@@ -1,11 +1,15 @@
 import {
+  commandCenterCostBreakdownResponseSchema,
   commandCenterNeedsAttentionResponseSchema,
   commandCenterRecentRunsResponseSchema,
   commandCenterRosterResponseSchema,
+  commandCenterScoreTrendsResponseSchema,
   commandCenterSummarySchema,
+  type CommandCenterCostBreakdownResponse,
   type CommandCenterNeedsAttentionResponse,
   type CommandCenterRecentRun,
   type CommandCenterRosterAgent,
+  type CommandCenterScoreTrendsResponse,
   type CommandCenterSummary,
 } from "@workspace/shared"
 import { ApiError } from "@/lib/api/client"
@@ -59,4 +63,22 @@ export async function fetchCommandCenterRecentRuns(
     `${API_BASE}/api/command-center/recent-runs?limit=${encodeURIComponent(String(limit))}`
   )
   return parseJson(response, commandCenterRecentRunsResponseSchema)
+}
+
+export async function fetchCommandCenterScoreTrends(
+  periodDays = 90
+): Promise<CommandCenterScoreTrendsResponse> {
+  const response = await fetch(
+    `${API_BASE}/api/command-center/score-trends?periodDays=${encodeURIComponent(String(periodDays))}`
+  )
+  return parseJson(response, commandCenterScoreTrendsResponseSchema)
+}
+
+export async function fetchCommandCenterCostBreakdown(
+  periodDays = 90
+): Promise<CommandCenterCostBreakdownResponse> {
+  const response = await fetch(
+    `${API_BASE}/api/command-center/cost-breakdown?periodDays=${encodeURIComponent(String(periodDays))}`
+  )
+  return parseJson(response, commandCenterCostBreakdownResponseSchema)
 }

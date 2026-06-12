@@ -27,6 +27,8 @@ const suggestionActions = [
 type LearningConversationRowProps = {
   conversation: LearningConversation
   candidates?: LearningCandidate[]
+  defaultExpanded?: boolean
+  focusedSuggestionId?: string | null
   onEditMemory?: (candidate: LearningCandidate) => void
   onAccept?: (candidate: LearningCandidate) => void
   onDismiss?: (candidate: LearningCandidate) => void
@@ -36,12 +38,15 @@ type LearningConversationRowProps = {
 export function LearningConversationRow({
   conversation,
   candidates = [],
+  defaultExpanded = false,
+  focusedSuggestionId = null,
   onEditMemory,
   onAccept,
   onDismiss,
   actionPendingId = null,
 }: LearningConversationRowProps): ReactElement {
-  const [expanded, setExpanded] = useState(false)
+  const [userExpanded, setUserExpanded] = useState<boolean | null>(null)
+  const expanded = userExpanded ?? defaultExpanded
   const hasSuggestions = candidates.length > 0
 
   return (
@@ -54,7 +59,7 @@ export function LearningConversationRow({
             size="icon-sm"
             aria-label={`${expanded ? "Collapse" : "Expand"} ${conversation.title}`}
             aria-expanded={expanded}
-            onClick={() => setExpanded((current) => !current)}
+            onClick={() => setUserExpanded((current) => !(current ?? defaultExpanded))}
             className="mt-0.5"
           >
             <HugeiconsIcon
@@ -117,6 +122,7 @@ export function LearningConversationRow({
           {hasSuggestions ? (
             <LearningCandidatesSection
               candidates={candidates}
+              focusedSuggestionId={focusedSuggestionId}
               onEditMemory={onEditMemory}
               onAccept={onAccept}
               onDismiss={onDismiss}

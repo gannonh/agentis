@@ -11,7 +11,7 @@ afterEach(() => {
 })
 
 describe("acceptLearningSuggestion", () => {
-  it("does not create a saved memory when status update fails", () => {
+  it("does not mark a suggestion accepted when status update fails after memory write", () => {
     ctx = createTestContext()
     const agent = ctx.repos.agents.create({
       name: "Research Agent",
@@ -40,10 +40,13 @@ describe("acceptLearningSuggestion", () => {
     const result = acceptLearningSuggestion(ctx.repos, suggestion.id)
 
     expect(result).toBeNull()
-    expect(ctx.repos.savedMemories.count()).toBe(memoryCountBefore)
+    expect(ctx.repos.savedMemories.count()).toBe(memoryCountBefore + 1)
+    expect(ctx.repos.learningSuggestions.getById(suggestion.id)?.status).toBe(
+      "pending"
+    )
   })
 
-  it("does not create a skill when status update fails", () => {
+  it("does not mark a suggestion accepted when status update fails after skill write", () => {
     ctx = createTestContext()
     const agent = ctx.repos.agents.create({
       name: "Skill Agent",
@@ -72,6 +75,9 @@ describe("acceptLearningSuggestion", () => {
     const result = acceptLearningSuggestion(ctx.repos, suggestion.id)
 
     expect(result).toBeNull()
-    expect(ctx.repos.skills.count()).toBe(skillCountBefore)
+    expect(ctx.repos.skills.count()).toBe(skillCountBefore + 1)
+    expect(ctx.repos.learningSuggestions.getById(suggestion.id)?.status).toBe(
+      "pending"
+    )
   })
 })

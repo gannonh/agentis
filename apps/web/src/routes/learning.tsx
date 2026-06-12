@@ -1,5 +1,6 @@
 import type { ReactElement } from "react"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "react-router"
 import type {
   LearningSkill,
   LearningSuggestion,
@@ -12,6 +13,10 @@ import type {
 import { AgentFilterBar } from "@/components/learning/agent-filter-bar"
 import { LearningBanner } from "@/components/learning/learning-banner"
 import { LearningConversationRow } from "@/components/learning/learning-conversation-row"
+import {
+  LearningReviewFocusBanner,
+  LearningReviewFocusMissingBanner,
+} from "@/components/learning/learning-review-focus-banner"
 import { LearningSecondaryPanel } from "@/components/learning/learning-secondary-panel"
 import { SkillsCard } from "@/components/learning/skills-card"
 import { PageHeader } from "@/components/shell/page-header"
@@ -33,6 +38,8 @@ import {
 } from "@/lib/api/learning-client"
 import { updateMemory } from "@/lib/api/memories-client"
 import { EditMemoryDialog } from "@/components/memories/memory-dialogs"
+import { useLearningSuggestionFocus } from "@/hooks/use-learning-suggestion-focus"
+import { parseLearningDeepLink } from "@/lib/learning-deep-link"
 
 type LearningData = {
   conversations: LearningConversation[]
@@ -321,7 +328,24 @@ function deriveSummaryFallback(
   }
 }
 
+function clearLearningDeepLinkParams(
+  setSearchParams: ReturnType<typeof useSearchParams>[1]
+) {
+  setSearchParams(
+    (current) => {
+      const next = new URLSearchParams(current)
+      next.delete("suggestionId")
+      next.delete("status")
+      return next
+    },
+    { replace: true }
+  )
+}
+
 export function LearningPage(): ReactElement {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { suggestionId: focusSuggestionId, status: focusSuggestionStatus } =
+    parseLearningDeepLink(searchParams)
   const [agentFilter, setAgentFilter] = useState("all")
   const [learningData, setLearningData] =
     useState<LearningData>(EMPTY_LEARNING_DATA)
@@ -338,13 +362,26 @@ export function LearningPage(): ReactElement {
   const [actionError, setActionError] = useState<string | null>(null)
 
   async function reloadLearningData() {
+    const suggestionQueryStatus =
+      focusSuggestionStatus === "pending" ||
+      focusSuggestionStatus === "accepted" ||
+      focusSuggestionStatus === "dismissed"
+        ? focusSuggestionStatus
+        : focusSuggestionId
+          ? "pending"
+          : undefined
+
     const [threadsResult, memoriesResult, summaryResult, skillsResult, suggestionsResult] =
       await Promise.allSettled([
         listThreads(),
         listLearningMemories({ page: 1, pageSize: 100 }),
         getLearningSummary(),
         listLearningSkills({ page: 1, pageSize: 5 }),
-        listLearningSuggestions({ page: 1, pageSize: 100 }),
+        listLearningSuggestions({
+          page: 1,
+          pageSize: 100,
+          status: suggestionQueryStatus,
+        }),
       ])
 
     const nextErrors: LearningLoadErrors = {}
@@ -446,40 +483,42 @@ export function LearningPage(): ReactElement {
     }
   }
 
-  async function handleAcceptCandidate(candidate: LearningCandidate): Promise<void> {
+  async function runSuggestionAction(
+    candidate: LearningCandidate,
+    action: (suggestionId: string) => Promise<unknown>,
+    failureMessage: string
+  ): Promise<void> {
     setActionPendingId(candidate.id)
     setActionError(null)
     try {
-      await acceptLearningSuggestion(candidate.id)
+      await action(candidate.id)
+      if (candidate.id === focusSuggestionId) {
+        clearLearningDeepLinkParams(setSearchParams)
+      }
       await reloadLearningData()
-    } catch (acceptError) {
+    } catch (actionError) {
       setActionError(
-        acceptError instanceof Error
-          ? acceptError.message
-          : "Failed to accept suggestion"
+        actionError instanceof Error ? actionError.message : failureMessage
       )
     } finally {
       setActionPendingId(null)
     }
   }
 
-  async function handleDismissCandidate(
-    candidate: LearningCandidate
-  ): Promise<void> {
-    setActionPendingId(candidate.id)
-    setActionError(null)
-    try {
-      await dismissLearningSuggestion(candidate.id)
-      await reloadLearningData()
-    } catch (dismissError) {
-      setActionError(
-        dismissError instanceof Error
-          ? dismissError.message
-          : "Failed to dismiss suggestion"
-      )
-    } finally {
-      setActionPendingId(null)
-    }
+  function handleAcceptCandidate(candidate: LearningCandidate): void {
+    void runSuggestionAction(
+      candidate,
+      acceptLearningSuggestion,
+      "Failed to accept suggestion"
+    )
+  }
+
+  function handleDismissCandidate(candidate: LearningCandidate): void {
+    void runSuggestionAction(
+      candidate,
+      dismissLearningSuggestion,
+      "Failed to dismiss suggestion"
+    )
   }
 
   const candidatesByThreadId = useMemo(() => {
@@ -492,6 +531,18 @@ export function LearningPage(): ReactElement {
       {}
     )
   }, [learningData.candidates])
+
+  const resetAgentFilter = useCallback(() => {
+    setAgentFilter("all")
+  }, [])
+
+  const { focusedCandidate, focusThreadId } = useLearningSuggestionFocus({
+    focusSuggestionId,
+    candidates: learningData.candidates,
+    loading,
+    agentFilter,
+    onAgentFilterChange: resetAgentFilter,
+  })
 
   return (
     <PageLayout variant="fixed" className="gap-6">
@@ -555,6 +606,14 @@ export function LearningPage(): ReactElement {
         onChange={setAgentFilter}
       />
 
+      {!loading && focusSuggestionId && focusedCandidate ? (
+        <LearningReviewFocusBanner candidate={focusedCandidate} />
+      ) : null}
+
+      {!loading && focusSuggestionId && !focusedCandidate && !loadErrors.core ? (
+        <LearningReviewFocusMissingBanner suggestionId={focusSuggestionId} />
+      ) : null}
+
       <section
         className="flex flex-col gap-3"
         aria-label="Learning conversations"
@@ -580,13 +639,11 @@ export function LearningPage(): ReactElement {
               key={conversation.id}
               conversation={conversation}
               candidates={candidatesByThreadId[conversation.id]}
+              defaultExpanded={conversation.id === focusThreadId}
+              focusedSuggestionId={focusSuggestionId}
               actionPendingId={actionPendingId}
-              onAccept={(candidate) => {
-                void handleAcceptCandidate(candidate)
-              }}
-              onDismiss={(candidate) => {
-                void handleDismissCandidate(candidate)
-              }}
+              onAccept={handleAcceptCandidate}
+              onDismiss={handleDismissCandidate}
               onEditMemory={(candidate) => {
                 const memory = candidate.savedMemoryId
                   ? memoriesById.get(candidate.savedMemoryId)

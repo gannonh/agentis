@@ -21,6 +21,7 @@ import {
   acceptLearningSuggestion,
   dismissLearningSuggestion,
 } from "../learning/learning-suggestion-service.js"
+import { filterVisiblePendingSuggestions } from "../learning/suggestion-consistency.js"
 import type { Repositories } from "../repositories/index.js"
 
 function invalidLearningPayload(issues: unknown[] = []) {
@@ -113,7 +114,16 @@ export function createLearningRoutes(repos: Repositories): Hono {
     }
 
     const response = repos.learningSuggestions.listPaginated(parsed.data)
-    return c.json(learningSuggestionsListResponseSchema.parse(response))
+    const visibleSuggestions = filterVisiblePendingSuggestions(
+      repos,
+      response.suggestions
+    )
+    return c.json(
+      learningSuggestionsListResponseSchema.parse({
+        ...response,
+        suggestions: visibleSuggestions,
+      })
+    )
   })
 
   app.post("/suggestions/:id/accept", async (c) => {

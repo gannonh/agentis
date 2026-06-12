@@ -35,7 +35,7 @@ function resolveModelPricing(modelId: string): ModelPricing {
   return TIER_PRICING_USD_PER_MILLION[tier]
 }
 
-function providerFromModelId(modelId: string): string {
+export function providerFromModelId(modelId: string): string {
   if (modelId.startsWith("@cf/")) return "cloudflare-workers-ai"
   const [provider] = modelId.split("/")
   return provider || "unknown"

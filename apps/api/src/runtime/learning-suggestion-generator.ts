@@ -51,6 +51,19 @@ export function maybeGenerateLearningSuggestions(input: {
 
   if (!content) return
 
+  if (
+    input.repos.learningSuggestions.hasOpenSuggestionForThreadContent(
+      input.thread.id,
+      content
+    ) ||
+    input.repos.savedMemories.existsThreadDerivedMemory(
+      input.thread.id,
+      content
+    )
+  ) {
+    return
+  }
+
   input.repos.learningSuggestions.create({
     suggestionType: "memory",
     title: inferSuggestionTitle(input.latestUserPrompt),

@@ -107,6 +107,40 @@ export class SavedMemoryRepository {
     return row ? mapSavedMemory(row) : null
   }
 
+  existsThreadDerivedMemory(
+    sourceThreadId: string,
+    content: string
+  ): boolean {
+    const row = this.db
+      .select({ value: count() })
+      .from(savedMemories)
+      .where(
+        and(
+          eq(savedMemories.sourceThreadId, sourceThreadId),
+          eq(savedMemories.content, content)
+        )
+      )
+      .get()
+    return Number(row?.value ?? 0) > 0
+  }
+
+  findThreadDerivedMemory(
+    sourceThreadId: string,
+    content: string
+  ): SavedMemory | null {
+    const row = this.db
+      .select()
+      .from(savedMemories)
+      .where(
+        and(
+          eq(savedMemories.sourceThreadId, sourceThreadId),
+          eq(savedMemories.content, content)
+        )
+      )
+      .get()
+    return row ? mapSavedMemory(row) : null
+  }
+
   update(id: string, input: UpdateSavedMemoryRequest): SavedMemory | null {
     const existing = this.getById(id)
     if (!existing) return null

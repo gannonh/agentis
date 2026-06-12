@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { ApiError } from "@/lib/api/client"
 import {
+  fetchCommandCenterCostBreakdown,
   fetchCommandCenterNeedsAttention,
   fetchCommandCenterRecentRuns,
   fetchCommandCenterRoster,
+  fetchCommandCenterScoreTrends,
   fetchCommandCenterSummary,
 } from "@/lib/api/command-center-client"
 
@@ -107,6 +109,55 @@ describe("command center client", () => {
         }),
       ],
     })
+  })
+
+  it("fetches score trends and cost breakdown", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          Response.json({
+            periodDays: 90,
+            evaluatedRunCount: 2,
+            daily: [
+              {
+                date: "2026-06-08",
+                avgScore: 80,
+                evaluatedRunCount: 1,
+              },
+            ],
+          })
+        )
+        .mockResolvedValueOnce(
+          Response.json({
+            periodDays: 90,
+            totalCostUsd: 1.5,
+            totalRuns: 3,
+            byModel: [
+              {
+                model: "openai/gpt-5.4-mini",
+                costUsd: 1.5,
+                runCount: 3,
+              },
+            ],
+            byProvider: [
+              {
+                provider: "openai",
+                costUsd: 1.5,
+                runCount: 3,
+              },
+            ],
+          })
+        )
+    )
+
+    await expect(fetchCommandCenterScoreTrends()).resolves.toEqual(
+      expect.objectContaining({ evaluatedRunCount: 2 })
+    )
+    await expect(fetchCommandCenterCostBreakdown()).resolves.toEqual(
+      expect.objectContaining({ totalCostUsd: 1.5, totalRuns: 3 })
+    )
   })
 
   it("normalizes non-JSON error responses", async () => {

@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest"
 import { eq } from "drizzle-orm"
 import {
+  commandCenterCostBreakdownResponseSchema,
   commandCenterNeedsAttentionResponseSchema,
+  commandCenterScoreTrendsResponseSchema,
   GENERIC_AGENTIS_AGENT_ID,
 } from "@workspace/shared"
 import { createApp } from "../app.js"
@@ -273,6 +275,59 @@ describe("command center routes", () => {
           score: 45,
         }),
       ])
+    )
+  })
+
+  it("omits superseded pending suggestions from needs-attention without mutating them", async () => {
+    ctx = createTestContext()
+    const app = createCommandCenterTestApp(ctx)
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Attention Agent",
+        systemPrompt: "Surface operational issues",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+    const thread = ctx.repos.threads.create({
+      title: "Already saved memory",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+    })
+    const content = "User prefers citations."
+
+    ctx.repos.savedMemories.createFromThread({
+      content,
+      category: "memory_category_preference",
+      importance: "medium",
+      usageGuidance: "Use when working on follow-up tasks from the source thread.",
+      tags: [],
+      scope: "agent",
+      associatedAgent: agent.id,
+      sourceThreadId: thread.id,
+      sourceThreadTitle: thread.title,
+      pinnedToContext: true,
+    })
+
+    const staleSuggestion = ctx.repos.learningSuggestions.create({
+      suggestionType: "memory",
+      title: "Remember citation preference",
+      content,
+      sourceThreadId: thread.id,
+      sourceThreadTitle: thread.title,
+      agentId: agent.id,
+    })
+
+    const response = await app.request("/api/command-center/needs-attention")
+    expect(response.status).toBe(200)
+    const body = commandCenterNeedsAttentionResponseSchema.parse(
+      await response.json()
+    )
+    expect(body.items).toEqual([])
+    expect(ctx.repos.learningSuggestions.getById(staleSuggestion.id)?.status).toBe(
+      "pending"
     )
   })
 
@@ -598,5 +653,126 @@ describe("command center routes", () => {
     const recentRuns = (await recentRunsResponse.json()) as { id: string }[]
     expect(recentRuns).toHaveLength(1)
     expect(recentRuns[0]?.id).toBe(namedThread.run.id)
+  })
+
+  it("returns fleet score trends and cost breakdown for chart panels", async () => {
+    ctx = createTestContext()
+    const app = createCommandCenterTestApp(ctx)
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Chart Agent",
+        systemPrompt: "Chart runs",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+    const agentConfigurationVersionId =
+      ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).id
+    const startedAt = new Date().toISOString()
+
+    const thread = ctx.repos.threads.createWithInitialRun({
+      title: "Chart run",
+      prompt: "Hello",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId,
+    })
+    ctx.repos.runs.updateStatus(thread.run.id, "completed", {
+      finishedAt: startedAt,
+      cost: MOCK_MODEL_COST_USD,
+      costBreakdown: {
+        totalUsd: MOCK_MODEL_COST_USD,
+        lineItems: [
+          {
+            category: "model",
+            provider: "mock",
+            model: "openai/gpt-5.4-mini",
+            costUsd: MOCK_MODEL_COST_USD,
+          },
+        ],
+      },
+    })
+    ctx.repos.runs.saveEvaluation(thread.run.id, {
+      rubricId: "rubric_quality",
+      rubricName: "Quality rubric",
+      score: 88,
+      evaluatedAt: startedAt,
+      criteria: [
+        {
+          criterionId: "criterion_accuracy",
+          criterionName: "Accuracy",
+          weight: 1,
+          score: 88,
+          feedback: "Strong answer.",
+        },
+      ],
+    })
+
+    const trendsResponse = await app.request(
+      "/api/command-center/score-trends?periodDays=14"
+    )
+    expect(trendsResponse.status).toBe(200)
+    const trends = commandCenterScoreTrendsResponseSchema.parse(
+      await trendsResponse.json()
+    )
+    expect(trends.periodDays).toBe(14)
+    expect(trends.evaluatedRunCount).toBe(1)
+    expect(trends.daily).toHaveLength(14)
+    expect(trends.daily).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          date: startedAt.slice(0, 10),
+          avgScore: 88,
+          evaluatedRunCount: 1,
+        }),
+      ])
+    )
+
+    const breakdownResponse = await app.request(
+      "/api/command-center/cost-breakdown?periodDays=30"
+    )
+    expect(breakdownResponse.status).toBe(200)
+    const breakdown = commandCenterCostBreakdownResponseSchema.parse(
+      await breakdownResponse.json()
+    )
+    expect(breakdown.totalRuns).toBe(1)
+    expect(breakdown.totalCostUsd).toBe(MOCK_MODEL_COST_USD)
+    expect(breakdown.byModel).toEqual([
+      expect.objectContaining({
+        model: "openai/gpt-5.4-mini",
+        costUsd: MOCK_MODEL_COST_USD,
+        runCount: 1,
+      }),
+    ])
+    expect(breakdown.byProvider).toEqual([
+      expect.objectContaining({
+        provider: "mock",
+        costUsd: MOCK_MODEL_COST_USD,
+        runCount: 1,
+      }),
+    ])
+  })
+
+  it("rejects invalid periodDays for chart endpoints", async () => {
+    ctx = createTestContext()
+    const app = createCommandCenterTestApp(ctx)
+
+    const trendsResponse = await app.request(
+      "/api/command-center/score-trends?periodDays=0"
+    )
+    expect(trendsResponse.status).toBe(400)
+    expect(await trendsResponse.json()).toEqual(
+      expect.objectContaining({ code: "invalid_period_days" })
+    )
+
+    const breakdownResponse = await app.request(
+      "/api/command-center/cost-breakdown?periodDays=120"
+    )
+    expect(breakdownResponse.status).toBe(400)
+    expect(await breakdownResponse.json()).toEqual(
+      expect.objectContaining({ code: "invalid_period_days" })
+    )
   })
 })

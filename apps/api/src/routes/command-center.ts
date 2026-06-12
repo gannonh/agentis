@@ -1,16 +1,31 @@
 import { Hono } from "hono"
 import {
+  commandCenterCostBreakdownResponseSchema,
   commandCenterNeedsAttentionResponseSchema,
   commandCenterRecentRunsResponseSchema,
   commandCenterRosterResponseSchema,
+  commandCenterScoreTrendsResponseSchema,
   commandCenterSummarySchema,
   type CommandCenterNeedsAttentionItem,
   type LearningSuggestion,
 } from "@workspace/shared"
+import { filterVisiblePendingSuggestions } from "../learning/suggestion-consistency.js"
 import type { Repositories } from "../repositories/index.js"
 
 const NEEDS_ATTENTION_LIMIT = 20
 const LOW_SCORE_THRESHOLD = 70
+const DEFAULT_CHART_PERIOD_DAYS = 90
+
+function parsePeriodDays(
+  value: string | undefined,
+  defaultDays: number
+): number | null {
+  const periodDays = Number(value ?? String(defaultDays))
+  if (!Number.isInteger(periodDays) || periodDays <= 0 || periodDays > 90) {
+    return null
+  }
+  return periodDays
+}
 
 function mergeNeedsAttentionItems(
   buckets: CommandCenterNeedsAttentionItem[][],
@@ -106,12 +121,14 @@ export function createCommandCenterRoutes(repos: Repositories) {
       pageSize: NEEDS_ATTENTION_LIMIT,
       status: "pending",
     })
+    const visibleSuggestions = filterVisiblePendingSuggestions(
+      repos,
+      pendingSuggestionsPage.suggestions
+    )
     const failedRuns = repos.runs.listFailedRunsForAttention(
       NEEDS_ATTENTION_LIMIT
     )
-    const suggestionItems = pendingSuggestionsPage.suggestions.map(
-      learningSuggestionToAttentionItem
-    )
+    const suggestionItems = visibleSuggestions.map(learningSuggestionToAttentionItem)
     const lowScoreRuns = repos.runs.listLowScoreRunsForAttention(
       LOW_SCORE_THRESHOLD,
       NEEDS_ATTENTION_LIMIT
@@ -140,6 +157,44 @@ export function createCommandCenterRoutes(repos: Repositories) {
         : 20
     const recentRuns = repos.runs.listRecentRuns(limit)
     return c.json(commandCenterRecentRunsResponseSchema.parse(recentRuns))
+  })
+
+  app.get("/score-trends", (c) => {
+    const periodDays = parsePeriodDays(
+      c.req.query("periodDays"),
+      DEFAULT_CHART_PERIOD_DAYS
+    )
+    if (periodDays === null) {
+      return c.json(
+        {
+          error: "periodDays must be an integer between 1 and 90",
+          code: "invalid_period_days",
+        },
+        400
+      )
+    }
+
+    const trends = repos.runs.getFleetScoreTrends(periodDays)
+    return c.json(commandCenterScoreTrendsResponseSchema.parse(trends))
+  })
+
+  app.get("/cost-breakdown", (c) => {
+    const periodDays = parsePeriodDays(
+      c.req.query("periodDays"),
+      DEFAULT_CHART_PERIOD_DAYS
+    )
+    if (periodDays === null) {
+      return c.json(
+        {
+          error: "periodDays must be an integer between 1 and 90",
+          code: "invalid_period_days",
+        },
+        400
+      )
+    }
+
+    const breakdown = repos.runs.getFleetCostBreakdown(periodDays)
+    return c.json(commandCenterCostBreakdownResponseSchema.parse(breakdown))
   })
 
   return app

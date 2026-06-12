@@ -1,14 +1,19 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useLocation } from "react-router"
 import type {
+  CommandCenterCostBreakdownResponse,
   CommandCenterNeedsAttentionItem,
   CommandCenterRecentRun,
   CommandCenterRosterAgent,
+  CommandCenterScoreTrendsResponse,
   CommandCenterSummary,
 } from "@workspace/shared"
 import {
+  fetchCommandCenterCostBreakdown,
   fetchCommandCenterNeedsAttention,
   fetchCommandCenterRecentRuns,
   fetchCommandCenterRoster,
+  fetchCommandCenterScoreTrends,
   fetchCommandCenterSummary,
 } from "@/lib/api/command-center-client"
 
@@ -22,6 +27,8 @@ export type CommandCenterData = {
   roster: CommandCenterRosterAgent[]
   recentRuns: CommandCenterRecentRun[]
   needsAttention: CommandCenterNeedsAttentionData
+  scoreTrends: CommandCenterScoreTrendsResponse | null
+  costBreakdown: CommandCenterCostBreakdownResponse | null
 }
 
 export type CommandCenterSectionErrors = {
@@ -29,6 +36,8 @@ export type CommandCenterSectionErrors = {
   roster?: string
   recentRuns?: string
   needsAttention?: string
+  scoreTrends?: string
+  costBreakdown?: string
 }
 
 type CommandCenterLoadResult = {
@@ -42,13 +51,21 @@ function loadErrorMessage(error: unknown, fallback: string) {
 }
 
 async function fetchCommandCenterData(): Promise<CommandCenterLoadResult> {
-  const [summaryResult, rosterResult, recentRunsResult, needsAttentionResult] =
-    await Promise.allSettled([
-      fetchCommandCenterSummary(),
-      fetchCommandCenterRoster(),
-      fetchCommandCenterRecentRuns(),
-      fetchCommandCenterNeedsAttention(),
-    ])
+  const [
+    summaryResult,
+    rosterResult,
+    recentRunsResult,
+    needsAttentionResult,
+    scoreTrendsResult,
+    costBreakdownResult,
+  ] = await Promise.allSettled([
+    fetchCommandCenterSummary(),
+    fetchCommandCenterRoster(),
+    fetchCommandCenterRecentRuns(),
+    fetchCommandCenterNeedsAttention(),
+    fetchCommandCenterScoreTrends(),
+    fetchCommandCenterCostBreakdown(),
+  ])
 
   const data: CommandCenterData = {
     summary: summaryResult.status === "fulfilled" ? summaryResult.value : null,
@@ -59,6 +76,12 @@ async function fetchCommandCenterData(): Promise<CommandCenterLoadResult> {
       needsAttentionResult.status === "fulfilled"
         ? needsAttentionResult.value
         : { items: [], totalCount: 0 },
+    scoreTrends:
+      scoreTrendsResult.status === "fulfilled" ? scoreTrendsResult.value : null,
+    costBreakdown:
+      costBreakdownResult.status === "fulfilled"
+        ? costBreakdownResult.value
+        : null,
   }
   const sectionErrors: CommandCenterSectionErrors = {}
 
@@ -86,23 +109,38 @@ async function fetchCommandCenterData(): Promise<CommandCenterLoadResult> {
       "Failed to load needs-attention items"
     )
   }
+  if (scoreTrendsResult.status === "rejected") {
+    sectionErrors.scoreTrends = loadErrorMessage(
+      scoreTrendsResult.reason,
+      "Failed to load score trends"
+    )
+  }
+  if (costBreakdownResult.status === "rejected") {
+    sectionErrors.costBreakdown = loadErrorMessage(
+      costBreakdownResult.reason,
+      "Failed to load cost breakdown"
+    )
+  }
 
   return {
     data,
     sectionErrors,
     error:
-      Object.keys(sectionErrors).length === 4
+      Object.keys(sectionErrors).length === 6
         ? "Failed to load command center metrics"
         : null,
   }
 }
 
 export function useCommandCenter() {
+  const location = useLocation()
   const [data, setData] = useState<CommandCenterData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [sectionErrors, setSectionErrors] =
     useState<CommandCenterSectionErrors>({})
+  const loading = loadedKey !== location.key
+  const latestRequestIdRef = useRef(0)
 
   const applyLoadResult = useCallback((result: CommandCenterLoadResult) => {
     setData(result.data)
@@ -111,27 +149,27 @@ export function useCommandCenter() {
   }, [])
 
   const refresh = useCallback(async () => {
-    setLoading(true)
+    const requestId = ++latestRequestIdRef.current
+    setLoadedKey(null)
     setError(null)
     setSectionErrors({})
     const result = await fetchCommandCenterData()
+    if (requestId !== latestRequestIdRef.current) return
     applyLoadResult(result)
-    setLoading(false)
-  }, [applyLoadResult])
+    setLoadedKey(location.key)
+  }, [applyLoadResult, location.key])
 
   useEffect(() => {
-    let cancelled = false
-
+    const requestId = ++latestRequestIdRef.current
     void fetchCommandCenterData().then((result) => {
-      if (cancelled) return
+      if (requestId !== latestRequestIdRef.current) return
       applyLoadResult(result)
-      setLoading(false)
+      setLoadedKey(location.key)
     })
-
     return () => {
-      cancelled = true
+      latestRequestIdRef.current += 1
     }
-  }, [applyLoadResult])
+  }, [applyLoadResult, location.key])
 
   return { data, loading, error, sectionErrors, refresh }
 }

@@ -1,11 +1,14 @@
 import { and, count, desc, eq, gte, inArray, ne, sql } from "drizzle-orm"
 import {
+  runCostBreakdownSchema,
   runEvaluationSchema,
   type AgentRunEvaluationSummary,
   type AgentUsageResponse,
+  type CommandCenterCostBreakdownResponse,
   type CommandCenterNeedsAttentionItem,
   type CommandCenterRecentRun,
   type CommandCenterRosterAgent,
+  type CommandCenterScoreTrendsResponse,
   type CommandCenterSummary,
   type Run,
   type RunCostBreakdown,
@@ -18,7 +21,10 @@ import type { AppDatabase } from "../db/client.js"
 import { runs, threads } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapRun } from "../lib/mappers.js"
-import { roundCostUsd } from "../cost/run-cost-attribution.js"
+import {
+  providerFromModelId,
+  roundCostUsd,
+} from "../cost/run-cost-attribution.js"
 
 const ACTIVE_RUN_STATUSES: RunStatus[] = ["queued", "running", "tool-calling"]
 
@@ -86,10 +92,33 @@ function toUtcDateKey(isoTimestamp: string): string {
   return isoTimestamp.slice(0, 10)
 }
 
-function subtractDaysIso(days: number): string {
-  const date = new Date()
-  date.setUTCDate(date.getUTCDate() - days)
-  return date.toISOString()
+function startOfUtcWindowIso(periodDays: number): string {
+  const start = new Date()
+  start.setUTCHours(0, 0, 0, 0)
+  start.setUTCDate(start.getUTCDate() - (periodDays - 1))
+  return start.toISOString()
+}
+
+function buildUtcDateRange(periodDays: number): string[] {
+  const end = new Date()
+  end.setUTCHours(0, 0, 0, 0)
+  const dates: string[] = []
+
+  for (let offset = periodDays - 1; offset >= 0; offset -= 1) {
+    const day = new Date(end)
+    day.setUTCDate(day.getUTCDate() - offset)
+    dates.push(day.toISOString().slice(0, 10))
+  }
+
+  return dates
+}
+
+function fleetCompletedRunsWhere(since: string) {
+  return and(
+    eq(runs.status, "completed"),
+    gte(runs.startedAt, since),
+    ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
+  )
 }
 
 export class RunRepository {
@@ -290,7 +319,7 @@ export class RunRepository {
   }
 
   getAgentUsage(agentId: string, periodDays = 14): AgentUsageResponse {
-    const since = subtractDaysIso(periodDays)
+    const since = startOfUtcWindowIso(periodDays)
     const rows = this.db
       .select({
         model: runs.model,
@@ -356,13 +385,14 @@ export class RunRepository {
       periodDays,
       totalCostUsd: roundCostUsd(totalCostUsd),
       totalRuns: rows.length,
-      daily: [...dailyMap.entries()]
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([date, stats]) => ({
+      daily: buildUtcDateRange(periodDays).map((date) => {
+        const stats = dailyMap.get(date)
+        return {
           date,
-          costUsd: roundCostUsd(stats.costUsd),
-          runCount: stats.runCount,
-        })),
+          costUsd: roundCostUsd(stats?.costUsd ?? 0),
+          runCount: stats?.runCount ?? 0,
+        }
+      }),
       byModel: [...modelMap.entries()]
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([model, stats]) => ({
@@ -371,6 +401,184 @@ export class RunRepository {
           runCount: stats.runCount,
           promptTokens: stats.promptTokens,
           completionTokens: stats.completionTokens,
+        })),
+    }
+  }
+
+  getFleetScoreTrends(periodDays = 90): CommandCenterScoreTrendsResponse {
+    const since = startOfUtcWindowIso(periodDays)
+    const rows = this.db
+      .select({
+        startedAt: runs.startedAt,
+        evaluationJson: runs.evaluationJson,
+      })
+      .from(runs)
+      .where(
+        and(
+          fleetCompletedRunsWhere(since),
+          sql`${runs.evaluationJson} is not null`
+        )
+      )
+      .all()
+
+    const dailyMap = new Map<
+      string,
+      { scoreTotal: number; evaluatedRunCount: number }
+    >()
+    let evaluatedRunCount = 0
+
+    for (const row of rows) {
+      if (!row.evaluationJson) {
+        continue
+      }
+
+      try {
+        const evaluation = runEvaluationSchema.parse(
+          JSON.parse(row.evaluationJson)
+        )
+        evaluatedRunCount += 1
+        const date = toUtcDateKey(row.startedAt)
+        const daily = dailyMap.get(date) ?? {
+          scoreTotal: 0,
+          evaluatedRunCount: 0,
+        }
+        daily.scoreTotal += evaluation.score
+        daily.evaluatedRunCount += 1
+        dailyMap.set(date, daily)
+      } catch {
+        // Skip malformed evaluationJson for this row.
+      }
+    }
+
+    const daily = buildUtcDateRange(periodDays).map((date) => {
+      const stats = dailyMap.get(date)
+      if (!stats || stats.evaluatedRunCount === 0) {
+        return {
+          date,
+          avgScore: null,
+          evaluatedRunCount: 0,
+        }
+      }
+
+      return {
+        date,
+        avgScore: Math.round(stats.scoreTotal / stats.evaluatedRunCount),
+        evaluatedRunCount: stats.evaluatedRunCount,
+      }
+    })
+
+    return {
+      periodDays,
+      evaluatedRunCount,
+      daily,
+    }
+  }
+
+  getFleetCostBreakdown(periodDays = 90): CommandCenterCostBreakdownResponse {
+    const since = startOfUtcWindowIso(periodDays)
+    const rows = this.db
+      .select({
+        id: runs.id,
+        model: runs.model,
+        startedAt: runs.startedAt,
+        cost: runs.cost,
+        usageJson: runs.usageJson,
+        costBreakdownJson: runs.costBreakdownJson,
+      })
+      .from(runs)
+      .where(fleetCompletedRunsWhere(since))
+      .all()
+
+    const modelMap = new Map<
+      string,
+      {
+        costUsd: number
+        runCount: number
+        promptTokens: number
+        completionTokens: number
+      }
+    >()
+    const providerMap = new Map<
+      string,
+      { costUsd: number; runIds: Set<string> }
+    >()
+
+    let totalCostUsd = 0
+
+    for (const row of rows) {
+      const costUsd = row.cost ?? 0
+      totalCostUsd += costUsd
+
+      const modelStats = modelMap.get(row.model) ?? {
+        costUsd: 0,
+        runCount: 0,
+        promptTokens: 0,
+        completionTokens: 0,
+      }
+      modelStats.costUsd += costUsd
+      modelStats.runCount += 1
+      if (row.usageJson) {
+        try {
+          const usage = JSON.parse(row.usageJson) as RunUsage
+          modelStats.promptTokens += usage.promptTokens ?? 0
+          modelStats.completionTokens += usage.completionTokens ?? 0
+        } catch {
+          // Skip malformed usageJson for this row.
+        }
+      }
+      modelMap.set(row.model, modelStats)
+
+      if (row.costBreakdownJson) {
+        try {
+          const breakdown = runCostBreakdownSchema.parse(
+            JSON.parse(row.costBreakdownJson)
+          )
+          if (breakdown.lineItems.length > 0) {
+            for (const lineItem of breakdown.lineItems) {
+              const providerStats = providerMap.get(lineItem.provider) ?? {
+                costUsd: 0,
+                runIds: new Set<string>(),
+              }
+              providerStats.costUsd += lineItem.costUsd
+              providerStats.runIds.add(row.id)
+              providerMap.set(lineItem.provider, providerStats)
+            }
+            continue
+          }
+        } catch {
+          // Fall through to model-derived provider allocation.
+        }
+      }
+
+      const provider = providerFromModelId(row.model)
+      const providerStats = providerMap.get(provider) ?? {
+        costUsd: 0,
+        runIds: new Set<string>(),
+      }
+      providerStats.costUsd += costUsd
+      providerStats.runIds.add(row.id)
+      providerMap.set(provider, providerStats)
+    }
+
+    return {
+      periodDays,
+      totalCostUsd: roundCostUsd(totalCostUsd),
+      totalRuns: rows.length,
+      byModel: [...modelMap.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([model, stats]) => ({
+          model,
+          costUsd: roundCostUsd(stats.costUsd),
+          runCount: stats.runCount,
+          promptTokens: stats.promptTokens,
+          completionTokens: stats.completionTokens,
+        })),
+      byProvider: [...providerMap.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([provider, stats]) => ({
+          provider,
+          costUsd: roundCostUsd(stats.costUsd),
+          runCount: stats.runIds.size,
         })),
     }
   }
