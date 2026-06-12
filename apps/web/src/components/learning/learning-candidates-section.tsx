@@ -6,6 +6,7 @@ import type { LearningCandidate } from "@/fixtures/schema"
 
 type LearningCandidatesSectionProps = {
   candidates: LearningCandidate[]
+  focusedSuggestionId?: string | null
   onEditMemory?: (candidate: LearningCandidate) => void
   onAccept?: (candidate: LearningCandidate) => void
   onDismiss?: (candidate: LearningCandidate) => void
@@ -18,6 +19,7 @@ function isPendingSuggestion(candidate: LearningCandidate): boolean {
 
 export function LearningCandidatesSection({
   candidates,
+  focusedSuggestionId = null,
   onEditMemory,
   onAccept,
   onDismiss,
@@ -59,6 +61,7 @@ export function LearningCandidatesSection({
             <LearningCandidateCard
               key={candidate.id}
               candidate={candidate}
+              highlighted={focusedSuggestionId === candidate.id}
               onEditMemory={onEditMemory}
               onAccept={onAccept}
               onDismiss={onDismiss}

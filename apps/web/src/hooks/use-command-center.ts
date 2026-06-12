@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
+import { useLocation } from "react-router"
 import type {
   CommandCenterCostBreakdownResponse,
   CommandCenterNeedsAttentionItem,
@@ -132,6 +133,7 @@ async function fetchCommandCenterData(): Promise<CommandCenterLoadResult> {
 }
 
 export function useCommandCenter() {
+  const location = useLocation()
   const [data, setData] = useState<CommandCenterData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -155,6 +157,7 @@ export function useCommandCenter() {
 
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
 
     void fetchCommandCenterData().then((result) => {
       if (cancelled) return
@@ -165,7 +168,7 @@ export function useCommandCenter() {
     return () => {
       cancelled = true
     }
-  }, [applyLoadResult])
+  }, [applyLoadResult, location.key])
 
   return { data, loading, error, sectionErrors, refresh }
 }

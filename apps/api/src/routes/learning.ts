@@ -21,6 +21,10 @@ import {
   acceptLearningSuggestion,
   dismissLearningSuggestion,
 } from "../learning/learning-suggestion-service.js"
+import {
+  healAllStalePendingSuggestions,
+  healStalePendingSuggestions,
+} from "../learning/suggestion-consistency.js"
 import type { Repositories } from "../repositories/index.js"
 
 function invalidLearningPayload(issues: unknown[] = []) {
@@ -43,6 +47,7 @@ export function createLearningRoutes(repos: Repositories): Hono {
   const app = new Hono()
 
   app.get("/summary", (c) => {
+    healAllStalePendingSuggestions(repos)
     const summary = {
       skillsCount: repos.skills.count(),
       pinnedSkillsCount: repos.skills.countPinned(),
@@ -112,8 +117,14 @@ export function createLearningRoutes(repos: Repositories): Hono {
       return c.json(invalidLearningQuery(parsed.error.issues), 400)
     }
 
+    healAllStalePendingSuggestions(repos)
     const response = repos.learningSuggestions.listPaginated(parsed.data)
-    return c.json(learningSuggestionsListResponseSchema.parse(response))
+    return c.json(
+      learningSuggestionsListResponseSchema.parse({
+        ...response,
+        suggestions: healStalePendingSuggestions(repos, response.suggestions),
+      })
+    )
   })
 
   app.post("/suggestions/:id/accept", async (c) => {

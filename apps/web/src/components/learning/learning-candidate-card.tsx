@@ -4,6 +4,8 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import type { LearningCandidate } from "@/fixtures/schema"
+import { learningSuggestionDomId } from "@/lib/learning-deep-link"
+import { cn } from "@workspace/ui/lib/utils"
 
 const candidateActionIcons = {
   sparkles: SparklesIcon,
@@ -11,6 +13,7 @@ const candidateActionIcons = {
 
 type LearningCandidateCardProps = {
   candidate: LearningCandidate
+  highlighted?: boolean
   onEditMemory?: (candidate: LearningCandidate) => void
   onAccept?: (candidate: LearningCandidate) => void
   onDismiss?: (candidate: LearningCandidate) => void
@@ -33,6 +36,7 @@ function formatSuggestionState(status: LearningCandidate["status"]): string {
 
 export function LearningCandidateCard({
   candidate,
+  highlighted = false,
   onEditMemory,
   onAccept,
   onDismiss,
@@ -41,7 +45,13 @@ export function LearningCandidateCard({
   const confidence = Math.round(candidate.confidence * 100)
 
   return (
-    <article className="rounded-lg border border-border bg-card px-4 py-3">
+    <article
+      id={learningSuggestionDomId(candidate.id)}
+      className={cn(
+        "rounded-lg border border-border bg-card px-4 py-3",
+        highlighted && "border-primary/50 ring-2 ring-primary/30"
+      )}
+    >
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-400">

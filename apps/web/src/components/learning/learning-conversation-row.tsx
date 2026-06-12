@@ -1,5 +1,5 @@
 import type { ReactElement } from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowRight01Icon,
@@ -27,6 +27,8 @@ const suggestionActions = [
 type LearningConversationRowProps = {
   conversation: LearningConversation
   candidates?: LearningCandidate[]
+  defaultExpanded?: boolean
+  focusedSuggestionId?: string | null
   onEditMemory?: (candidate: LearningCandidate) => void
   onAccept?: (candidate: LearningCandidate) => void
   onDismiss?: (candidate: LearningCandidate) => void
@@ -36,13 +38,21 @@ type LearningConversationRowProps = {
 export function LearningConversationRow({
   conversation,
   candidates = [],
+  defaultExpanded = false,
+  focusedSuggestionId = null,
   onEditMemory,
   onAccept,
   onDismiss,
   actionPendingId = null,
 }: LearningConversationRowProps): ReactElement {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(defaultExpanded)
   const hasSuggestions = candidates.length > 0
+
+  useEffect(() => {
+    if (defaultExpanded) {
+      setExpanded(true)
+    }
+  }, [defaultExpanded])
 
   return (
     <article className="rounded-lg border border-border bg-card px-4 py-3">
@@ -117,6 +127,7 @@ export function LearningConversationRow({
           {hasSuggestions ? (
             <LearningCandidatesSection
               candidates={candidates}
+              focusedSuggestionId={focusedSuggestionId}
               onEditMemory={onEditMemory}
               onAccept={onAccept}
               onDismiss={onDismiss}

@@ -20,7 +20,7 @@ export function LearningBanner() {
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <p className="text-sm font-medium">Your agents learn from conversations</p>
             <p className="text-muted-foreground text-xs">
-              Review accepted memories below. Pending suggestion review ships in the next learning slice.
+              Expand a conversation to review pending memory suggestions, or accept and edit saved memories.
             </p>
           </div>
           <span className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs">
@@ -50,7 +50,7 @@ export function LearningBanner() {
             <div className="flex flex-col gap-2">
               <h2 className="text-sm font-medium">How to use this page</h2>
               <p className="text-muted-foreground">
-                Review accepted memories today. Upcoming suggestion tools will add accept and dismiss actions.
+                Pending suggestions can be saved as memories or dismissed. Accepted memories can be edited from this page.
               </p>
             </div>
           </div>

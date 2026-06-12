@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router"
 import { afterEach, vi } from "vitest"
@@ -849,5 +849,100 @@ describe("LearningPage", () => {
     expect(
       conversations().queryByRole("heading", { name: "Editor gate review" })
     ).not.toBeInTheDocument()
+  })
+
+  it("focuses a pending suggestion from Command Center deep links", async () => {
+    const pendingSuggestion = {
+      id: "learning_suggestion_pending",
+      status: "pending",
+      suggestionType: "memory",
+      title: "Review conversation insight",
+      content: "Conversation takeaway: Fleet observability is confirmed.",
+      confidence: 0.82,
+      sourceThreadId: "thread-creating-agent",
+      sourceThreadTitle: "Creating Agent",
+      agentId: "senior-reviewer",
+      createdAt: "2026-06-09T00:00:00.000Z",
+      updatedAt: "2026-06-09T00:00:00.000Z",
+    }
+
+    stubLearningFetch({
+      threads: [
+        {
+          id: "thread-creating-agent",
+          title: "Creating Agent",
+          status: "finished",
+          model: "gpt-4o-mini",
+          mode: "agent",
+          agentId: "senior-reviewer",
+          agentNameSnapshot: "Senior Reviewer",
+          createdAt: "2026-05-15T15:30:00.000Z",
+          updatedAt: "2026-05-21T15:30:00.000Z",
+          messageCount: 2,
+        },
+      ],
+      suggestions: {
+        suggestions: [pendingSuggestion],
+        page: 1,
+        pageSize: 100,
+        totalCount: 1,
+        totalPages: 1,
+      },
+    })
+
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          "/learning?status=pending&suggestionId=learning_suggestion_pending",
+        ]}
+      >
+        <Routes>
+          <Route path="/learning" element={<LearningPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(
+      await screen.findByTestId("learning-review-focus-banner")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Save memory" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Collapse Creating Agent" })
+    ).toBeInTheDocument()
+    expect(
+      document.getElementById("learning-suggestion-learning_suggestion_pending")
+    ).toBeTruthy()
+    await waitFor(() => {
+      expect(scrollIntoView).toHaveBeenCalled()
+    })
+  })
+
+  it("shows a missing suggestion banner for stale deep links", async () => {
+    stubLearningFetch({
+      threads: [],
+      suggestions: EMPTY_LEARNING_SUGGESTIONS,
+    })
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          "/learning?status=pending&suggestionId=learning_suggestion_missing",
+        ]}
+      >
+        <Routes>
+          <Route path="/learning" element={<LearningPage />} />
+        </Routes>
+      </MemoryRouter>
+    )
+
+    expect(
+      await screen.findByTestId("learning-review-focus-missing-banner")
+    ).toBeInTheDocument()
+    expect(screen.getByText(/learning_suggestion_missing/)).toBeInTheDocument()
   })
 })

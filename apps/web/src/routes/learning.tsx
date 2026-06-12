@@ -1,5 +1,6 @@
 import type { ReactElement } from "react"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useSearchParams } from "react-router"
 import type {
   LearningSkill,
   LearningSuggestion,
@@ -12,6 +13,10 @@ import type {
 import { AgentFilterBar } from "@/components/learning/agent-filter-bar"
 import { LearningBanner } from "@/components/learning/learning-banner"
 import { LearningConversationRow } from "@/components/learning/learning-conversation-row"
+import {
+  LearningReviewFocusBanner,
+  LearningReviewFocusMissingBanner,
+} from "@/components/learning/learning-review-focus-banner"
 import { LearningSecondaryPanel } from "@/components/learning/learning-secondary-panel"
 import { SkillsCard } from "@/components/learning/skills-card"
 import { PageHeader } from "@/components/shell/page-header"
@@ -33,6 +38,10 @@ import {
 } from "@/lib/api/learning-client"
 import { updateMemory } from "@/lib/api/memories-client"
 import { EditMemoryDialog } from "@/components/memories/memory-dialogs"
+import {
+  learningSuggestionDomId,
+  parseLearningDeepLink,
+} from "@/lib/learning-deep-link"
 
 type LearningData = {
   conversations: LearningConversation[]
@@ -321,7 +330,23 @@ function deriveSummaryFallback(
   }
 }
 
+function clearLearningDeepLinkParams(
+  setSearchParams: ReturnType<typeof useSearchParams>[1]
+) {
+  setSearchParams(
+    (current) => {
+      const next = new URLSearchParams(current)
+      next.delete("suggestionId")
+      next.delete("status")
+      return next
+    },
+    { replace: true }
+  )
+}
+
 export function LearningPage(): ReactElement {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { suggestionId: focusSuggestionId } = parseLearningDeepLink(searchParams)
   const [agentFilter, setAgentFilter] = useState("all")
   const [learningData, setLearningData] =
     useState<LearningData>(EMPTY_LEARNING_DATA)
@@ -336,6 +361,7 @@ export function LearningPage(): ReactElement {
   const [editError, setEditError] = useState<string | null>(null)
   const [actionPendingId, setActionPendingId] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const hasScrolledToFocusRef = useRef(false)
 
   async function reloadLearningData() {
     const [threadsResult, memoriesResult, summaryResult, skillsResult, suggestionsResult] =
@@ -451,6 +477,9 @@ export function LearningPage(): ReactElement {
     setActionError(null)
     try {
       await acceptLearningSuggestion(candidate.id)
+      if (candidate.id === focusSuggestionId) {
+        clearLearningDeepLinkParams(setSearchParams)
+      }
       await reloadLearningData()
     } catch (acceptError) {
       setActionError(
@@ -470,6 +499,9 @@ export function LearningPage(): ReactElement {
     setActionError(null)
     try {
       await dismissLearningSuggestion(candidate.id)
+      if (candidate.id === focusSuggestionId) {
+        clearLearningDeepLinkParams(setSearchParams)
+      }
       await reloadLearningData()
     } catch (dismissError) {
       setActionError(
@@ -492,6 +524,51 @@ export function LearningPage(): ReactElement {
       {}
     )
   }, [learningData.candidates])
+
+  const focusedCandidate = useMemo(() => {
+    if (!focusSuggestionId) return null
+    return (
+      learningData.candidates.find(
+        (candidate) => candidate.id === focusSuggestionId
+      ) ?? null
+    )
+  }, [focusSuggestionId, learningData.candidates])
+
+  const focusThreadId = focusedCandidate?.source.threadId ?? null
+
+  useEffect(() => {
+    hasScrolledToFocusRef.current = false
+  }, [focusSuggestionId])
+
+  useEffect(() => {
+    if (!focusSuggestionId || loading || hasScrolledToFocusRef.current) {
+      return
+    }
+    if (!focusedCandidate) {
+      return
+    }
+
+    if (agentFilter !== "all" && focusedCandidate.source.agentId !== agentFilter) {
+      setAgentFilter("all")
+      return
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      const element = document.getElementById(
+        learningSuggestionDomId(focusSuggestionId)
+      )
+      if (!element) return
+      element.scrollIntoView({ behavior: "smooth", block: "center" })
+      hasScrolledToFocusRef.current = true
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
+  }, [
+    agentFilter,
+    focusSuggestionId,
+    focusedCandidate,
+    loading,
+  ])
 
   return (
     <PageLayout variant="fixed" className="gap-6">
@@ -555,6 +632,14 @@ export function LearningPage(): ReactElement {
         onChange={setAgentFilter}
       />
 
+      {!loading && focusSuggestionId && focusedCandidate ? (
+        <LearningReviewFocusBanner candidate={focusedCandidate} />
+      ) : null}
+
+      {!loading && focusSuggestionId && !focusedCandidate && !loadErrors.core ? (
+        <LearningReviewFocusMissingBanner suggestionId={focusSuggestionId} />
+      ) : null}
+
       <section
         className="flex flex-col gap-3"
         aria-label="Learning conversations"
@@ -580,6 +665,8 @@ export function LearningPage(): ReactElement {
               key={conversation.id}
               conversation={conversation}
               candidates={candidatesByThreadId[conversation.id]}
+              defaultExpanded={conversation.id === focusThreadId}
+              focusedSuggestionId={focusSuggestionId}
               actionPendingId={actionPendingId}
               onAccept={(candidate) => {
                 void handleAcceptCandidate(candidate)

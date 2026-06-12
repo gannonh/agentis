@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq } from "drizzle-orm"
+import { and, asc, count, desc, eq, ne, or } from "drizzle-orm"
 import type {
   LearningSuggestion,
   LearningSuggestionStatus,
@@ -57,6 +57,47 @@ export class LearningSuggestionRepository {
       .where(eq(learningSuggestions.status, "pending"))
       .get()
     return Number(row?.value ?? 0)
+  }
+
+  hasOpenSuggestionForThreadContent(
+    sourceThreadId: string,
+    content: string
+  ): boolean {
+    const row = this.db
+      .select({ value: count() })
+      .from(learningSuggestions)
+      .where(
+        and(
+          eq(learningSuggestions.sourceThreadId, sourceThreadId),
+          eq(learningSuggestions.content, content),
+          or(
+            eq(learningSuggestions.status, "pending"),
+            eq(learningSuggestions.status, "accepted")
+          )
+        )
+      )
+      .get()
+    return Number(row?.value ?? 0) > 0
+  }
+
+  listOtherPendingWithSameThreadContent(
+    sourceThreadId: string,
+    content: string,
+    excludeId: string
+  ): LearningSuggestion[] {
+    return this.db
+      .select()
+      .from(learningSuggestions)
+      .where(
+        and(
+          eq(learningSuggestions.sourceThreadId, sourceThreadId),
+          eq(learningSuggestions.content, content),
+          eq(learningSuggestions.status, "pending"),
+          ne(learningSuggestions.id, excludeId)
+        )
+      )
+      .all()
+      .map(mapLearningSuggestion)
   }
 
   listPaginated(input: {
