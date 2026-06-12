@@ -24,6 +24,8 @@ import type {
 import { formatRelativeTime } from "@/fixtures"
 import type { Thread } from "@/fixtures/schema"
 import { useAgentUsage } from "@/hooks/use-agent-usage"
+import { SparklineChart } from "@/components/charts/sparkline-chart"
+import { buildDailyCostSeries } from "@/lib/chart-series"
 
 type AgentOverviewThread = Pick<
   Thread,
@@ -65,78 +67,6 @@ function threadStatusBadge(status: AgentOverviewThread["status"]) {
     <Badge variant="secondary" className="capitalize">
       {status}
     </Badge>
-  )
-}
-
-function buildDailyCostSeries(usage: AgentUsageResponse): number[] {
-  const dailyByDate = new Map(
-    usage.daily.map((entry) => [entry.date, entry.costUsd])
-  )
-  const end = new Date()
-  end.setUTCHours(0, 0, 0, 0)
-  const points: number[] = []
-
-  for (let offset = usage.periodDays - 1; offset >= 0; offset -= 1) {
-    const day = new Date(end)
-    day.setUTCDate(day.getUTCDate() - offset)
-    const dateKey = day.toISOString().slice(0, 10)
-    points.push(dailyByDate.get(dateKey) ?? 0)
-  }
-
-  return points
-}
-
-function UsageCostChart({ points }: { points: number[] }) {
-  const max = Math.max(...points, 0)
-  const width = 600
-  const height = 132
-  const step = width / Math.max(points.length - 1, 1)
-  const path = points
-    .map((value, index) => {
-      const x = index * step
-      const y = height - (max > 0 ? value / max : 0) * 92 - 20
-      return `${index === 0 ? "M" : "L"}${x},${y}`
-    })
-    .join(" ")
-
-  return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      className="h-36 w-full overflow-visible"
-      role="img"
-      aria-label="Usage cost trend"
-    >
-      {[20, 48, 76, 104].map((y) => (
-        <line
-          key={y}
-          x1="0"
-          x2={width}
-          y1={y}
-          y2={y}
-          className="stroke-border"
-          strokeWidth="1"
-        />
-      ))}
-      <path
-        d={path}
-        fill="none"
-        className="stroke-status-success"
-        strokeWidth="2"
-      />
-      {points.map((value, index) => {
-        const x = index * step
-        const y = height - (max > 0 ? value / max : 0) * 92 - 20
-        return (
-          <circle
-            key={index}
-            cx={x}
-            cy={y}
-            r="2.5"
-            className="fill-status-success"
-          />
-        )
-      })}
-    </svg>
   )
 }
 
@@ -215,7 +145,7 @@ function AgentUsagePanel({ agentId }: { agentId: string }) {
   }
 
   const { usage } = state
-  const chartPoints = buildDailyCostSeries(usage)
+  const chartPoints = buildDailyCostSeries(usage.daily, usage.periodDays)
 
   return (
     <div className="mt-6" data-testid="agent-usage-panel">
@@ -223,7 +153,10 @@ function AgentUsagePanel({ agentId }: { agentId: string }) {
         <span>Total cost per day</span>
         <span>Last {usage.periodDays} days</span>
       </div>
-      <UsageCostChart points={chartPoints} />
+      <SparklineChart
+        points={chartPoints}
+        ariaLabel="Usage cost trend"
+      />
       <dl className="mt-2 flex items-center justify-between border-t border-border pt-4 text-sm">
         <dt className="text-muted-foreground">Total usage</dt>
         <dd className="font-medium tabular-nums">

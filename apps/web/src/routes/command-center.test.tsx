@@ -105,6 +105,41 @@ describe("CommandCenterPage", () => {
             },
           ],
         },
+        scoreTrends: {
+          periodDays: 90,
+          evaluatedRunCount: 2,
+          daily: [
+            {
+              date: "2026-06-08",
+              avgScore: 84,
+              evaluatedRunCount: 1,
+            },
+            {
+              date: "2026-06-09",
+              avgScore: 86,
+              evaluatedRunCount: 1,
+            },
+          ],
+        },
+        costBreakdown: {
+          periodDays: 90,
+          totalCostUsd: 0.88,
+          totalRuns: 2,
+          byModel: [
+            {
+              model: "gpt-4o-mini",
+              costUsd: 0.88,
+              runCount: 2,
+            },
+          ],
+          byProvider: [
+            {
+              provider: "openai",
+              costUsd: 0.88,
+              runCount: 2,
+            },
+          ],
+        },
       },
       loading: false,
       error: null,
@@ -123,10 +158,8 @@ describe("CommandCenterPage", () => {
       screen.getByRole("heading", { name: "Command Center" })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole("note", { name: "Demo data notice" })
-    ).toHaveTextContent(
-      "Score trends and cost breakdown by model use seeded workspace data until their live chart APIs ship."
-    )
+      screen.queryByRole("note", { name: "Demo data notice" })
+    ).not.toBeInTheDocument()
     expect(screen.getByText("Agents")).toBeInTheDocument()
     expect(screen.getByText("Active runs")).toBeInTheDocument()
     expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(1)
@@ -135,6 +168,17 @@ describe("CommandCenterPage", () => {
     expect(screen.getAllByText("$0.88").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Avg score")).toBeInTheDocument()
     expect(screen.getAllByText("86%").length).toBeGreaterThanOrEqual(1)
+    expect(
+      screen.getByRole("heading", { name: "Score trends" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("img", { name: "Fleet evaluation score trends" })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("heading", { name: "Cost breakdown" })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId("cost-model-gpt-4o-mini")).toBeInTheDocument()
+    expect(screen.getByTestId("cost-provider-openai")).toBeInTheDocument()
     expect(
       screen.getByRole("heading", { name: "Agent roster" })
     ).toBeInTheDocument()

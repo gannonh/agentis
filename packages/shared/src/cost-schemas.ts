@@ -119,6 +119,32 @@ export const commandCenterNeedsAttentionResponseSchema = z.object({
   totalCount: z.number().int().nonnegative(),
 })
 
+export const commandCenterScoreTrendDailySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  avgScore: z.number().min(0).max(100).nullable(),
+  evaluatedRunCount: z.number().int().nonnegative(),
+})
+
+export const commandCenterScoreTrendsResponseSchema = z.object({
+  periodDays: z.number().int().positive(),
+  evaluatedRunCount: z.number().int().nonnegative(),
+  daily: z.array(commandCenterScoreTrendDailySchema),
+})
+
+export const commandCenterCostByProviderSchema = z.object({
+  provider: z.string(),
+  costUsd: nonNegativeNumber,
+  runCount: z.number().int().nonnegative(),
+})
+
+export const commandCenterCostBreakdownResponseSchema = z.object({
+  periodDays: z.number().int().positive(),
+  totalCostUsd: nonNegativeNumber,
+  totalRuns: z.number().int().nonnegative(),
+  byModel: z.array(agentUsageByModelSchema),
+  byProvider: z.array(commandCenterCostByProviderSchema),
+})
+
 export type RunCostLineItem = z.infer<typeof runCostLineItemSchema>
 export type RunCostBreakdown = z.infer<typeof runCostBreakdownSchema>
 export type AgentUsageResponse = z.infer<typeof agentUsageResponseSchema>
@@ -134,4 +160,10 @@ export type CommandCenterNeedsAttentionItem = z.infer<
 >
 export type CommandCenterNeedsAttentionResponse = z.infer<
   typeof commandCenterNeedsAttentionResponseSchema
+>
+export type CommandCenterScoreTrendsResponse = z.infer<
+  typeof commandCenterScoreTrendsResponseSchema
+>
+export type CommandCenterCostBreakdownResponse = z.infer<
+  typeof commandCenterCostBreakdownResponseSchema
 >

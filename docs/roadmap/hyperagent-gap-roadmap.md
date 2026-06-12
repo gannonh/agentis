@@ -20,7 +20,7 @@
 | Thread session | Model picker, Live mode, reasoning blocks, Working Doc side panel, inline artifact iframes, Plan vs Execute | API-backed streaming; human-readable native tool cards, document links in transcript, durable-artifact sidebar; inline Working Doc panel still missing | Medium–High |
 | Library | Search, Type/Visibility/Source filters, Save/bookmark, archived toggle, iframe previews | API-backed artifacts + workspaces | Low–Medium |
 | Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, rubric CRUD, and run evaluation scores on Overview when rubrics exist | Medium |
-| Command Center | Live roster, cost breakdown, needs-attention queue, pending improvements, recent runs, score trends | API-backed live run metrics, roster, recent runs, avg score, and needs-attention queue (HA-GAP-07); fleet chart panels still placeholder (HA-GAP-27) | Medium |
+| Command Center | Live roster, cost breakdown, needs-attention queue, pending improvements, recent runs, score trends | API-backed live run metrics, roster, recent runs, avg score, needs-attention queue (HA-GAP-07), and fleet score-trend + cost breakdown charts (HA-GAP-27) | Low–Medium |
 | Learning | Skills (19), categorized memories, rubrics, thread-derived suggestions with accept/dismiss | API-backed skills, memories, rubrics, post-run suggestions with accept/dismiss, and accepted-memory context injection | Low–Medium |
 | Integrations | NATIVE + MCP catalog, custom MCP server, 20+ apps | Composio-backed; fixture catalog UI | Medium |
 | Projects | Sidebar grouping, thread counts, per-project threads | API-backed | Low |
@@ -76,10 +76,10 @@ These slices make Agentis **truthful and inspectable** for fleet oversight — t
 | HA-GAP-04 | Learning dashboard API (read path) | Shipped ([#420](https://github.com/gannonh/agentis/issues/420)) |
 | HA-GAP-05 | Post-run learning suggestions + accept/dismiss | Shipped on `feat/wave1-421-422-integration` ([#421](https://github.com/gannonh/agentis/issues/421)) |
 | HA-GAP-06 | Rubrics and run evaluation scoring | Shipped on `feat/wave1-421-422-integration` ([#422](https://github.com/gannonh/agentis/issues/422)) |
-| HA-GAP-07 | Needs-attention queue (live) | [#423](https://github.com/gannonh/agentis/issues/423) |
-| HA-GAP-27 | Command Center observability charts (live) | [#430](https://github.com/gannonh/agentis/issues/430) |
+| HA-GAP-07 | Needs-attention queue (live) | Shipped in PR [#431](https://github.com/gannonh/agentis/pull/431) ([#423](https://github.com/gannonh/agentis/issues/423)) |
+| HA-GAP-27 | Command Center observability charts (live) | Shipped ([#430](https://github.com/gannonh/agentis/issues/430)) |
 
-**Gate:** Wave 0 (#412–#415) and HA-GAP-01 through HA-GAP-06 (#417–#422) are complete. HA-GAP-07 (#423) ships the needs-attention queue; HA-GAP-27 (#430) completes fleet chart panels and can run in parallel with Wave 2 once #423 merges.
+**Gate:** Wave 1 is complete (#417–#430). Wave 2 (HA-GAP-08, HA-GAP-09) is unblocked.
 
 **Dependency graph** (mirrored as GitHub blocked-by links):
 
@@ -116,8 +116,8 @@ flowchart LR
 | #420 | Shipped | — |
 | #421 | Shipped | — |
 | #422 | Shipped | — |
-| #423 | #421, #422 | #430 (after cost + eval data exists) |
-| #430 | #417, #422 | #423, Wave 2 (HA-GAP-08, HA-GAP-09) |
+| #423 | Shipped | — |
+| #430 | Shipped | — |
 
 #### HA-GAP-01: Run cost attribution API
 
@@ -143,7 +143,7 @@ flowchart LR
 
 **HyperAgent reference:** `/command-center` — agent roster table (runs, quality, cost/run, last active), cost breakdown, recent runs, needs-attention count.
 
-**Agentis today:** Shipped. `command-center.tsx` reads API summary, roster, and recent-run data including `avgScore` from run evaluations (HA-GAP-06). Needs-attention queue ships in HA-GAP-07 (#423). Fleet score-trend and cost-by-model chart panels remain placeholders until HA-GAP-27 (#430).
+**Agentis today:** Shipped. `command-center.tsx` reads API summary, roster, recent-run data including `avgScore` from run evaluations (HA-GAP-06), the live needs-attention queue (HA-GAP-07), and fleet score-trend + cost breakdown chart panels (HA-GAP-27).
 
 **Goal:** Replace fixture metrics with HA-GAP-01 aggregates; keep existing component schema.
 
@@ -236,7 +236,7 @@ flowchart LR
 - [x] Rubric CRUD API with weighted criteria.
 - [x] Post-run evaluator produces score + criterion feedback (mock-runtime deterministic).
 - [x] Run detail and Command Center display scores.
-- [ ] Low-score runs can appear in needs-attention (HA-GAP-07).
+- [x] Low-score runs can appear in needs-attention (HA-GAP-07).
 
 **Depends on:** HA-GAP-04; pairs with HA-GAP-01 for cost-aware quality metrics later.
 
@@ -246,16 +246,16 @@ flowchart LR
 
 **HyperAgent reference:** Command Center → Needs Attention: pending improvements, failed/low-score signals.
 
-**Agentis today:** Fixture queue.
+**Agentis today:** Shipped in PR [#431](https://github.com/gannonh/agentis/pull/431). `GET /api/command-center/needs-attention` returns typed items (pending learning suggestions, failed runs, low evaluation scores); Command Center renders the live queue with resolve/dismiss navigation.
 
 **Goal:** API-driven queue combining pending learning suggestions, failed runs, and low evaluation scores.
 
 **Demo:** Fail a run + leave pending memory → Command Center shows 2 attention items with links.
 
 **Acceptance:**
-- [ ] `GET /api/command-center/needs-attention` returns typed items.
-- [ ] UI renders list with resolve/dismiss navigation.
-- [ ] No fixture data in production path.
+- [x] `GET /api/command-center/needs-attention` returns typed items.
+- [x] UI renders list with resolve/dismiss navigation.
+- [x] No fixture data in production path.
 
 **Depends on:** HA-GAP-05, HA-GAP-06 (partial OK — failed runs can ship first).
 
@@ -265,22 +265,22 @@ flowchart LR
 
 **HyperAgent reference:** `/command-center` sidebar — Score trends (fleet eval quality over ~90 days) and Cost breakdown (spend by model/provider).
 
-**Agentis today:** `ScoreTrendsPanel` and `CostBreakdownPanel` show placeholder empty states; `DemoDataNotice` on Command Center warns that chart panels are not live yet. Agent-level usage charts shipped in HA-GAP-03 (`GET /api/agents/:id/usage`).
+**Agentis today:** Shipped. `GET /api/command-center/score-trends` and `GET /api/command-center/cost-breakdown` return fleet-level series; `ScoreTrendsPanel` and `CostBreakdownPanel` consume live API data with intentional empty states. Agent-level usage charts shipped in HA-GAP-03 (`GET /api/agents/:id/usage`).
 
 **Goal:** Fleet-level score trend series and cost-by-model breakdown on Command Center, backed by new command-center chart API(s).
 
 **Demo:** Complete rubric-scored runs with mixed models → Command Center sidebar shows live score trend and cost breakdown lines; empty states when data is insufficient.
 
 **Acceptance:**
-- [ ] Fleet cost breakdown API for a bounded period (by model/provider).
-- [ ] Fleet score trends API for a bounded period (daily/weekly avg evaluation scores).
-- [ ] `ScoreTrendsPanel` and `CostBreakdownPanel` consume live API data only.
-- [ ] Remove or narrow Command Center `DemoDataNotice` once panels are live.
-- [ ] Unit tests for aggregation; mock-runtime deterministic series.
+- [x] Fleet cost breakdown API for a bounded period (by model/provider).
+- [x] Fleet score trends API for a bounded period (daily/weekly avg evaluation scores).
+- [x] `ScoreTrendsPanel` and `CostBreakdownPanel` consume live API data only.
+- [x] Remove or narrow Command Center `DemoDataNotice` once panels are live.
+- [x] Unit tests for aggregation; mock-runtime deterministic series.
 
-**Depends on:** HA-GAP-01 (cost), HA-GAP-06 (eval scores). HA-GAP-07 (#423) recommended first; not a hard blocker.
+**Depends on:** HA-GAP-01 (cost), HA-GAP-06 (eval scores). HA-GAP-07 (#423) shipped.
 
-**Parallel note:** Can run alongside Wave 2 (HA-GAP-08/09) after cost and evaluation data exist.
+**Parallel note:** Can run alongside Wave 2 (HA-GAP-08/09).
 
 ---
 
@@ -775,12 +775,12 @@ flowchart TD
   W4 --> G19[HA-GAP-19 deep research]
 ```
 
-**Max parallelism after HA-GAP-04:** HA-GAP-05 and HA-GAP-06 can start concurrently; HA-GAP-07 follows once suggestions and rubrics exist. HA-GAP-27 can parallel HA-GAP-07 and Wave 2 once HA-GAP-01 and HA-GAP-06 data exists.
+**Max parallelism now:** Wave 2 (HA-GAP-08, HA-GAP-09) and Wave 3 integration slices can run in parallel — Wave 1 is complete.
 
 ---
 
 ## Next steps
 
-1. Ship HA-GAP-07 (#423) — needs-attention queue combining pending suggestions, failed runs, and low evaluation scores.
-2. Pick up HA-GAP-27 (#430) for Command Center fleet chart panels, or open Wave 2 (HA-GAP-08 thread artifact panel, HA-GAP-09 global search) in parallel.
-3. Keep this roadmap aligned as Wave 1 closes and integration branch merges to `main`.
+1. Open Wave 2: HA-GAP-08 (thread artifact side panel) and HA-GAP-09 (global ⌘K search) are the highest-impact picks.
+2. Consider HA-GAP-10 (new thread home parity) and HA-GAP-11 (thread metadata) after the core thread/discovery slices.
+3. Keep this roadmap aligned as Wave 2 work begins.
