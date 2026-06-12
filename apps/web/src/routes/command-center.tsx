@@ -19,7 +19,7 @@ import { PageLayout } from "@/components/shell/page-layout"
 import { Button } from "@workspace/ui/components/button"
 import { useAgents } from "@/hooks/use-agents"
 import { useCommandCenter } from "@/hooks/use-command-center"
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import type {
   CommandCenterNeedsAttentionItem,
   CommandCenterRosterAgent,
@@ -164,6 +164,15 @@ export function CommandCenterPage() {
     : null
   const [dismissError, setDismissError] = useState<string | null>(null)
 
+  const refreshCommandCenter = useCallback(async () => {
+    setDismissError(null)
+    await refreshMetrics()
+  }, [refreshMetrics])
+
+  useEffect(() => {
+    setDismissError(null)
+  }, [commandCenterData?.needsAttention])
+
   const handleDismissAttention = async (
     item: CommandCenterNeedsAttentionItem
   ) => {
@@ -171,7 +180,7 @@ export function CommandCenterPage() {
     setDismissError(null)
     try {
       await dismissLearningSuggestion(item.suggestionId)
-      await refreshMetrics()
+      await refreshCommandCenter()
     } catch (error) {
       setDismissError(
         error instanceof Error ? error.message : "Failed to dismiss suggestion"
@@ -192,12 +201,12 @@ export function CommandCenterPage() {
       </DemoDataNotice>
 
       {metricsLoading && !summary ? (
-        <CommandCenterStatus error={null} loading onRetry={refreshMetrics} />
+        <CommandCenterStatus error={null} loading onRetry={refreshCommandCenter} />
       ) : metricsError || sectionErrors.summary ? (
         <CommandCenterStatus
           error={sectionErrors.summary ?? metricsError}
           loading={false}
-          onRetry={refreshMetrics}
+          onRetry={refreshCommandCenter}
         />
       ) : summary ? (
         <FleetStats metrics={metrics!} />

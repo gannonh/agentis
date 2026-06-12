@@ -101,16 +101,15 @@ export function createCommandCenterRoutes(repos: Repositories) {
   })
 
   app.get("/needs-attention", (c) => {
-    const pendingSuggestions = repos.learningSuggestions.listPaginated({
+    const pendingSuggestionsPage = repos.learningSuggestions.listPaginated({
       page: 1,
       pageSize: NEEDS_ATTENTION_LIMIT,
       status: "pending",
-    }).suggestions
-
+    })
     const failedRuns = repos.runs.listFailedRunsForAttention(
       NEEDS_ATTENTION_LIMIT
     )
-    const suggestionItems = pendingSuggestions.map(
+    const suggestionItems = pendingSuggestionsPage.suggestions.map(
       learningSuggestionToAttentionItem
     )
     const lowScoreRuns = repos.runs.listLowScoreRunsForAttention(
@@ -119,13 +118,13 @@ export function createCommandCenterRoutes(repos: Repositories) {
     )
 
     const items = mergeNeedsAttentionItems(
-      [failedRuns, suggestionItems, lowScoreRuns],
+      [failedRuns.items, suggestionItems, lowScoreRuns.items],
       NEEDS_ATTENTION_LIMIT
     )
     const totalCount =
-      repos.runs.countFailedRunsForAttention() +
-      repos.learningSuggestions.countPending() +
-      repos.runs.countLowScoreRunsForAttention(LOW_SCORE_THRESHOLD)
+      failedRuns.totalCount +
+      pendingSuggestionsPage.totalCount +
+      lowScoreRuns.totalCount
 
     return c.json(
       commandCenterNeedsAttentionResponseSchema.parse({ items, totalCount })

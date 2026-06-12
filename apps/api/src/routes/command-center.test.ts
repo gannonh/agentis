@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest"
+import { eq } from "drizzle-orm"
 import {
   commandCenterNeedsAttentionResponseSchema,
   GENERIC_AGENTIS_AGENT_ID,
 } from "@workspace/shared"
 import { createApp } from "../app.js"
+import { runs } from "../db/schema.js"
 import { createComposioServices } from "../composio/index.js"
 import { MOCK_MODEL_COST_USD } from "../cost/run-cost-attribution.js"
 import { evaluateCompletedRun } from "../evaluation/run-evaluator.js"
@@ -272,6 +274,102 @@ describe("command center routes", () => {
         }),
       ])
     )
+  })
+
+  it("ignores corrupt low-score evaluation rows instead of failing the queue", async () => {
+    ctx = createTestContext()
+    const app = createCommandCenterTestApp(ctx)
+    const agent = ctx.repos.agents.createWithGrants(
+      {
+        name: "Resilient Queue Agent",
+        systemPrompt: "Ignore bad rows",
+        model: "openai/gpt-5.4-mini",
+      },
+      []
+    )
+    const agentConfigurationVersionId =
+      ctx.repos.agents.getCurrentConfigurationSnapshot(agent.id).id
+
+    const validLowScoreThread = ctx.repos.threads.createWithInitialRun({
+      title: "Valid weak answer",
+      prompt: "Answer poorly",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId,
+    })
+    ctx.repos.runs.updateStatus(validLowScoreThread.run.id, "completed", {
+      finishedAt: "2026-06-09T12:10:00.000Z",
+      cost: MOCK_MODEL_COST_USD,
+    })
+    ctx.repos.runs.saveEvaluation(validLowScoreThread.run.id, {
+      rubricId: "rubric_quality",
+      rubricName: "Quality rubric",
+      score: 45,
+      evaluatedAt: "2026-06-09T12:11:00.000Z",
+      criteria: [
+        {
+          criterionId: "criterion_accuracy",
+          criterionName: "Accuracy",
+          weight: 1,
+          score: 45,
+          feedback: "Missed the requested evidence.",
+        },
+      ],
+    })
+
+    const malformedJsonThread = ctx.repos.threads.createWithInitialRun({
+      title: "Malformed evaluation JSON",
+      prompt: "Corrupt row",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId,
+    })
+    ctx.repos.runs.updateStatus(malformedJsonThread.run.id, "completed", {
+      finishedAt: "2026-06-09T12:09:00.000Z",
+      cost: MOCK_MODEL_COST_USD,
+    })
+    ctx.db
+      .update(runs)
+      .set({ evaluationJson: "{not-json" })
+      .where(eq(runs.id, malformedJsonThread.run.id))
+      .run()
+
+    const legacyShapeThread = ctx.repos.threads.createWithInitialRun({
+      title: "Legacy evaluation shape",
+      prompt: "Old row",
+      model: "openai/gpt-5.4-mini",
+      mode: "agent",
+      agentId: agent.id,
+      agentNameSnapshot: agent.name,
+      agentConfigurationVersionId,
+    })
+    ctx.repos.runs.updateStatus(legacyShapeThread.run.id, "completed", {
+      finishedAt: "2026-06-09T12:08:00.000Z",
+      cost: MOCK_MODEL_COST_USD,
+    })
+    ctx.db
+      .update(runs)
+      .set({ evaluationJson: JSON.stringify({ score: 40 }) })
+      .where(eq(runs.id, legacyShapeThread.run.id))
+      .run()
+
+    const response = await app.request("/api/command-center/needs-attention")
+    expect(response.status).toBe(200)
+    const body = commandCenterNeedsAttentionResponseSchema.parse(
+      await response.json()
+    )
+    expect(body.totalCount).toBe(2)
+    expect(body.items).toEqual([
+      expect.objectContaining({
+        type: "low_score_run",
+        title: "Low score: Valid weak answer",
+        runId: validLowScoreThread.run.id,
+      }),
+    ])
   })
 
   it("returns failed-run needs-attention items when learning and evaluation data are absent", async () => {

@@ -14,6 +14,12 @@ type NeedsAttentionPanelProps = {
   onDismiss?: (item: CommandCenterNeedsAttentionItem) => void
 }
 
+const dismissingSuggestionIds = new Set<string>()
+
+export function resetDismissingSuggestionIdsForTests() {
+  dismissingSuggestionIds.clear()
+}
+
 function actionLabel(item: CommandCenterNeedsAttentionItem): string {
   return item.type === "pending_learning_suggestion" ? "Review" : "Open thread"
 }
@@ -99,7 +105,25 @@ export function NeedsAttentionPanel({
                           variant="link"
                           size="sm"
                           className="h-auto p-0 text-muted-foreground"
-                          onClick={() => onDismiss?.(item)}
+                          disabled={
+                            item.suggestionId
+                              ? dismissingSuggestionIds.has(item.suggestionId)
+                              : false
+                          }
+                          onClick={() => {
+                            void (async () => {
+                              if (!item.suggestionId) return
+                              if (!dismissingSuggestionIds.add(item.suggestionId)) {
+                                return
+                              }
+
+                              try {
+                                await onDismiss?.(item)
+                              } finally {
+                                dismissingSuggestionIds.delete(item.suggestionId)
+                              }
+                            })()
+                          }}
                         >
                           Dismiss
                         </Button>

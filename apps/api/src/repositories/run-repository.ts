@@ -22,6 +22,56 @@ import { roundCostUsd } from "../cost/run-cost-attribution.js"
 
 const ACTIVE_RUN_STATUSES: RunStatus[] = ["queued", "running", "tool-calling"]
 
+type AttentionListResult = {
+  items: CommandCenterNeedsAttentionItem[]
+  totalCount: number
+}
+
+function lowScoreAttentionWhere(scoreThreshold: number) {
+  return and(
+    eq(runs.status, "completed"),
+    sql`${runs.evaluationJson} is not null`,
+    sql`json_valid(${runs.evaluationJson}) = 1`,
+    sql`json_extract(${runs.evaluationJson}, '$.score') <= ${scoreThreshold}`,
+    sql`${runs.agentId} is not null`,
+    ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
+  )
+}
+
+function mapLowScoreAttentionRow(row: {
+  id: string
+  threadId: string
+  agentId: string | null
+  startedAt: string
+  title: string
+  evaluationJson: string | null
+}): CommandCenterNeedsAttentionItem | null {
+  if (!row.evaluationJson) {
+    return null
+  }
+
+  try {
+    const evaluation = runEvaluationSchema.parse(JSON.parse(row.evaluationJson))
+    return {
+      id: `attention_low_score_${row.id}`,
+      type: "low_score_run",
+      title: `Low score: ${row.title}`,
+      description: `${evaluation.score}% on ${evaluation.rubricName}`,
+      tag: "Low score",
+      severity: "warning",
+      createdAt: row.startedAt,
+      href: `/threads/${row.threadId}`,
+      dismissible: false,
+      agentId: row.agentId,
+      threadId: row.threadId,
+      runId: row.id,
+      score: evaluation.score,
+    }
+  } catch {
+    return null
+  }
+}
+
 function serializeRunUsage(usage: RunUsage | null | undefined): string | null {
   return usage ? JSON.stringify(usage) : null
 }
@@ -441,9 +491,10 @@ export class RunRepository {
     return Number(row?.value ?? 0)
   }
 
-  listFailedRunsForAttention(limit = 20): CommandCenterNeedsAttentionItem[] {
+  listFailedRunsForAttention(limit = 20): AttentionListResult {
+    const totalCount = this.countFailedRunsForAttention()
     const boundedLimit = Math.min(Math.max(limit, 1), 100)
-    return this.db
+    const items = this.db
       .select({
         id: runs.id,
         threadId: runs.threadId,
@@ -479,21 +530,15 @@ export class RunRepository {
         threadId: row.threadId,
         runId: row.id,
       }))
+
+    return { items, totalCount }
   }
 
   countLowScoreRunsForAttention(scoreThreshold = 70): number {
     const row = this.db
       .select({ value: count() })
       .from(runs)
-      .where(
-        and(
-          eq(runs.status, "completed"),
-          sql`${runs.evaluationJson} is not null`,
-          sql`json_extract(${runs.evaluationJson}, '$.score') <= ${scoreThreshold}`,
-          sql`${runs.agentId} is not null`,
-          ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
-        )
-      )
+      .where(lowScoreAttentionWhere(scoreThreshold))
       .get()
     return Number(row?.value ?? 0)
   }
@@ -501,9 +546,10 @@ export class RunRepository {
   listLowScoreRunsForAttention(
     scoreThreshold = 70,
     limit = 20
-  ): CommandCenterNeedsAttentionItem[] {
+  ): AttentionListResult {
+    const totalCount = this.countLowScoreRunsForAttention(scoreThreshold)
     const boundedLimit = Math.min(Math.max(limit, 1), 100)
-    return this.db
+    const items = this.db
       .select({
         id: runs.id,
         threadId: runs.threadId,
@@ -514,38 +560,16 @@ export class RunRepository {
       })
       .from(runs)
       .innerJoin(threads, eq(runs.threadId, threads.id))
-      .where(
-        and(
-          eq(runs.status, "completed"),
-          sql`${runs.evaluationJson} is not null`,
-          sql`json_extract(${runs.evaluationJson}, '$.score') <= ${scoreThreshold}`,
-          sql`${runs.agentId} is not null`,
-          ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
-        )
-      )
+      .where(lowScoreAttentionWhere(scoreThreshold))
       .orderBy(desc(runs.startedAt), desc(runs.id))
       .limit(boundedLimit)
       .all()
-      .map((row) => {
-        const evaluation = runEvaluationSchema.parse(
-          JSON.parse(row.evaluationJson!)
-        )
-        return {
-          id: `attention_low_score_${row.id}`,
-          type: "low_score_run" as const,
-          title: `Low score: ${row.title}`,
-          description: `${evaluation.score}% on ${evaluation.rubricName}`,
-          tag: "Low score",
-          severity: "warning" as const,
-          createdAt: row.startedAt,
-          href: `/threads/${row.threadId}`,
-          dismissible: false,
-          agentId: row.agentId,
-          threadId: row.threadId,
-          runId: row.id,
-          score: evaluation.score,
-        }
+      .flatMap((row) => {
+        const item = mapLowScoreAttentionRow(row)
+        return item ? [item] : []
       })
+
+    return { items, totalCount }
   }
 
   listRecentRuns(limit = 20): CommandCenterRecentRun[] {

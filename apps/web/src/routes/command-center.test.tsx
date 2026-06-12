@@ -219,6 +219,60 @@ describe("CommandCenterPage", () => {
     })
   })
 
+  it("clears dismiss errors when command center metrics are refreshed", async () => {
+    dismissLearningSuggestionMock.mockRejectedValueOnce(
+      new Error("Suggestion already resolved")
+    )
+    const refresh = vi.fn().mockResolvedValue(undefined)
+    useCommandCenterMock.mockReturnValue({
+      data: {
+        summary: null,
+        roster: [],
+        recentRuns: [],
+        needsAttention: {
+          totalCount: 1,
+          items: [
+            {
+              id: "attention_learning_suggestion_1",
+              type: "pending_learning_suggestion",
+              title: "Remember citation preference",
+              description: "User prefers source-backed answers.",
+              tag: "Pending memory",
+              severity: "warning",
+              createdAt: "2026-06-09T12:05:00.000Z",
+              href: "/learning?status=pending&suggestionId=suggestion_1",
+              dismissible: true,
+              suggestionId: "suggestion_1",
+            },
+          ],
+        },
+      },
+      loading: false,
+      error: "Failed to load command center metrics",
+      sectionErrors: { summary: "Failed to load command center metrics" },
+      refresh,
+    })
+
+    render(
+      <MemoryRouter>
+        <CommandCenterPage />
+      </MemoryRouter>
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }))
+    await waitFor(() => {
+      expect(screen.getByText("Suggestion already resolved")).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry loading metrics" }))
+    await waitFor(() => {
+      expect(refresh).toHaveBeenCalled()
+      expect(
+        screen.queryByText("Suggestion already resolved")
+      ).not.toBeInTheDocument()
+    })
+  })
+
   it("dismisses pending learning suggestions from the needs-attention panel", async () => {
     const refresh = vi.fn()
     useCommandCenterMock.mockReturnValue({
