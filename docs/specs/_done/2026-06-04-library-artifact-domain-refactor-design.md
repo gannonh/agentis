@@ -267,10 +267,10 @@ Acceptance tie-ins: 4, 5, 7.
 
 Likely files:
 
-- `docs/specs/2026-06-04-agent-native-tooling-v4-static-artifacts-design.md`
-- `docs/specs/2026-06-04-agent-native-tooling-v4-apps-design.md`
-- `docs/specs/agent-native-tooling.md`
-- `docs/specs/agentis-prd-roadmap.md`
+- `docs/specs/_done/2026-06-04-agent-native-tooling-v4-static-artifacts-design.md`
+- `docs/specs/_done/2026-06-04-agent-native-tooling-v4-apps-design.md`
+- `docs/specs/_done/agent-native-tooling.md`
+- `docs/specs/_done/agentis-prd-roadmap.md`
 - GitHub issues #410 and #406.
 
 Build tasks:
@@ -336,7 +336,7 @@ Definition of done:
 
 ## Build completion report
 
-- Spec path: `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`
+- Spec path: `docs/specs/_done/2026-06-04-library-artifact-domain-refactor-design.md`
 - Base SHA: `07d01aa5fb814c4ecba664148e1d42bf849c4dc5`
 - Final implementation SHA before this report: `0e98a1e0`
 - Tasks completed:

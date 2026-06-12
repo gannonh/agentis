@@ -40,7 +40,7 @@ Relevant POC files:
 
 - `apps/api/src/poc/cloudflare-ai-gateway-poc.ts`
 - `apps/api/src/poc/cloudflare-ai-gateway-poc.test.ts`
-- `docs/specs/2026-06-04-cloudflare-ai-gateway-poc-design.md`
+- `docs/specs/_done/2026-06-04-cloudflare-ai-gateway-poc-design.md`
 
 ## Scope
 

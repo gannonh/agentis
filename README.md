@@ -50,12 +50,12 @@ docs/              # Product docs, roadmap, UI comps
 
 ## Documentation
 
-- [MVP roadmap](docs/specs/agentis-prd-roadmap.md)
+- [Active roadmap](docs/roadmap/hyperagent-gap-roadmap.md)
 - [Product overview](docs/overview.md)
-- [Agent native tooling](docs/specs/agent-native-tooling.md)
+- [Agent native tooling history](docs/specs/_done/agent-native-tooling.md)
 - [Document workspace](docs/specs/_done/2026-06-01-document-workspace-design.md)
 - [Static artifacts (webpages and slides)](docs/specs/_done/2026-06-04-agent-native-tooling-v4-static-artifacts-design.md)
-- [App artifact runtime](docs/specs/2026-06-04-agent-native-tooling-v4-apps-design.md)
+- [App artifact runtime](docs/specs/_done/2026-06-04-agent-native-tooling-v4-apps-design.md)
 - [Artifact Library primitive (ADR 0005)](docs/adr/0005-use-artifact-as-library-primitive.md)
 - [Architecture decisions](docs/adr/)
 - [Self-host research golden path](docs/self-host/golden-path-research.md)

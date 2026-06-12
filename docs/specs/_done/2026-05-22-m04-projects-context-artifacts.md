@@ -673,7 +673,7 @@ pnpm test:e2e
   Lint, typecheck, unit tests, coverage, build, and e2e verification pass.
   
 ## Build handoff
-- Spec path: `docs/specs/2026-05-22-m04-projects-context-artifacts.md`
+- Spec path: `docs/specs/_done/2026-05-22-m04-projects-context-artifacts.md`
   
 - Approved scope: API-backed projects, project memories, project context injection, local artifact storage, uploaded/generated artifacts, Library replacement, and M04 acceptance tests.
   
@@ -692,7 +692,7 @@ pnpm test:e2e
 ## Open questions
 None.
 ## Build completion report
-- Spec path: `docs/specs/2026-05-22-m04-projects-context-artifacts.md`
+- Spec path: `docs/specs/_done/2026-05-22-m04-projects-context-artifacts.md`
   
 - Base SHA: `2e08da3605abb73265ab31fec9a4e5fe6c63bae8`
   

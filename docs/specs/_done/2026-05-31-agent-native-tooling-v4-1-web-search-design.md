@@ -19,7 +19,7 @@ documents, tables, or media tooling.
 
 ## Source of truth
 
-- Roadmap: `docs/specs/agent-native-tooling.md`, especially V4 and the Hyperagent
+- Roadmap: `docs/specs/_done/agent-native-tooling.md`, especially V4 and the Hyperagent
   research inventory.
 - Existing native runtime plumbing:
   - `apps/api/src/runtime/run-executor.ts`
@@ -341,7 +341,7 @@ that is worse than provider/tool-native citation behavior.
   the existing Connected apps section in `apps/web/src/routes/agent-create.tsx`,
   even before the future screen-by-screen create walkthrough exists.
 - Add focused API and web tests.
-- Update `docs/specs/agent-native-tooling.md` to mark V4.1 as planned or implemented,
+- Update `docs/specs/_done/agent-native-tooling.md` to mark V4.1 as planned or implemented,
   depending on Build completion.
 
 ## Acceptance criteria
@@ -422,10 +422,10 @@ not a reason to substitute mock evidence.
 
 ## Build completion report
 
-- Spec path: `docs/specs/2026-05-31-agent-native-tooling-v4-1-web-search-design.md`
+- Spec path: `docs/specs/_done/2026-05-31-agent-native-tooling-v4-1-web-search-design.md`
 - Base SHA: `7f3f75a3`
 - Tasks completed: provider-neutral `searchWeb` contract/config/provider boundary, versioned `webSearch` native tool permission, runtime registration/preflight/mock flow, bounded native run-step evidence, timeline rendering, agent create/detail Search controls, docs/env updates.
-- Files changed: shared schemas, API config/repositories/runtime/native tool/research modules, DB migration, web agent create/detail/timeline surfaces, focused tests, `.env.example`, and `docs/specs/agent-native-tooling.md`.
+- Files changed: shared schemas, API config/repositories/runtime/native tool/research modules, DB migration, web agent create/detail/timeline surfaces, focused tests, `.env.example`, and `docs/specs/_done/agent-native-tooling.md`.
 - Verification run: `pnpm --filter api test`, `pnpm --filter web test`, `pnpm typecheck && pnpm build && pnpm lint`.
 - Review gates: single-agent TDD red/green checks, spec compliance self-review, code quality self-review.
 - Approved deviations: none.

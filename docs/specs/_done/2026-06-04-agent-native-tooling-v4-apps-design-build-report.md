@@ -2,7 +2,7 @@
 
 ## Spec
 
-`docs/specs/2026-06-04-agent-native-tooling-v4-apps-design.md`
+`docs/specs/_done/2026-06-04-agent-native-tooling-v4-apps-design.md`
 
 ## SHAs
 

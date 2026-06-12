@@ -17,8 +17,8 @@ The vertical slice should let a user create a thread for the selected agent, hav
 
 ## Source of truth
 
-- Planning document: `docs/agent-native-tooling.md`
-- Roadmap context: `docs/agentis-prd-roadmap.md`
+- Planning document: `docs/specs/_done/agent-native-tooling.md`
+- Roadmap context: `docs/specs/_done/agentis-prd-roadmap.md`
 - Existing runtime: `apps/api/src/runtime/run-executor.ts`
 - Existing local generated artifact tool: `apps/api/src/artifacts/artifact-tool.ts`
 - Existing Composio grant/runtime pattern: `apps/api/src/composio/tool-execution-service.ts`

@@ -1,5 +1,7 @@
 # Agent Native Tooling PRD and Roadmap
 
+Historical completed roadmap. The active roadmap is `docs/roadmap/hyperagent-gap-roadmap.md`.
+
 ## Purpose
 
 Define the product direction, capability roadmap, and implementation references for Agentis-native agent tooling.
@@ -14,7 +16,7 @@ Give every Agentis agent a durable workspace and a growing set of native tools s
 
 ### ✅ V1: Workspace-backed read-only tools
 
-Spec: `docs/specs/2026-05-29-agent-native-tooling-design.md`
+Spec: `docs/specs/_done/2026-05-29-agent-native-tooling-design.md`
 
 Status: V1 vertical slice implemented for local demo and verification.
 
@@ -146,7 +148,7 @@ V4.3 implemented static generated outputs as Artifact types `webpage` and `slide
 
 #### V4.4: Apps
 
-Spec: `docs/specs/2026-06-04-agent-native-tooling-v4-apps-design.md`
+Spec: `docs/specs/_done/2026-06-04-agent-native-tooling-v4-apps-design.md`
 
 V4.4 implemented interactive Apps as Artifact type `app` behind the `apps` native permission. Apps share the Artifact workspace route at `/artifacts/:artifactId`, version immutable code bundles separately from mutable App state in a dedicated `app_state` store, and render in a sandboxed iframe with a parent-proxied `App` bridge. Runtime tools: `createApp`, `editApp`, and `findApps`.
 
@@ -531,7 +533,7 @@ Source note: inventory copied from the Hyperagent agent tools section screenshot
 
 ## V1 and follow-on implementation notes
 
-Authoritative V1 design: `docs/specs/2026-05-29-agent-native-tooling-design.md`.
+Authoritative V1 design: `docs/specs/_done/2026-05-29-agent-native-tooling-design.md`.
 
 The notes below summarize the V1 architecture and adjacent follow-on capabilities.
 

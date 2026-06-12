@@ -156,7 +156,7 @@ Acceptance criteria covered: 4, 7, 9.
 
 Likely files:
 
-- `docs/specs/2026-06-04-cloudflare-ai-gateway-poc-design.md` or a follow-up report file
+- `docs/specs/_done/2026-06-04-cloudflare-ai-gateway-poc-design.md` or a follow-up report file
 - Optional ADR draft only if the POC recommends a migration and the user approves documenting the decision
 
 Tasks:
@@ -332,7 +332,7 @@ Cloudflare remains directionally plausible for production hosting, but the app n
 
 ## Build completion report
 
-- Spec path: `docs/specs/2026-06-04-cloudflare-ai-gateway-poc-design.md`
+- Spec path: `docs/specs/_done/2026-06-04-cloudflare-ai-gateway-poc-design.md`
 - Base SHA: `9b029790dec59a688b9c591e8a6b4050d61579d6`
 - Final head SHA: pending final commit
 
@@ -361,7 +361,7 @@ Cloudflare remains directionally plausible for production hosting, but the app n
 - `apps/api/package.json`
 - `apps/api/src/poc/cloudflare-ai-gateway-poc.ts`
 - `apps/api/src/poc/cloudflare-ai-gateway-poc.test.ts`
-- `docs/specs/2026-06-04-cloudflare-ai-gateway-poc-design.md`
+- `docs/specs/_done/2026-06-04-cloudflare-ai-gateway-poc-design.md`
 - `pnpm-lock.yaml`
 
 ### Verification commands

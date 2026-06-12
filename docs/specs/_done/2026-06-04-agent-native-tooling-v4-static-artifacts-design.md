@@ -14,11 +14,11 @@ Static generated outputs are frozen at creation time. They may include links, st
 
 ## Source of truth
 
-- Roadmap: `docs/specs/agent-native-tooling.md`, V4 Interactive category.
+- Roadmap: `docs/specs/_done/agent-native-tooling.md`, V4 Interactive category.
 - Domain language: `CONTEXT.md`, especially Artifact as the durable Library primitive and Document as the markdown artifact subtype.
 - Artifact primitive decision: `docs/adr/0005-use-artifact-as-library-primitive.md`.
 - Native tool permission decision: `docs/adr/0002-version-native-tool-permissions-with-agent-configuration.md`.
-- App adjacent spec: `docs/specs/2026-06-04-agent-native-tooling-v4-apps-design.md`.
+- App adjacent spec: `docs/specs/_done/2026-06-04-agent-native-tooling-v4-apps-design.md`.
 - Existing document implementation:
   - `packages/shared/src/artifact-schemas.ts`
   - `apps/api/src/documents/document-service.ts`
@@ -33,7 +33,7 @@ Static generated outputs are frozen at creation time. They may include links, st
 
 ## Current state
 
-Agentis has an Artifact-backed Library implementation. The completed Artifact domain refactor in `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md` makes Artifact the durable Library primitive and Document the markdown-specific artifact subtype. Webpages and slides are sibling artifact types with shared versioning, visibility scope, provenance, local storage, Library filters, detail routes, and downloads.
+Agentis has an Artifact-backed Library implementation. The completed Artifact domain refactor in `docs/specs/_done/2026-06-04-library-artifact-domain-refactor-design.md` makes Artifact the durable Library primitive and Document the markdown-specific artifact subtype. Webpages and slides are sibling artifact types with shared versioning, visibility scope, provenance, local storage, Library filters, detail routes, and downloads.
 
 Agentis does not yet have:
 
@@ -50,7 +50,7 @@ Use **Artifact** for durable storage and Library surfaces. Documents are only th
 
 ## Dependency
 
-Build must use the landed Artifact primitive from `docs/specs/2026-06-04-library-artifact-domain-refactor-design.md`. Do not implement webpages or slides as Document types. They must be Artifacts with `type = "webpage"` and `type = "slides"`, sibling to `type = "document"`.
+Build must use the landed Artifact primitive from `docs/specs/_done/2026-06-04-library-artifact-domain-refactor-design.md`. Do not implement webpages or slides as Document types. They must be Artifacts with `type = "webpage"` and `type = "slides"`, sibling to `type = "document"`.
 
 ## Product scope
 
@@ -604,7 +604,7 @@ Do not implement deferred Hyperagent parity capabilities during this Build unles
 
 ## Build completion report
 
-- Spec path: `docs/specs/2026-06-04-agent-native-tooling-v4-static-artifacts-design.md`
+- Spec path: `docs/specs/_done/2026-06-04-agent-native-tooling-v4-static-artifacts-design.md`
 - Base SHA: `29a2f9f521c2db902eff209bc955287b112fb56d`
 - Final implementation head: `b7f4a658`
 - Tasks completed:

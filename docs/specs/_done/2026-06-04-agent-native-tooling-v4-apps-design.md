@@ -12,7 +12,7 @@ This spec targets the App artifact runtime primitive. Product-specific templates
 
 ## Source of truth
 
-- Roadmap: `docs/specs/agent-native-tooling.md`, V4 Interactive category.
+- Roadmap: `docs/specs/_done/agent-native-tooling.md`, V4 Interactive category.
 - Domain language: `CONTEXT.md`, especially **App**, **App state**, and **Artifact workspace**.
 - Native tool permission decision: `docs/adr/0002-version-native-tool-permissions-with-agent-configuration.md`.
 - Artifact primitive decision: `docs/adr/0005-use-artifact-as-library-primitive.md`.

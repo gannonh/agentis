@@ -489,7 +489,7 @@ Use the architecture deepening candidates to keep the Build phase from spreading
 
 ## Build completion report
 
-- **Spec:** `docs/specs/2026-06-01-document-workspace-design.md`
+- **Spec:** `docs/specs/_done/2026-06-01-document-workspace-design.md`
 - **Base SHA:** `f29b47cfb5d6cb994ee5dbfd18b256794099e01e`
 - **Implementation completion SHA:** `387195b6` before docs closeout
 - **Tasks completed:** Phase 1–5 (API/contracts, workspace route, markdown editing, entry points, visibility scope management, verification)

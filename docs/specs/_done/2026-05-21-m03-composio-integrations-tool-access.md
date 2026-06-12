@@ -499,7 +499,7 @@ pnpm test:e2e
 
 ## Build handoff
 
-- Spec path: `docs/specs/2026-05-21-m03-composio-integrations-tool-access.md`
+- Spec path: `docs/specs/_done/2026-05-21-m03-composio-integrations-tool-access.md`
 - Approved scope: API-backed integrations catalog, Composio connection flow, SQLite connection metadata, thread-scoped tool grants, curated Composio tool execution bridge, run timeline logging, tests, and local setup docs.
 - Non-goals: Full catalog coverage, external invocations, reusable agent creation UI, project/artifact work, promotion, evaluations, Docker Compose, and production auth.
 - Ordered task list: Phase 1 through Phase 6 in this spec.
@@ -514,7 +514,7 @@ pnpm test:e2e
 
 ## Build completion report
 
-- **Spec path:** `docs/specs/2026-05-21-m03-composio-integrations-tool-access.md`
+- **Spec path:** `docs/specs/_done/2026-05-21-m03-composio-integrations-tool-access.md`
 - **Base SHA:** `aa63db88b5a8ddeb29ea66245dc8342e19a189f4`
 - **Final head SHA:** `2165a6eaee7427c7a952f0b89d1894390d43eda4` (`feat(integrations): add Composio connections, grants, and runtime tools`)
 - **Execution mode:** Single-agent path; independent subagent spec/code review was not performed.
@@ -564,7 +564,7 @@ Implemented scope matches the approved spec: five featured toolkits, connect flo
 
 ## Verification report
 
-**Location:** this section in `docs/specs/2026-05-21-m03-composio-integrations-tool-access.md` (there is no separate `uat-evidence/` bundle for M03).
+**Location:** this section in `docs/specs/_done/2026-05-21-m03-composio-integrations-tool-access.md` (there is no separate `uat-evidence/` bundle for M03).
 
 **UAT scope:** M03 Composio integrations and tool access on branch `gannonhall/m03-compsio`.
 

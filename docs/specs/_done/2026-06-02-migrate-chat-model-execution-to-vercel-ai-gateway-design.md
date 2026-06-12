@@ -250,7 +250,7 @@ Build should implement the phases above, keep edits surgical, and verify the acc
 
 ## Build completion report
 
-- Spec path: `docs/specs/2026-06-02-migrate-chat-model-execution-to-vercel-ai-gateway-design.md`
+- Spec path: `docs/specs/_done/2026-06-02-migrate-chat-model-execution-to-vercel-ai-gateway-design.md`
 - Base SHA: `9aa30b14a595d07ec993ff4f8cf0ea1921bc65be`
 - Post-review implementation SHA: `159008ba`
 - Independent subagent review: used for spec compliance, code quality, and final whole-branch review.
