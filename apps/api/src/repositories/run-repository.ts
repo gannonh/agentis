@@ -92,10 +92,11 @@ function toUtcDateKey(isoTimestamp: string): string {
   return isoTimestamp.slice(0, 10)
 }
 
-function subtractDaysIso(days: number): string {
-  const date = new Date()
-  date.setUTCDate(date.getUTCDate() - days)
-  return date.toISOString()
+function startOfUtcWindowIso(periodDays: number): string {
+  const start = new Date()
+  start.setUTCHours(0, 0, 0, 0)
+  start.setUTCDate(start.getUTCDate() - (periodDays - 1))
+  return start.toISOString()
 }
 
 function buildUtcDateRange(periodDays: number): string[] {
@@ -318,7 +319,7 @@ export class RunRepository {
   }
 
   getAgentUsage(agentId: string, periodDays = 14): AgentUsageResponse {
-    const since = subtractDaysIso(periodDays)
+    const since = startOfUtcWindowIso(periodDays)
     const rows = this.db
       .select({
         model: runs.model,
@@ -384,13 +385,14 @@ export class RunRepository {
       periodDays,
       totalCostUsd: roundCostUsd(totalCostUsd),
       totalRuns: rows.length,
-      daily: [...dailyMap.entries()]
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([date, stats]) => ({
+      daily: buildUtcDateRange(periodDays).map((date) => {
+        const stats = dailyMap.get(date)
+        return {
           date,
-          costUsd: roundCostUsd(stats.costUsd),
-          runCount: stats.runCount,
-        })),
+          costUsd: roundCostUsd(stats?.costUsd ?? 0),
+          runCount: stats?.runCount ?? 0,
+        }
+      }),
       byModel: [...modelMap.entries()]
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([model, stats]) => ({
@@ -404,7 +406,7 @@ export class RunRepository {
   }
 
   getFleetScoreTrends(periodDays = 90): CommandCenterScoreTrendsResponse {
-    const since = subtractDaysIso(periodDays)
+    const since = startOfUtcWindowIso(periodDays)
     const rows = this.db
       .select({
         startedAt: runs.startedAt,
@@ -473,7 +475,7 @@ export class RunRepository {
   }
 
   getFleetCostBreakdown(periodDays = 90): CommandCenterCostBreakdownResponse {
-    const since = subtractDaysIso(periodDays)
+    const since = startOfUtcWindowIso(periodDays)
     const rows = this.db
       .select({
         id: runs.id,

@@ -9,7 +9,7 @@ import {
   type CommandCenterNeedsAttentionItem,
   type LearningSuggestion,
 } from "@workspace/shared"
-import { syncPendingLearningSuggestions } from "../learning/suggestion-consistency.js"
+import { healStalePendingSuggestions } from "../learning/suggestion-consistency.js"
 import type { Repositories } from "../repositories/index.js"
 
 const NEEDS_ATTENTION_LIMIT = 20
@@ -116,18 +116,19 @@ export function createCommandCenterRoutes(repos: Repositories) {
   })
 
   app.get("/needs-attention", (c) => {
-    syncPendingLearningSuggestions(repos)
     const pendingSuggestionsPage = repos.learningSuggestions.listPaginated({
       page: 1,
       pageSize: NEEDS_ATTENTION_LIMIT,
       status: "pending",
     })
+    const healedSuggestions = healStalePendingSuggestions(
+      repos,
+      pendingSuggestionsPage.suggestions
+    )
     const failedRuns = repos.runs.listFailedRunsForAttention(
       NEEDS_ATTENTION_LIMIT
     )
-    const suggestionItems = pendingSuggestionsPage.suggestions.map(
-      learningSuggestionToAttentionItem
-    )
+    const suggestionItems = healedSuggestions.map(learningSuggestionToAttentionItem)
     const lowScoreRuns = repos.runs.listLowScoreRunsForAttention(
       LOW_SCORE_THRESHOLD,
       NEEDS_ATTENTION_LIMIT

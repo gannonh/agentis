@@ -344,7 +344,8 @@ function clearLearningDeepLinkParams(
 
 export function LearningPage(): ReactElement {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { suggestionId: focusSuggestionId } = parseLearningDeepLink(searchParams)
+  const { suggestionId: focusSuggestionId, status: focusSuggestionStatus } =
+    parseLearningDeepLink(searchParams)
   const [agentFilter, setAgentFilter] = useState("all")
   const [learningData, setLearningData] =
     useState<LearningData>(EMPTY_LEARNING_DATA)
@@ -361,13 +362,26 @@ export function LearningPage(): ReactElement {
   const [actionError, setActionError] = useState<string | null>(null)
 
   async function reloadLearningData() {
+    const suggestionQueryStatus =
+      focusSuggestionStatus === "pending" ||
+      focusSuggestionStatus === "accepted" ||
+      focusSuggestionStatus === "dismissed"
+        ? focusSuggestionStatus
+        : focusSuggestionId
+          ? "pending"
+          : undefined
+
     const [threadsResult, memoriesResult, summaryResult, skillsResult, suggestionsResult] =
       await Promise.allSettled([
         listThreads(),
         listLearningMemories({ page: 1, pageSize: 100 }),
         getLearningSummary(),
         listLearningSkills({ page: 1, pageSize: 5 }),
-        listLearningSuggestions({ page: 1, pageSize: 100 }),
+        listLearningSuggestions({
+          page: 1,
+          pageSize: 100,
+          status: suggestionQueryStatus,
+        }),
       ])
 
     const nextErrors: LearningLoadErrors = {}

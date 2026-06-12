@@ -145,7 +145,7 @@ function AgentUsagePanel({ agentId }: { agentId: string }) {
   }
 
   const { usage } = state
-  const chartPoints = buildDailyCostSeries(usage.daily, usage.periodDays)
+  const chartPoints = buildDailyCostSeries(usage.daily)
 
   return (
     <div className="mt-6" data-testid="agent-usage-panel">

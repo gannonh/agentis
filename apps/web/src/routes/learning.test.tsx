@@ -866,29 +866,48 @@ describe("LearningPage", () => {
       updatedAt: "2026-06-09T00:00:00.000Z",
     }
 
-    stubLearningFetch({
-      threads: [
-        {
-          id: "thread-creating-agent",
-          title: "Creating Agent",
-          status: "finished",
-          model: "gpt-4o-mini",
-          mode: "agent",
-          agentId: "senior-reviewer",
-          agentNameSnapshot: "Senior Reviewer",
-          createdAt: "2026-05-15T15:30:00.000Z",
-          updatedAt: "2026-05-21T15:30:00.000Z",
-          messageCount: 2,
-        },
-      ],
-      suggestions: {
-        suggestions: [pendingSuggestion],
-        page: 1,
-        pageSize: 100,
-        totalCount: 1,
-        totalPages: 1,
-      },
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes("/api/learning/suggestions")) {
+        expect(url).toContain("status=pending")
+      }
+      if (url.endsWith("/api/threads")) {
+        return jsonResponse([
+          {
+            id: "thread-creating-agent",
+            title: "Creating Agent",
+            status: "finished",
+            model: "gpt-4o-mini",
+            mode: "agent",
+            agentId: "senior-reviewer",
+            agentNameSnapshot: "Senior Reviewer",
+            createdAt: "2026-05-15T15:30:00.000Z",
+            updatedAt: "2026-05-21T15:30:00.000Z",
+            messageCount: 2,
+          },
+        ])
+      }
+      if (url.startsWith("/api/learning/memories")) {
+        return jsonResponse(EMPTY_LEARNING_MEMORIES)
+      }
+      if (url.endsWith("/api/learning/summary")) {
+        return jsonResponse(EMPTY_LEARNING_SUMMARY)
+      }
+      if (url.startsWith("/api/learning/skills")) {
+        return jsonResponse(EMPTY_LEARNING_SKILLS)
+      }
+      if (url.startsWith("/api/learning/suggestions")) {
+        return jsonResponse({
+          suggestions: [pendingSuggestion],
+          page: 1,
+          pageSize: 100,
+          totalCount: 1,
+          totalPages: 1,
+        })
+      }
+      return jsonResponse({})
     })
+    vi.stubGlobal("fetch", fetchMock)
 
     const scrollIntoView = vi.fn()
     Element.prototype.scrollIntoView = scrollIntoView

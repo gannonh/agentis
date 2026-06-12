@@ -12,6 +12,13 @@ afterEach(() => {
 })
 
 describe("RunRepository fleet observability", () => {
+  it("returns dense agent usage daily buckets aligned to the UTC window", () => {
+    ctx = createTestContext()
+    const usage = ctx.repos.runs.getAgentUsage("missing-agent", 7)
+    expect(usage.daily).toHaveLength(7)
+    expect(usage.daily.every((entry) => entry.costUsd === 0)).toBe(true)
+  })
+
   it("returns empty score trends and cost breakdown on a fresh install", () => {
     ctx = createTestContext()
 

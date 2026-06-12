@@ -116,9 +116,7 @@ export function ScoreTrendsPanel({
   error = null,
 }: ScoreTrendsPanelProps) {
   const periodDays = trends?.periodDays ?? 90
-  const chartPoints = trends
-    ? buildDailyScoreSeries(trends.daily, trends.periodDays)
-    : []
+  const chartPoints = trends ? buildDailyScoreSeries(trends.daily) : []
 
   return (
     <section
