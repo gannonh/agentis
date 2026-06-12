@@ -55,7 +55,7 @@ export function dismissDuplicatePendingSuggestions(
   }
 }
 
-export function healAllStalePendingSuggestions(repos: Repositories): number {
+export function syncPendingLearningSuggestions(repos: Repositories): number {
   let healedCount = 0
   let page = 1
 

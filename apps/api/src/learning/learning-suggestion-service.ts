@@ -4,10 +4,7 @@ import type {
   LearningSuggestion,
 } from "@workspace/shared"
 import type { Repositories } from "../repositories/index.js"
-import {
-  dismissDuplicatePendingSuggestions,
-  isSuggestionSupersededByMemory,
-} from "./suggestion-consistency.js"
+import { dismissDuplicatePendingSuggestions } from "./suggestion-consistency.js"
 
 function suggestionNotPending(suggestion: LearningSuggestion) {
   return suggestion.status !== "pending"
@@ -36,14 +33,12 @@ export function acceptLearningSuggestion(
   const content = input.content?.trim() || suggestion.content
   const scope =
     input.scope ?? (suggestion.agentId ? ("agent" as const) : ("global" as const))
-  const existingMemory =
-    suggestion.sourceThreadId &&
-    isSuggestionSupersededByMemory(repos, suggestion)
-      ? repos.savedMemories.findThreadDerivedMemory(
-          suggestion.sourceThreadId,
-          suggestion.content
-        )
-      : null
+  const existingMemory = suggestion.sourceThreadId
+    ? repos.savedMemories.findThreadDerivedMemory(
+        suggestion.sourceThreadId,
+        suggestion.content
+      )
+    : null
 
   const updated = repos.learningSuggestions.updateStatus(suggestionId, "accepted")
   if (!updated) return null

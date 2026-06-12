@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest"
 import { acceptLearningSuggestion } from "./learning-suggestion-service.js"
 import {
-  healAllStalePendingSuggestions,
+  syncPendingLearningSuggestions,
   isSuggestionSupersededByMemory,
 } from "./suggestion-consistency.js"
 import { maybeGenerateLearningSuggestions } from "../runtime/learning-suggestion-generator.js"
@@ -95,7 +95,7 @@ describe("suggestion consistency", () => {
     })
 
     expect(isSuggestionSupersededByMemory(ctx.repos, suggestion)).toBe(true)
-    expect(healAllStalePendingSuggestions(ctx.repos)).toBe(1)
+    expect(syncPendingLearningSuggestions(ctx.repos)).toBe(1)
     expect(ctx.repos.learningSuggestions.getById(suggestion.id)?.status).toBe(
       "accepted"
     )

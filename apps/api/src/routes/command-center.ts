@@ -9,7 +9,7 @@ import {
   type CommandCenterNeedsAttentionItem,
   type LearningSuggestion,
 } from "@workspace/shared"
-import { healAllStalePendingSuggestions } from "../learning/suggestion-consistency.js"
+import { syncPendingLearningSuggestions } from "../learning/suggestion-consistency.js"
 import type { Repositories } from "../repositories/index.js"
 
 const NEEDS_ATTENTION_LIMIT = 20
@@ -116,7 +116,7 @@ export function createCommandCenterRoutes(repos: Repositories) {
   })
 
   app.get("/needs-attention", (c) => {
-    healAllStalePendingSuggestions(repos)
+    syncPendingLearningSuggestions(repos)
     const pendingSuggestionsPage = repos.learningSuggestions.listPaginated({
       page: 1,
       pageSize: NEEDS_ATTENTION_LIMIT,
