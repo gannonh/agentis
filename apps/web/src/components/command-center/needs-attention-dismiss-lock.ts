@@ -3,7 +3,12 @@ const dismissingSuggestionIds = new Set<string>()
 export function acquireNeedsAttentionDismissLock(
   suggestionId: string
 ): boolean {
-  return dismissingSuggestionIds.add(suggestionId)
+  if (dismissingSuggestionIds.has(suggestionId)) {
+    return false
+  }
+
+  dismissingSuggestionIds.add(suggestionId)
+  return true
 }
 
 export function releaseNeedsAttentionDismissLock(suggestionId: string) {
