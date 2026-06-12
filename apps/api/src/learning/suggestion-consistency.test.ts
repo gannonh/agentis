@@ -149,7 +149,7 @@ describe("suggestion consistency", () => {
       agentId: agent.id,
     })
 
-    expect(syncPendingLearningSuggestions(ctx.repos)).toBe(1)
+    expect(syncPendingLearningSuggestions(ctx.repos)).toBe(2)
     expect(ctx.repos.learningSuggestions.getById(first.id)?.status).toBe(
       "accepted"
     )

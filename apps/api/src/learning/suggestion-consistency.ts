@@ -48,7 +48,13 @@ export function healStalePendingSuggestion(
         current.content,
         current.id
       )
-    if (otherPending.some((peer) => peer.id < current.id)) {
+    const canonical = [current, ...otherPending].reduce((best, candidate) => {
+      if (candidate.createdAt !== best.createdAt) {
+        return candidate.createdAt < best.createdAt ? candidate : best
+      }
+      return candidate.id < best.id ? candidate : best
+    })
+    if (canonical.id !== current.id) {
       return (
         repos.learningSuggestions.updateStatus(current.id, "dismissed") ??
         current

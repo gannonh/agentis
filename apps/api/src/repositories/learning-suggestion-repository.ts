@@ -24,6 +24,16 @@ export class LearningSuggestionRepository {
 
   create(input: CreateLearningSuggestionInput): LearningSuggestion {
     const now = nowIso()
+    const latest = this.db
+      .select({ createdAt: learningSuggestions.createdAt })
+      .from(learningSuggestions)
+      .orderBy(desc(learningSuggestions.createdAt))
+      .limit(1)
+      .get()
+    let createdAt = now
+    if (latest?.createdAt && latest.createdAt >= now) {
+      createdAt = new Date(Date.parse(latest.createdAt) + 1).toISOString()
+    }
     const row = {
       id: createId("learning_suggestion"),
       status: "pending" as const,
@@ -34,8 +44,8 @@ export class LearningSuggestionRepository {
       sourceThreadId: input.sourceThreadId ?? null,
       sourceThreadTitle: input.sourceThreadTitle ?? null,
       agentId: input.agentId ?? null,
-      createdAt: now,
-      updatedAt: now,
+      createdAt,
+      updatedAt: createdAt,
     }
     this.db.insert(learningSuggestions).values(row).run()
     return mapLearningSuggestion(row)
