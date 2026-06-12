@@ -1,25 +1,34 @@
 import { useCallback, useEffect, useState } from "react"
 import type {
+  CommandCenterNeedsAttentionItem,
   CommandCenterRecentRun,
   CommandCenterRosterAgent,
   CommandCenterSummary,
 } from "@workspace/shared"
 import {
+  fetchCommandCenterNeedsAttention,
   fetchCommandCenterRecentRuns,
   fetchCommandCenterRoster,
   fetchCommandCenterSummary,
 } from "@/lib/api/command-center-client"
 
+export type CommandCenterNeedsAttentionData = {
+  items: CommandCenterNeedsAttentionItem[]
+  totalCount: number
+}
+
 export type CommandCenterData = {
   summary: CommandCenterSummary | null
   roster: CommandCenterRosterAgent[]
   recentRuns: CommandCenterRecentRun[]
+  needsAttention: CommandCenterNeedsAttentionData
 }
 
 export type CommandCenterSectionErrors = {
   summary?: string
   roster?: string
   recentRuns?: string
+  needsAttention?: string
 }
 
 type CommandCenterLoadResult = {
@@ -33,19 +42,23 @@ function loadErrorMessage(error: unknown, fallback: string) {
 }
 
 async function fetchCommandCenterData(): Promise<CommandCenterLoadResult> {
-  const [summaryResult, rosterResult, recentRunsResult] =
+  const [summaryResult, rosterResult, recentRunsResult, needsAttentionResult] =
     await Promise.allSettled([
       fetchCommandCenterSummary(),
       fetchCommandCenterRoster(),
       fetchCommandCenterRecentRuns(),
+      fetchCommandCenterNeedsAttention(),
     ])
 
   const data: CommandCenterData = {
-    summary:
-      summaryResult.status === "fulfilled" ? summaryResult.value : null,
+    summary: summaryResult.status === "fulfilled" ? summaryResult.value : null,
     roster: rosterResult.status === "fulfilled" ? rosterResult.value : [],
     recentRuns:
       recentRunsResult.status === "fulfilled" ? recentRunsResult.value : [],
+    needsAttention:
+      needsAttentionResult.status === "fulfilled"
+        ? needsAttentionResult.value
+        : { items: [], totalCount: 0 },
   }
   const sectionErrors: CommandCenterSectionErrors = {}
 
@@ -67,12 +80,18 @@ async function fetchCommandCenterData(): Promise<CommandCenterLoadResult> {
       "Failed to load recent runs"
     )
   }
+  if (needsAttentionResult.status === "rejected") {
+    sectionErrors.needsAttention = loadErrorMessage(
+      needsAttentionResult.reason,
+      "Failed to load needs-attention items"
+    )
+  }
 
   return {
     data,
     sectionErrors,
     error:
-      Object.keys(sectionErrors).length === 3
+      Object.keys(sectionErrors).length === 4
         ? "Failed to load command center metrics"
         : null,
   }

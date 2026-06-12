@@ -17,14 +17,16 @@ import { DemoDataNotice } from "@/components/shell/demo-data-notice"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { Button } from "@workspace/ui/components/button"
-import { getWorkspace } from "@/fixtures"
 import { useAgents } from "@/hooks/use-agents"
 import { useCommandCenter } from "@/hooks/use-command-center"
+import { useCallback, useState } from "react"
 import type {
+  CommandCenterNeedsAttentionItem,
   CommandCenterRosterAgent,
   CommandCenterSummary,
 } from "@workspace/shared"
 import type { AgentListItem } from "@workspace/shared"
+import { dismissLearningSuggestion } from "@/lib/api/learning-client"
 
 function rosterMetricsByAgentId(
   roster: CommandCenterRosterAgent[]
@@ -78,7 +80,7 @@ function CommandCenterStatus({
   onRetry: () => void
 }) {
   if (loading) {
-    return <p className="text-muted-foreground text-sm">Loading metrics…</p>
+    return <p className="text-sm text-muted-foreground">Loading metrics…</p>
   }
 
   if (error) {
@@ -90,7 +92,7 @@ function CommandCenterStatus({
         <h2 id="command-center-error-heading" className="text-sm font-medium">
           Command Center metrics unavailable
         </h2>
-        <p className="text-muted-foreground mt-1 text-sm">{error}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{error}</p>
         <Button className="mt-3" variant="outline" size="sm" onClick={onRetry}>
           Retry loading metrics
         </Button>
@@ -111,7 +113,7 @@ function AgentRosterStatus({
   onRetry: () => void
 }) {
   if (loading) {
-    return <p className="text-muted-foreground text-sm">Loading agents…</p>
+    return <p className="text-sm text-muted-foreground">Loading agents…</p>
   }
 
   if (error) {
@@ -123,7 +125,7 @@ function AgentRosterStatus({
         <h2 id="agent-roster-error-heading" className="text-sm font-medium">
           Agent roster unavailable
         </h2>
-        <p className="text-muted-foreground mt-1 text-sm">{error}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{error}</p>
         <Button className="mt-3" variant="outline" size="sm" onClick={onRetry}>
           Retry loading agents
         </Button>
@@ -135,7 +137,6 @@ function AgentRosterStatus({
 }
 
 export function CommandCenterPage() {
-  const workspace = getWorkspace()
   const {
     agents,
     loading: agentsLoading,
@@ -155,9 +156,33 @@ export function CommandCenterPage() {
     toRosterAgent(agent, rosterMetrics.get(agent.id))
   )
   const summary = commandCenterData?.summary
+  const needsAttentionItems = commandCenterData?.needsAttention?.items ?? []
+  const needsAttentionTotalCount =
+    commandCenterData?.needsAttention?.totalCount ?? 0
   const metrics = summary
-    ? metricsFromSummary(summary, workspace.commandCenter.pending)
+    ? metricsFromSummary(summary, needsAttentionTotalCount)
     : null
+  const [dismissError, setDismissError] = useState<string | null>(null)
+
+  const refreshCommandCenter = useCallback(async () => {
+    setDismissError(null)
+    await refreshMetrics()
+  }, [refreshMetrics])
+
+  const handleDismissAttention = async (
+    item: CommandCenterNeedsAttentionItem
+  ) => {
+    if (!item.suggestionId) return
+    setDismissError(null)
+    try {
+      await dismissLearningSuggestion(item.suggestionId)
+      await refreshCommandCenter()
+    } catch (error) {
+      setDismissError(
+        error instanceof Error ? error.message : "Failed to dismiss suggestion"
+      )
+    }
+  }
 
   return (
     <PageLayout>
@@ -167,21 +192,17 @@ export function CommandCenterPage() {
       />
 
       <DemoDataNotice>
-        Score trends, cost breakdown by model, and needs-attention items use
-        seeded workspace data until live eval and queue APIs ship.
+        Score trends and cost breakdown by model use seeded workspace data until
+        their live chart APIs ship.
       </DemoDataNotice>
 
       {metricsLoading && !summary ? (
-        <CommandCenterStatus
-          error={null}
-          loading
-          onRetry={refreshMetrics}
-        />
+        <CommandCenterStatus error={null} loading onRetry={refreshCommandCenter} />
       ) : metricsError || sectionErrors.summary ? (
         <CommandCenterStatus
           error={sectionErrors.summary ?? metricsError}
           loading={false}
-          onRetry={refreshMetrics}
+          onRetry={refreshCommandCenter}
         />
       ) : summary ? (
         <FleetStats metrics={metrics!} />
@@ -210,8 +231,11 @@ export function CommandCenterPage() {
           <ScoreTrendsPanel />
           <CostBreakdownPanel totalCost={summary?.totalCostUsd ?? 0} />
           <NeedsAttentionPanel
-            items={workspace.needsAttention}
-            pendingCount={workspace.commandCenter.pending}
+            items={needsAttentionItems}
+            pendingCount={needsAttentionTotalCount}
+            error={sectionErrors.needsAttention ?? null}
+            actionError={dismissError}
+            onDismiss={handleDismissAttention}
           />
         </aside>
       </div>

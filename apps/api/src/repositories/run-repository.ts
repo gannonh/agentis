@@ -1,8 +1,9 @@
-import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm"
+import { and, count, desc, eq, gte, inArray, ne, sql } from "drizzle-orm"
 import {
   runEvaluationSchema,
   type AgentRunEvaluationSummary,
   type AgentUsageResponse,
+  type CommandCenterNeedsAttentionItem,
   type CommandCenterRecentRun,
   type CommandCenterRosterAgent,
   type CommandCenterSummary,
@@ -19,11 +20,57 @@ import { createId, nowIso } from "../lib/ids.js"
 import { mapRun } from "../lib/mappers.js"
 import { roundCostUsd } from "../cost/run-cost-attribution.js"
 
-const ACTIVE_RUN_STATUSES: RunStatus[] = [
-  "queued",
-  "running",
-  "tool-calling",
-]
+const ACTIVE_RUN_STATUSES: RunStatus[] = ["queued", "running", "tool-calling"]
+
+type AttentionListResult = {
+  items: CommandCenterNeedsAttentionItem[]
+  totalCount: number
+}
+
+function lowScoreAttentionWhere(scoreThreshold: number) {
+  return and(
+    eq(runs.status, "completed"),
+    sql`${runs.evaluationJson} is not null`,
+    sql`json_valid(${runs.evaluationJson}) = 1`,
+    sql`json_extract(${runs.evaluationJson}, '$.score') <= ${scoreThreshold}`,
+    sql`${runs.agentId} is not null`,
+    ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
+  )
+}
+
+function mapLowScoreAttentionRow(row: {
+  id: string
+  threadId: string
+  agentId: string | null
+  startedAt: string
+  title: string
+  evaluationJson: string | null
+}): CommandCenterNeedsAttentionItem | null {
+  if (!row.evaluationJson) {
+    return null
+  }
+
+  try {
+    const evaluation = runEvaluationSchema.parse(JSON.parse(row.evaluationJson))
+    return {
+      id: `attention_low_score_${row.id}`,
+      type: "low_score_run",
+      title: `Low score: ${row.title}`,
+      description: `${evaluation.score}% on ${evaluation.rubricName}`,
+      tag: "Low score",
+      severity: "warning",
+      createdAt: row.startedAt,
+      href: `/threads/${row.threadId}`,
+      dismissible: false,
+      agentId: row.agentId,
+      threadId: row.threadId,
+      runId: row.id,
+      score: evaluation.score,
+    }
+  } catch {
+    return null
+  }
+}
 
 function serializeRunUsage(usage: RunUsage | null | undefined): string | null {
   return usage ? JSON.stringify(usage) : null
@@ -358,8 +405,10 @@ export class RunRepository {
       evaluatedRuns.length === 0
         ? null
         : Math.round(
-            evaluatedRuns.reduce((total, evaluation) => total + evaluation.score, 0) /
-              evaluatedRuns.length
+            evaluatedRuns.reduce(
+              (total, evaluation) => total + evaluation.score,
+              0
+            ) / evaluatedRuns.length
           )
 
     return {
@@ -393,10 +442,11 @@ export class RunRepository {
           sql<number>`sum(case when ${runs.status} = 'completed' and ${runs.evaluationJson} is not null then 1 else 0 end)`.mapWith(
             Number
           ),
-        avgScore:
-          sql<number | null>`avg(case when ${runs.status} = 'completed' and ${runs.evaluationJson} is not null then json_extract(${runs.evaluationJson}, '$.score') end)`.mapWith(
-            Number
-          ),
+        avgScore: sql<
+          number | null
+        >`avg(case when ${runs.status} = 'completed' and ${runs.evaluationJson} is not null then json_extract(${runs.evaluationJson}, '$.score') end)`.mapWith(
+          Number
+        ),
       })
       .from(runs)
       .where(
@@ -409,7 +459,9 @@ export class RunRepository {
       .all()
 
     return rows
-      .filter((row): row is typeof row & { agentId: string } => row.agentId != null)
+      .filter(
+        (row): row is typeof row & { agentId: string } => row.agentId != null
+      )
       .map((row) => ({
         agentId: row.agentId,
         runCount: row.runCount,
@@ -422,6 +474,102 @@ export class RunRepository {
             ? Math.round(row.avgScore)
             : null,
       }))
+  }
+
+  countFailedRunsForAttention(): number {
+    const row = this.db
+      .select({ value: count() })
+      .from(runs)
+      .where(
+        and(
+          eq(runs.status, "failed"),
+          sql`${runs.agentId} is not null`,
+          ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
+        )
+      )
+      .get()
+    return Number(row?.value ?? 0)
+  }
+
+  listFailedRunsForAttention(limit = 20): AttentionListResult {
+    const totalCount = this.countFailedRunsForAttention()
+    const boundedLimit = Math.min(Math.max(limit, 1), 100)
+    const items = this.db
+      .select({
+        id: runs.id,
+        threadId: runs.threadId,
+        agentId: runs.agentId,
+        startedAt: runs.startedAt,
+        errorSummary: runs.errorSummary,
+        title: threads.title,
+      })
+      .from(runs)
+      .innerJoin(threads, eq(runs.threadId, threads.id))
+      .where(
+        and(
+          eq(runs.status, "failed"),
+          sql`${runs.agentId} is not null`,
+          ne(runs.agentId, GENERIC_AGENTIS_AGENT_ID)
+        )
+      )
+      .orderBy(desc(runs.startedAt), desc(runs.id))
+      .limit(boundedLimit)
+      .all()
+      .map((row) => ({
+        id: `attention_failed_${row.id}`,
+        type: "failed_run" as const,
+        title: `Run failed: ${row.title}`,
+        description:
+          row.errorSummary ?? "Open the thread to review the failed run.",
+        tag: "Failed run",
+        severity: "critical" as const,
+        createdAt: row.startedAt,
+        href: `/threads/${row.threadId}`,
+        dismissible: false,
+        agentId: row.agentId,
+        threadId: row.threadId,
+        runId: row.id,
+      }))
+
+    return { items, totalCount }
+  }
+
+  countLowScoreRunsForAttention(scoreThreshold = 70): number {
+    const row = this.db
+      .select({ value: count() })
+      .from(runs)
+      .where(lowScoreAttentionWhere(scoreThreshold))
+      .get()
+    return Number(row?.value ?? 0)
+  }
+
+  listLowScoreRunsForAttention(
+    scoreThreshold = 70,
+    limit = 20
+  ): AttentionListResult {
+    const totalCount = this.countLowScoreRunsForAttention(scoreThreshold)
+    const boundedLimit = Math.min(Math.max(limit, 1), 100)
+    const items = this.db
+      .select({
+        id: runs.id,
+        threadId: runs.threadId,
+        agentId: runs.agentId,
+        startedAt: runs.startedAt,
+        title: threads.title,
+        evaluationJson: runs.evaluationJson,
+      })
+      .from(runs)
+      .innerJoin(threads, eq(runs.threadId, threads.id))
+      .where(lowScoreAttentionWhere(scoreThreshold))
+      .orderBy(desc(runs.startedAt), desc(runs.id))
+      .limit(boundedLimit)
+      .all()
+      .flatMap((row) => {
+        const item = mapLowScoreAttentionRow(row)
+        return item ? [item] : []
+      })
+
+    return { items, totalCount }
   }
 
   listRecentRuns(limit = 20): CommandCenterRecentRun[] {
