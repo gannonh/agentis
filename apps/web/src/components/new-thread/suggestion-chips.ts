@@ -81,6 +81,8 @@ export function buildSuggestionChips(agents: AgentListItem[]): SuggestionChip[] 
   const seenPrompts = new Set<string>()
   const chips: SuggestionChip[] = []
 
+  addUniqueChip(chips, seenPrompts, STATIC_SUGGESTION_CHIPS[0])
+
   for (const agent of agents) {
     const prompt = agent.sourceWorkflow?.firstUserPrompt?.trim()
     if (!prompt) continue

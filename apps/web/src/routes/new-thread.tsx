@@ -45,6 +45,8 @@ export function NewThreadPage() {
   function handleSelectChip(chip: SuggestionChip) {
     if (chip.agentId) {
       setSelectedAgentId(chip.agentId)
+    } else {
+      setSelectedAgentId(null)
     }
     setPromptDraft({
       id: crypto.randomUUID(),

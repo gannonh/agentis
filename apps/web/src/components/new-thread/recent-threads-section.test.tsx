@@ -59,4 +59,19 @@ describe("RecentThreadsSection", () => {
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
   })
 
+  it("renders every thread supplied by the caller", () => {
+    const callerLimitedThreads = Array.from({ length: 4 }, (_, index) => ({
+      ...threads[0],
+      id: `thread_${index}`,
+      title: `Thread ${index}`,
+    }))
+
+    render(
+      <MemoryRouter>
+        <RecentThreadsSection threads={callerLimitedThreads} />
+      </MemoryRouter>
+    )
+
+    expect(screen.getAllByRole("link")).toHaveLength(4)
+  })
 })

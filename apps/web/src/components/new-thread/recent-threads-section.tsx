@@ -2,7 +2,6 @@ import { Link } from "react-router"
 import type { ThreadListItem } from "@workspace/shared"
 import { formatRelativeTime } from "@/fixtures"
 
-const RECENT_THREAD_LIMIT = 3
 const THREAD_SUMMARY_FALLBACK = "Open this thread to continue the conversation."
 
 type RecentThreadsSectionProps = {
@@ -14,9 +13,7 @@ export function RecentThreadsSection({
   threads,
   loading = false,
 }: RecentThreadsSectionProps) {
-  const recentThreads = threads.slice(0, RECENT_THREAD_LIMIT)
-
-  if (!loading && recentThreads.length === 0) {
+  if (!loading && threads.length === 0) {
     return null
   }
 
@@ -27,7 +24,7 @@ export function RecentThreadsSection({
         <p className="text-muted-foreground text-xs">Loading…</p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {recentThreads.map((thread) => (
+          {threads.map((thread) => (
             <li key={thread.id}>
               <Link
                 to={`/threads/${thread.id}`}

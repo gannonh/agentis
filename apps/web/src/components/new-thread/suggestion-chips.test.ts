@@ -27,7 +27,28 @@ describe("buildSuggestionChips", () => {
       },
     ])
 
-    expect(chips[0]?.agentId).toBe("agent_launch")
+    expect(chips[1]?.agentId).toBe("agent_launch")
     expect(chips.some((chip) => chip.id === "launch-readiness")).toBe(false)
+  })
+
+  it("preserves the research chip when agent prompts fill the chip budget", () => {
+    const chips = buildSuggestionChips(
+      Array.from({ length: 5 }, (_, index) => ({
+        id: `agent_${index}`,
+        name: `Agent ${index}`,
+        description: "Agent prompt",
+        model: "openai/gpt-4o-mini",
+        toolGrantCount: 0,
+        createdAt: "2026-06-10T12:00:00.000Z",
+        updatedAt: "2026-06-10T12:00:00.000Z",
+        sourceWorkflow: {
+          summary: "Prompt",
+          firstUserPrompt: `Handle seeded prompt ${index}.`,
+        },
+      }))
+    )
+
+    expect(chips).toHaveLength(5)
+    expect(chips[0]?.id).toBe("research-topic")
   })
 })

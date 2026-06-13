@@ -43,6 +43,10 @@ vi.mock("@/hooks/use-agents", () => ({
         toolGrantCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        sourceWorkflow: {
+          summary: "Research",
+          firstUserPrompt: "Summarize the latest research notes.",
+        },
       },
     ],
     loading: false,
@@ -126,8 +130,9 @@ describe("NewThreadPage", () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByRole("button", { name: /research agent/i }))
-      .toBeInTheDocument()
+    expect(
+      screen.getAllByRole("button", { name: /research agent/i }).length
+    ).toBeGreaterThan(0)
 
     const input = screen.getByPlaceholderText("What's the task?")
     await user.type(input, "Read the research notes")
@@ -204,6 +209,31 @@ describe("NewThreadPage", () => {
     await waitFor(() => {
       expect(createThread).toHaveBeenCalledWith(
         expect.objectContaining({ agentId: "agent_research" })
+      )
+    })
+  })
+
+  it("clears an agent chip selection when a static chip is selected", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter>
+        <NewThreadPage />
+      </MemoryRouter>
+    )
+
+    const agentChip = screen
+      .getAllByRole("button", { name: /research agent/i })
+      .find((button) => button.getAttribute("aria-haspopup") !== "menu")
+    expect(agentChip).toBeDefined()
+    if (!agentChip) throw new Error("Expected an agent suggestion chip")
+
+    await user.click(agentChip)
+    await user.click(screen.getByRole("button", { name: /research a topic/i }))
+    await user.click(screen.getByRole("button", { name: /send message/i }))
+
+    await waitFor(() => {
+      expect(createThread).toHaveBeenCalledWith(
+        expect.objectContaining({ agentId: GENERIC_AGENTIS_AGENT_ID })
       )
     })
   })
