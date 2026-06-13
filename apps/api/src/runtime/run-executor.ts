@@ -77,7 +77,15 @@ import {
   toUiMessages,
 } from "./run-message-adapters.js"
 import { RunCostLedger } from "../cost/run-cost-ledger.js"
-import { createGatewayLanguageModel } from "./gateway-model.js"
+import {
+  createGatewayLanguageModel,
+  prepareGatewayStreamPrompt,
+} from "./gateway-model.js"
+import {
+  anthropicCloudflareEmptyResponseHint,
+  DEFAULT_RUN_MAX_OUTPUT_TOKENS,
+  formatProviderErrorMessage,
+} from "./provider-error.js"
 import { createMockDocumentRunSuffix } from "./mock-document-run.js"
 import { evaluateCompletedRun } from "../evaluation/run-evaluator.js"
 import {
@@ -747,12 +755,19 @@ export class RunExecutor {
       liveModel ?? createDefaultMockLanguageModel(mockDocumentSuffix)
 
     const maxToolSteps = looksLikeResearchBriefIntent(latestUserPrompt) ? 8 : 5
+    const gatewayPrompt = prepareGatewayStreamPrompt({
+      config: this.config,
+      modelId: run.model,
+      system: runtimeSystemPrompt,
+      messages: modelMessages,
+    })
 
     const result = streamText({
       model,
-      system: runtimeSystemPrompt,
-      messages: modelMessages,
+      system: gatewayPrompt.system,
+      messages: gatewayPrompt.messages,
       tools: runtimeTools,
+      maxOutputTokens: DEFAULT_RUN_MAX_OUTPUT_TOKENS,
       stopWhen: stepCountIs(maxToolSteps),
       abortSignal: controller.signal,
       onChunk: async ({ chunk }) => {
@@ -954,6 +969,40 @@ export class RunExecutor {
           })
           assistantParts = finalized.assistantParts
         }
+        const responseText = getTextFromParts(assistantParts).trim()
+        const hasToolActivity = assistantParts.some(
+          (part) => part.type === "tool-call" || part.type === "tool-result"
+        )
+        const emptyProviderResponse =
+          !hasPendingApproval &&
+          !responseText &&
+          !hasToolActivity &&
+          (totalUsage.outputTokens ?? 0) > 0
+        if (emptyProviderResponse) {
+          const message =
+            anthropicCloudflareEmptyResponseHint(
+              run.model,
+              this.config.aiGatewayProvider
+            ) ?? "The model returned no content."
+          this.repos.messages.updatePartsAndStatus(
+            assistantMessage.id,
+            assistantParts,
+            "failed"
+          )
+          this.repos.runs.updateStatus(runId, "failed", {
+            finishedAt: nowIso(),
+            errorSummary: message,
+          })
+          this.repos.steps.create({
+            runId,
+            type: "error",
+            status: "failed",
+            title: "Run failed",
+            payload: { message },
+          })
+          this.repos.threads.touch(run.threadId, { status: "failed" })
+          return
+        }
         this.repos.messages.updatePartsAndStatus(
           assistantMessage.id,
           assistantParts,
@@ -1016,8 +1065,7 @@ export class RunExecutor {
       },
       onError: async ({ error }) => {
         clearAbortController(runId)
-        const message =
-          error instanceof Error ? error.message : "Unknown provider error"
+        const message = formatProviderErrorMessage(error)
         this.repos.messages.updatePartsAndStatus(
           assistantMessage.id,
           assistantParts,

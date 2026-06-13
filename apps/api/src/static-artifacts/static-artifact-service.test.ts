@@ -480,6 +480,120 @@ describe("StaticArtifactService", () => {
     ctx.cleanup()
   })
 
+  it("parses div-based model slide decks into multiple navigable slides", () => {
+    const { ctx, thread, run, service } = createRunContext()
+
+    const created = service.createStaticArtifact({
+      title: "Thread-scoped artifacts",
+      artifactType: "slides",
+      renderMode: "html",
+      contentBrief: "Eight-slide deck",
+      theme: "developer",
+      generatedHtml: [
+        "<!doctype html><html><body>",
+        '<main data-static-artifact="slides">',
+        '<div class="slide"><h1>Title</h1><p>Intro</p></div>',
+        '<div class="slide"><h1>Foundations</h1><p>What artifacts are</p></div>',
+        '<div class="slide"><h1>Scopes</h1><p>Thread, project, global</p></div>',
+        '<div class="slide"><h1>Deep dive</h1><p>Isolation and promotion</p></div>',
+        '<div class="slide"><h1>Lifecycle</h1><p>Create through persist</p></div>',
+        '<div class="slide"><h1>When to use</h1><p>Five use cases</p></div>',
+        '<div class="slide"><h1>Comparison</h1><p>Scope table</p></div>',
+        '<div class="slide"><h1>Summary</h1><p>Best practices</p></div>',
+        "</main></body></html>",
+      ].join(""),
+      threadId: thread.id,
+      runId: run.id,
+    })
+    if (!created.ok) throw new Error(created.message)
+
+    expect(created.output.slideCount).toBe(8)
+    const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
+    const storage = new LocalDocumentStorage(ctx.config)
+    const html = storage.read(artifact!.storageKey).toString("utf8")
+    expect(Array.from(html.matchAll(/class="slide/g))).toHaveLength(8)
+    expect(html).toContain("developer · 1/8")
+    expect(html).toContain("querySelectorAll('.slide')")
+    ctx.cleanup()
+  })
+
+  it("splits collapsed slide decks that use page markers like 01 / 08", () => {
+    const { ctx, thread, run, service } = createRunContext()
+
+    const created = service.createStaticArtifact({
+      title: "Thread-scoped artifacts",
+      artifactType: "slides",
+      renderMode: "html",
+      contentBrief: "Eight-slide deck",
+      theme: "developer",
+      generatedHtml: [
+        '<main data-static-artifact="slides">',
+        '<section class="slide"><h1>Thread-Scoped Working Artifacts</h1>',
+        "<ul>",
+        "<li>01 / 08</li><li>Agentis · Platform Concepts</li><li>Intro body</li>",
+        "<li>02 / 08</li><li>Foundations</li><li>What Is an Artifact?</li><li>Artifact definition</li>",
+        "<li>03 / 08</li><li>Scopes</li><li>Thread vs project vs global</li>",
+        "</ul></section></main>",
+      ].join(""),
+      threadId: thread.id,
+      runId: run.id,
+    })
+    if (!created.ok) throw new Error(created.message)
+
+    expect(created.output.slideCount).toBe(3)
+    const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
+    const storage = new LocalDocumentStorage(ctx.config)
+    const html = storage.read(artifact!.storageKey).toString("utf8")
+    expect(Array.from(html.matchAll(/class="slide/g))).toHaveLength(3)
+    expect(html).toContain("<h1>Foundations</h1>")
+    expect(html).toContain("<li>What Is an Artifact?</li>")
+    expect(html).toContain("<h1>Scopes</h1>")
+    ctx.cleanup()
+  })
+
+  it("normalizes bare section slide HTML into a navigable deck", () => {
+    const { ctx, thread, run, service } = createRunContext()
+
+    const created = service.createStaticArtifact({
+      title: "Thread-scoped artifacts",
+      artifactType: "slides",
+      renderMode: "html",
+      contentBrief: "Outline only",
+      theme: "corporate",
+      generatedHtml: [
+        "<!doctype html><html><body>",
+        '<main data-static-artifact="slides">',
+        "<section><h1>Slide 1</h1><p>Intro</p></section>",
+        "<section><h1>Slide 2</h1><p>Details</p></section>",
+        "<section><h1>Slide 3</h1><p>Workflow</p></section>",
+        "</main></body></html>",
+      ].join(""),
+      threadId: thread.id,
+      runId: run.id,
+    })
+    if (!created.ok) throw new Error(created.message)
+
+    const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
+    expect(artifact?.metadata).toMatchObject({ slideCount: 3 })
+    const storage = new LocalDocumentStorage(ctx.config)
+    const html = storage.read(artifact!.storageKey).toString("utf8")
+    expect(Array.from(html.matchAll(/class="slide/g))).toHaveLength(3)
+
+    const read = service.readStaticArtifact({
+      artifactId: created.output.artifactId,
+      maxChars: 12_000,
+      runContext: { threadId: thread.id, runId: run.id },
+    })
+    expect(read).toMatchObject({
+      ok: true,
+      output: {
+        slideCount: 3,
+        contentTextTruncated: false,
+      },
+    })
+    ctx.cleanup()
+  })
+
   it("reads exact stored text from static slide artifacts", () => {
     const { ctx, thread, run, service } = createRunContext()
 

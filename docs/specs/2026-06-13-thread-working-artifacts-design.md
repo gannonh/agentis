@@ -2,13 +2,15 @@
 
 ## Status
 
-APPROVED
+IMPLEMENTED (2026-06-13)
 
 ## Goal
 
 Implement HA-GAP-08 from `docs/roadmap/hyperagent-gap-roadmap.md`: the thread session should show run-linked documents and artifacts in an inline right rail so users can preview working outputs without leaving the thread.
 
 The first slice is frontend-first. It reuses existing artifact and document APIs unless Build discovers a concrete batching or freshness gap.
+
+**Shipped:** `WorkingArtifactsRailProvider`, `WorkingArtifactsRailSidebar`, and `WorkingArtifactsRailMobile` in `thread-durable-artifacts.tsx`; integrated in `thread-detail.tsx` with desktop right rail and collapsed mobile bar above the transcript.
 
 ## Source of truth
 

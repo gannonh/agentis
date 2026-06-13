@@ -36,7 +36,7 @@ AGENTIS_MOCK_RUNTIME=0
 AGENTIS_MOCK_COMPOSIO=0
 ```
 
-`CLOUDFLARE_AI_GATEWAY_ID` is optional when your account uses the default gateway id.
+`CLOUDFLARE_AI_GATEWAY_ID` is optional for third-party models when your account uses the default gateway. **Workers AI** models (`@cf/...` in the catalog) always require `cf-aig-gateway-id`; the API defaults this to `default` when the env var is unset.
 
 Do not put these secrets in `apps/web/.env`. The API loads the repo root `.env` on startup.
 
@@ -97,6 +97,22 @@ If `AGENTIS_WEB_SEARCH_PROVIDER=tavily` is paired with another backend, the API 
 ### Model picker does not show Cloudflare models
 
 Confirm `AI_GATEWAY_PROVIDER=cloudflare`, restart `pnpm dev`, then check `/api/runtime/health`. The model catalog is selected from the configured gateway provider at API startup.
+
+### A thread run fails immediately ("Failed")
+
+Check the run record for a human-readable `errorSummary`:
+
+```bash
+curl -s "http://localhost:3101/api/runs/<runId>" | jq '.status, .errorSummary'
+```
+
+Common Cloudflare causes:
+
+- Missing account credits or Unified Billing for third-party models.
+- Workers AI selected without a gateway id (set `CLOUDFLARE_AI_GATEWAY_ID` or rely on the API default `default`).
+- Stale API process after gateway code changes — restart `pnpm dev`.
+
+Cloudflare models are routed by provider prefix (`anthropic/*` → Messages API, `openai/*` and `google/*` → chat/completions). See ADR 0006 before adding per-model runtime workarounds.
 
 ### The run uses mock output
 

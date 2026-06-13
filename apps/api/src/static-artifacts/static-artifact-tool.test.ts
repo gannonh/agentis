@@ -84,10 +84,20 @@ describe("static artifact runtime tools", () => {
     })
     expect(JSON.stringify(read)).not.toContain("<main")
 
+    const readWithLargeLimit = await executeTool(tools.readStaticArtifact, {
+      artifactId,
+      maxChars: 12_000,
+    })
+    expect(readWithLargeLimit).toMatchObject({
+      artifactId,
+      contentTextTruncated: false,
+    })
+
     expect(evidence.map((entry) => entry.title)).toEqual([
       "Static artifact created: Launch page",
       "Searched static artifacts",
       "Static artifact edited: Launch page",
+      "Static artifact read: Launch page",
       "Static artifact read: Launch page",
     ])
     ctx.cleanup()

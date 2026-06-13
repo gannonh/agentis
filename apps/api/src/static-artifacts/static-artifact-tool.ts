@@ -119,7 +119,7 @@ export function buildStaticArtifactTools(
 
     readStaticArtifact: tool({
       description:
-        "Read the exact stored text content and metadata for an accessible static artifact. Use this before answering questions about what an existing artifact actually contains.",
+        "Read the exact stored text content and metadata for an accessible static artifact. Use this before answering questions about what an existing artifact actually contains. Optional maxChars is capped at 10000.",
       inputSchema: readStaticArtifactInputSchema,
       execute: async (input) => {
         const result = staticArtifactService.readStaticArtifact({

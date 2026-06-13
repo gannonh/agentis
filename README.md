@@ -58,6 +58,7 @@ docs/              # Product docs, roadmap, UI comps
 - [App artifact runtime](docs/specs/_done/2026-06-04-agent-native-tooling-v4-apps-design.md)
 - [Artifact Library primitive (ADR 0005)](docs/adr/0005-use-artifact-as-library-primitive.md)
 - [Architecture decisions](docs/adr/)
+- [Cloudflare gateway transport routing (ADR 0006)](docs/adr/0006-cloudflare-gateway-transport-routing.md)
 - [Self-host research golden path](docs/self-host/golden-path-research.md)
 - [Design system](DESIGN.md)
 - [Contributing](CONTRIBUTING.md)

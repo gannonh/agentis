@@ -9,7 +9,11 @@ import { Message, MessageContent } from "@/components/ai-elements/message"
 import { ThreadMessageContent } from "@/components/thread/thread-message-content"
 import { messageHasVisibleContent } from "@/lib/thread/message-text"
 import { RunTimeline } from "@/components/thread/run-timeline"
-import { ThreadDurableArtifacts } from "@/components/thread/thread-durable-artifacts"
+import {
+  WorkingArtifactsRailMobile,
+  WorkingArtifactsRailProvider,
+  WorkingArtifactsRailSidebar,
+} from "@/components/thread/thread-durable-artifacts"
 import { ThreadProjectContext } from "@/components/thread/thread-project-context"
 import { ThreadPromptComposer } from "@/components/thread/thread-prompt-composer"
 import { PageLayout } from "@/components/shell/page-layout"
@@ -304,9 +308,14 @@ export function ThreadDetailPage() {
           />
         </div>
 
-        <div className="flex min-h-0 flex-1">
-          <div className="flex min-h-0 flex-1 flex-col">
-            <Conversation className="flex-1">
+        <WorkingArtifactsRailProvider
+          threadId={threadId}
+          refreshKey={`${latestRun?.id ?? "no-run"}:${latestRun?.status ?? "none"}:${steps.length}:${detail?.messages.length ?? 0}`}
+        >
+          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+            <div className="flex min-h-0 flex-1 flex-col">
+              <WorkingArtifactsRailMobile />
+              <Conversation className="flex-1">
               <ConversationContent>
                 {loading ? (
                   <p className="text-muted-foreground text-sm">Loading transcript…</p>
@@ -424,17 +433,15 @@ export function ThreadDetailPage() {
                 />
               </div>
             </div>
-          </div>
+            </div>
 
-          <div className="flex w-80 shrink-0 flex-col border-l border-border">
-            <ThreadProjectContext context={detail?.projectContext} />
-            <RunTimeline run={latestRun} steps={steps} />
-            <ThreadDurableArtifacts
-              threadId={threadId}
-              refreshKey={`${latestRun?.id ?? "no-run"}:${latestRun?.status ?? "none"}:${steps.length}:${detail?.messages.length ?? 0}`}
-            />
+            <div className="hidden w-80 shrink-0 flex-col border-l border-border lg:flex">
+              <ThreadProjectContext context={detail?.projectContext} />
+              <RunTimeline run={latestRun} steps={steps} />
+              <WorkingArtifactsRailSidebar />
+            </div>
           </div>
-        </div>
+        </WorkingArtifactsRailProvider>
       </div>
     </PageLayout>
   )

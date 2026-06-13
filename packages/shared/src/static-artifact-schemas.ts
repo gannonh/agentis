@@ -352,9 +352,19 @@ export const editStaticArtifactOutputSchema = z
   })
   .superRefine(refineStaticArtifactMode)
 
+export const readStaticArtifactMaxChars = 10_000
+
 export const readStaticArtifactInputSchema = z.object({
   artifactId: nonEmptyString,
-  maxChars: positiveInteger.max(10_000).optional(),
+  maxChars: z.preprocess(
+    (value) => {
+      if (value === undefined || value === null) return undefined
+      const parsed = Number(value)
+      if (!Number.isFinite(parsed) || parsed <= 0) return undefined
+      return Math.min(Math.floor(parsed), readStaticArtifactMaxChars)
+    },
+    positiveInteger.optional()
+  ),
 })
 
 export const readStaticArtifactOutputSchema = z

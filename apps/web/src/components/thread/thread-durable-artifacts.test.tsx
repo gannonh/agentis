@@ -1,23 +1,54 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router"
-import { describe, expect, it, vi } from "vitest"
-import { ThreadDurableArtifacts } from "./thread-durable-artifacts"
+import { type ReactNode } from "react"
+import { describe, expect, it, vi, beforeEach } from "vitest"
+import {
+  WorkingArtifactsRailMobile,
+  WorkingArtifactsRailProvider,
+  WorkingArtifactsRailSidebar,
+} from "./thread-durable-artifacts"
+
+vi.mock("@/components/documents/document-viewer", () => ({
+  DocumentViewer: ({ content }: { content: string }) => (
+    <div data-testid="document-preview">{content}</div>
+  ),
+}))
+
+vi.mock("@/components/static-artifacts/static-artifact-preview", () => ({
+  StaticArtifactPreview: () => (
+    <div data-testid="static-artifact-preview">Static preview</div>
+  ),
+}))
 
 vi.mock("@/lib/api/projects-client", () => ({
   listArtifacts: vi.fn(),
+  getDocumentDetail: vi.fn(),
+  getArtifactDetail: vi.fn(),
   artifactLaunchPath: (artifact: { id: string; type: string }) => {
     if (artifact.type === "document") return `/documents/${artifact.id}`
-    if (artifact.type === "app") return `/artifacts/${artifact.id}`
+    if (
+      artifact.type === "webpage" ||
+      artifact.type === "slides" ||
+      artifact.type === "app"
+    ) {
+      return `/artifacts/${artifact.id}`
+    }
     return null
   },
   artifactLaunchLabel: (type: string) => {
     if (type === "document") return "Open document"
     if (type === "app") return "Open app"
+    if (type === "webpage" || type === "slides") return "Open artifact"
     return null
   },
 }))
 
-import { listArtifacts } from "@/lib/api/projects-client"
+import {
+  getArtifactDetail,
+  getDocumentDetail,
+  listArtifacts,
+} from "@/lib/api/projects-client"
 
 const baseArtifact = {
   description: null,
@@ -39,8 +70,94 @@ const baseArtifact = {
   updatedAt: new Date().toISOString(),
 }
 
-describe("ThreadDurableArtifacts", () => {
-  it("shows an Open document launch button for document artifacts", async () => {
+function renderRail(
+  ui: ReactNode,
+  { refreshKey = "refresh-1" }: { refreshKey?: string } = {}
+) {
+  return render(
+    <MemoryRouter>
+      <WorkingArtifactsRailProvider threadId="thread_test" refreshKey={refreshKey}>
+        {ui}
+      </WorkingArtifactsRailProvider>
+    </MemoryRouter>
+  )
+}
+
+describe("WorkingArtifactsRail", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getDocumentDetail).mockResolvedValue({
+      document: {
+        id: "document_123",
+        title: "Research brief",
+        type: "document",
+        contentFormat: "markdown",
+        mimeType: "text/markdown",
+        sizeBytes: 120,
+        visibilityScope: "thread",
+        threadId: "thread_test",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      content: "# Research brief\n\nInline preview body.",
+      truncated: false,
+      currentVersion: 1,
+      selectedVersion: 1,
+      versions: [],
+    })
+    vi.mocked(getArtifactDetail).mockResolvedValue({
+      artifact: {
+        ...baseArtifact,
+        id: "artifact_deck",
+        title: "Slide deck",
+        type: "slides",
+        contentFormat: "html",
+      },
+      content: "<html><body>Slides</body></html>",
+      truncated: false,
+      currentVersion: 1,
+      selectedVersion: 1,
+      versions: [],
+    })
+  })
+
+  it("lists artifacts newest first with workspace links", async () => {
+    const older = new Date("2026-01-01T00:00:00.000Z").toISOString()
+    const newer = new Date("2026-06-01T00:00:00.000Z").toISOString()
+    vi.mocked(listArtifacts).mockResolvedValueOnce([
+      {
+        ...baseArtifact,
+        id: "document_old",
+        title: "Older document",
+        type: "document",
+        contentFormat: "markdown",
+        mimeType: "text/markdown",
+        updatedAt: older,
+      },
+      {
+        ...baseArtifact,
+        id: "document_new",
+        title: "Newer document",
+        type: "document",
+        contentFormat: "markdown",
+        mimeType: "text/markdown",
+        updatedAt: newer,
+      },
+    ])
+
+    renderRail(<WorkingArtifactsRailSidebar />)
+
+    expect(await screen.findByText("Newer document")).toBeInTheDocument()
+    const listItems = screen.getAllByRole("listitem")
+    expect(listItems[0]).toHaveTextContent("Newer document")
+    expect(listItems[1]).toHaveTextContent("Older document")
+    expect(screen.getAllByRole("button", { name: "Open document" })[0]).toHaveAttribute(
+      "href",
+      "/documents/document_new"
+    )
+  })
+
+  it("loads document preview for the selected markdown document", async () => {
     vi.mocked(listArtifacts).mockResolvedValueOnce([
       {
         ...baseArtifact,
@@ -52,21 +169,40 @@ describe("ThreadDurableArtifacts", () => {
       },
     ])
 
-    render(
-      <MemoryRouter>
-        <ThreadDurableArtifacts threadId="thread_test" />
-      </MemoryRouter>
-    )
+    renderRail(<WorkingArtifactsRailSidebar />)
 
     expect(await screen.findByText("Research brief: AI agents")).toBeInTheDocument()
-    expect(screen.getByText("document · markdown · v1")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Open document" })).toHaveAttribute(
-      "href",
-      "/documents/document_123"
+    await waitFor(() => {
+      expect(getDocumentDetail).toHaveBeenCalledWith("document_123")
+    })
+    expect(await screen.findByTestId("document-preview")).toHaveTextContent(
+      "Inline preview body."
     )
   })
 
-  it("shows an Open app launch button for app artifacts", async () => {
+  it("loads static artifact preview when a slides artifact is selected", async () => {
+    vi.mocked(listArtifacts).mockResolvedValueOnce([
+      {
+        ...baseArtifact,
+        id: "artifact_deck",
+        title: "How to Create a Good Changelog",
+        type: "slides",
+        contentFormat: "html",
+      },
+    ])
+
+    renderRail(<WorkingArtifactsRailSidebar />)
+
+    expect(
+      await screen.findByText("How to Create a Good Changelog")
+    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(getArtifactDetail).toHaveBeenCalledWith("artifact_deck")
+    })
+    expect(await screen.findByTestId("static-artifact-preview")).toBeInTheDocument()
+  })
+
+  it("shows preview unavailable for unsupported artifact types", async () => {
     vi.mocked(listArtifacts).mockResolvedValueOnce([
       {
         ...baseArtifact,
@@ -77,17 +213,150 @@ describe("ThreadDurableArtifacts", () => {
       },
     ])
 
-    render(
+    renderRail(<WorkingArtifactsRailSidebar />)
+
+    expect(await screen.findByText("Simple Calculator")).toBeInTheDocument()
+    expect(
+      await screen.findByText(/preview unavailable for this artifact type/i)
+    ).toBeInTheDocument()
+    expect(getArtifactDetail).not.toHaveBeenCalled()
+    expect(getDocumentDetail).not.toHaveBeenCalled()
+  })
+
+  it("shows empty and list error states", async () => {
+    vi.mocked(listArtifacts).mockResolvedValueOnce([])
+    const { unmount } = renderRail(<WorkingArtifactsRailSidebar />)
+    expect(await screen.findByText("No working artifacts yet.")).toBeInTheDocument()
+    unmount()
+
+    vi.mocked(listArtifacts).mockRejectedValueOnce(new Error("Artifacts unavailable"))
+    renderRail(<WorkingArtifactsRailSidebar />)
+    expect(await screen.findByText("Artifacts unavailable")).toBeInTheDocument()
+  })
+
+  it("shows preview errors without removing the selected artifact", async () => {
+    vi.mocked(listArtifacts).mockResolvedValueOnce([
+      {
+        ...baseArtifact,
+        id: "document_123",
+        title: "Broken document",
+        type: "document",
+        contentFormat: "markdown",
+        mimeType: "text/markdown",
+      },
+    ])
+    vi.mocked(getDocumentDetail).mockRejectedValueOnce(
+      new Error("Could not load document detail.")
+    )
+
+    renderRail(<WorkingArtifactsRailSidebar />)
+
+    expect(await screen.findByText("Broken document")).toBeInTheDocument()
+    expect(
+      await screen.findByText("Could not load document detail.")
+    ).toBeInTheDocument()
+  })
+
+  it("preserves selection across refresh when the artifact still exists", async () => {
+    const user = userEvent.setup()
+    vi.mocked(listArtifacts)
+      .mockResolvedValueOnce([
+        {
+          ...baseArtifact,
+          id: "document_a",
+          title: "Document A",
+          type: "document",
+          contentFormat: "markdown",
+          mimeType: "text/markdown",
+          updatedAt: new Date("2026-06-02T00:00:00.000Z").toISOString(),
+        },
+        {
+          ...baseArtifact,
+          id: "document_b",
+          title: "Document B",
+          type: "document",
+          contentFormat: "markdown",
+          mimeType: "text/markdown",
+          updatedAt: new Date("2026-06-01T00:00:00.000Z").toISOString(),
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          ...baseArtifact,
+          id: "document_b",
+          title: "Document B",
+          type: "document",
+          contentFormat: "markdown",
+          mimeType: "text/markdown",
+          updatedAt: new Date("2026-06-03T00:00:00.000Z").toISOString(),
+        },
+        {
+          ...baseArtifact,
+          id: "document_a",
+          title: "Document A",
+          type: "document",
+          contentFormat: "markdown",
+          mimeType: "text/markdown",
+          updatedAt: new Date("2026-06-02T00:00:00.000Z").toISOString(),
+        },
+      ])
+
+    const { rerender } = render(
       <MemoryRouter>
-        <ThreadDurableArtifacts threadId="thread_test" />
+        <WorkingArtifactsRailProvider threadId="thread_test" refreshKey="refresh-1">
+          <WorkingArtifactsRailSidebar />
+        </WorkingArtifactsRailProvider>
       </MemoryRouter>
     )
 
-    expect(await screen.findByText("Simple Calculator")).toBeInTheDocument()
-    expect(screen.getByText("app · json · v1")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Open app" })).toHaveAttribute(
-      "href",
-      "/artifacts/artifact_app"
+    const documentB = await screen.findByRole("button", { name: /Document B/i })
+    await user.click(documentB)
+    await waitFor(() => {
+      expect(getDocumentDetail).toHaveBeenCalledWith("document_b")
+    })
+
+    rerender(
+      <MemoryRouter>
+        <WorkingArtifactsRailProvider threadId="thread_test" refreshKey="refresh-2">
+          <WorkingArtifactsRailSidebar />
+        </WorkingArtifactsRailProvider>
+      </MemoryRouter>
     )
+
+    await waitFor(() => {
+      expect(listArtifacts).toHaveBeenCalledTimes(2)
+    })
+    const selected = screen.getByRole("button", { name: /Document B/i })
+    expect(selected.className).toMatch(/border-primary/)
+  })
+
+  it("collapses on mobile by default and can be opened and closed", async () => {
+    vi.mocked(listArtifacts).mockResolvedValueOnce([
+      {
+        ...baseArtifact,
+        id: "document_123",
+        title: "Research brief: AI agents",
+        type: "document",
+        contentFormat: "markdown",
+        mimeType: "text/markdown",
+      },
+    ])
+    const user = userEvent.setup()
+
+    renderRail(<WorkingArtifactsRailMobile />)
+
+    const toggle = screen.getByRole("button", { name: /working artifacts/i })
+    expect(toggle).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByText("Research brief: AI agents")).not.toBeInTheDocument()
+
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
+    expect(
+      await within(document.body).findByText("Research brief: AI agents")
+    ).toBeInTheDocument()
+
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByText("Research brief: AI agents")).not.toBeInTheDocument()
   })
 })

@@ -8,6 +8,7 @@ import {
   editStaticArtifactOutputSchema,
   findStaticArtifactsInputSchema,
   findStaticArtifactsOutputSchema,
+  readStaticArtifactInputSchema,
   readStaticArtifactOutputSchema,
   staticArtifactMetadataSchema,
   staticArtifactThemeSchema,
@@ -76,6 +77,13 @@ describe("static artifact schemas", () => {
         summary: "Updated the risk section.",
       }).previousVersion
     ).toBe(1)
+
+    expect(
+      readStaticArtifactInputSchema.parse({
+        artifactId: "artifact-1",
+        maxChars: 12_000,
+      }).maxChars
+    ).toBe(10_000)
 
     expect(
       readStaticArtifactOutputSchema.parse({

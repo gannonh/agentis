@@ -1,6 +1,10 @@
 import { createGateway, type LanguageModel } from "ai"
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
-import { formatMissingEnvVarsMessage, type AppConfig } from "../config.js"
+import type { ModelMessage } from "ai"
+import type { AppConfig } from "../config.js"
+import {
+  createCloudflareLanguageModel,
+  usesCloudflareAnthropicMessagesTransport,
+} from "./cloudflare-ai-gateway.js"
 
 const LEGACY_OPENAI_MODEL_ID_PATTERN = /^(?:gpt-|chatgpt-|o\d(?:-|$))/
 
@@ -33,16 +37,6 @@ export function resolveGatewayModelId(modelId: string): string {
   throw new Error("Gateway model ids must include a provider prefix")
 }
 
-function cloudflareBaseUrl(accountId: string): string {
-  return `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1`
-}
-
-function cloudflareHeaders(
-  gatewayId: string | undefined
-): Record<string, string> | undefined {
-  return gatewayId ? { "cf-aig-gateway-id": gatewayId } : undefined
-}
-
 export function createGatewayLanguageModel(
   config: AppConfig,
   modelId: string
@@ -50,24 +44,7 @@ export function createGatewayLanguageModel(
   const resolvedModelId = resolveGatewayModelId(modelId)
 
   if (config.aiGatewayProvider === "cloudflare") {
-    const missing = [
-      ...(config.cloudflareApiKey ? [] : ["CLOUDFLARE_API_KEY"]),
-      ...(config.cloudflareAccountId ? [] : ["CLOUDFLARE_ACCOUNT_ID"]),
-    ]
-    if (missing.length > 0) {
-      throw new Error(formatMissingEnvVarsMessage(missing))
-    }
-
-    const cloudflareApiKey = config.cloudflareApiKey!
-    const cloudflareAccountId = config.cloudflareAccountId!
-
-    const gateway = createOpenAICompatible({
-      name: "cloudflare-ai-gateway",
-      apiKey: cloudflareApiKey,
-      baseURL: cloudflareBaseUrl(cloudflareAccountId),
-      headers: cloudflareHeaders(config.cloudflareAiGatewayId),
-    })
-    return gateway(resolvedModelId)
+    return createCloudflareLanguageModel(config, resolvedModelId)
   }
 
   if (!config.vercelAiGatewayApiKey) {
@@ -76,4 +53,45 @@ export function createGatewayLanguageModel(
 
   const gateway = createGateway({ apiKey: config.vercelAiGatewayApiKey })
   return gateway(resolvedModelId)
+}
+
+function prependSystemToFirstUserMessage(
+  system: string,
+  messages: ModelMessage[]
+): ModelMessage[] {
+  const trimmedSystem = system.trim()
+  if (!trimmedSystem) return messages
+
+  let applied = false
+  return messages.map((message) => {
+    if (applied || message.role !== "user") return message
+    applied = true
+    if (typeof message.content === "string") {
+      return {
+        ...message,
+        content: `${trimmedSystem}\n\n${message.content}`,
+      }
+    }
+    if (Array.isArray(message.content)) {
+      return {
+        ...message,
+        content: [{ type: "text", text: trimmedSystem }, ...message.content],
+      }
+    }
+    return message
+  })
+}
+
+export function prepareGatewayStreamPrompt(input: {
+  config: AppConfig
+  modelId: string
+  system: string
+  messages: ModelMessage[]
+}): { system?: string; messages: ModelMessage[] } {
+  if (!usesCloudflareAnthropicMessagesTransport(input.config, input.modelId)) {
+    return { system: input.system, messages: input.messages }
+  }
+  return {
+    messages: prependSystemToFirstUserMessage(input.system, input.messages),
+  }
 }

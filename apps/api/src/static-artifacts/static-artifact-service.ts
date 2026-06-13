@@ -302,29 +302,204 @@ function slideSectionFromHtml(fragment: string, fallbackTitle: string): SlideSec
   })
 }
 
-function slideSectionsFromHtml(content: string): SlideSection[] {
-  const slideMatches = Array.from(
-    content.matchAll(
-      /<section\b[^>]*class=["'][^"']*\bslide\b[^"']*["'][^>]*>([\s\S]*?)<\/section>/gi
+const SLIDE_CLASS_CONTAINER_PATTERN =
+  /<(?:section|div)\b[^>]*class=["'][^"']*\bslide\b[^"']*["'][^>]*>([\s\S]*?)<\/(?:section|div)>/gi
+
+function slideClassContainersFromHtml(content: string): RegExpMatchArray[] {
+  return Array.from(content.matchAll(SLIDE_CLASS_CONTAINER_PATTERN))
+}
+
+function pageMarkerLine(line: string): boolean {
+  return /^\d{1,2}\s*\/\s*\d{1,2}$/.test(line.trim())
+}
+
+function splitSectionsByPageMarkers(sections: SlideSection[]): SlideSection[] {
+  if (sections.length !== 1) return sections
+  const [only] = sections
+  const markerIndexes = only.body
+    .map((line, index) => (pageMarkerLine(line) ? index : -1))
+    .filter((index) => index >= 0)
+  if (markerIndexes.length < 2) return sections
+
+  const expanded: SlideSection[] = []
+
+  for (let markerIndex = 0; markerIndex < markerIndexes.length; markerIndex += 1) {
+    const start = markerIndexes[markerIndex]! + 1
+    const end = markerIndexes[markerIndex + 1] ?? only.body.length
+    const lines = only.body
+      .slice(start, end)
+      .map(cleanSlideLine)
+      .filter((line) => line.length > 0 && !pageMarkerLine(line))
+
+    if (lines.length === 0) continue
+
+    let title = lines[0]!
+    let body = lines.slice(1)
+
+    if (
+      body.length > 0 &&
+      title.includes("·") &&
+      body[0] &&
+      !body[0].includes("·") &&
+      body[0].length <= 80
+    ) {
+      title = body[0]
+      body = body.slice(1)
+    }
+
+    expanded.push(
+      normalizeTitleSlideSection({
+        title: stripSlideMarker(title),
+        body,
+      })
     )
-  )
-  if (slideMatches.length > 0) {
-    return slideMatches
-      .map((match, index) =>
-        slideSectionFromHtml(match[1] ?? "", `Slide ${index + 1}`)
-      )
-      .filter((section) => section.title.length > 0)
   }
 
-  return [slideSectionFromHtml(content, "Additional content")].filter(
-    (section) => section.title.length > 0 || section.body.length > 0
+  if (expanded.length < 2) return sections
+
+  const prefixEnd = markerIndexes[0]!
+  if (prefixEnd > 0) {
+    const prefix = only.body
+      .slice(0, prefixEnd)
+      .map(cleanSlideLine)
+      .filter((line) => line.length > 0 && line !== only.title)
+    expanded[0] = normalizeTitleSlideSection({
+      title: only.title,
+      body: [...prefix, ...expanded[0]!.body],
+    })
+  } else if (only.title.trim()) {
+    expanded[0] = normalizeTitleSlideSection({
+      title: only.title,
+      body: expanded[0]!.body,
+    })
+  }
+
+  return expanded
+}
+
+function expandCollapsedSlideSections(sections: SlideSection[]): SlideSection[] {
+  const split = splitSectionsByPageMarkers(sections)
+  return split.length >= 2 ? split : sections
+}
+
+function slideSectionsFromHtml(content: string): SlideSection[] {
+  const classSlideMatches = slideClassContainersFromHtml(content)
+  if (classSlideMatches.length > 0) {
+    return expandCollapsedSlideSections(
+      classSlideMatches
+        .map((match, index) =>
+          slideSectionFromHtml(match[1] ?? "", `Slide ${index + 1}`)
+        )
+        .filter(
+          (section) => section.title.length > 0 || section.body.length > 0
+        )
+    )
+  }
+
+  const bareSectionMatches = Array.from(
+    content.matchAll(/<section\b[^>]*>([\s\S]*?)<\/section>/gi)
   )
+  if (bareSectionMatches.length > 0) {
+    return expandCollapsedSlideSections(
+      bareSectionMatches
+        .map((match, index) =>
+          slideSectionFromHtml(match[1] ?? "", `Slide ${index + 1}`)
+        )
+        .filter(
+          (section) => section.title.length > 0 || section.body.length > 0
+        )
+    )
+  }
+
+  return expandCollapsedSlideSections(
+    [slideSectionFromHtml(content, "Additional content")].filter(
+      (section) => section.title.length > 0 || section.body.length > 0
+    )
+  )
+}
+
+function countSlidesInHtml(html: string): number {
+  const classSlides = slideClassContainersFromHtml(html).length
+  if (classSlides > 0) return classSlides
+  const bareSections = Array.from(html.matchAll(/<section\b/gi)).length
+  if (bareSections > 0) return bareSections
+  return 1
+}
+
+function normalizeStoredSlideDeckHtml(input: {
+  title: string
+  html: string
+  theme: string
+  sourceData?: string
+}): { html: string; slideCount: number } {
+  const classSlideMatches = slideClassContainersFromHtml(input.html)
+  const classSlideCount = classSlideMatches.length
+  const totalSectionCount = Array.from(input.html.matchAll(/<section\b/gi)).length
+
+  if (classSlideCount >= 2) {
+    const hasDeckNavigation =
+      input.html.includes("querySelectorAll('.slide')") &&
+      input.html.includes('class="deck"')
+    if (hasDeckNavigation) {
+      return {
+        html: input.html,
+        slideCount: Math.max(1, classSlideCount),
+      }
+    }
+    const sections = slideSectionsFromHtml(input.html)
+    if (sections.length >= 2) {
+      return renderSlidesHtml({
+        title: input.title,
+        sections,
+        sourceData: input.sourceData,
+        theme: input.theme,
+      })
+    }
+    return {
+      html: input.html,
+      slideCount: Math.max(1, classSlideCount),
+    }
+  }
+
+  if (classSlideCount === 1 && classSlideCount === totalSectionCount) {
+    const sections = expandCollapsedSlideSections(
+      classSlideMatches.map((match, index) =>
+        slideSectionFromHtml(match[1] ?? "", `Slide ${index + 1}`)
+      )
+    )
+    if (sections.length >= 2) {
+      return renderSlidesHtml({
+        title: input.title,
+        sections,
+        sourceData: input.sourceData,
+        theme: input.theme,
+      })
+    }
+    return {
+      html: input.html,
+      slideCount: 1,
+    }
+  }
+
+  if (totalSectionCount > 0) {
+    const sections = slideSectionsFromHtml(input.html)
+    if (sections.length > 0) {
+      return renderSlidesHtml({
+        title: input.title,
+        sections,
+        sourceData: input.sourceData,
+        theme: input.theme,
+      })
+    }
+  }
+
+  return { html: input.html, slideCount: 1 }
 }
 
 function isCompleteSlideDeckHtml(content: string): boolean {
   return (
     /data-static-artifact=["']slides["']/i.test(content) &&
-    /<section\b[^>]*class=["'][^"']*\bslide\b/i.test(content)
+    slideClassContainersFromHtml(content).length >= 2
   )
 }
 
@@ -540,15 +715,12 @@ function buildGeneratedSlidesHtml(input: {
   theme: string
 }): { html: string; slideCount: number } {
   if (isCompleteSlideDeckHtml(input.generatedHtml)) {
-    return {
+    return normalizeStoredSlideDeckHtml({
+      title: input.title,
       html: input.generatedHtml,
-      slideCount: Math.max(
-        1,
-        Array.from(
-          input.generatedHtml.matchAll(/class=["'][^"']*\bslide\b/gi)
-        ).length
-      ),
-    }
+      theme: input.theme,
+      sourceData: input.sourceData,
+    })
   }
 
   const generatedSections = slideSectionsFromHtml(input.generatedHtml)
@@ -556,7 +728,10 @@ function buildGeneratedSlidesHtml(input: {
     input.existingContent && shouldAppendSlideEdit(input)
       ? slideSectionsFromHtml(input.existingContent)
       : []
-  const sections = [...existingSections, ...generatedSections]
+  const sections = expandCollapsedSlideSections([
+    ...existingSections,
+    ...generatedSections,
+  ])
   const fallbackSections = sections.length > 0
     ? sections
     : outlineSlideSections(input.contentBrief)
@@ -957,7 +1132,10 @@ export class StaticArtifactService {
           version: artifact.currentVersion ?? 1,
           ...links(artifact.id),
           theme: metadata.theme,
-          slideCount: metadata.slideCount,
+          slideCount:
+            metadata.artifactType === "slides" && metadata.renderMode === "html"
+              ? countSlidesInHtml(content)
+              : metadata.slideCount,
           ...boundedStaticArtifactText(content, maxChars),
           summary: `Read ${metadata.artifactType} static artifact content.`,
         },
@@ -1176,6 +1354,17 @@ export class StaticArtifactService {
       })
       content = slides.html
       slideCount = slides.slideCount
+    }
+
+    if (input.artifactType === "slides" && input.renderMode === "html") {
+      const normalized = normalizeStoredSlideDeckHtml({
+        title: input.title,
+        html: content,
+        theme: guidance.selectedTheme.id,
+        sourceData: input.sourceData,
+      })
+      content = normalized.html
+      slideCount = normalized.slideCount
     }
 
     const validation = validateStaticHtml({
