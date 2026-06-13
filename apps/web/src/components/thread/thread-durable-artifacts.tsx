@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react"
 import { Link } from "react-router"
+import { ArrowDown01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import type {
   ArtifactDetailResponse,
   ArtifactPublic as Artifact,
@@ -228,7 +230,7 @@ function WorkingArtifactPreviewLoader({ artifact }: { artifact: Artifact }) {
 
   if (artifact.type === "document" && documentDetail) {
     return (
-      <div className="max-h-80 overflow-auto rounded-lg border border-border bg-background p-3">
+      <div className="rounded-lg border border-border bg-background p-3">
         {documentDetail.truncated ? (
           <p className="mb-2 text-xs text-amber-700 dark:text-amber-400">
             Preview truncated. Open the document workspace for the full content.
@@ -244,7 +246,7 @@ function WorkingArtifactPreviewLoader({ artifact }: { artifact: Artifact }) {
 
   if (artifactDetail) {
     return (
-      <div className="max-h-80 overflow-auto rounded-lg border border-border bg-background p-3 [&_iframe]:!h-48 [&_iframe]:!min-h-48">
+      <div className="rounded-lg border border-border bg-background p-3 [&_iframe]:!h-48 [&_iframe]:!min-h-48">
         {artifactDetail.truncated ? (
           <p className="mb-2 text-xs text-amber-700 dark:text-amber-400">
             Preview truncated. Open the artifact workspace for the full content.
@@ -275,14 +277,58 @@ function WorkingArtifactPreview({ artifact }: { artifact: Artifact }) {
   )
 }
 
+function WorkingArtifactPreviewSection({
+  artifact,
+  className,
+}: {
+  artifact: Artifact
+  className?: string
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const contentId = `working-artifact-preview-${artifact.id}`
+
+  return (
+    <div
+      className={cn(
+        "flex min-h-0 flex-col border-t border-border pt-3",
+        expanded ? "min-h-0 flex-1" : "shrink-0",
+        className
+      )}
+    >
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={contentId}
+        className="flex shrink-0 items-center gap-2 text-left"
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <HugeiconsIcon
+          icon={expanded ? ArrowDown01Icon : ArrowRight01Icon}
+          className="size-3.5 text-muted-foreground"
+          strokeWidth={2}
+          aria-hidden
+        />
+        <span className="text-sm font-medium">Preview</span>
+      </button>
+      {expanded ? (
+        <div id={contentId} className="mt-2 min-h-0 flex-1 overflow-y-auto">
+          <WorkingArtifactPreview artifact={artifact} />
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 type WorkingArtifactsRailPanelProps = {
   className?: string
   listClassName?: string
+  previewClassName?: string
 }
 
 function WorkingArtifactsRailPanel({
   className,
   listClassName,
+  previewClassName,
 }: WorkingArtifactsRailPanelProps) {
   const {
     sortedArtifacts,
@@ -294,8 +340,13 @@ function WorkingArtifactsRailPanel({
   } = useWorkingArtifactsRail()
 
   return (
-    <section className={cn("flex flex-col gap-3 bg-card/40 p-4", className)}>
-      <div className="flex items-center justify-between gap-2">
+    <section
+      className={cn(
+        "flex min-h-0 flex-col gap-3 bg-card/40 p-4",
+        className
+      )}
+    >
+      <div className="flex shrink-0 items-center justify-between gap-2">
         <h2 className="text-sm font-medium">Working artifacts</h2>
         {sortedArtifacts.length ? (
           <span className="rounded-full border border-border bg-input/20 px-2 py-0.5 text-[0.625rem] font-medium text-muted-foreground">
@@ -313,7 +364,12 @@ function WorkingArtifactsRailPanel({
         </p>
       ) : null}
       {sortedArtifacts.length ? (
-        <ul className={cn("flex flex-col gap-2", listClassName)}>
+        <ul
+          className={cn(
+            "flex min-h-0 flex-col gap-2 overflow-y-auto",
+            listClassName
+          )}
+        >
           {sortedArtifacts.map((artifact) => {
             const launchPath = artifactLaunchPath(artifact)
             const launchLabel = artifactLaunchLabel(artifact.type)
@@ -357,12 +413,10 @@ function WorkingArtifactsRailPanel({
         </ul>
       ) : null}
       {selectedArtifact ? (
-        <div className="border-t border-border pt-3">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">
-            Preview
-          </p>
-          <WorkingArtifactPreview artifact={selectedArtifact} />
-        </div>
+        <WorkingArtifactPreviewSection
+          artifact={selectedArtifact}
+          className={previewClassName}
+        />
       ) : null}
     </section>
   )
@@ -411,8 +465,8 @@ export function WorkingArtifactsRailSidebar({
 }) {
   return (
     <WorkingArtifactsRailPanel
-      className={cn("w-full shrink-0", className)}
-      listClassName="max-h-48 overflow-y-auto"
+      className={cn("min-h-0 w-full flex-1", className)}
+      listClassName="min-h-0 flex-1"
     />
   )
 }

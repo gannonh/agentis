@@ -5,9 +5,7 @@ import {
   Conversation,
   ConversationContent,
 } from "@/components/ai-elements/conversation"
-import { Message, MessageContent } from "@/components/ai-elements/message"
-import { ThreadMessageContent } from "@/components/thread/thread-message-content"
-import { messageHasVisibleContent } from "@/lib/thread/message-text"
+import { ThreadTranscript } from "@/components/thread/thread-transcript"
 import { RunTimeline } from "@/components/thread/run-timeline"
 import {
   WorkingArtifactsRailMobile,
@@ -28,6 +26,8 @@ import {
   type RunStep,
   type ThreadMode,
 } from "@workspace/shared"
+
+const THREAD_COLUMN_CLASS = "mx-auto w-full max-w-3xl"
 
 type ThreadAgentIndicatorProps = {
   agentHref: string | null
@@ -289,9 +289,10 @@ export function ThreadDetailPage() {
   }
 
   return (
-    <PageLayout className="h-[calc(100vh-3rem)] gap-0 p-0">
+    <PageLayout className="-mx-6 w-[calc(100%+3rem)] max-w-none h-[calc(100vh-3rem)] gap-0">
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="border-b border-border">
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
             <p className="text-muted-foreground text-xs">Thread</p>
             <h1 className="truncate text-lg font-medium">
@@ -306,17 +307,18 @@ export function ThreadDetailPage() {
             onCreateAgentFromThread={() => void handleCreateAgentFromThread()}
             owningAgentId={fullAgentId}
           />
+          </div>
         </div>
 
         <WorkingArtifactsRailProvider
           threadId={threadId}
           refreshKey={`${latestRun?.id ?? "no-run"}:${latestRun?.status ?? "none"}:${steps.length}:${detail?.messages.length ?? 0}`}
         >
-          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div className="flex min-h-0 w-full flex-1 flex-col lg:flex-row">
             <div className="flex min-h-0 flex-1 flex-col">
               <WorkingArtifactsRailMobile />
               <Conversation className="flex-1">
-              <ConversationContent>
+              <ConversationContent className={`${THREAD_COLUMN_CLASS} gap-10`}>
                 {loading ? (
                   <p className="text-muted-foreground text-sm">Loading transcript…</p>
                 ) : null}
@@ -335,21 +337,9 @@ export function ThreadDetailPage() {
                     {approvalError}
                   </p>
                 ) : null}
-                {detail?.messages.map((message) => {
-                  if (
-                    !messageHasVisibleContent(message) &&
-                    message.status === "completed"
-                  ) {
-                    return null
-                  }
-                  return (
-                    <Message key={message.id} from={message.role}>
-                      <MessageContent>
-                        <ThreadMessageContent message={message} />
-                      </MessageContent>
-                    </Message>
-                  )
-                })}
+                {detail ? (
+                  <ThreadTranscript messages={detail.messages} />
+                ) : null}
                 {pendingApprovals.map(({ step, approval }) => (
                   <div
                     key={step.id}
@@ -404,8 +394,9 @@ export function ThreadDetailPage() {
               </ConversationContent>
             </Conversation>
 
-            <div className="border-t border-border p-4">
-              <div className="mx-auto w-full max-w-3xl">
+            <div className="border-t border-border">
+              <div className="p-4">
+              <div className={THREAD_COLUMN_CLASS}>
                 {detail ? (
                   <ThreadAgentIndicator
                     agentHref={agentHref}
@@ -432,10 +423,11 @@ export function ThreadDetailPage() {
                   }}
                 />
               </div>
+              </div>
             </div>
             </div>
 
-            <div className="hidden w-80 shrink-0 flex-col border-l border-border lg:flex">
+            <div className="hidden min-h-0 w-80 shrink-0 flex-col border-l border-border lg:flex lg:self-stretch">
               <ThreadProjectContext context={detail?.projectContext} />
               <RunTimeline run={latestRun} steps={steps} />
               <WorkingArtifactsRailSidebar />

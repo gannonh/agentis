@@ -169,9 +169,13 @@ describe("WorkingArtifactsRail", () => {
       },
     ])
 
+    const user = userEvent.setup()
     renderRail(<WorkingArtifactsRailSidebar />)
 
     expect(await screen.findByText("Research brief: AI agents")).toBeInTheDocument()
+    expect(getDocumentDetail).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole("button", { name: "Preview" }))
     await waitFor(() => {
       expect(getDocumentDetail).toHaveBeenCalledWith("document_123")
     })
@@ -191,11 +195,15 @@ describe("WorkingArtifactsRail", () => {
       },
     ])
 
+    const user = userEvent.setup()
     renderRail(<WorkingArtifactsRailSidebar />)
 
     expect(
       await screen.findByText("How to Create a Good Changelog")
     ).toBeInTheDocument()
+    expect(getArtifactDetail).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole("button", { name: "Preview" }))
     await waitFor(() => {
       expect(getArtifactDetail).toHaveBeenCalledWith("artifact_deck")
     })
@@ -213,14 +221,17 @@ describe("WorkingArtifactsRail", () => {
       },
     ])
 
+    const user = userEvent.setup()
     renderRail(<WorkingArtifactsRailSidebar />)
 
     expect(await screen.findByText("Simple Calculator")).toBeInTheDocument()
+    expect(getArtifactDetail).not.toHaveBeenCalled()
+    expect(getDocumentDetail).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole("button", { name: "Preview" }))
     expect(
       await screen.findByText(/preview unavailable for this artifact type/i)
     ).toBeInTheDocument()
-    expect(getArtifactDetail).not.toHaveBeenCalled()
-    expect(getDocumentDetail).not.toHaveBeenCalled()
   })
 
   it("shows empty and list error states", async () => {
@@ -249,9 +260,11 @@ describe("WorkingArtifactsRail", () => {
       new Error("Could not load document detail.")
     )
 
+    const user = userEvent.setup()
     renderRail(<WorkingArtifactsRailSidebar />)
 
     expect(await screen.findByText("Broken document")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Preview" }))
     expect(
       await screen.findByText("Could not load document detail.")
     ).toBeInTheDocument()
@@ -311,9 +324,7 @@ describe("WorkingArtifactsRail", () => {
 
     const documentB = await screen.findByRole("button", { name: /Document B/i })
     await user.click(documentB)
-    await waitFor(() => {
-      expect(getDocumentDetail).toHaveBeenCalledWith("document_b")
-    })
+    expect(documentB.className).toMatch(/border-primary/)
 
     rerender(
       <MemoryRouter>
@@ -328,6 +339,26 @@ describe("WorkingArtifactsRail", () => {
     })
     const selected = screen.getByRole("button", { name: /Document B/i })
     expect(selected.className).toMatch(/border-primary/)
+  })
+
+  it("keeps preview collapsed by default", async () => {
+    vi.mocked(listArtifacts).mockResolvedValueOnce([
+      {
+        ...baseArtifact,
+        id: "document_123",
+        title: "Research brief: AI agents",
+        type: "document",
+        contentFormat: "markdown",
+        mimeType: "text/markdown",
+      },
+    ])
+
+    renderRail(<WorkingArtifactsRailSidebar />)
+
+    const previewToggle = await screen.findByRole("button", { name: "Preview" })
+    expect(previewToggle).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByTestId("document-preview")).not.toBeInTheDocument()
+    expect(getDocumentDetail).not.toHaveBeenCalled()
   })
 
   it("collapses on mobile by default and can be opened and closed", async () => {

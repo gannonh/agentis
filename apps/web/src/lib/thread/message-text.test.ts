@@ -144,4 +144,36 @@ describe("message-text", () => {
 
     expect(messageHasVisibleContent(message)).toBe(true)
   })
+
+  it("strips redundant artifact path lines from display text", () => {
+    const message = assistantMessage([
+      {
+        type: "text",
+        text: [
+          "Done — I created the document version.",
+          "",
+          "View it here: /documents/document_cab5727a-1950-4554-bea7-6dd46a933b01",
+          "",
+          "Download markdown: /api/documents/document_cab5727a-1950-4554-bea7-6dd46a933b01/download",
+        ].join("\n"),
+      },
+      {
+        type: "tool-result",
+        toolCallId: "call_1",
+        toolName: "createDocument",
+        output: {
+          documentId: "document_cab5727a-1950-4554-bea7-6dd46a933b01",
+          title: "Working artifacts",
+          viewPath:
+            "/documents/document_cab5727a-1950-4554-bea7-6dd46a933b01",
+          currentVersion: 1,
+          visibilityScope: "thread",
+        },
+      },
+    ])
+
+    expect(getDisplayTranscriptText(message)).toBe(
+      "Done — I created the document version."
+    )
+  })
 })
