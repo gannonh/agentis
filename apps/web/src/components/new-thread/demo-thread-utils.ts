@@ -1,21 +1,26 @@
-export const DEMO_THREAD_PREFIX = "seed_thread_"
+const DEMO_THREAD_PREFIX = "seed_thread_"
+export const HOME_THREAD_SECTION_LIMIT = 3
 
-export function isDemoThreadId(threadId: string): boolean {
-  return threadId.startsWith(DEMO_THREAD_PREFIX)
-}
-
-export function selectDemoThreads<T extends { id: string }>(
+export function partitionHomeThreads<T extends { id: string }>(
   threads: T[],
-  limit: number
-): T[] {
-  return threads.filter((thread) => isDemoThreadId(thread.id)).slice(0, limit)
-}
+  limit = HOME_THREAD_SECTION_LIMIT
+): { demoThreads: T[]; recentThreads: T[] } {
+  const demoThreads: T[] = []
+  const recentThreads: T[] = []
 
-export function selectRecentThreads<T extends { id: string }>(
-  threads: T[],
-  limit: number
-): T[] {
-  return threads
-    .filter((thread) => !isDemoThreadId(thread.id))
-    .slice(0, limit)
+  for (const thread of threads) {
+    const isDemoThread = thread.id.startsWith(DEMO_THREAD_PREFIX)
+
+    if (isDemoThread && demoThreads.length < limit) {
+      demoThreads.push(thread)
+    } else if (!isDemoThread && recentThreads.length < limit) {
+      recentThreads.push(thread)
+    }
+
+    if (demoThreads.length >= limit && recentThreads.length >= limit) {
+      break
+    }
+  }
+
+  return { demoThreads, recentThreads }
 }

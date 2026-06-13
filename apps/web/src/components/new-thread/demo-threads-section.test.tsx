@@ -30,22 +30,10 @@ describe("DemoThreadsSection", () => {
     ).toHaveAttribute("href", "/threads/seed_thread_launch_plan")
   })
 
-  it("renders nothing when no demo threads exist", () => {
+  it("renders nothing when no demo threads are provided", () => {
     const { container } = render(
       <MemoryRouter>
-        <DemoThreadsSection
-          threads={[
-            {
-              id: "thread_regular",
-              title: "Regular thread",
-              status: "active",
-              model: "openai/gpt-4o-mini",
-              mode: "agent",
-              createdAt: "2026-06-10T12:00:00.000Z",
-              updatedAt: "2026-06-12T12:00:00.000Z",
-            },
-          ]}
-        />
+        <DemoThreadsSection threads={[]} />
       </MemoryRouter>
     )
 

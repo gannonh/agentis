@@ -36,19 +36,23 @@ export function createThreadRoutes(
   const contextService = new ProjectContextService(repos, config)
 
   app.get("/", (c) => {
-    const threads = repos.threads.list().map((thread) => {
-      const messages = repos.messages.listByThreadId(thread.id)
-      const latestRun = repos.runs.getLatestByThreadId(thread.id)
-      const documentCount = repos.documents.list({ threadId: thread.id }).length
+    const threads = repos.threads.list()
+    const threadIds = threads.map((thread) => thread.id)
+    const messagesByThreadId = repos.messages.listByThreadIds(threadIds)
+    const latestRuns = repos.runs.listLatestByThreadIds(threadIds)
+    const documentCounts = repos.documents.countByThreadIds(threadIds)
+
+    const items = threads.map((thread) => {
+      const messages = messagesByThreadId.get(thread.id) ?? []
       return threadListItemSchema.parse({
         ...thread,
         messageCount: messages.length,
-        lastRunStatus: latestRun?.status,
+        lastRunStatus: latestRuns.get(thread.id)?.status,
         summary: threadListSummaryFromMessages(messages),
-        documentCount,
+        documentCount: documentCounts.get(thread.id) ?? 0,
       })
     })
-    return c.json(threads)
+    return c.json(items)
   })
 
   app.post("/", async (c) => {

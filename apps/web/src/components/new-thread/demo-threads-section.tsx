@@ -1,8 +1,7 @@
 import { Link } from "react-router"
 import type { ThreadListItem } from "@workspace/shared"
-import { selectDemoThreads } from "@/components/new-thread/demo-thread-utils"
+import { ThreadSummaryLines } from "@/components/new-thread/thread-summary-lines"
 
-const DEMO_THREAD_LIMIT = 3
 const DEMO_THREAD_SUMMARY_FALLBACK = "Open this curated demo thread."
 
 type DemoThreadsSectionProps = {
@@ -10,9 +9,7 @@ type DemoThreadsSectionProps = {
 }
 
 export function DemoThreadsSection({ threads }: DemoThreadsSectionProps) {
-  const demoThreads = selectDemoThreads(threads, DEMO_THREAD_LIMIT)
-
-  if (demoThreads.length === 0) {
+  if (threads.length === 0) {
     return null
   }
 
@@ -25,16 +22,17 @@ export function DemoThreadsSection({ threads }: DemoThreadsSectionProps) {
         </p>
       </div>
       <ul className="grid gap-2 sm:grid-cols-2">
-        {demoThreads.map((thread) => (
+        {threads.map((thread) => (
           <li key={thread.id}>
             <Link
               to={`/threads/${thread.id}`}
               className="hover:bg-muted/40 flex h-full flex-col gap-2 rounded-xl border border-border bg-card p-4 text-left transition-colors"
             >
-              <h3 className="text-sm font-medium leading-snug">{thread.title}</h3>
-              <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed">
-                {thread.summary ?? DEMO_THREAD_SUMMARY_FALLBACK}
-              </p>
+              <ThreadSummaryLines
+                title={thread.title}
+                summary={thread.summary}
+                summaryFallback={DEMO_THREAD_SUMMARY_FALLBACK}
+              />
             </Link>
           </li>
         ))}

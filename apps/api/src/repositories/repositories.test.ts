@@ -41,6 +41,41 @@ describe("repositories", () => {
     ctx.cleanup()
   })
 
+  it("groups messages by thread id for batch reads", () => {
+    const ctx = createTestContext()
+    const firstThread = ctx.repos.threads.create({
+      title: "First",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+    const secondThread = ctx.repos.threads.create({
+      title: "Second",
+      model: "gpt-4o-mini",
+      mode: "plan",
+    })
+
+    ctx.repos.messages.create({
+      threadId: firstThread.id,
+      role: "user",
+      parts: [{ type: "text", text: "First prompt" }],
+    })
+    ctx.repos.messages.create({
+      threadId: secondThread.id,
+      role: "user",
+      parts: [{ type: "text", text: "Second prompt" }],
+    })
+
+    const grouped = ctx.repos.messages.listByThreadIds([
+      firstThread.id,
+      secondThread.id,
+    ])
+
+    expect(grouped.get(firstThread.id)).toHaveLength(1)
+    expect(grouped.get(secondThread.id)).toHaveLength(1)
+
+    ctx.cleanup()
+  })
+
   it("updates assistant message parts for streaming", () => {
     const ctx = createTestContext()
     const thread = ctx.repos.threads.create({

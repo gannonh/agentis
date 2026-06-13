@@ -18,8 +18,9 @@ export function buildAgentDetail(
   const threadIds = threads.map((thread) => thread.id)
   const latestRuns = repos.runs.listLatestByThreadIds(threadIds)
   const documentCounts = repos.documents.countByThreadIds(threadIds)
+  const messagesByThreadId = repos.messages.listByThreadIds(threadIds)
   const recentThreads = threads.map((thread) => {
-    const messages = repos.messages.listByThreadId(thread.id)
+    const messages = messagesByThreadId.get(thread.id) ?? []
     return {
       id: thread.id,
       title: thread.title,

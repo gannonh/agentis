@@ -59,31 +59,4 @@ describe("RecentThreadsSection", () => {
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
   })
 
-  it("excludes seeded demo threads from recent list", () => {
-    render(
-      <MemoryRouter>
-        <RecentThreadsSection
-          threads={[
-            {
-              id: "seed_thread_launch_plan",
-              title: "Seeded demo launch plan",
-              status: "finished",
-              model: "openai/gpt-4o-mini",
-              mode: "agent",
-              createdAt: "2026-06-10T12:00:00.000Z",
-              updatedAt: "2026-06-12T12:00:00.000Z",
-              summary: "Demo thread summary",
-            },
-            threads[0],
-          ]}
-        />
-      </MemoryRouter>
-    )
-
-    expect(
-      screen.getByRole("link", { name: /launch readiness weekly update/i })
-    ).toBeInTheDocument()
-    expect(screen.queryByText("Seeded demo launch plan")).not.toBeInTheDocument()
-    expect(screen.queryByText("Demo thread summary")).not.toBeInTheDocument()
-  })
 })

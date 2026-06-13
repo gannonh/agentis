@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 import { QuickActions } from "./quick-actions"
-import { buildSuggestionChips } from "./suggestion-chips"
+import { RESEARCH_TOPIC_PROMPT } from "./research-prompt"
 
 describe("QuickActions", () => {
   it("calls onSelectChip for enabled suggestion chips", async () => {
@@ -18,10 +18,8 @@ describe("QuickActions", () => {
       screen.getByRole("button", { name: /launch readiness update/i })
     )
 
-    const [firstChip] = buildSuggestionChips([])
-
     expect(onSelectChip).toHaveBeenCalledTimes(2)
-    expect(onSelectChip.mock.calls[0]?.[0]?.prompt).toBe(firstChip?.prompt)
+    expect(onSelectChip.mock.calls[0]?.[0]?.prompt).toBe(RESEARCH_TOPIC_PROMPT)
     expect(onSelectChip.mock.calls[1]?.[0]?.label).toBe("Launch readiness update")
   })
 

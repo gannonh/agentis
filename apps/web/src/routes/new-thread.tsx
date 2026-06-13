@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router"
 import type { ThreadListItem, ThreadMode } from "@workspace/shared"
 import { AgentPicker } from "@/components/new-thread/agent-picker"
 import { DEFAULT_AGENT_PICKER_ID } from "@/components/new-thread/agent-picker-options"
+import { partitionHomeThreads } from "@/components/new-thread/demo-thread-utils"
 import { DemoThreadsSection } from "@/components/new-thread/demo-threads-section"
 import { QuickActions } from "@/components/new-thread/quick-actions"
 import { RecentThreadsSection } from "@/components/new-thread/recent-threads-section"
@@ -32,6 +33,10 @@ export function NewThreadPage() {
       ? requestedAgentId
       : DEFAULT_AGENT_PICKER_ID
   const effectiveSelectedAgentId = selectedAgentId ?? urlAgentId
+  const { demoThreads, recentThreads } = useMemo(
+    () => partitionHomeThreads(threads),
+    [threads]
+  )
 
   useEffect(() => {
     void listThreads()
@@ -72,8 +77,8 @@ export function NewThreadPage() {
         <QuickActions agents={agents} onSelectChip={handleSelectChip} />
       </div>
 
-      <DemoThreadsSection threads={threads} />
-      <RecentThreadsSection threads={threads} loading={threadsLoading} />
+      <DemoThreadsSection threads={demoThreads} />
+      <RecentThreadsSection threads={recentThreads} loading={threadsLoading} />
     </PageLayout>
   )
 }

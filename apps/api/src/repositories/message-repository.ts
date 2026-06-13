@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm"
+import { asc, eq, inArray } from "drizzle-orm"
 import type { Message, MessagePart, MessageRole, MessageStatus } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
 import { messages } from "../db/schema.js"
@@ -27,13 +27,31 @@ export class MessageRepository {
   }
 
   listByThreadId(threadId: string): Message[] {
-    return this.db
+    return this.listByThreadIds([threadId]).get(threadId) ?? []
+  }
+
+  listByThreadIds(threadIds: string[]): Map<string, Message[]> {
+    if (threadIds.length === 0) return new Map()
+
+    const grouped = new Map<string, Message[]>()
+    const rows = this.db
       .select()
       .from(messages)
-      .where(eq(messages.threadId, threadId))
+      .where(inArray(messages.threadId, threadIds))
       .orderBy(asc(messages.createdAt))
       .all()
-      .map(mapMessage)
+
+    for (const row of rows) {
+      const message = mapMessage(row)
+      const threadMessages = grouped.get(message.threadId)
+      if (threadMessages) {
+        threadMessages.push(message)
+      } else {
+        grouped.set(message.threadId, [message])
+      }
+    }
+
+    return grouped
   }
 
   getById(id: string): Message | null {

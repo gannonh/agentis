@@ -43,24 +43,22 @@ function getVisibleMessageText(message: ThreadSummaryMessage): string {
   return normalized.trim()
 }
 
-function lastMessageTextByRole(
-  messages: ThreadSummaryMessage[],
-  role: Message["role"]
-): string | null {
-  for (let index = messages.length - 1; index >= 0; index--) {
-    const message = messages[index]
-    if (message.role !== role) continue
-    const text = getVisibleMessageText(message)
-    if (text) return summarizeThreadPreview(text)
-  }
-  return null
-}
-
 export function threadListSummaryFromMessages(
   messages: ThreadSummaryMessage[]
 ): string | null {
-  return (
-    lastMessageTextByRole(messages, "assistant") ??
-    lastMessageTextByRole(messages, "user")
-  )
+  let userFallback: string | null = null
+
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index]
+    const text = getVisibleMessageText(message)
+    if (!text) continue
+
+    const preview = summarizeThreadPreview(text)
+    if (message.role === "assistant") return preview
+    if (message.role === "user" && userFallback === null) {
+      userFallback = preview
+    }
+  }
+
+  return userFallback
 }
