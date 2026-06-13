@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { Message } from "@workspace/shared"
 import {
   normalizeAssistantText,
+  setTextPart,
   stripRedundantToolJsonText,
   toModelMessages,
 } from "./run-message-adapters.js"
@@ -15,6 +16,16 @@ describe("run message adapters", () => {
     ).toBe(
       "Download [the document](/documents/document_123) or view /documents/document_123"
     )
+  })
+
+  it("preserves trailing spaces while streaming text chunks", () => {
+    let parts = setTextPart([], "Hello ", { normalize: false })
+    parts = setTextPart(parts, "Hello from ", { normalize: false })
+
+    expect(parts).toEqual([{ type: "text", text: "Hello from " }])
+    expect(setTextPart(parts, "Hello from Agentis mock runtime.")).toEqual([
+      { type: "text", text: "Hello from Agentis mock runtime." },
+    ])
   })
 
   it("preserves user-requested JSON summaries when tool results exist", () => {

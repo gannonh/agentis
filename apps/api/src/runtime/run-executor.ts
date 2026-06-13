@@ -815,8 +815,18 @@ export class RunExecutor {
         if (chunk.type === "text-delta") {
           if (hasPendingApprovalInParts(assistantParts)) return
 
+          const textDelta =
+            "text" in chunk && typeof chunk.text === "string"
+              ? chunk.text
+              : "delta" in chunk && typeof chunk.delta === "string"
+                ? chunk.delta
+                : ""
           const currentText = getTextFromParts(assistantParts)
-          assistantParts = setTextPart(assistantParts, currentText + chunk.text)
+          assistantParts = setTextPart(
+            assistantParts,
+            currentText + textDelta,
+            { normalize: false }
+          )
           this.repos.messages.updatePartsAndStatus(
             assistantMessage.id,
             assistantParts,
@@ -991,6 +1001,10 @@ export class RunExecutor {
           assistantParts = suppressTextForPendingApproval(assistantParts)
         } else {
           assistantParts = stripRedundantToolJsonText(assistantParts)
+          assistantParts = setTextPart(
+            assistantParts,
+            getTextFromParts(assistantParts)
+          )
           if (!getTextFromParts(assistantParts).trim()) {
             const fallback = formatToolResultFallback(assistantParts)
             if (fallback) {

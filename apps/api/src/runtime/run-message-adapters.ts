@@ -47,10 +47,17 @@ export function normalizeAssistantText(text: string) {
   ).trim()
 }
 
-export function setTextPart(parts: MessagePart[], text: string): MessagePart[] {
+export function setTextPart(
+  parts: MessagePart[],
+  text: string,
+  options?: { normalize?: boolean }
+): MessagePart[] {
   const nonText = parts.filter((part) => part.type !== "text")
-  const normalizedText = normalizeAssistantText(text)
-  return normalizedText ? [{ type: "text", text: normalizedText }, ...nonText] : nonText
+  const normalizedText =
+    options?.normalize === false ? text : normalizeAssistantText(text)
+  return normalizedText
+    ? [{ type: "text", text: normalizedText }, ...nonText]
+    : nonText
 }
 
 function renderToolSummary(output: unknown): string {
