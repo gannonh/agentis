@@ -156,8 +156,14 @@ export async function streamRun(runId: string, signal?: AbortSignal) {
   return response.body
 }
 
-export async function listIntegrations(): Promise<IntegrationsListResponse> {
-  const response = await fetch(`${API_BASE}/api/integrations`)
+export async function listIntegrations(
+  query: { q?: string; category?: string } = {}
+): Promise<IntegrationsListResponse> {
+  const params = new URLSearchParams()
+  if (query.q?.trim()) params.set("q", query.q.trim())
+  if (query.category?.trim()) params.set("category", query.category.trim())
+  const suffix = params.size > 0 ? `?${params.toString()}` : ""
+  const response = await fetch(`${API_BASE}/api/integrations${suffix}`)
   return parseJson(response, integrationsListResponseSchema)
 }
 

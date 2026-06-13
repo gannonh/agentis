@@ -43,6 +43,9 @@ describe("resolveAuthConfigId", () => {
             authConfigDetails: [{}],
           }
         },
+        async listCategories() {
+          return { items: [], nextCursor: null, totalPages: 0 }
+        },
       },
     }
 

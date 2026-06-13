@@ -705,6 +705,7 @@ describe("shared schemas", () => {
       description: "Manage repos",
       category: "developer",
       featured: true,
+      integrationType: "native",
       status: "connected",
       connectedAccountCount: 1,
       availableTools: ["GITHUB_LIST_REPOS"],
@@ -723,6 +724,7 @@ describe("shared schemas", () => {
 
     const list = integrationsListResponseSchema.parse({
       toolkits: [toolkit],
+      categories: ["developer"],
       composioConfigured: true,
       composioMockEnabled: false,
     })

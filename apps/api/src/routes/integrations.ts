@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import {
   connectIntegrationResponseSchema,
+  integrationsListQuerySchema,
   integrationsListResponseSchema,
   refreshIntegrationsResponseSchema,
 } from "@workspace/shared"
@@ -14,15 +15,42 @@ export function createIntegrationRoutes(
 ) {
   const app = new Hono()
 
-  app.get("/", (c) => {
-    const toolkits = services.integrations.listFeaturedToolkits()
-    return c.json(
-      integrationsListResponseSchema.parse({
-        toolkits,
-        composioConfigured: isComposioAvailable(config),
-        composioMockEnabled: config.mockComposio,
+  app.get("/", async (c) => {
+    const query = integrationsListQuerySchema.parse({
+      q: c.req.query("q"),
+      category: c.req.query("category"),
+      featured: c.req.query("featured"),
+    })
+
+    try {
+      const result = await services.integrations.listToolkits({
+        q: query.q,
+        category: query.category,
+        featured: query.featured,
       })
-    )
+      return c.json(
+        integrationsListResponseSchema.parse({
+          toolkits: result.toolkits,
+          categories: result.categories,
+          composioConfigured: isComposioAvailable(config),
+          composioMockEnabled: config.mockComposio,
+        })
+      )
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load integrations catalog"
+      if (isComposioAvailable(config) || config.mockComposio) {
+        return c.json({ error: message }, 502)
+      }
+      return c.json(
+        integrationsListResponseSchema.parse({
+          toolkits: [],
+          categories: [],
+          composioConfigured: false,
+          composioMockEnabled: config.mockComposio,
+        })
+      )
+    }
   })
 
   app.post("/:toolkitSlug/connect", async (c) => {
@@ -83,9 +111,11 @@ export function createIntegrationRoutes(
     }
   })
 
-  app.delete("/:toolkitSlug/connection", (c) => {
+  app.delete("/:toolkitSlug/connection", async (c) => {
     try {
-      const reset = services.integrations.resetConnection(c.req.param("toolkitSlug"))
+      const reset = await services.integrations.resetConnection(
+        c.req.param("toolkitSlug")
+      )
       if (!reset) {
         return c.json({ error: "not_found" }, 404)
       }

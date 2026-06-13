@@ -34,6 +34,7 @@ function connectedToolkit(slug: string, name = slug): IntegrationToolkit {
     description: `${name} integration`,
     category: "developer",
     featured: true,
+    integrationType: "native",
     status: "connected",
     connectedAccountCount: 1,
     availableTools: [`${slug.toUpperCase()}_TOOL`],
@@ -43,6 +44,11 @@ function connectedToolkit(slug: string, name = slug): IntegrationToolkit {
 function mockIntegrations(toolkits: IntegrationToolkit[] = []) {
   vi.mocked(useIntegrations).mockReturnValue({
     toolkits,
+    categories: ["developer"],
+    query: "",
+    category: null,
+    setQuery: vi.fn(),
+    setCategory: vi.fn(),
     composioConfigured: true,
     composioMockEnabled: false,
     loading: false,

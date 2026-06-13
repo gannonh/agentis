@@ -21,9 +21,21 @@ import { useAgents } from "@/hooks/use-agents"
 vi.mock("@/hooks/use-integrations", () => ({
   useIntegrations: () => ({
     toolkits: [connectedToolkit()],
+    categories: ["Developer tools"],
+    query: "",
+    category: null,
+    setQuery: vi.fn(),
+    setCategory: vi.fn(),
+    composioConfigured: true,
+    composioMockEnabled: false,
     loading: false,
     error: null,
+    notice: null,
+    setNotice: vi.fn(),
     refresh: vi.fn(),
+    connect: vi.fn(),
+    refreshStatuses: vi.fn(),
+    resetConnection: vi.fn(),
   }),
 }))
 
@@ -46,6 +58,7 @@ function connectedToolkit(): IntegrationToolkit {
     description: "Source control",
     category: "Developer tools",
     featured: true,
+    integrationType: "native",
     status: "connected",
     connectedAccountCount: 1,
     availableTools: ["issues"],

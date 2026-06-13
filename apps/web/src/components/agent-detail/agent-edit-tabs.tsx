@@ -838,6 +838,7 @@ function getToolOptions(
       description: "Already granted to this agent.",
       category: "connected",
       featured: false,
+      integrationType: "native",
       status: "connected",
       connectedAccountCount: grant.connectionId ? 1 : 0,
       availableTools: [],
