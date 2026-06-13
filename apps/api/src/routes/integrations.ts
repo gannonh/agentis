@@ -9,6 +9,15 @@ import type { AppConfig } from "../config.js"
 import { getComposioUnavailableReason, isComposioAvailable } from "../config.js"
 import type { ComposioServices } from "../composio/index.js"
 
+function emptyIntegrationsListResponse(config: AppConfig) {
+  return integrationsListResponseSchema.parse({
+    toolkits: [],
+    categories: [],
+    composioConfigured: false,
+    composioMockEnabled: config.mockComposio,
+  })
+}
+
 export function createIntegrationRoutes(
   services: ComposioServices,
   config: AppConfig
@@ -42,14 +51,7 @@ export function createIntegrationRoutes(
       if (isComposioAvailable(config) || config.mockComposio) {
         return c.json({ error: message }, 502)
       }
-      return c.json(
-        integrationsListResponseSchema.parse({
-          toolkits: [],
-          categories: [],
-          composioConfigured: false,
-          composioMockEnabled: config.mockComposio,
-        })
-      )
+      return c.json(emptyIntegrationsListResponse(config))
     }
   })
 
@@ -111,11 +113,9 @@ export function createIntegrationRoutes(
     }
   })
 
-  app.delete("/:toolkitSlug/connection", async (c) => {
+  app.delete("/:toolkitSlug/connection", (c) => {
     try {
-      const reset = await services.integrations.resetConnection(
-        c.req.param("toolkitSlug")
-      )
+      const reset = services.integrations.resetConnection(c.req.param("toolkitSlug"))
       if (!reset) {
         return c.json({ error: "not_found" }, 404)
       }
@@ -123,9 +123,6 @@ export function createIntegrationRoutes(
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to reset connection"
-      if (message === "Unsupported toolkit") {
-        return c.json({ error: message }, 404)
-      }
       return c.json({ error: message }, 400)
     }
   })

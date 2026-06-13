@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { resolveAuthConfigId } from "./composio-client.js"
-import { mapComposioAccountStatus } from "./mock-composio-client.js"
+import { mapComposioAccountStatus } from "./toolkit-catalog-map.js"
 
 describe("mapComposioAccountStatus", () => {
   it("maps live Composio in-progress statuses to pending", () => {

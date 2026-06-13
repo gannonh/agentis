@@ -1,4 +1,3 @@
-import type { ConnectionStatus, IntegrationType } from "@workspace/shared"
 import type {
   ComposioAuthorizeResult,
   ComposioClientAdapter,
@@ -14,26 +13,21 @@ import {
   MOCK_COMPOSIO_TOOLKITS,
   MOCK_TOOLKIT_CATEGORIES,
 } from "../repositories/integration-seeds.js"
-import { normalizeToolkitCategoryList, normalizeToolkitCategoryValue } from "./category-normalize.js"
-import { toAppToolkitSlug } from "./toolkit-slugs.js"
+import { normalizeToolkitCategoryValue } from "./category-normalize.js"
+import { matchesToolkitCatalogSearch } from "./toolkit-catalog-map.js"
 
 function filterMockToolkits(input: ComposioListToolkitsInput): ComposioToolkitSummary[] {
-  const normalizedSearch = input.search?.trim().toLowerCase()
+  const search = input.search?.trim() ?? ""
   const featuredOnly = input.featured ?? false
+  const category = input.category?.trim()
 
   return MOCK_COMPOSIO_TOOLKITS.filter((toolkit) => {
     if (featuredOnly && !toolkit.featured) return false
-    if (input.category && toolkit.category !== normalizeToolkitCategoryValue(input.category)) {
+    if (category && toolkit.category !== normalizeToolkitCategoryValue(category)) {
       return false
     }
-    if (!normalizedSearch) return true
-    return (
-      toolkit.name.toLowerCase().includes(normalizedSearch) ||
-      toolkit.description.toLowerCase().includes(normalizedSearch) ||
-      toolkit.slug.toLowerCase().includes(normalizedSearch) ||
-      toolkit.category.toLowerCase().includes(normalizedSearch)
-    )
-  }).map((toolkit) => ({ ...toolkit }))
+    return matchesToolkitCatalogSearch(toolkit, search)
+  })
 }
 
 export class MockComposioClient implements ComposioClientAdapter {
@@ -141,65 +135,6 @@ export class MockComposioClient implements ComposioClientAdapter {
   }
 
   async listToolkitCategories(): Promise<string[]> {
-    return MOCK_TOOLKIT_CATEGORIES.map((category) =>
-      normalizeToolkitCategoryValue(category)
-    )
-  }
-}
-
-export function mapComposioAccountStatus(status: string): ConnectionStatus {
-  const normalized = status.trim().toUpperCase()
-  if (normalized === "ACTIVE") return "connected"
-  if (
-    normalized === "PENDING" ||
-    normalized === "INITIALIZING" ||
-    normalized === "INITIATED"
-  ) {
-    return "pending"
-  }
-  if (normalized === "EXPIRED") return "expired"
-  return "error"
-}
-
-function mapIntegrationType(managedBy?: string): IntegrationType {
-  return managedBy === "project" ? "mcp" : "native"
-}
-
-type ComposioToolkitResponse = {
-  slug?: string
-  name?: string
-  description?: string
-  logo?: string
-  categories?: Array<string | { slug?: string; name?: string }>
-  managedBy?: string
-  meta?: {
-    description?: string
-    logo?: string
-    categories?: Array<string | { slug?: string; name?: string }>
-  }
-}
-
-export function mapComposioToolkitSummary(
-  toolkit: ComposioToolkitResponse,
-  featured = false
-): ComposioToolkitSummary | null {
-  const slug = toolkit.slug ? toAppToolkitSlug(toolkit.slug) : null
-  if (!slug || !toolkit.name) return null
-
-  const description =
-    toolkit.description ??
-    toolkit.meta?.description ??
-    `${toolkit.name} integration`
-  const categories = toolkit.categories ?? toolkit.meta?.categories
-  const logoUrl = toolkit.logo ?? toolkit.meta?.logo
-
-  return {
-    slug,
-    name: toolkit.name,
-    description,
-    category: normalizeToolkitCategoryList(categories),
-    featured,
-    integrationType: mapIntegrationType(toolkit.managedBy),
-    logoUrl: logoUrl || undefined,
+    return [...MOCK_TOOLKIT_CATEGORIES]
   }
 }

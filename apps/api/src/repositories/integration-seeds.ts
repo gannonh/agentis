@@ -1,17 +1,7 @@
-import type { IntegrationType } from "@workspace/shared"
-
-export type MockCatalogToolkit = {
-  slug: string
-  name: string
-  description: string
-  category: string
-  featured: boolean
-  integrationType: IntegrationType
-  logoUrl?: string
-}
+import type { ComposioToolkitSummary } from "../composio/types.js"
 
 /** Mock Composio catalog fixture used when AGENTIS_MOCK_COMPOSIO=1. */
-export const MOCK_COMPOSIO_TOOLKITS: MockCatalogToolkit[] = [
+export const MOCK_COMPOSIO_TOOLKITS: ComposioToolkitSummary[] = [
   {
     slug: "slack",
     name: "Slack",
@@ -86,14 +76,9 @@ export const MOCK_COMPOSIO_TOOLKITS: MockCatalogToolkit[] = [
   },
 ]
 
-/** @deprecated Use MOCK_COMPOSIO_TOOLKITS for mock catalog; kept for version env keys. */
-export const FEATURED_INTEGRATION_TOOLKITS = MOCK_COMPOSIO_TOOLKITS.filter(
+export const FEATURED_TOOLKIT_SLUGS = MOCK_COMPOSIO_TOOLKITS.filter(
   (toolkit) => toolkit.featured
-)
-
-export const FEATURED_TOOLKIT_SLUGS = FEATURED_INTEGRATION_TOOLKITS.map(
-  (toolkit) => toolkit.slug
-)
+).map((toolkit) => toolkit.slug)
 
 export const MOCK_TOOLKIT_CATEGORIES = [
   ...new Set(MOCK_COMPOSIO_TOOLKITS.map((toolkit) => toolkit.category)),

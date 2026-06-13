@@ -6,6 +6,16 @@ type IntegrationsCategoryFilterProps = {
   onChange: (category: string | null) => void
 }
 
+function categoryFilterButtonClass(active: boolean, extraClassName?: string) {
+  return cn(
+    "rounded-full border px-3 py-1 text-xs transition-colors",
+    extraClassName,
+    active
+      ? "border-agent-blue bg-agent-blue/10 text-foreground"
+      : "border-border bg-card text-muted-foreground hover:text-foreground"
+  )
+}
+
 export function IntegrationsCategoryFilter({
   categories,
   value,
@@ -18,12 +28,7 @@ export function IntegrationsCategoryFilter({
       <button
         type="button"
         onClick={() => onChange(null)}
-        className={cn(
-          "rounded-full border px-3 py-1 text-xs transition-colors",
-          value === null
-            ? "border-agent-blue bg-agent-blue/10 text-foreground"
-            : "border-border bg-card text-muted-foreground hover:text-foreground"
-        )}
+        className={categoryFilterButtonClass(value === null)}
       >
         All
       </button>
@@ -32,12 +37,7 @@ export function IntegrationsCategoryFilter({
           key={category}
           type="button"
           onClick={() => onChange(category)}
-          className={cn(
-            "rounded-full border px-3 py-1 text-xs capitalize transition-colors",
-            value === category
-              ? "border-agent-blue bg-agent-blue/10 text-foreground"
-              : "border-border bg-card text-muted-foreground hover:text-foreground"
-          )}
+          className={categoryFilterButtonClass(value === category, "capitalize")}
         >
           {category}
         </button>

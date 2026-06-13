@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router"
+import type { IntegrationToolkit } from "@workspace/shared"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { RefreshIcon } from "@hugeicons/core-free-icons"
 import { Button } from "@workspace/ui/components/button"
@@ -49,35 +50,32 @@ export function IntegrationsPage() {
     }
   }, [searchParams, setNotice, setSearchParams])
 
-  const activeIntegrations = useMemo(
-    () => toolkits.filter((integration) => integration.status !== "not_connected"),
-    [toolkits]
-  )
+  const hasActiveFilters = Boolean(query.trim() || category)
 
-  const connectedIntegrations = useMemo(
-    () => toolkits.filter((integration) => integration.status === "connected"),
-    [toolkits]
-  )
+  const { inUseIntegrations, connectedIntegrations, connectedNames, browseIntegrations } =
+    useMemo(() => {
+      const inUse: IntegrationToolkit[] = []
+      const connected: IntegrationToolkit[] = []
+      const browse: IntegrationToolkit[] = []
 
-  const activeSlugs = useMemo(
-    () => new Set(activeIntegrations.map((integration) => integration.slug)),
-    [activeIntegrations]
-  )
+      for (const integration of toolkits) {
+        if (integration.status === "connected") {
+          connected.push(integration)
+        }
+        if (integration.status !== "not_connected") {
+          inUse.push(integration)
+        } else if (hasActiveFilters || integration.featured) {
+          browse.push(integration)
+        }
+      }
 
-  const browseIntegrations = useMemo(() => {
-    const browsing = toolkits.filter(
-      (integration) => !activeSlugs.has(integration.slug)
-    )
-    if (query.trim() || category) {
-      return browsing
-    }
-    return browsing.filter((integration) => integration.featured)
-  }, [activeSlugs, category, query, toolkits])
-
-  const connectedNames = useMemo(
-    () => connectedIntegrations.map((integration) => integration.name),
-    [connectedIntegrations]
-  )
+      return {
+        inUseIntegrations: inUse,
+        connectedIntegrations: connected,
+        connectedNames: connected.map((integration) => integration.name),
+        browseIntegrations: browse,
+      }
+    }, [hasActiveFilters, toolkits])
 
   const handleConnect = async (slug: string) => {
     setConnectingSlug(slug)
@@ -97,6 +95,14 @@ export function IntegrationsPage() {
     }
   }
 
+  const integrationGridProps = {
+    composioConfigured,
+    onConnect: handleConnect,
+    onReset: handleReset,
+    connectingSlug,
+    resettingSlug,
+  }
+
   const setupNotice =
     !composioConfigured && !composioMockEnabled
       ? "Add COMPOSIO_API_KEY and COMPOSIO_REDIRECT_BASE_URL to the repo root .env, or set AGENTIS_MOCK_COMPOSIO=1 for local demos."
@@ -106,8 +112,7 @@ export function IntegrationsPage() {
     ? "Demo mode: connections here are simulated from test data, not your real GitHub or Slack accounts. Restart the API without AGENTIS_MOCK_COMPOSIO=1 for live Composio."
     : null
 
-  const browseTitle = query.trim() || category ? "Results" : "Featured"
-  const hasActiveFilters = Boolean(query.trim() || category)
+  const browseTitle = hasActiveFilters ? "Results" : "Featured"
 
   return (
     <PageLayout className="gap-6">
@@ -158,7 +163,7 @@ export function IntegrationsPage() {
       <IntegrationInfoIntro />
 
       <ConnectionStatusPanel
-        connectedCount={connectedNames.length}
+        connectedCount={connectedIntegrations.length}
         connectedNames={connectedNames}
       />
 
@@ -171,25 +176,17 @@ export function IntegrationsPage() {
       />
 
       <FeaturedIntegrationsGrid
-        integrations={activeIntegrations}
-        composioConfigured={composioConfigured}
-        variant="connected"
-        onConnect={(slug) => void handleConnect(slug)}
-        onReset={(slug) => void handleReset(slug)}
-        connectingSlug={connectingSlug}
-        resettingSlug={resettingSlug}
+        integrations={inUseIntegrations}
+        variant="in-use"
+        {...integrationGridProps}
       />
 
       {loading ? null : (
         <FeaturedIntegrationsGrid
           integrations={browseIntegrations}
-          composioConfigured={composioConfigured}
           title={browseTitle}
           headingId="browse-integrations-heading"
-          onConnect={(slug) => void handleConnect(slug)}
-          onReset={(slug) => void handleReset(slug)}
-          connectingSlug={connectingSlug}
-          resettingSlug={resettingSlug}
+          {...integrationGridProps}
         />
       )}
 

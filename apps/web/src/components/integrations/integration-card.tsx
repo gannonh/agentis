@@ -14,6 +14,12 @@ function integrationTypeLabel(integrationType: IntegrationToolkit["integrationTy
   return integrationType === "mcp" ? "MCP" : "NATIVE"
 }
 
+function connectActionLabel(connecting: boolean, isPending: boolean): string {
+  if (connecting) return "Connecting…"
+  if (isPending) return "Continue setup"
+  return "Connect"
+}
+
 function integrationStatusLabel(integration: IntegrationToolkit): string {
   if (integration.status === "connected") {
     const count = integration.connectedAccountCount
@@ -52,12 +58,7 @@ export function IntegrationCard({
   const isPending = integration.status === "pending"
   const canReset =
     isPending || integration.status === "error" || integration.status === "expired"
-  const action = isConnected ? "manage" : "connect"
-  const connectLabel = connecting
-    ? "Connecting…"
-    : isPending
-      ? "Continue setup"
-      : "Connect"
+  const connectLabel = connectActionLabel(connecting ?? false, isPending)
 
   return (
     <article
@@ -116,26 +117,27 @@ export function IntegrationCard({
           ) : null}
           <Button
             size="sm"
-            variant={action === "manage" ? "outline" : "secondary"}
+            variant={isConnected ? "outline" : "secondary"}
             className="gap-1.5"
             disabled={
-              action === "manage" ||
-              (action === "connect" &&
-                (!composioConfigured || connecting || resetting)) ||
+              isConnected ||
+              !composioConfigured ||
+              connecting ||
+              resetting ||
               !onConnect
             }
             onClick={() => {
-              if (action === "connect" && onConnect) {
+              if (!isConnected && onConnect) {
                 onConnect(integration.slug)
               }
             }}
           >
-            {action === "manage" ? (
+            {isConnected ? (
               <HugeiconsIcon icon={Settings01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
             ) : (
               <HugeiconsIcon icon={LinkSquare01Icon} className="size-3.5" strokeWidth={2} aria-hidden />
             )}
-            {action === "manage" ? "Manage" : connectLabel}
+            {isConnected ? "Manage" : connectLabel}
           </Button>
         </div>
       </div>
