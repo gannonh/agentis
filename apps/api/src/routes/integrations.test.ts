@@ -14,6 +14,16 @@ function extendComposioAdapter(
   return Object.assign(new MockComposioClient(), overrides)
 }
 
+function createMockToolExecution() {
+  if (!ctx) {
+    throw new Error("Test context has not been initialized")
+  }
+  return createComposioServices(ctx.repos, {
+    ...ctx.config,
+    mockComposio: true,
+  }).toolExecution
+}
+
 afterEach(() => {
   ctx?.cleanup()
   ctx = undefined
@@ -60,8 +70,7 @@ describe("integration routes", () => {
     const services = {
       composio,
       integrations: new IntegrationService(ctx.repos, ctx.config, composio),
-      toolExecution: createComposioServices(ctx.repos, ctx.config)
-        .toolExecution,
+      toolExecution: createMockToolExecution(),
     }
     const app = createApp(ctx.repos, ctx.config, services)
 
@@ -82,8 +91,7 @@ describe("integration routes", () => {
     const services = {
       composio,
       integrations: new IntegrationService(ctx.repos, ctx.config, composio),
-      toolExecution: createComposioServices(ctx.repos, ctx.config)
-        .toolExecution,
+      toolExecution: createMockToolExecution(),
     }
     const app = createApp(ctx.repos, ctx.config, services)
 
