@@ -31,17 +31,17 @@ export function useDebouncedWorkspaceSearch({
 
     const trimmedQuery = query.trim()
     if (!trimmedQuery) {
-      reset()
       return
     }
 
     requestGeneration.current += 1
     const generation = requestGeneration.current
-    setResults(emptySearchResponse())
-    setLoading(true)
-    setError(null)
 
     const timer = window.setTimeout(() => {
+      setResults(emptySearchResponse())
+      setLoading(true)
+      setError(null)
+
       void searchWorkspace(trimmedQuery)
         .then((response) => {
           if (requestGeneration.current !== generation) return
@@ -64,7 +64,7 @@ export function useDebouncedWorkspaceSearch({
     }, SEARCH_DEBOUNCE_MS)
 
     return () => window.clearTimeout(timer)
-  }, [enabled, query, reset])
+  }, [enabled, query])
 
   return { results, loading, error, reset }
 }

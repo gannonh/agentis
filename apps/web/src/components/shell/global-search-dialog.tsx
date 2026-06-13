@@ -71,8 +71,10 @@ export function GlobalSearchDialog() {
     navigate(path)
   }
 
-  const displayResults = isSearching ? results : emptySearchResponse()
-  const displayLoading = isSearching && loading
+  const resultsMatchQuery = !isSearching || results.query === trimmedQuery
+  const displayResults =
+    isSearching && resultsMatchQuery ? results : emptySearchResponse()
+  const displayLoading = isSearching && (loading || !resultsMatchQuery)
   const displayError = isSearching ? error : null
   const showIdleHint = open && !trimmedQuery && !displayLoading && !displayError
   const showEmptyState =
