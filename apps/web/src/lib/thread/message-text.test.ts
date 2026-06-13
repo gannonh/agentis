@@ -176,4 +176,24 @@ describe("message-text", () => {
       "Done — I created the document version."
     )
   })
+
+  it("keeps user-authored path lines visible", () => {
+    const userMessage: Message = {
+      id: "msg_user_1",
+      threadId: "thread_1",
+      role: "user",
+      status: "completed",
+      createdAt: new Date().toISOString(),
+      parts: [
+        {
+          type: "text",
+          text: "Please keep this line: View it here: /documents/document_123",
+        },
+      ],
+    }
+
+    expect(getDisplayTranscriptText(userMessage)).toBe(
+      "Please keep this line: View it here: /documents/document_123"
+    )
+  })
 })

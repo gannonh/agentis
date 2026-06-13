@@ -324,7 +324,7 @@ describe("WorkingArtifactsRail", () => {
 
     const documentB = await screen.findByRole("button", { name: /Document B/i })
     await user.click(documentB)
-    expect(documentB.className).toMatch(/border-primary/)
+    expect(documentB.closest("li")?.className).toMatch(/border-primary/)
 
     rerender(
       <MemoryRouter>
@@ -338,7 +338,7 @@ describe("WorkingArtifactsRail", () => {
       expect(listArtifacts).toHaveBeenCalledTimes(2)
     })
     const selected = screen.getByRole("button", { name: /Document B/i })
-    expect(selected.className).toMatch(/border-primary/)
+    expect(selected.closest("li")?.className).toMatch(/border-primary/)
   })
 
   it("keeps preview collapsed by default", async () => {

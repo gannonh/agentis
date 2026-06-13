@@ -517,6 +517,34 @@ describe("StaticArtifactService", () => {
     ctx.cleanup()
   })
 
+  it("preserves nested div content inside slide containers", () => {
+    const { ctx, thread, run, service } = createRunContext()
+
+    const created = service.createStaticArtifact({
+      title: "Nested slide layout",
+      artifactType: "slides",
+      renderMode: "html",
+      contentBrief: "One slide with nested wrappers",
+      theme: "developer",
+      generatedHtml: [
+        "<main data-static-artifact=\"slides\">",
+        '<div class="slide"><div class="content"><h2>Hero</h2></div><p>Details after nested wrapper</p></div>',
+        "</main>",
+      ].join(""),
+      threadId: thread.id,
+      runId: run.id,
+    })
+    if (!created.ok) throw new Error(created.message)
+
+    expect(created.output.slideCount).toBe(1)
+    const artifact = ctx.repos.artifacts.getById(created.output.artifactId)
+    const storage = new LocalDocumentStorage(ctx.config)
+    const html = storage.read(artifact!.storageKey).toString("utf8")
+    expect(html).toContain("<h1>Hero</h1>")
+    expect(html).toContain("Details after nested wrapper")
+    ctx.cleanup()
+  })
+
   it("splits collapsed slide decks that use page markers like 01 / 08", () => {
     const { ctx, thread, run, service } = createRunContext()
 

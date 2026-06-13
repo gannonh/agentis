@@ -312,7 +312,7 @@ export function ThreadDetailPage() {
 
         <WorkingArtifactsRailProvider
           threadId={threadId}
-          refreshKey={`${latestRun?.id ?? "no-run"}:${latestRun?.status ?? "none"}:${steps.length}:${detail?.messages.length ?? 0}`}
+          refreshKey={`${latestRun?.id ?? "no-run"}:${latestRun?.status ?? "none"}`}
         >
           <div className="flex min-h-0 w-full flex-1 flex-col lg:flex-row">
             <div className="flex min-h-0 flex-1 flex-col">

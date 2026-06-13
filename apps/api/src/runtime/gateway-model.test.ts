@@ -138,7 +138,7 @@ describe("Gateway model resolution", () => {
     )
 
     expect(aiMocks.createAnthropic).toHaveBeenCalledWith({
-      apiKey: "cloudflare-key",
+      apiKey: "",
       baseURL:
         "https://api.cloudflare.com/client/v4/accounts/account-id/ai/v1",
       headers: {
@@ -235,5 +235,20 @@ describe("prepareGatewayStreamPrompt", () => {
 
     expect(prepared.system).toBe("You are Agentis.")
     expect(prepared.messages).toEqual([{ role: "user", content: "Say hello." }])
+  })
+
+  it("prepends a synthetic user turn when Cloudflare Anthropic runs lack a user message", () => {
+    const prepared = prepareGatewayStreamPrompt({
+      config: loadConfig({ AI_GATEWAY_PROVIDER: "cloudflare" }),
+      modelId: "anthropic/claude-sonnet-4.6",
+      system: "You are Agentis.",
+      messages: [{ role: "assistant", content: "Prior assistant turn." }],
+    })
+
+    expect(prepared.system).toBeUndefined()
+    expect(prepared.messages).toEqual([
+      { role: "user", content: "You are Agentis." },
+      { role: "assistant", content: "Prior assistant turn." },
+    ])
   })
 })

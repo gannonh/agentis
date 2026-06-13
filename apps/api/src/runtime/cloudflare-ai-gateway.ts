@@ -146,7 +146,7 @@ export function createCloudflareLanguageModel(
 
   if (transport === "anthropic-messages") {
     const anthropic = createAnthropic({
-      apiKey: cloudflareApiKey,
+      apiKey: "",
       baseURL,
       headers: {
         Authorization: `Bearer ${cloudflareApiKey}`,

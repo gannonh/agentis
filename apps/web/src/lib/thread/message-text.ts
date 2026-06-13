@@ -16,7 +16,17 @@ export function getDisplayTranscriptText(message: Message): string {
   if (shouldSuppressTextForToolResults(text, message.parts)) {
     return ""
   }
-  return stripRedundantArtifactLinkLines(text).trim()
+  const hasToolParts = message.parts.some(
+    (part) =>
+      part.type === "tool-call" ||
+      part.type === "tool-result" ||
+      part.type === "tool-error"
+  )
+  const normalized =
+    message.role === "assistant" && hasToolParts
+      ? stripRedundantArtifactLinkLines(text)
+      : text
+  return normalized.trim()
 }
 
 export function messageHasVisibleContent(message: Message): boolean {

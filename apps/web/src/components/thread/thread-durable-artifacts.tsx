@@ -430,16 +430,19 @@ function WorkingArtifactsRailPanel({
             const selected = artifact.id === selectedId
 
             return (
-              <li key={artifact.id}>
+              <li
+                key={artifact.id}
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-left text-xs transition-colors",
+                  selected
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:bg-muted/40"
+                )}
+              >
                 <button
                   type="button"
                   onClick={() => selectArtifact(artifact.id)}
-                  className={cn(
-                    "w-full rounded-lg border px-3 py-2 text-left text-xs transition-colors",
-                    selected
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:bg-muted/40"
-                  )}
+                  className="w-full text-left"
                 >
                   <p className="font-medium leading-snug">{artifact.title}</p>
                   <p className="mt-1 text-muted-foreground">
@@ -448,19 +451,18 @@ function WorkingArtifactsRailPanel({
                   <p className="mt-1 text-muted-foreground">
                     Updated {formatRelativeTime(artifact.updatedAt)}
                   </p>
-                  {launchPath && launchLabel ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-2"
-                      nativeButton={false}
-                      render={<Link to={launchPath} />}
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      {launchLabel}
-                    </Button>
-                  ) : null}
                 </button>
+                {launchPath && launchLabel ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                    nativeButton={false}
+                    render={<Link to={launchPath} />}
+                  >
+                    {launchLabel}
+                  </Button>
+                ) : null}
               </li>
             )
           })}

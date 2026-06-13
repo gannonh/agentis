@@ -58,12 +58,12 @@ export function createGatewayLanguageModel(
 function prependSystemToFirstUserMessage(
   system: string,
   messages: ModelMessage[]
-): ModelMessage[] {
+): { messages: ModelMessage[]; applied: boolean } {
   const trimmedSystem = system.trim()
-  if (!trimmedSystem) return messages
+  if (!trimmedSystem) return { messages, applied: false }
 
   let applied = false
-  return messages.map((message) => {
+  const next = messages.map((message) => {
     if (applied || message.role !== "user") return message
     applied = true
     if (typeof message.content === "string") {
@@ -80,6 +80,7 @@ function prependSystemToFirstUserMessage(
     }
     return message
   })
+  return { messages: next, applied }
 }
 
 export function prepareGatewayStreamPrompt(input: {
@@ -91,7 +92,11 @@ export function prepareGatewayStreamPrompt(input: {
   if (!usesCloudflareAnthropicMessagesTransport(input.config, input.modelId)) {
     return { system: input.system, messages: input.messages }
   }
-  return {
-    messages: prependSystemToFirstUserMessage(input.system, input.messages),
+  const merged = prependSystemToFirstUserMessage(input.system, input.messages)
+  if (!merged.applied && input.system.trim()) {
+    return {
+      messages: [{ role: "user", content: input.system.trim() }, ...input.messages],
+    }
   }
+  return { messages: merged.messages }
 }

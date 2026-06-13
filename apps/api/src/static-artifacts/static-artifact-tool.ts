@@ -4,6 +4,7 @@ import {
   editStaticArtifactInputSchema,
   findStaticArtifactsInputSchema,
   readStaticArtifactInputSchema,
+  readStaticArtifactMaxChars,
 } from "@workspace/shared"
 import type { StaticArtifactService } from "./static-artifact-service.js"
 
@@ -119,7 +120,7 @@ export function buildStaticArtifactTools(
 
     readStaticArtifact: tool({
       description:
-        "Read the exact stored text content and metadata for an accessible static artifact. Use this before answering questions about what an existing artifact actually contains. Optional maxChars is capped at 10000.",
+        `Read the exact stored text content and metadata for an accessible static artifact. Use this before answering questions about what an existing artifact actually contains. Optional maxChars is capped at ${readStaticArtifactMaxChars}.`,
       inputSchema: readStaticArtifactInputSchema,
       execute: async (input) => {
         const result = staticArtifactService.readStaticArtifact({

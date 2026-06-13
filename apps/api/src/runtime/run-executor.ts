@@ -1107,6 +1107,10 @@ export class RunExecutor {
       },
       onError: async ({ error }) => {
         clearAbortController(runId)
+        for (const stepId of toolStepIds.values()) {
+          this.repos.steps.update(stepId, { status: "failed" })
+        }
+        toolStepIds.clear()
         const message = formatProviderErrorMessage(error)
         this.failStreamingRun(
           runId,

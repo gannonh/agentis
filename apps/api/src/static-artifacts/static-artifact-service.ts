@@ -303,11 +303,64 @@ function slideSectionFromHtml(fragment: string, fallbackTitle: string): SlideSec
   })
 }
 
-const SLIDE_CLASS_CONTAINER_PATTERN =
-  /<(?:section|div)\b[^>]*class=["'][^"']*\bslide\b[^"']*["'][^>]*>([\s\S]*?)<\/(?:section|div)>/gi
+const SLIDE_CLASS_OPEN_PATTERN =
+  /<(?:section|div)\b[^>]*class=["'][^"']*\bslide\b[^"']*["'][^>]*>/gi
 
-function slideClassContainersFromHtml(content: string): RegExpMatchArray[] {
-  return Array.from(content.matchAll(SLIDE_CLASS_CONTAINER_PATTERN))
+function slideContainerTagName(openTag: string): "section" | "div" {
+  return /^<section\b/i.test(openTag) ? "section" : "div"
+}
+
+function findBalancedCloseIndex(
+  content: string,
+  startAfterOpen: number,
+  tagName: "section" | "div"
+): number | null {
+  const openNeedle = new RegExp(`<${tagName}\\b`, "gi")
+  const closeNeedle = new RegExp(`</${tagName}>`, "gi")
+  let depth = 1
+  let pos = startAfterOpen
+
+  while (depth > 0 && pos < content.length) {
+    openNeedle.lastIndex = pos
+    closeNeedle.lastIndex = pos
+    const openMatch = openNeedle.exec(content)
+    const closeMatch = closeNeedle.exec(content)
+    if (!closeMatch) return null
+
+    const openIndex = openMatch?.index ?? Number.POSITIVE_INFINITY
+    const closeIndex = closeMatch.index
+
+    if (openIndex < closeIndex) {
+      depth += 1
+      pos = openIndex + 1
+      continue
+    }
+
+    depth -= 1
+    if (depth === 0) {
+      return closeIndex
+    }
+    pos = closeIndex + closeMatch[0].length
+  }
+
+  return null
+}
+
+function slideClassContainersFromHtml(content: string): string[] {
+  const inners: string[] = []
+  const pattern = new RegExp(SLIDE_CLASS_OPEN_PATTERN.source, "gi")
+  let match: RegExpExecArray | null
+
+  while ((match = pattern.exec(content)) !== null) {
+    const openTag = match[0]
+    const tagName = slideContainerTagName(openTag)
+    const innerStart = match.index + openTag.length
+    const closeIndex = findBalancedCloseIndex(content, innerStart, tagName)
+    if (closeIndex === null) continue
+    inners.push(content.slice(innerStart, closeIndex))
+  }
+
+  return inners
 }
 
 function pageMarkerLine(line: string): boolean {
@@ -384,14 +437,12 @@ function expandCollapsedSlideSections(sections: SlideSection[]): SlideSection[] 
 }
 
 function slideSectionsFromMatches(
-  matches: RegExpMatchArray[],
+  inners: string[],
   fallbackTitle: (index: number) => string
 ): SlideSection[] {
   return expandCollapsedSlideSections(
-    matches
-      .map((match, index) =>
-        slideSectionFromHtml(match[1] ?? "", fallbackTitle(index))
-      )
+    inners
+      .map((inner, index) => slideSectionFromHtml(inner, fallbackTitle(index)))
       .filter(
         (section) => section.title.length > 0 || section.body.length > 0
       )
@@ -408,7 +459,10 @@ function slideSectionsFromHtml(content: string): SlideSection[] {
     content.matchAll(/<section\b[^>]*>([\s\S]*?)<\/section>/gi)
   )
   if (bareSectionMatches.length > 0) {
-    return slideSectionsFromMatches(bareSectionMatches, (index) => `Slide ${index + 1}`)
+    return slideSectionsFromMatches(
+      bareSectionMatches.map((match) => match[1] ?? ""),
+      (index) => `Slide ${index + 1}`
+    )
   }
 
   return expandCollapsedSlideSections(
@@ -478,8 +532,8 @@ function normalizeStoredSlideDeckHtml(input: {
 
   if (classSlideCount === 1 && classSlideCount === totalSectionCount) {
     const sections = expandCollapsedSlideSections(
-      classSlideMatches.map((match, index) =>
-        slideSectionFromHtml(match[1] ?? "", `Slide ${index + 1}`)
+      classSlideMatches.map((inner, index) =>
+        slideSectionFromHtml(inner, `Slide ${index + 1}`)
       )
     )
     const rendered = renderStoredSlideDeck(input, sections, 2)
