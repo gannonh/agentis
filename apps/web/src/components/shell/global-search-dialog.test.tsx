@@ -105,4 +105,53 @@ describe("GlobalSearchDialog", () => {
       ).toBeInTheDocument()
     })
   })
+
+  it("clears stale results while the query changes", async () => {
+    searchWorkspaceMock.mockImplementation(async (query: string) => {
+      await new Promise((resolve) => window.setTimeout(resolve, 50))
+      return {
+        query,
+        threads:
+          query === "pros"
+            ? [
+                {
+                  id: "thread_old",
+                  title: "Old prospect thread",
+                  subtitle: "Agent",
+                  entityType: "thread",
+                },
+              ]
+            : [
+                {
+                  id: "thread_new",
+                  title: "New prospect thread",
+                  subtitle: "Agent",
+                  entityType: "thread",
+                },
+              ],
+        artifacts: [],
+        agents: [],
+        projects: [],
+      }
+    })
+
+    renderDialog()
+
+    fireEvent.keyDown(window, { key: "k", metaKey: true })
+    const input = await screen.findByPlaceholderText(
+      "Search threads, library, agents, projects…"
+    )
+
+    fireEvent.change(input, { target: { value: "pros" } })
+    await waitFor(() => {
+      expect(screen.getByText("Old prospect thread")).toBeInTheDocument()
+    })
+
+    fireEvent.change(input, { target: { value: "prospect" } })
+    expect(screen.queryByText("Old prospect thread")).not.toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(screen.getByText("New prospect thread")).toBeInTheDocument()
+    })
+  })
 })

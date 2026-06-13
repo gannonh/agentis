@@ -1,4 +1,4 @@
-import { desc, eq, like, or } from "drizzle-orm"
+import { desc, eq, or } from "drizzle-orm"
 import type {
   Message,
   Run,
@@ -7,6 +7,7 @@ import type {
   ThreadStatus,
 } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
+import { likeContains } from "../db/like-pattern.js"
 import {
   agents,
   messages,
@@ -300,14 +301,13 @@ export class ThreadRepository {
   }
 
   search(query: string, limit: number): Thread[] {
-    const pattern = `%${query.trim()}%`
     return this.db
       .select()
       .from(threads)
       .where(
         or(
-          like(threads.title, pattern),
-          like(threads.agentNameSnapshot, pattern)
+          likeContains(threads.title, query),
+          likeContains(threads.agentNameSnapshot, query)
         )!
       )
       .orderBy(desc(threads.updatedAt))

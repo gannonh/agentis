@@ -9,6 +9,7 @@ export function SearchPage() {
 
   useEffect(() => {
     setOpen(true)
+    return () => setOpen(false)
   }, [setOpen])
 
   return (

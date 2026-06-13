@@ -145,6 +145,7 @@ import {
   searchResponseSchema,
 } from "./search-schemas.js"
 export {
+  MAX_SEARCH_QUERY_LENGTH,
   searchEntityTypeSchema,
   searchHitSchema,
   searchResponseSchema,

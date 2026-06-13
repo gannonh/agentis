@@ -1,6 +1,7 @@
-import { and, desc, eq, like, or } from "drizzle-orm"
+import { and, desc, eq, or } from "drizzle-orm"
 import type { Project, ProjectStatus } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
+import { likeContains } from "../db/like-pattern.js"
 import { projects } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapProject } from "../lib/mappers.js"
@@ -46,7 +47,6 @@ export class ProjectRepository {
   }
 
   search(query: string, limit: number): Project[] {
-    const pattern = `%${query.trim()}%`
     return this.db
       .select()
       .from(projects)
@@ -54,9 +54,9 @@ export class ProjectRepository {
         and(
           eq(projects.status, "active"),
           or(
-            like(projects.name, pattern),
-            like(projects.description, pattern),
-            like(projects.goals, pattern)
+            likeContains(projects.name, query),
+            likeContains(projects.description, query),
+            likeContains(projects.goals, query)
           )!
         )
       )

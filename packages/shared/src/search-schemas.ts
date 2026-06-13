@@ -1,6 +1,8 @@
 import { z } from "zod"
 import { artifactTypeSchema } from "./artifact-schemas.js"
 
+export const MAX_SEARCH_QUERY_LENGTH = 200
+
 export const searchEntityTypeSchema = z.enum([
   "thread",
   "artifact",

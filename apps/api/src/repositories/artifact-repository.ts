@@ -5,7 +5,6 @@ import {
   inArray,
   isNotNull,
   isNull,
-  like,
   or,
 } from "drizzle-orm"
 import type {
@@ -16,6 +15,7 @@ import type {
   ArtifactVisibilityScope,
 } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
+import { likeContains } from "../db/like-pattern.js"
 import { documents, documentVersions } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapArtifact, mapArtifactVersion } from "../lib/mappers.js"
@@ -382,16 +382,15 @@ export class ArtifactRepository {
       conditions.push(isNull(documents.runId))
     }
     if (filters.query?.trim()) {
-      const pattern = `%${filters.query.trim()}%`
       conditions.push(
         or(
-          like(documents.title, pattern),
-          like(documents.description, pattern),
-          like(documents.metadataJson, pattern),
-          like(documents.projectNameSnapshot, pattern),
-          like(documents.threadTitleSnapshot, pattern),
-          like(documents.agentNameSnapshot, pattern),
-          like(documents.previewText, pattern)
+          likeContains(documents.title, filters.query),
+          likeContains(documents.description, filters.query),
+          likeContains(documents.metadataJson, filters.query),
+          likeContains(documents.projectNameSnapshot, filters.query),
+          likeContains(documents.threadTitleSnapshot, filters.query),
+          likeContains(documents.agentNameSnapshot, filters.query),
+          likeContains(documents.previewText, filters.query)
         )!
       )
     }

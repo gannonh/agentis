@@ -122,12 +122,17 @@ export function GlobalSearchDialog() {
 
   const handleQueryChange = (value: string) => {
     setQuery(value)
+    requestGeneration.current += 1
     if (!value.trim()) {
-      requestGeneration.current += 1
       setResults(EMPTY_RESULTS)
       setLoading(false)
       setError(null)
+      return
     }
+
+    setResults(EMPTY_RESULTS)
+    setLoading(true)
+    setError(null)
   }
 
   useEffect(() => {

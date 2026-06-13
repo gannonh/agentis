@@ -7,8 +7,9 @@ import {
   DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS,
   nativeToolsSchema,
 } from "@workspace/shared"
-import { and, asc, count, desc, eq, inArray, like, ne, or } from "drizzle-orm"
+import { and, asc, count, desc, eq, inArray, ne, or } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
+import { likeContains } from "../db/like-pattern.js"
 import {
   agentConfigurationVersions,
   agents,
@@ -291,7 +292,6 @@ export class AgentRepository {
     query: string,
     limit: number
   ): { id: string; name: string; description: string | null }[] {
-    const pattern = `%${query.trim()}%`
     return this.db
       .select({
         id: agents.id,
@@ -302,7 +302,10 @@ export class AgentRepository {
       .where(
         and(
           ne(agents.id, GENERIC_AGENTIS_AGENT_ID),
-          or(like(agents.name, pattern), like(agents.description, pattern))!
+          or(
+            likeContains(agents.name, query),
+            likeContains(agents.description, query)
+          )!
         )
       )
       .orderBy(asc(agents.name), asc(agents.createdAt), asc(agents.id))
