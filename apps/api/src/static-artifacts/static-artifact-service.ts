@@ -145,11 +145,12 @@ function decodeHtmlEntity(match: string, entity: string): string {
   const named = NAMED_HTML_ENTITIES[entity]
   if (named) return named
 
-  const codePoint = entity.startsWith("#x") || entity.startsWith("#X")
-    ? Number.parseInt(entity.slice(2), 16)
-    : entity.startsWith("#")
-      ? Number.parseInt(entity.slice(1), 10)
-      : Number.NaN
+  let codePoint = Number.NaN
+  if (entity.startsWith("#x") || entity.startsWith("#X")) {
+    codePoint = Number.parseInt(entity.slice(2), 16)
+  } else if (entity.startsWith("#")) {
+    codePoint = Number.parseInt(entity.slice(1), 10)
+  }
   if (!Number.isFinite(codePoint) || codePoint < 0 || codePoint > 0x10ffff) {
     return match
   }
@@ -382,33 +383,32 @@ function expandCollapsedSlideSections(sections: SlideSection[]): SlideSection[] 
   return split.length >= 2 ? split : sections
 }
 
+function slideSectionsFromMatches(
+  matches: RegExpMatchArray[],
+  fallbackTitle: (index: number) => string
+): SlideSection[] {
+  return expandCollapsedSlideSections(
+    matches
+      .map((match, index) =>
+        slideSectionFromHtml(match[1] ?? "", fallbackTitle(index))
+      )
+      .filter(
+        (section) => section.title.length > 0 || section.body.length > 0
+      )
+  )
+}
+
 function slideSectionsFromHtml(content: string): SlideSection[] {
   const classSlideMatches = slideClassContainersFromHtml(content)
   if (classSlideMatches.length > 0) {
-    return expandCollapsedSlideSections(
-      classSlideMatches
-        .map((match, index) =>
-          slideSectionFromHtml(match[1] ?? "", `Slide ${index + 1}`)
-        )
-        .filter(
-          (section) => section.title.length > 0 || section.body.length > 0
-        )
-    )
+    return slideSectionsFromMatches(classSlideMatches, (index) => `Slide ${index + 1}`)
   }
 
   const bareSectionMatches = Array.from(
     content.matchAll(/<section\b[^>]*>([\s\S]*?)<\/section>/gi)
   )
   if (bareSectionMatches.length > 0) {
-    return expandCollapsedSlideSections(
-      bareSectionMatches
-        .map((match, index) =>
-          slideSectionFromHtml(match[1] ?? "", `Slide ${index + 1}`)
-        )
-        .filter(
-          (section) => section.title.length > 0 || section.body.length > 0
-        )
-    )
+    return slideSectionsFromMatches(bareSectionMatches, (index) => `Slide ${index + 1}`)
   }
 
   return expandCollapsedSlideSections(

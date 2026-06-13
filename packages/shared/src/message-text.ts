@@ -49,19 +49,12 @@ export function shouldSuppressTextForToolResults(
 /** Agent boilerplate after document/artifact tools; the thread UI already surfaces links. */
 export function isRedundantArtifactLinkLine(line: string): boolean {
   if (!line) return false
-  if (
-    /^view it here:\s*\/(?:documents|artifacts)\/\S+$/i.test(line)
-  ) {
-    return true
-  }
-  if (
+  return (
+    /^view it here:\s*\/(?:documents|artifacts)\/\S+$/i.test(line) ||
     /^download (?:markdown(?:\/html source)?|html source|markdown\/html source):\s*\/api\/(?:documents|artifacts)\/\S+\/download$/i.test(
       line
     )
-  ) {
-    return true
-  }
-  return false
+  )
 }
 
 export function stripRedundantArtifactLinkLines(text: string): string {

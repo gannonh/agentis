@@ -1,6 +1,7 @@
 import type { Message } from "@workspace/shared"
 import { MessageResponse } from "@/components/ai-elements/message"
 import { ThreadMessageContent } from "@/components/thread/thread-message-content"
+import { cn } from "@workspace/ui/lib/utils"
 import {
   getTranscriptText,
   messageHasVisibleContent,
@@ -13,10 +14,9 @@ export type ThreadTurn = {
 }
 
 export function isTranscriptMessage(message: Message) {
-  if (message.status === "completed" && !messageHasVisibleContent(message)) {
-    return false
-  }
-  return true
+  return (
+    message.status !== "completed" || messageHasVisibleContent(message)
+  )
 }
 
 export function groupThreadTurns(messages: Message[]): ThreadTurn[] {
@@ -63,15 +63,31 @@ function ThreadUserPrompt({ message }: { message: Message }) {
   )
 }
 
+function ThreadAssistantReplies({
+  messages,
+  className,
+}: {
+  messages: Message[]
+  className?: string
+}) {
+  if (!messages.length) return null
+
+  return (
+    <div className={cn("flex flex-col gap-6", className)}>
+      {messages.map((message) => (
+        <div key={message.id} className="w-full text-sm text-foreground">
+          <ThreadMessageContent message={message} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function ThreadTurnSection({ turn }: { turn: ThreadTurn }) {
   if (!turn.user) {
     return (
-      <section className="flex flex-col gap-6">
-        {turn.replies.map((message) => (
-          <div key={message.id} className="w-full text-sm text-foreground">
-            <ThreadMessageContent message={message} />
-          </div>
-        ))}
+      <section>
+        <ThreadAssistantReplies messages={turn.replies} />
       </section>
     )
   }
@@ -81,15 +97,10 @@ function ThreadTurnSection({ turn }: { turn: ThreadTurn }) {
       <div className="sticky top-0 z-10 border-b border-border bg-background/95 py-4 backdrop-blur-sm supports-[backdrop-filter]:bg-background/80">
         <ThreadUserPrompt message={turn.user} />
       </div>
-      {turn.replies.length ? (
-        <div className="flex flex-col gap-6 pt-6">
-          {turn.replies.map((message) => (
-            <div key={message.id} className="w-full text-sm text-foreground">
-              <ThreadMessageContent message={message} />
-            </div>
-          ))}
-        </div>
-      ) : null}
+      <ThreadAssistantReplies
+        messages={turn.replies}
+        className="pt-6"
+      />
     </section>
   )
 }

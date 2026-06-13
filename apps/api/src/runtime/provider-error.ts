@@ -24,13 +24,14 @@ export function formatProviderErrorMessage(error: unknown): string {
       const gatewayMessage = parsed.errors?.[0]?.message
       if (gatewayMessage) return gatewayMessage
       if (typeof parsed.error === "string") return parsed.error
+      const nestedError = parsed.error
       if (
-        parsed.error &&
-        typeof parsed.error === "object" &&
-        "message" in parsed.error &&
-        typeof parsed.error.message === "string"
+        nestedError &&
+        typeof nestedError === "object" &&
+        "message" in nestedError &&
+        typeof nestedError.message === "string"
       ) {
-        return parsed.error.message
+        return nestedError.message
       }
     } catch {
       // Fall through to the generic error message.

@@ -70,10 +70,11 @@ function artifactMetadata(artifact: Artifact) {
 }
 
 function isPreviewableArtifact(artifact: Artifact) {
-  if (artifact.type === "document" && artifact.contentFormat === "markdown") {
-    return true
-  }
-  return artifact.type === "webpage" || artifact.type === "slides"
+  return (
+    (artifact.type === "document" && artifact.contentFormat === "markdown") ||
+    artifact.type === "webpage" ||
+    artifact.type === "slides"
+  )
 }
 
 function resolveSelection(
@@ -179,6 +180,16 @@ export function WorkingArtifactsRailProvider({
   )
 }
 
+function PreviewTruncatedNotice({ workspace }: { workspace: "document" | "artifact" }) {
+  const label =
+    workspace === "document" ? "document workspace" : "artifact workspace"
+  return (
+    <p className="mb-2 text-xs text-amber-700 dark:text-amber-400">
+      Preview truncated. Open the {label} for the full content.
+    </p>
+  )
+}
+
 function WorkingArtifactPreviewLoader({ artifact }: { artifact: Artifact }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -237,9 +248,7 @@ function WorkingArtifactPreviewLoader({ artifact }: { artifact: Artifact }) {
     return (
       <div className="rounded-lg border border-border bg-background p-3">
         {documentDetail.truncated ? (
-          <p className="mb-2 text-xs text-amber-700 dark:text-amber-400">
-            Preview truncated. Open the document workspace for the full content.
-          </p>
+          <PreviewTruncatedNotice workspace="document" />
         ) : null}
         <DocumentViewer
           mode="preview"
@@ -253,9 +262,7 @@ function WorkingArtifactPreviewLoader({ artifact }: { artifact: Artifact }) {
     return (
       <div className="rounded-lg border border-border bg-background p-3 [&_iframe]:!h-48 [&_iframe]:!min-h-48">
         {artifactDetail.truncated ? (
-          <p className="mb-2 text-xs text-amber-700 dark:text-amber-400">
-            Preview truncated. Open the artifact workspace for the full content.
-          </p>
+          <PreviewTruncatedNotice workspace="artifact" />
         ) : null}
         <StaticArtifactPreview detail={artifactDetail} />
       </div>
@@ -296,7 +303,7 @@ function WorkingArtifactPreviewSection({
     <div
       className={cn(
         "flex min-h-0 flex-col border-t border-border pt-3",
-        expanded ? "min-h-0 flex-1" : "shrink-0",
+        expanded ? "flex-1" : "shrink-0",
         className
       )}
     >
