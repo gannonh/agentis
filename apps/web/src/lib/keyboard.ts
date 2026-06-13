@@ -24,6 +24,11 @@ export function isCommandPaletteShortcut(event: KeyboardEvent) {
 }
 
 export function commandPaletteShortcutLabel() {
+  const stableLabel = import.meta.env.VITE_COMMAND_PALETTE_SHORTCUT_LABEL
+  if (typeof stableLabel === "string" && stableLabel.length > 0) {
+    return stableLabel
+  }
+
   if (typeof navigator === "undefined") {
     return "⌘K"
   }
