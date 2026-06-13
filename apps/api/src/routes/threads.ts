@@ -21,28 +21,15 @@ import {
   type ResolvedAgentToolGrant,
 } from "../agents/tool-grant-resolution.js"
 import { summarizeTitle } from "../lib/title-summary.js"
+import {
+  EMPTY_THREAD_LIST_CONTEXT,
+  loadThreadListContext,
+} from "../lib/thread-list-context.js"
 import { toSourceWorkflowSnapshot } from "../lib/source-workflow-snapshot.js"
 import { ProjectContextService } from "../projects/project-context-service.js"
 import { RunExecutor } from "../runtime/run-executor.js"
 import { GENERIC_AGENTIS_AGENT_ID } from "../workspaces/constants.js"
 import { WorkspaceError } from "../workspaces/workspace-service.js"
-
-function summarizeThreadPreview(prompt: string) {
-  const trimmed = prompt.trim().replace(/\s+/g, " ")
-  if (trimmed.length <= 160) return trimmed
-  return `${trimmed.slice(0, 157)}...`
-}
-
-function firstUserMessageText(
-  messages: { role: string; parts: { type: string; text?: string }[] }[]
-) {
-  const message = messages.find((item) => item.role === "user")
-  if (!message) return null
-  const textPart = message.parts.find(
-    (part) => part.type === "text" && typeof part.text === "string"
-  )
-  return textPart?.text?.trim() ? summarizeThreadPreview(textPart.text) : null
-}
 
 export function createThreadRoutes(
   repos: Repositories,
@@ -52,19 +39,19 @@ export function createThreadRoutes(
   const contextService = new ProjectContextService(repos, config)
 
   app.get("/", (c) => {
-    const threads = repos.threads.list().map((thread) => {
-      const messages = repos.messages.listByThreadId(thread.id)
-      const latestRun = repos.runs.getLatestByThreadId(thread.id)
-      const documentCount = repos.documents.list({ threadId: thread.id }).length
-      return threadListItemSchema.parse({
+    const threads = repos.threads.list()
+    const contextByThreadId = loadThreadListContext(
+      repos,
+      threads.map((thread) => thread.id)
+    )
+
+    const items = threads.map((thread) =>
+      threadListItemSchema.parse({
         ...thread,
-        messageCount: messages.length,
-        lastRunStatus: latestRun?.status,
-        summary: firstUserMessageText(messages),
-        documentCount,
+        ...(contextByThreadId.get(thread.id) ?? EMPTY_THREAD_LIST_CONTEXT),
       })
-    })
-    return c.json(threads)
+    )
+    return c.json(items)
   })
 
   app.post("/", async (c) => {

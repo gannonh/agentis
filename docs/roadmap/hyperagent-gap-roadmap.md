@@ -16,7 +16,7 @@
 
 | Surface | HyperAgent (observed) | Agentis today | Gap severity |
 | --- | --- | --- | --- |
-| New thread home | Agent switcher, Plan/Execute, suggestion chips, AI thread summaries, capability showcase cards with cost/time | API-backed threads; simpler home | Medium |
+| New thread home | Agent switcher, Plan/Execute, suggestion chips, AI thread summaries, capability showcase cards with cost/time | API-backed home with agent picker, suggestion chips, rule-based thread summaries, and demo/recent sections (HA-GAP-10); no capability showcase cards with cost/time | Low–Medium |
 | Thread session | Model picker, Live mode, reasoning blocks, Working Doc side panel, inline artifact iframes, Plan vs Execute | API-backed streaming; human-readable native tool cards, turn-grouped transcript (`thread-transcript.tsx`), Working artifacts rail with inline document/static preview (HA-GAP-08); no draggable panel or in-thread app iframe | Medium |
 | Library | Search, Type/Visibility/Source filters, Save/bookmark, archived toggle, iframe previews | API-backed artifacts + workspaces | Low–Medium |
 | Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, rubric CRUD, and run evaluation scores on Overview when rubrics exist | Medium |
@@ -24,7 +24,7 @@
 | Learning | Skills (19), categorized memories, rubrics, thread-derived suggestions with accept/dismiss | API-backed skills, memories, rubrics, post-run suggestions with accept/dismiss, and accepted-memory context injection | Low–Medium |
 | Integrations | NATIVE + MCP catalog, custom MCP server, 20+ apps | Composio-backed; fixture catalog UI | Medium |
 | Projects | Sidebar grouping, thread counts, per-project threads | API-backed | Low |
-| Search (⌘K) | Global search entry point | Placeholder route | Medium |
+| Search (⌘K) | Global search entry point | `GET /api/search?q=` grouped results; ⌘K command palette from app shell (HA-GAP-09); `/search` browse page | Low–Medium |
 | Teams | Shared agents/skills spaces | Not present | Defer (multi-tenant) |
 
 ### Native tools (20 active on Sales Prospector agent)
@@ -48,7 +48,7 @@
 
 ## Recommended execution order
 
-Completed foundation: HA-GAP-00a through HA-GAP-08 and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, and the thread Working artifacts rail.
+Completed foundation: HA-GAP-00a through HA-GAP-10 and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, the thread Working artifacts rail, global ⌘K search, and enriched new thread home summaries/chips.
 
 Start new work from the first open wave below. Within each wave, slices are parallel-safe unless a dependency is listed.
 
@@ -78,18 +78,20 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-09: Global search (⌘K)
 
+**Status:** Shipped (2026-06-13). PR #438.
+
 **HyperAgent reference:** Sidebar Search ⌘K across threads, library, agents.
 
-**Agentis today:** `/search` placeholder.
+**Agentis today:** `GET /api/search?q=` returns grouped thread, artifact, agent, and project hits (`search-service.ts`); ⌘K opens `global-search-dialog.tsx` from the app shell on any route; `/search` provides a browse page with the same API.
 
 **Goal:** Command palette search over threads, artifacts, agents, projects.
 
 **Demo:** ⌘K → type "prospect" → jump to thread and library hits.
 
 **Acceptance:**
-- [ ] `GET /api/search?q=` returns grouped results.
-- [ ] Keyboard shortcut opens modal from any authenticated route.
-- [ ] Result navigation works for each entity type.
+- [x] `GET /api/search?q=` returns grouped results.
+- [x] Keyboard shortcut opens modal from any authenticated route.
+- [x] Result navigation works for each entity type.
 
 **Depends on:** None.
 
@@ -97,18 +99,20 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-10: New thread home parity (lightweight)
 
+**Status:** Shipped (2026-06-13). PR #437.
+
 **HyperAgent reference:** Recent threads with AI summaries; suggestion chips; showcase cards.
 
-**Agentis today:** Basic recent threads list.
+**Agentis today:** `/threads/new` loads `GET /api/threads` once, partitions demo (`seed_thread_*`) and recent sections, and shows rule-based one-line summaries via shared `threadListSummaryFromMessages` (`thread-preview.ts`). Suggestion chips (`buildSuggestionChips`) prefill the composer from agent workflow prompts plus static prompts. `loadThreadListContext` batches message/run/document reads for thread list and agent detail summaries.
 
 **Goal:** Enrich home without external dependencies — rule-based summaries from last message + static suggestion chips from agent catalog.
 
 **Demo:** Home shows 3 recent threads with one-line summaries; chips prefill composer.
 
 **Acceptance:**
-- [ ] Thread cards show summary (stored or computed on run complete).
-- [ ] 4+ suggestion chips map to composer prefill.
-- [ ] Optional: link to curated demo threads (self-hosted seed data).
+- [x] Thread cards show summary (stored or computed on run complete).
+- [x] 4+ suggestion chips map to composer prefill.
+- [x] Optional: link to curated demo threads (self-hosted seed data).
 
 **Depends on:** None.
 
@@ -548,6 +552,6 @@ flowchart TD
 
 ## Next steps
 
-1. Open Wave 2: HA-GAP-09 (global ⌘K search) is the highest-impact pick; HA-GAP-08 shipped in 2026-06-13.
-2. Consider HA-GAP-10 (new thread home parity) and HA-GAP-11 (thread metadata) after the core thread/discovery slices.
-3. Keep this roadmap aligned as Wave 2 work begins.
+1. Open Wave 2: HA-GAP-11 (thread metadata — star, status badges, agent chip) is the next pick; HA-GAP-08, HA-GAP-09, and HA-GAP-10 shipped in 2026-06-13.
+2. Wave 3 can run in parallel: HA-GAP-12 (integrations catalog API wire-up) remains the highest-impact integrations slice.
+3. Keep this roadmap aligned as Wave 2 discovery work continues.
