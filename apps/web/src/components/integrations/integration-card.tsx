@@ -5,9 +5,14 @@ import {
   Tick01Icon,
 } from "@hugeicons/core-free-icons"
 import type { IntegrationToolkit } from "@workspace/shared"
+import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
 import { IntegrationMark } from "@/lib/integration-mark"
 import { cn } from "@workspace/ui/lib/utils"
+
+function integrationTypeLabel(integrationType: IntegrationToolkit["integrationType"]) {
+  return integrationType === "mcp" ? "MCP" : "NATIVE"
+}
 
 function integrationStatusLabel(integration: IntegrationToolkit): string {
   if (integration.status === "connected") {
@@ -71,9 +76,22 @@ export function IntegrationCard({
       ) : null}
 
       <div className="flex items-start gap-3 pr-6">
-        <IntegrationMark integrationId={integration.slug} />
+        {integration.logoUrl ? (
+          <img
+            src={integration.logoUrl}
+            alt=""
+            className="size-9 shrink-0 rounded-md object-contain"
+          />
+        ) : (
+          <IntegrationMark integrationId={integration.slug} />
+        )}
         <div className="flex min-w-0 flex-col gap-1">
-          <h3 className="text-sm font-medium">{integration.name}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-medium">{integration.name}</h3>
+            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+              {integrationTypeLabel(integration.integrationType)}
+            </Badge>
+          </div>
           <p className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
             {integration.description}
           </p>

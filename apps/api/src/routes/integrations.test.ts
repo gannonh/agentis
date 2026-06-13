@@ -2,10 +2,30 @@ import { afterEach, describe, expect, it } from "vitest"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
 import { IntegrationService } from "../composio/integration-service.js"
+import { MockComposioClient } from "../composio/mock-composio-client.js"
 import type { ComposioClientAdapter } from "../composio/types.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 
 let ctx: TestContext | undefined
+
+function extendComposioAdapter(
+  overrides: Partial<ComposioClientAdapter> = {}
+): ComposioClientAdapter {
+  const base = new MockComposioClient()
+  return {
+    authorizeToolkit:
+      overrides.authorizeToolkit ?? base.authorizeToolkit.bind(base),
+    refreshConnectedAccount:
+      overrides.refreshConnectedAccount ?? base.refreshConnectedAccount.bind(base),
+    listConnectedAccounts:
+      overrides.listConnectedAccounts ?? base.listConnectedAccounts.bind(base),
+    executeTool: overrides.executeTool ?? base.executeTool.bind(base),
+    listToolkits: overrides.listToolkits ?? base.listToolkits.bind(base),
+    getToolkit: overrides.getToolkit ?? base.getToolkit.bind(base),
+    listToolkitCategories:
+      overrides.listToolkitCategories ?? base.listToolkitCategories.bind(base),
+  }
+}
 
 afterEach(() => {
   ctx?.cleanup()
@@ -21,11 +41,28 @@ describe("integration routes", () => {
     const response = await app.request("/api/integrations")
     expect(response.status).toBe(200)
     const body = (await response.json()) as {
-      toolkits: { slug: string }[]
+      toolkits: { slug: string; integrationType: string }[]
+      categories: string[]
       composioMockEnabled: boolean
     }
     expect(body.toolkits.map((t) => t.slug)).toContain("github")
+    expect(body.toolkits[0]?.integrationType).toBe("native")
+    expect(body.categories.length).toBeGreaterThan(0)
     expect(body.composioMockEnabled).toBe(true)
+  })
+
+  it("filters integrations by search query", async () => {
+    ctx = createTestContext()
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const response = await app.request("/api/integrations?q=github")
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as {
+      toolkits: { slug: string }[]
+    }
+    expect(body.toolkits.some((toolkit) => toolkit.slug === "github")).toBe(true)
+    expect(body.toolkits.some((toolkit) => toolkit.slug === "slack")).toBe(false)
   })
 
   it("uses the API port when no Composio redirect base is configured", async () => {
@@ -34,7 +71,7 @@ describe("integration routes", () => {
     ctx.config.composioRedirectBaseUrl = undefined
     ctx.repos.integrationToolkits.seedFeatured()
     let callbackUrl = ""
-    const composio: ComposioClientAdapter = {
+    const composio = extendComposioAdapter({
       async authorizeToolkit(_userId, _toolkitSlug, requestedCallbackUrl) {
         callbackUrl = requestedCallbackUrl
         return {
@@ -43,16 +80,7 @@ describe("integration routes", () => {
           connectedAccountId: "acct-github",
         }
       },
-      async refreshConnectedAccount() {
-        throw new Error("unused")
-      },
-      async listConnectedAccounts() {
-        return []
-      },
-      async executeTool() {
-        return { data: {}, durationMs: 0 }
-      },
-    }
+    })
     const service = new IntegrationService(ctx.repos, ctx.config, composio)
 
     await service.startConnection("github")
@@ -108,10 +136,7 @@ describe("integration routes", () => {
       composioConnectionRequestId: "req-google-drive",
       composioConnectedAccountId: "acct-google-drive",
     })
-    const composio: ComposioClientAdapter = {
-      async authorizeToolkit() {
-        throw new Error("unused")
-      },
+    const composio = extendComposioAdapter({
       async refreshConnectedAccount() {
         return {
           id: "acct-google-drive",
@@ -119,13 +144,7 @@ describe("integration routes", () => {
           status: "connected",
         }
       },
-      async listConnectedAccounts() {
-        return []
-      },
-      async executeTool() {
-        return { data: {}, durationMs: 0 }
-      },
-    }
+    })
     const services = {
       composio,
       integrations: new IntegrationService(ctx.repos, ctx.config, composio),
@@ -164,10 +183,7 @@ describe("integration routes", () => {
       composioConnectionRequestId: "req-google-drive",
       composioConnectedAccountId: "acct-github",
     })
-    const composio: ComposioClientAdapter = {
-      async authorizeToolkit() {
-        throw new Error("unused")
-      },
+    const composio = extendComposioAdapter({
       async refreshConnectedAccount() {
         return {
           id: "acct-github",
@@ -175,13 +191,7 @@ describe("integration routes", () => {
           status: "connected",
         }
       },
-      async listConnectedAccounts() {
-        return []
-      },
-      async executeTool() {
-        return { data: {}, durationMs: 0 }
-      },
-    }
+    })
     const services = {
       composio,
       integrations: new IntegrationService(ctx.repos, ctx.config, composio),
@@ -222,10 +232,7 @@ describe("integration routes", () => {
       composioConnectedAccountId: "acct-github-init",
       errorCode: "connection_error",
     })
-    const composio: ComposioClientAdapter = {
-      async authorizeToolkit() {
-        throw new Error("unused")
-      },
+    const composio = extendComposioAdapter({
       async refreshConnectedAccount(connectedAccountId) {
         return {
           id: connectedAccountId,
@@ -248,10 +255,7 @@ describe("integration routes", () => {
           },
         ]
       },
-      async executeTool() {
-        return { data: {}, durationMs: 0 }
-      },
-    }
+    })
     const services = {
       composio,
       integrations: new IntegrationService(ctx.repos, ctx.config, composio),
@@ -294,10 +298,7 @@ describe("integration routes", () => {
       toolkitSlug: "github",
       connectionId: connection.id,
     })
-    const composio: ComposioClientAdapter = {
-      async authorizeToolkit() {
-        throw new Error("unused")
-      },
+    const composio = extendComposioAdapter({
       async refreshConnectedAccount(connectedAccountId) {
         return {
           id: connectedAccountId,
@@ -315,10 +316,7 @@ describe("integration routes", () => {
           },
         ]
       },
-      async executeTool() {
-        return { data: {}, durationMs: 0 }
-      },
-    }
+    })
     const services = {
       composio,
       integrations: new IntegrationService(ctx.repos, ctx.config, composio),
@@ -341,10 +339,7 @@ describe("integration routes", () => {
   it("adopts a preferred remote account when no local connection exists", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
-    const composio: ComposioClientAdapter = {
-      async authorizeToolkit() {
-        throw new Error("unused")
-      },
+    const composio = extendComposioAdapter({
       async refreshConnectedAccount(connectedAccountId) {
         return {
           id: connectedAccountId,
@@ -362,10 +357,7 @@ describe("integration routes", () => {
           },
         ]
       },
-      async executeTool() {
-        return { data: {}, durationMs: 0 }
-      },
-    }
+    })
     const services = {
       composio,
       integrations: new IntegrationService(ctx.repos, ctx.config, composio),

@@ -4,23 +4,28 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { RefreshIcon } from "@hugeicons/core-free-icons"
 import { Button } from "@workspace/ui/components/button"
 import { ConnectionStatusPanel } from "@/components/integrations/connection-status-panel"
+import { CustomMcpComingSoonCard } from "@/components/integrations/custom-mcp-coming-soon-card"
 import { FeaturedIntegrationsGrid } from "@/components/integrations/featured-integrations-grid"
 import { IntegrationInfoIntro } from "@/components/integrations/integration-info-intro"
 import { IntegrationNoticeBanner } from "@/components/integrations/integration-notice-banner"
 import { IntegrationsBackNav } from "@/components/integrations/integrations-back-nav"
+import { IntegrationsCategoryFilter } from "@/components/integrations/integrations-category-filter"
 import { IntegrationsSearch } from "@/components/integrations/integrations-search"
-import { DemoDataNotice } from "@/components/shell/demo-data-notice"
 import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { useIntegrations } from "@/hooks/use-integrations"
 
 export function IntegrationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [query, setQuery] = useState("")
   const [connectingSlug, setConnectingSlug] = useState<string | null>(null)
   const [resettingSlug, setResettingSlug] = useState<string | null>(null)
   const {
     toolkits,
+    categories,
+    query,
+    category,
+    setQuery,
+    setCategory,
     composioConfigured,
     composioMockEnabled,
     loading,
@@ -44,25 +49,29 @@ export function IntegrationsPage() {
     }
   }, [searchParams, setNotice, setSearchParams])
 
-  const featuredIntegrations = useMemo(() => {
-    const featured = toolkits.filter((integration) => integration.featured)
-    const normalized = query.trim().toLowerCase()
-    if (!normalized) {
-      return featured
-    }
-    return featured.filter(
-      (integration) =>
-        integration.name.toLowerCase().includes(normalized) ||
-        integration.description.toLowerCase().includes(normalized)
+  const connectedIntegrations = useMemo(
+    () => toolkits.filter((integration) => integration.status === "connected"),
+    [toolkits]
+  )
+
+  const connectedSlugs = useMemo(
+    () => new Set(connectedIntegrations.map((integration) => integration.slug)),
+    [connectedIntegrations]
+  )
+
+  const browseIntegrations = useMemo(() => {
+    const browsing = toolkits.filter(
+      (integration) => !connectedSlugs.has(integration.slug)
     )
-  }, [query, toolkits])
+    if (query.trim() || category) {
+      return browsing
+    }
+    return browsing.filter((integration) => integration.featured)
+  }, [category, connectedSlugs, query, toolkits])
 
   const connectedNames = useMemo(
-    () =>
-      toolkits
-        .filter((integration) => integration.status === "connected")
-        .map((integration) => integration.name),
-    [toolkits]
+    () => connectedIntegrations.map((integration) => integration.name),
+    [connectedIntegrations]
   )
 
   const handleConnect = async (slug: string) => {
@@ -92,6 +101,8 @@ export function IntegrationsPage() {
     ? "Demo mode: connections here are simulated from test data, not your real GitHub or Slack accounts. Restart the API without AGENTIS_MOCK_COMPOSIO=1 for live Composio."
     : null
 
+  const browseTitle = query.trim() || category ? "Results" : "Featured"
+
   return (
     <PageLayout className="gap-6">
       <IntegrationsBackNav />
@@ -117,11 +128,6 @@ export function IntegrationsPage() {
           </Button>
         }
       />
-
-      <DemoDataNotice>
-        Featured catalog metadata is seeded. Connection status and OAuth actions
-        come from the integrations API.
-      </DemoDataNotice>
 
       {notice ? <IntegrationNoticeBanner message={notice} /> : null}
       {setupNotice ? (
@@ -152,14 +158,47 @@ export function IntegrationsPage() {
 
       <IntegrationsSearch value={query} onChange={setQuery} />
 
+      <IntegrationsCategoryFilter
+        categories={categories}
+        value={category}
+        onChange={setCategory}
+      />
+
       <FeaturedIntegrationsGrid
-        integrations={featuredIntegrations}
+        integrations={connectedIntegrations}
         composioConfigured={composioConfigured}
+        variant="connected"
         onConnect={(slug) => void handleConnect(slug)}
         onReset={(slug) => void handleReset(slug)}
         connectingSlug={connectingSlug}
         resettingSlug={resettingSlug}
       />
+
+      {loading ? null : (
+        <FeaturedIntegrationsGrid
+          integrations={browseIntegrations}
+          composioConfigured={composioConfigured}
+          title={browseTitle}
+          headingId="browse-integrations-heading"
+          onConnect={(slug) => void handleConnect(slug)}
+          onReset={(slug) => void handleReset(slug)}
+          connectingSlug={connectingSlug}
+          resettingSlug={resettingSlug}
+        />
+      )}
+
+      {!loading && browseIntegrations.length === 0 ? (
+        <p className="text-muted-foreground rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm">
+          No integrations match your search.
+        </p>
+      ) : null}
+
+      <section aria-labelledby="custom-mcp-heading" className="flex flex-col gap-3">
+        <h2 id="custom-mcp-heading" className="text-sm font-medium">
+          Custom MCP
+        </h2>
+        <CustomMcpComingSoonCard />
+      </section>
     </PageLayout>
   )
 }

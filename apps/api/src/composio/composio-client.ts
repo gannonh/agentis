@@ -5,10 +5,16 @@ import type {
   ComposioAuthorizeResult,
   ComposioClientAdapter,
   ComposioConnectedAccount,
+  ComposioListToolkitsInput,
+  ComposioListToolkitsResult,
   ComposioToolExecuteInput,
   ComposioToolExecuteResult,
+  ComposioToolkitSummary,
 } from "./types.js"
-import { mapComposioAccountStatus } from "./mock-composio-client.js"
+import {
+  mapComposioAccountStatus,
+  mapComposioToolkitSummary,
+} from "./mock-composio-client.js"
 import { toAppToolkitSlug, toComposioToolkitSlug } from "./toolkit-slugs.js"
 
 function mapConnectionStatus(status: string): ConnectionStatus {
@@ -37,9 +43,47 @@ type ListedAuthConfig = {
   toolkitSlug?: string
 }
 
+type ComposioToolkitListItem = {
+  slug?: string
+  name?: string
+  description?: string
+  logo?: string
+  categories?: Array<string | { slug?: string; name?: string }>
+  managedBy?: string
+  meta?: {
+    description?: string
+    logo?: string
+    categories?: Array<string | { slug?: string; name?: string }>
+  }
+}
+
+type ComposioToolkitListResponse = {
+  items: ComposioToolkitListItem[]
+  nextCursor?: string | null
+}
+
 function getAuthConfigToolkitSlug(authConfig: ListedAuthConfig) {
   if (typeof authConfig.toolkit === "string") return authConfig.toolkit
   return authConfig.toolkit?.slug ?? authConfig.toolkitSlug
+}
+
+function isToolkitListResponse(value: unknown): value is ComposioToolkitListResponse {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Array.isArray((value as ComposioToolkitListResponse).items)
+  )
+}
+
+function matchesSearch(toolkit: ComposioToolkitSummary, search: string) {
+  const normalized = search.trim().toLowerCase()
+  if (!normalized) return true
+  return (
+    toolkit.name.toLowerCase().includes(normalized) ||
+    toolkit.description.toLowerCase().includes(normalized) ||
+    toolkit.slug.toLowerCase().includes(normalized) ||
+    toolkit.category.toLowerCase().includes(normalized)
+  )
 }
 
 export async function resolveAuthConfigId(
@@ -86,7 +130,10 @@ export class LiveComposioClient implements ComposioClientAdapter {
     const callback = new URL(callbackUrl)
     callback.searchParams.set("toolkitSlug", toolkitSlug)
 
-    const authConfigId = await resolveAuthConfigId(this.composio, toolkitSlug)
+    const authConfigId = await resolveAuthConfigId(
+      this.composio as unknown as AuthConfigLookupClient,
+      toolkitSlug
+    )
     const connectionRequest = await this.composio.connectedAccounts.link(
       userId,
       authConfigId,
@@ -177,6 +224,49 @@ export class LiveComposioClient implements ComposioClientAdapter {
         durationMs: Date.now() - started,
       }
     }
+  }
+
+  async listToolkits(input: ComposioListToolkitsInput): Promise<ComposioListToolkitsResult> {
+    const featured = input.featured ?? false
+    const response = await this.composio.toolkits.get({
+      category: input.category,
+      sortBy: featured ? "usage" : "alphabetically",
+      managedBy: featured ? "composio" : "all",
+      limit: input.limit ?? 20,
+      cursor: input.cursor,
+    })
+
+    if (!isToolkitListResponse(response)) {
+      return { items: [] }
+    }
+
+    const items = response.items
+      .map((toolkit) => mapComposioToolkitSummary(toolkit, featured))
+      .filter((toolkit): toolkit is ComposioToolkitSummary => toolkit !== null)
+      .filter((toolkit) =>
+        input.search ? matchesSearch(toolkit, input.search) : true
+      )
+
+    return {
+      items,
+      nextCursor: response.nextCursor ?? undefined,
+    }
+  }
+
+  async getToolkit(toolkitSlug: string): Promise<ComposioToolkitSummary | null> {
+    const response = await this.composio.toolkits.get(
+      toComposioToolkitSlug(toolkitSlug)
+    )
+    if (isToolkitListResponse(response)) return null
+    return mapComposioToolkitSummary(response, false)
+  }
+
+  async listToolkitCategories(): Promise<string[]> {
+    const response = await this.composio.toolkits.listCategories()
+    return response.items
+      .map((category) => category.name)
+      .filter((value): value is string => Boolean(value))
+      .sort()
   }
 }
 

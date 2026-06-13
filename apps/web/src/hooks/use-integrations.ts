@@ -7,32 +7,52 @@ import {
   resetIntegrationConnection,
 } from "@/lib/api/client"
 
+const SEARCH_DEBOUNCE_MS = 300
+
 export function useIntegrations() {
   const [toolkits, setToolkits] = useState<IntegrationToolkit[]>([])
+  const [categories, setCategories] = useState<string[]>([])
   const [composioConfigured, setComposioConfigured] = useState(false)
   const [composioMockEnabled, setComposioMockEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [query, setQuery] = useState("")
+  const [category, setCategory] = useState<string | null>(null)
+  const [debouncedQuery, setDebouncedQuery] = useState("")
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await listIntegrations()
-      setToolkits(data.toolkits)
-      setComposioConfigured(data.composioConfigured)
-      setComposioMockEnabled(data.composioMockEnabled)
-    } catch (refreshError) {
-      const message =
-        refreshError instanceof Error
-          ? refreshError.message
-          : "Failed to load integrations"
-      setError(message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedQuery(query)
+    }, SEARCH_DEBOUNCE_MS)
+    return () => window.clearTimeout(timeout)
+  }, [query])
+
+  const refresh = useCallback(
+    async (searchQuery = debouncedQuery, selectedCategory = category) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const data = await listIntegrations({
+          q: searchQuery || undefined,
+          category: selectedCategory || undefined,
+        })
+        setToolkits(data.toolkits)
+        setCategories(data.categories)
+        setComposioConfigured(data.composioConfigured)
+        setComposioMockEnabled(data.composioMockEnabled)
+      } catch (refreshError) {
+        const message =
+          refreshError instanceof Error
+            ? refreshError.message
+            : "Failed to load integrations"
+        setError(message)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [category, debouncedQuery]
+  )
 
   useEffect(() => {
     void refresh()
@@ -83,6 +103,7 @@ export function useIntegrations() {
       const data = await refreshIntegrations()
       setToolkits(data.toolkits)
       setNotice("Connection statuses refreshed.")
+      await refresh()
     } catch (refreshError) {
       const message =
         refreshError instanceof Error
@@ -90,10 +111,15 @@ export function useIntegrations() {
           : "Failed to refresh integrations"
       setError(message)
     }
-  }, [])
+  }, [refresh])
 
   return {
     toolkits,
+    categories,
+    query,
+    category,
+    setQuery,
+    setCategory,
     composioConfigured,
     composioMockEnabled,
     loading,
