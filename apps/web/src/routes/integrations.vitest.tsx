@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router"
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -102,5 +102,50 @@ describe("IntegrationsPage", () => {
       },
       { timeout: 2_000 }
     )
+  })
+
+  it("keeps the latest search results when an earlier request resolves later", async () => {
+    const user = userEvent.setup()
+    let resolveInitial: (value: Awaited<ReturnType<typeof listIntegrations>>) => void
+    const initial = new Promise<Awaited<ReturnType<typeof listIntegrations>>>(
+      (resolve) => {
+        resolveInitial = resolve
+      }
+    )
+    vi.mocked(listIntegrations)
+      .mockReturnValueOnce(initial)
+      .mockResolvedValueOnce({
+        toolkits: [mockToolkits[0]!],
+        categories: ["developer"],
+        composioConfigured: true,
+        composioMockEnabled: true,
+      })
+
+    render(
+      <MemoryRouter>
+        <IntegrationsPage />
+      </MemoryRouter>
+    )
+
+    await waitFor(() => {
+      expect(listIntegrations).toHaveBeenCalledTimes(1)
+    })
+    await user.type(screen.getByRole("searchbox", { name: "Search integrations" }), "git")
+    await waitFor(() => {
+      expect(listIntegrations).toHaveBeenCalledTimes(2)
+      expect(screen.getByRole("heading", { name: "GitHub" })).toBeInTheDocument()
+    })
+
+    await act(async () => {
+      resolveInitial!({
+        toolkits: [mockToolkits[1]!],
+        categories: ["communication"],
+        composioConfigured: true,
+        composioMockEnabled: true,
+      })
+    })
+
+    expect(screen.getByRole("heading", { name: "GitHub" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Slack" })).not.toBeInTheDocument()
   })
 })

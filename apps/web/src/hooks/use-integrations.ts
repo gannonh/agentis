@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { IntegrationToolkit } from "@workspace/shared"
 import {
   connectIntegration,
@@ -24,6 +24,7 @@ export function useIntegrations() {
   const [query, setQuery] = useState("")
   const [category, setCategory] = useState<string | null>(null)
   const [debouncedQuery, setDebouncedQuery] = useState("")
+  const latestRefreshId = useRef(0)
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -34,6 +35,8 @@ export function useIntegrations() {
 
   const refresh = useCallback(
     async (searchQuery = debouncedQuery, selectedCategory = category) => {
+      const refreshId = latestRefreshId.current + 1
+      latestRefreshId.current = refreshId
       setLoading(true)
       setError(null)
       try {
@@ -41,14 +44,18 @@ export function useIntegrations() {
           q: searchQuery || undefined,
           category: selectedCategory || undefined,
         })
+        if (refreshId !== latestRefreshId.current) return
         setToolkits(data.toolkits)
         setCategories(data.categories)
         setComposioConfigured(data.composioConfigured)
         setComposioMockEnabled(data.composioMockEnabled)
       } catch (refreshError) {
+        if (refreshId !== latestRefreshId.current) return
         setError(integrationErrorMessage(refreshError, "Failed to load integrations"))
       } finally {
-        setLoading(false)
+        if (refreshId === latestRefreshId.current) {
+          setLoading(false)
+        }
       }
     },
     [category, debouncedQuery]

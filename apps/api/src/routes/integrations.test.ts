@@ -38,6 +38,63 @@ describe("integration routes", () => {
     expect(body.composioMockEnabled).toBe(true)
   })
 
+  it("returns empty connected toolkits when Composio is unavailable", async () => {
+    ctx = createTestContext()
+    ctx.config.mockComposio = false
+    ctx.repos.integrationToolkits.seedFeatured()
+    ctx.repos.integrationConnections.create({
+      toolkitSlug: "github",
+      status: "connected",
+      composioConnectedAccountId: "acct-github",
+    })
+    const thread = ctx.repos.threads.create({
+      title: "Unavailable grants",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+    const composio = extendComposioAdapter({
+      async getToolkit() {
+        throw new Error("Composio should not be called")
+      },
+    })
+    const services = {
+      composio,
+      integrations: new IntegrationService(ctx.repos, ctx.config, composio),
+      toolExecution: createComposioServices(ctx.repos, ctx.config)
+        .toolExecution,
+    }
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const response = await app.request(`/api/threads/${thread.id}/tool-grants`)
+    expect(response.status).toBe(200)
+    const body = (await response.json()) as { availableToolkits: unknown[] }
+    expect(body.availableToolkits).toEqual([])
+  })
+
+  it("returns setup guidance before toolkit lookup when Composio is unavailable", async () => {
+    ctx = createTestContext()
+    ctx.config.mockComposio = false
+    const composio = extendComposioAdapter({
+      async getToolkit() {
+        throw new Error("Composio should not be called")
+      },
+    })
+    const services = {
+      composio,
+      integrations: new IntegrationService(ctx.repos, ctx.config, composio),
+      toolExecution: createComposioServices(ctx.repos, ctx.config)
+        .toolExecution,
+    }
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const response = await app.request("/api/integrations/github/connect", {
+      method: "POST",
+    })
+    expect(response.status).toBe(503)
+    const body = (await response.json()) as { error: string }
+    expect(body.error).toBe("composio_not_configured")
+  })
+
   it("filters integrations by search query", async () => {
     ctx = createTestContext()
     const services = createComposioServices(ctx.repos, ctx.config)
@@ -363,6 +420,101 @@ describe("integration routes", () => {
     const github = body.toolkits.find((toolkit) => toolkit.slug === "github")
     expect(github?.status).toBe("connected")
     expect(github?.connectedAccountCount).toBe(1)
+  })
+
+  it("imports remote accounts for toolkits that have not been locally seeded", async () => {
+    ctx = createTestContext()
+    const composio = extendComposioAdapter({
+      async refreshConnectedAccount(connectedAccountId) {
+        return {
+          id: connectedAccountId,
+          toolkitSlug: "jira",
+          status: "connected",
+        }
+      },
+      async listConnectedAccounts() {
+        return [
+          {
+            id: "acct-jira-live",
+            toolkitSlug: "jira",
+            status: "connected",
+            accountLabel: "Atlassian workspace",
+          },
+        ]
+      },
+    })
+    const services = {
+      composio,
+      integrations: new IntegrationService(ctx.repos, ctx.config, composio),
+      toolExecution: createComposioServices(ctx.repos, ctx.config)
+        .toolExecution,
+    }
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const refresh = await app.request("/api/integrations/refresh", {
+      method: "POST",
+    })
+    expect(refresh.status).toBe(200)
+    const body = (await refresh.json()) as {
+      toolkits: { slug: string; status: string; connectedAccountCount: number }[]
+    }
+    const jira = body.toolkits.find((toolkit) => toolkit.slug === "jira")
+
+    expect(ctx.repos.integrationToolkits.getBySlug("jira")).toBeTruthy()
+    expect(ctx.repos.integrationConnections.getByToolkitSlug("jira")).toMatchObject(
+      {
+        composioConnectedAccountId: "acct-jira-live",
+        accountLabel: "Atlassian workspace",
+      }
+    )
+    expect(jira?.status).toBe("connected")
+    expect(jira?.connectedAccountCount).toBe(1)
+  })
+
+  it("lists persisted active toolkits when Composio no longer resolves them", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.upsertFromCatalog({
+      slug: "retired-toolkit",
+      name: "Retired Toolkit",
+      description: "Removed from Composio",
+      category: "developer",
+      featured: false,
+    })
+    ctx.repos.integrationConnections.create({
+      toolkitSlug: "retired-toolkit",
+      status: "error",
+      errorCode: "connection_error",
+    })
+    const composio = extendComposioAdapter({
+      async getToolkit(toolkitSlug) {
+        if (toolkitSlug === "retired-toolkit") {
+          throw new Error("toolkit_not_found")
+        }
+        return new MockComposioClient().getToolkit(toolkitSlug)
+      },
+    })
+    const services = {
+      composio,
+      integrations: new IntegrationService(ctx.repos, ctx.config, composio),
+      toolExecution: createComposioServices(ctx.repos, ctx.config)
+        .toolExecution,
+    }
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const list = await app.request("/api/integrations")
+    expect(list.status).toBe(200)
+    const body = (await list.json()) as {
+      toolkits: { slug: string; status: string; name: string }[]
+    }
+    const retiredToolkit = body.toolkits.find(
+      (toolkit) => toolkit.slug === "retired-toolkit"
+    )
+
+    expect(retiredToolkit).toMatchObject({
+      slug: "retired-toolkit",
+      name: "Retired Toolkit",
+      status: "error",
+    })
   })
 
   it("resets a local connection when the toolkit is no longer in the catalog", async () => {

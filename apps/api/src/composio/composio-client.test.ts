@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { resolveAuthConfigId } from "./composio-client.js"
+import { LiveComposioClient, resolveAuthConfigId } from "./composio-client.js"
+import type { AppConfig } from "../config.js"
+
+const config = {
+  composioApiKey: "test-key",
+  composioToolkitVersions: {},
+} as AppConfig
 
 describe("resolveAuthConfigId", () => {
   it("does not reuse an auth config for a different toolkit", async () => {
@@ -42,6 +48,38 @@ describe("resolveAuthConfigId", () => {
     expect(authConfigId).toBe("auth-google-drive")
     expect(created).toEqual([
       { toolkit: "googledrive", name: "Google Drive Auth Config" },
+    ])
+  })
+})
+
+describe("LiveComposioClient", () => {
+  it("maps transformed toolkit arrays from the Composio SDK", async () => {
+    const client = new LiveComposioClient(config)
+    ;(client as unknown as { composio: unknown }).composio = {
+      toolkits: {
+        async get() {
+          return [
+            {
+              slug: "github",
+              name: "GitHub",
+              description: "Manage repositories",
+              categories: [{ name: "Developer" }],
+              managedBy: "composio",
+            },
+          ]
+        },
+      },
+    }
+
+    const result = await client.listToolkits({ featured: true })
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        slug: "github",
+        name: "GitHub",
+        category: "developer",
+        featured: true,
+      }),
     ])
   })
 })

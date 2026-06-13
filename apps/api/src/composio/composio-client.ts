@@ -84,15 +84,23 @@ function mapToolkitListPage(
   response: unknown,
   featured: boolean
 ): { items: ComposioToolkitSummary[]; nextCursor?: string } | null {
-  if (!isToolkitListResponse(response)) return null
+  const responseItems = Array.isArray(response)
+    ? response
+    : isToolkitListResponse(response)
+      ? response.items
+      : null
+  if (!responseItems) return null
 
-  const items = response.items
+  const items = responseItems
     .map((toolkit) => mapComposioToolkitSummary(toolkit, featured))
     .filter((toolkit): toolkit is ComposioToolkitSummary => toolkit !== null)
 
   return {
     items,
-    nextCursor: response.nextCursor ?? undefined,
+    nextCursor:
+      !Array.isArray(response) && isToolkitListResponse(response)
+        ? response.nextCursor ?? undefined
+        : undefined,
   }
 }
 

@@ -119,7 +119,12 @@ export class IntegrationCatalog {
   private async resolveToolkitSummary(
     slug: string
   ): Promise<ComposioToolkitSummary | null> {
-    const fromComposio = await this.composio.getToolkit(slug)
+    let fromComposio: ComposioToolkitSummary | null = null
+    try {
+      fromComposio = await this.composio.getToolkit(slug)
+    } catch {
+      // Active connections can outlive Composio catalog entries.
+    }
     if (fromComposio) return fromComposio
 
     const row = this.repos.integrationToolkits.getBySlug(slug)
