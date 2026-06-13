@@ -46,10 +46,11 @@ export function searchHitPath(hit: SearchHit): string | null {
       return `/projects/${hit.id}`
     case "artifact":
       if (!hit.artifactType) {
-        return "/library"
+        return `/library?artifactId=${encodeURIComponent(hit.id)}`
       }
       return (
-        artifactLaunchPath({ id: hit.id, type: hit.artifactType }) ?? "/library"
+        artifactLaunchPath({ id: hit.id, type: hit.artifactType }) ??
+        `/library?artifactId=${encodeURIComponent(hit.id)}`
       )
     default:
       return null

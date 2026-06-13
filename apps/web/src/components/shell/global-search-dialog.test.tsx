@@ -106,6 +106,38 @@ describe("GlobalSearchDialog", () => {
     })
   })
 
+  it("hides a stale error while a new query is pending", async () => {
+    searchWorkspaceMock
+      .mockRejectedValueOnce(new Error("network down"))
+      .mockResolvedValueOnce({
+        query: "prospect",
+        threads: [],
+        artifacts: [],
+        agents: [],
+        projects: [],
+      })
+
+    renderDialog()
+
+    fireEvent.keyDown(window, { key: "k", metaKey: true })
+    const input = await screen.findByPlaceholderText(
+      "Search threads, library, agents, projects…"
+    )
+    fireEvent.change(input, { target: { value: "broken" } })
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Search is unavailable right now.")
+      ).toBeInTheDocument()
+    })
+
+    fireEvent.change(input, { target: { value: "prospect" } })
+
+    expect(
+      screen.queryByText("Search is unavailable right now.")
+    ).not.toBeInTheDocument()
+  })
+
   it("clears stale results while the query changes", async () => {
     searchWorkspaceMock.mockImplementation(async (query: string) => {
       await new Promise((resolve) => window.setTimeout(resolve, 50))

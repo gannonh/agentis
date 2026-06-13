@@ -50,7 +50,7 @@ export function useDebouncedWorkspaceSearch({
         })
         .catch((caught) => {
           if (requestGeneration.current !== generation) return
-          setResults(emptySearchResponse())
+          setResults({ ...emptySearchResponse(), query: trimmedQuery })
           setError(
             caught instanceof ApiError
               ? caught.message

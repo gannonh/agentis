@@ -65,4 +65,54 @@ describe("useGlobalSearch", () => {
     })
     expect(result.current.open).toBe(false)
   })
+
+  it("closes the open palette when the shortcut starts from an input", () => {
+    const input = document.createElement("input")
+    document.body.appendChild(input)
+    input.focus()
+
+    const { result } = renderGlobalSearchHook()
+
+    act(() => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "k", metaKey: true })
+      )
+    })
+    expect(result.current.open).toBe(true)
+
+    act(() => {
+      const event = new KeyboardEvent("keydown", {
+        key: "k",
+        metaKey: true,
+        bubbles: true,
+      })
+      Object.defineProperty(event, "target", { value: input })
+      window.dispatchEvent(event)
+    })
+
+    expect(result.current.open).toBe(false)
+  })
+
+  it("ignores repeated shortcut keydown events", () => {
+    const { result } = renderGlobalSearchHook()
+
+    act(() => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "k", metaKey: true })
+      )
+    })
+    expect(result.current.open).toBe(true)
+
+    act(() => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "k",
+          metaKey: true,
+          repeat: true,
+        })
+      )
+    })
+
+    expect(result.current.open).toBe(true)
+  })
 })

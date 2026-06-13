@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { useNavigate } from "react-router"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { emptySearchResponse, type SearchHit } from "@workspace/shared"
@@ -47,21 +46,16 @@ function SearchResultItem({
 
 export function GlobalSearchDialog() {
   const navigate = useNavigate()
-  const { open, setOpen } = useGlobalSearch()
-  const [query, setQuery] = useState("")
+  const { open, setOpen, query, setQuery } = useGlobalSearch()
   const trimmedQuery = query.trim()
   const isSearching = open && trimmedQuery.length > 0
-  const { results, loading, error, reset } = useDebouncedWorkspaceSearch({
+  const { results, loading, error } = useDebouncedWorkspaceSearch({
     enabled: isSearching,
     query,
   })
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)
-    if (!nextOpen) {
-      setQuery("")
-      reset()
-    }
   }
 
   const handleSelect = (hit: SearchHit) => {
@@ -75,7 +69,7 @@ export function GlobalSearchDialog() {
   const displayResults =
     isSearching && resultsMatchQuery ? results : emptySearchResponse()
   const displayLoading = isSearching && (loading || !resultsMatchQuery)
-  const displayError = isSearching ? error : null
+  const displayError = isSearching && resultsMatchQuery ? error : null
   const showIdleHint = open && !trimmedQuery && !displayLoading && !displayError
   const showEmptyState =
     isSearching &&

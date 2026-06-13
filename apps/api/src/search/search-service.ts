@@ -1,5 +1,4 @@
 import {
-  emptySearchResponse,
   normalizeSearchQuery,
   type ArtifactType,
   type SearchHit,
@@ -43,8 +42,8 @@ export class SearchService {
 
   search(query: string): SearchResponse {
     const normalized = normalizeSearchQuery(query)
-    if (normalized.status !== "ready") {
-      return emptySearchResponse()
+    if (normalized.status !== "ready" || normalized.query !== query) {
+      throw new Error("SearchService.search requires a normalized search query.")
     }
 
     const trimmedQuery = normalized.query
@@ -62,7 +61,7 @@ export class SearchService {
         (thread): SearchHit => ({
           id: thread.id,
           title: thread.title,
-          subtitle: thread.agentNameSnapshot ?? thread.status,
+          subtitle: truncateText(thread.agentNameSnapshot) ?? thread.status,
           entityType: "thread",
         })
       ),
@@ -87,7 +86,8 @@ export class SearchService {
         (project): SearchHit => ({
           id: project.id,
           title: project.name,
-          subtitle: truncateText(project.description ?? project.goals),
+          subtitle:
+            truncateText(project.description) ?? truncateText(project.goals),
           entityType: "project",
         })
       ),

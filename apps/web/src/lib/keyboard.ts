@@ -33,5 +33,10 @@ export function commandPaletteShortcutLabel() {
     return "⌘K"
   }
 
-  return /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? "⌘K" : "Ctrl+K"
+  const platform =
+    (navigator as Navigator & { userAgentData?: { platform?: string } })
+      .userAgentData?.platform ??
+    navigator.platform ??
+    ""
+  return /mac|iphone|ipad|ipod/i.test(platform) ? "⌘K" : "Ctrl+K"
 }

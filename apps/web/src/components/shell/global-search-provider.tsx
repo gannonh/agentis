@@ -18,21 +18,39 @@ export type GlobalSearchContextValue = {
   setOpen: (open: boolean) => void
   toggle: () => void
   shortcutLabel: string
+  query: string
+  setQuery: (query: string) => void
 }
 
 export const GlobalSearchContext =
   createContext<GlobalSearchContextValue | null>(null)
 
 export function GlobalSearchProvider({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpenState] = useState(false)
+  const [query, setQuery] = useState("")
+
+  const setOpen = useCallback((nextOpen: boolean) => {
+    if (!nextOpen) {
+      setQuery("")
+    }
+    setOpenState(nextOpen)
+  }, [])
 
   const toggle = useCallback(() => {
-    setOpen((current) => !current)
-  }, [])
+    const nextOpen = !open
+    if (!nextOpen) {
+      setQuery("")
+    }
+    setOpenState(nextOpen)
+  }, [open])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!isCommandPaletteShortcut(event) || isEditableTarget(event.target)) {
+      if (event.repeat || !isCommandPaletteShortcut(event)) {
+        return
+      }
+
+      if (!open && isEditableTarget(event.target)) {
         return
       }
 
@@ -42,7 +60,7 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [toggle])
+  }, [open, toggle])
 
   const value = useMemo(
     () => ({
@@ -50,8 +68,10 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
       setOpen,
       toggle,
       shortcutLabel: commandPaletteShortcutLabel(),
+      query,
+      setQuery,
     }),
-    [open, toggle]
+    [open, query, setOpen, toggle]
   )
 
   return (
