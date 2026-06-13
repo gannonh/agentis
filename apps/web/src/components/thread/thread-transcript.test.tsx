@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { render, screen } from "@testing-library/react"
 import type { Message } from "@workspace/shared"
-import {
-  groupThreadTurns,
-  isTranscriptMessage,
-  ThreadTranscript,
-} from "./thread-transcript"
+import { groupThreadTurns, isTranscriptMessage } from "./thread-transcript-turns"
+import { ThreadTranscript } from "./thread-transcript"
 
 function message(
   overrides: Partial<Message> & Pick<Message, "id" | "role">

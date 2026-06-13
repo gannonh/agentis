@@ -94,15 +94,44 @@ export function WorkingArtifactsRailProvider({
   refreshKey,
   children,
 }: WorkingArtifactsRailProviderProps) {
-  const [artifacts, setArtifacts] = useState<Artifact[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [userSelectedId, setUserSelectedId] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
 
+  return (
+    <WorkingArtifactsRailProviderLoaded
+      key={`${threadId}:${refreshKey ?? ""}`}
+      threadId={threadId}
+      userSelectedId={userSelectedId}
+      onSelectArtifact={setUserSelectedId}
+      mobileOpen={mobileOpen}
+      onMobileOpenChange={setMobileOpen}
+    >
+      {children}
+    </WorkingArtifactsRailProviderLoaded>
+  )
+}
+
+function WorkingArtifactsRailProviderLoaded({
+  threadId,
+  userSelectedId,
+  onSelectArtifact,
+  mobileOpen,
+  onMobileOpenChange,
+  children,
+}: {
+  threadId: string
+  userSelectedId: string | null
+  onSelectArtifact: (id: string) => void
+  mobileOpen: boolean
+  onMobileOpenChange: (open: boolean) => void
+  children: ReactNode
+}) {
+  const [artifacts, setArtifacts] = useState<Artifact[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
     void listArtifacts({ threadId })
       .then((items) => {
         if (!cancelled) {
@@ -126,7 +155,7 @@ export function WorkingArtifactsRailProvider({
     return () => {
       cancelled = true
     }
-  }, [threadId, refreshKey])
+  }, [threadId])
 
   const sortedArtifacts = useMemo(
     () =>
@@ -147,9 +176,19 @@ export function WorkingArtifactsRailProvider({
     [sortedArtifacts, selectedId]
   )
 
-  const selectArtifact = useCallback((id: string) => {
-    setUserSelectedId(id)
-  }, [])
+  const selectArtifact = useCallback(
+    (id: string) => {
+      onSelectArtifact(id)
+    },
+    [onSelectArtifact]
+  )
+
+  const setMobileOpen = useCallback(
+    (open: boolean) => {
+      onMobileOpenChange(open)
+    },
+    [onMobileOpenChange]
+  )
 
   const value = useMemo(
     () => ({
@@ -170,6 +209,7 @@ export function WorkingArtifactsRailProvider({
       selectArtifact,
       selectedArtifact,
       mobileOpen,
+      setMobileOpen,
     ]
   )
 
@@ -201,10 +241,6 @@ function WorkingArtifactPreviewLoader({ artifact }: { artifact: Artifact }) {
 
   useEffect(() => {
     const requestId = ++requestRef.current
-    setLoading(true)
-    setError(null)
-    setDocumentDetail(null)
-    setArtifactDetail(null)
 
     const onFailure = (failure: unknown) => {
       if (requestId !== requestRef.current) return
