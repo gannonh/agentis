@@ -39,6 +39,8 @@ jobs:
         run: pnpm typecheck
 
       - name: Build
+        env:
+          VITE_COMMAND_PALETTE_SHORTCUT_LABEL: ⌘K
         run: pnpm build
 
       - name: Lint

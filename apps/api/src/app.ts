@@ -19,6 +19,7 @@ import {
 } from "./routes/promotion-drafts.js"
 import { createRuntimeRoutes } from "./routes/runtime.js"
 import { createRunRoutes, createThreadRoutes } from "./routes/threads.js"
+import { createSearchRoutes } from "./routes/search.js"
 import { createToolGrantRoutes } from "./routes/tool-grants.js"
 
 function getAllowedWebOrigins(webAppOrigin: string) {
@@ -72,6 +73,7 @@ export function createApp(
     createPromotionDraftRoutes(repos, config)
   )
   app.route("/api/runs", createRunRoutes(repos, config, services))
+  app.route("/api/search", createSearchRoutes(repos))
   if (isDebugSeedsEnabled(config)) {
     app.route("/api/debug", createDebugSeedRoutes(repos))
   }

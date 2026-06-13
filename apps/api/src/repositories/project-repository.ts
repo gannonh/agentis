@@ -1,6 +1,7 @@
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq, or } from "drizzle-orm"
 import type { Project, ProjectStatus } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
+import { likeContains } from "../db/like-pattern.js"
 import { projects } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapProject } from "../lib/mappers.js"
@@ -43,6 +44,26 @@ export class ProjectRepository {
         .map(mapProject)
     }
     return query.all().map(mapProject)
+  }
+
+  search(query: string, limit: number): Project[] {
+    return this.db
+      .select()
+      .from(projects)
+      .where(
+        and(
+          eq(projects.status, "active"),
+          or(
+            likeContains(projects.name, query),
+            likeContains(projects.description, query),
+            likeContains(projects.goals, query)
+          )!
+        )
+      )
+      .orderBy(desc(projects.updatedAt))
+      .limit(limit)
+      .all()
+      .map(mapProject)
   }
 
   update(

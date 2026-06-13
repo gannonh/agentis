@@ -139,6 +139,19 @@ export {
   updateDocumentVisibilityRequestSchema,
   updateDocumentVisibilityResponseSchema,
 } from "./document-schemas.js"
+import {
+  searchEntityTypeSchema,
+  searchHitSchema,
+  searchResponseSchema,
+} from "./search-schemas.js"
+export {
+  MAX_SEARCH_QUERY_LENGTH,
+  emptySearchResponse,
+  normalizeSearchQuery,
+  searchEntityTypeSchema,
+  searchHitSchema,
+  searchResponseSchema,
+} from "./search-schemas.js"
 
 const nonEmptyString = z.string().min(1)
 const nonNegativeNumber = z.number().nonnegative()
@@ -861,6 +874,9 @@ export const abortRunResponseSchema = z.object({
 export const DEFAULT_OPENAI_MODEL = DEFAULT_GATEWAY_MODEL
 
 export type RunStatus = z.infer<typeof runStatusSchema>
+export type SearchEntityType = z.infer<typeof searchEntityTypeSchema>
+export type SearchHit = z.infer<typeof searchHitSchema>
+export type SearchResponse = z.infer<typeof searchResponseSchema>
 export type ThreadStatus = z.infer<typeof threadStatusSchema>
 export type ThreadMode = z.infer<typeof threadModeSchema>
 export type WorkspaceBackendType = z.infer<typeof workspaceBackendTypeSchema>
