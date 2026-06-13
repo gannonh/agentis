@@ -7,7 +7,6 @@ import {
   runSchema,
   threadDetailSchema,
   threadListItemSchema,
-  threadListSummaryFromMessages,
   threadSchema,
   updateThreadRequestSchema,
 } from "@workspace/shared"
@@ -22,6 +21,10 @@ import {
   type ResolvedAgentToolGrant,
 } from "../agents/tool-grant-resolution.js"
 import { summarizeTitle } from "../lib/title-summary.js"
+import {
+  EMPTY_THREAD_LIST_CONTEXT,
+  loadThreadListContext,
+} from "../lib/thread-list-context.js"
 import { toSourceWorkflowSnapshot } from "../lib/source-workflow-snapshot.js"
 import { ProjectContextService } from "../projects/project-context-service.js"
 import { RunExecutor } from "../runtime/run-executor.js"
@@ -37,21 +40,17 @@ export function createThreadRoutes(
 
   app.get("/", (c) => {
     const threads = repos.threads.list()
-    const threadIds = threads.map((thread) => thread.id)
-    const messagesByThreadId = repos.messages.listByThreadIds(threadIds)
-    const latestRuns = repos.runs.listLatestByThreadIds(threadIds)
-    const documentCounts = repos.documents.countByThreadIds(threadIds)
+    const contextByThreadId = loadThreadListContext(
+      repos,
+      threads.map((thread) => thread.id)
+    )
 
-    const items = threads.map((thread) => {
-      const messages = messagesByThreadId.get(thread.id) ?? []
-      return threadListItemSchema.parse({
+    const items = threads.map((thread) =>
+      threadListItemSchema.parse({
         ...thread,
-        messageCount: messages.length,
-        lastRunStatus: latestRuns.get(thread.id)?.status,
-        summary: threadListSummaryFromMessages(messages),
-        documentCount: documentCounts.get(thread.id) ?? 0,
+        ...(contextByThreadId.get(thread.id) ?? EMPTY_THREAD_LIST_CONTEXT),
       })
-    })
+    )
     return c.json(items)
   })
 

@@ -7,14 +7,11 @@ import {
 } from "@/components/new-thread/suggestion-chips"
 
 type QuickActionsProps = {
-  agents?: AgentListItem[]
+  agents: AgentListItem[]
   onSelectChip: (chip: SuggestionChip) => void
 }
 
-export function QuickActions({
-  agents = [],
-  onSelectChip,
-}: QuickActionsProps) {
+export function QuickActions({ agents, onSelectChip }: QuickActionsProps) {
   const chips = buildSuggestionChips(agents)
 
   return (

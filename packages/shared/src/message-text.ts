@@ -1,7 +1,33 @@
-import type { MessagePart } from "./schemas.js"
+import type { Message, MessagePart } from "./schemas.js"
 
-function hasToolResultParts(parts: MessagePart[]): boolean {
-  return parts.some((part) => part.type === "tool-result")
+export function getTextFromMessageParts(parts: MessagePart[]): string {
+  return parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("")
+}
+
+export function messageHasToolParts(parts: MessagePart[]): boolean {
+  return parts.some(
+    (part) =>
+      part.type === "tool-call" ||
+      part.type === "tool-result" ||
+      part.type === "tool-error"
+  )
+}
+
+export type MessageTextSource = Pick<Message, "role" | "parts">
+
+export function getVisibleMessageText(message: MessageTextSource): string {
+  const text = getTextFromMessageParts(message.parts)
+  if (shouldSuppressTextForToolResults(text, message.parts)) {
+    return ""
+  }
+  const normalized =
+    message.role === "assistant" && messageHasToolParts(message.parts)
+      ? stripRedundantArtifactLinkLines(text)
+      : text
+  return normalized.trim()
 }
 
 export function looksLikeRawToolProviderJson(text: string): boolean {
@@ -40,7 +66,7 @@ export function shouldSuppressTextForToolResults(
   text: string,
   parts: MessagePart[]
 ): boolean {
-  if (!hasToolResultParts(parts)) return false
+  if (!parts.some((part) => part.type === "tool-result")) return false
   const trimmed = text.trim()
   if (!trimmed) return false
   return looksLikeRawToolProviderJson(trimmed)

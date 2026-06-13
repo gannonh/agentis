@@ -1,9 +1,13 @@
 import {
   agentDetailResponseSchema,
-  threadListSummaryFromMessages,
+  agentRecentThreadSummarySchema,
   type AgentDetailResponse,
 } from "@workspace/shared"
 import { toPublicArtifact } from "../lib/public-artifacts.js"
+import {
+  EMPTY_THREAD_LIST_CONTEXT,
+  loadThreadListContext,
+} from "../lib/thread-list-context.js"
 import type { Repositories } from "../repositories/index.js"
 
 export function buildAgentDetail(
@@ -15,25 +19,16 @@ export function buildAgentDetail(
 
   const libraryItems = repos.artifacts.list({ agentId }).map(toPublicArtifact)
   const threads = repos.threads.listByAgentId(agentId, { limit: 10 })
-  const threadIds = threads.map((thread) => thread.id)
-  const latestRuns = repos.runs.listLatestByThreadIds(threadIds)
-  const documentCounts = repos.documents.countByThreadIds(threadIds)
-  const messagesByThreadId = repos.messages.listByThreadIds(threadIds)
-  const recentThreads = threads.map((thread) => {
-    const messages = messagesByThreadId.get(thread.id) ?? []
-    return {
-      id: thread.id,
-      title: thread.title,
-      status: thread.status,
-      model: thread.model,
-      agentConfigurationVersionId: thread.agentConfigurationVersionId,
-      createdAt: thread.createdAt,
-      updatedAt: thread.updatedAt,
-      lastRunStatus: latestRuns.get(thread.id)?.status,
-      summary: threadListSummaryFromMessages(messages),
-      documentCount: documentCounts.get(thread.id) ?? 0,
-    }
-  })
+  const contextByThreadId = loadThreadListContext(
+    repos,
+    threads.map((thread) => thread.id)
+  )
+  const recentThreads = threads.map((thread) =>
+    agentRecentThreadSummarySchema.parse({
+      ...thread,
+      ...(contextByThreadId.get(thread.id) ?? EMPTY_THREAD_LIST_CONTEXT),
+    })
+  )
 
   const memories = repos.savedMemories.listForAgent(agentId)
 

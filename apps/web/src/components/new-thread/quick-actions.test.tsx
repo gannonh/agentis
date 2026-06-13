@@ -9,7 +9,7 @@ describe("QuickActions", () => {
     const user = userEvent.setup()
     const onSelectChip = vi.fn()
 
-    render(<QuickActions onSelectChip={onSelectChip} />)
+    render(<QuickActions agents={[]} onSelectChip={onSelectChip} />)
 
     await user.click(
       screen.getByRole("button", { name: /research a topic/i })
@@ -24,7 +24,7 @@ describe("QuickActions", () => {
   })
 
   it("renders at least four enabled chips", () => {
-    render(<QuickActions onSelectChip={vi.fn()} />)
+    render(<QuickActions agents={[]} onSelectChip={vi.fn()} />)
 
     const buttons = screen.getAllByRole("button")
     expect(buttons.length).toBeGreaterThanOrEqual(4)

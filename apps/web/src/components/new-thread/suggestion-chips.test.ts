@@ -28,8 +28,6 @@ describe("buildSuggestionChips", () => {
     ])
 
     expect(chips[0]?.agentId).toBe("agent_launch")
-    expect(
-      chips.filter((chip) => chip.label === "Launch readiness update")
-    ).toHaveLength(0)
+    expect(chips.some((chip) => chip.id === "launch-readiness")).toBe(false)
   })
 })

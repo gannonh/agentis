@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { useSearchParams } from "react-router"
 import type { ThreadListItem, ThreadMode } from "@workspace/shared"
 import { AgentPicker } from "@/components/new-thread/agent-picker"
@@ -33,10 +33,7 @@ export function NewThreadPage() {
       ? requestedAgentId
       : DEFAULT_AGENT_PICKER_ID
   const effectiveSelectedAgentId = selectedAgentId ?? urlAgentId
-  const { demoThreads, recentThreads } = useMemo(
-    () => partitionHomeThreads(threads),
-    [threads]
-  )
+  const { demoThreads, recentThreads } = partitionHomeThreads(threads)
 
   useEffect(() => {
     void listThreads()
@@ -46,7 +43,9 @@ export function NewThreadPage() {
   }, [])
 
   function handleSelectChip(chip: SuggestionChip) {
-    setSelectedAgentId(chip.agentId ?? null)
+    if (chip.agentId) {
+      setSelectedAgentId(chip.agentId)
+    }
     setPromptDraft({
       id: crypto.randomUUID(),
       text: chip.prompt,
