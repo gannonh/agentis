@@ -37,16 +37,17 @@ CI and Playwright continue to use `AGENTIS_MOCK_COMPOSIO=1` per `AGENTS.md`.
 
 ## Canonical golden path
 
-1. **Connect GitHub** — `/integrations` → **Connect** on GitHub → complete Composio/GitHub OAuth → return to `/integrations?connected=github`.
-2. **Start a generic thread** — `/threads/new` (default **Agentis** agent).
-3. **Grant GitHub** — composer **Tools** → enable GitHub → confirm `GitHub enabled` chip.
-4. **Run scripted prompt:**
+1. **Browse catalog (optional)** — `/integrations` lists Composio toolkits with search and category filters; connected/in-use toolkits appear in the top section. In mock mode (`AGENTIS_MOCK_COMPOSIO=1`) the catalog comes from `MOCK_COMPOSIO_TOOLKITS`.
+2. **Connect GitHub** — `/integrations` → **Connect** on GitHub → complete Composio/GitHub OAuth → return to `/integrations?connected=github`.
+3. **Start a generic thread** — `/threads/new` (default **Agentis** agent).
+4. **Grant GitHub** — composer **Tools** → enable GitHub → confirm `GitHub enabled` chip.
+5. **Run scripted prompt:**
 
    ```text
    List my GitHub repositories
    ```
 
-5. **Pass** — run timeline shows a Composio tool step (`provider: composio`, `toolkitSlug: github`); assistant summarizes repository results.
+6. **Pass** — run timeline shows a Composio tool step (`provider: composio`, `toolkitSlug: github`); assistant summarizes repository results.
 
 ---
 
@@ -63,7 +64,7 @@ Timeline preflight steps show the **human** remediation sentence (not machine co
 
 Thread/agent grant failures from `POST /api/threads` (and agent grant routes) return a human-readable `error` with a separate machine `code` field — the web client surfaces `error` via `ApiError`.
 
-Integration refresh (`POST /api/integrations/refresh`) syncs remote Composio accounts but **does not** overwrite a granted `connectionId` with a different Composio account. When the bound account disappears remotely, the local row is marked `expired` and grants remain pointed at the original connection.
+Integration refresh (`POST /api/integrations/refresh`, optional `q`/`category` query params) syncs remote Composio accounts and returns the full integrations list response (`toolkits`, `categories`, config flags). It does **not** overwrite a granted `connectionId` with a different Composio account. When the bound account disappears remotely, the local row is marked `expired` and grants remain pointed at the original connection.
 
 ---
 
@@ -74,7 +75,8 @@ Integration refresh (`POST /api/integrations/refresh`) syncs remote Composio acc
 | Check | Result |
 |-------|--------|
 | `GET /api/runtime/health` → `composio.available: true` | Pass |
-| `GET /api/integrations` → `composioMockEnabled: false` | Pass |
+| `GET /api/integrations` → `composioMockEnabled: false`, `categories` present | Pass |
+| `GET /api/integrations?q=github` filters catalog | Pass (`integrations.test.ts`) |
 | `POST /api/integrations/github/connect` → `redirectUrl` host `connect.composio.dev` | Pass |
 | OAuth redirect reaches GitHub sign-in | Pass (browser automation) |
 | Preflight: GitHub not connected | Pass — `400` stream; error “GitHub is not connected…” |
@@ -95,7 +97,7 @@ Integration refresh (`POST /api/integrations/refresh`) syncs remote Composio acc
 
 ### Manual checkpoint (requires human OAuth)
 
-Complete **Connect GitHub** in a browser with your GitHub account, then run steps 3–5 above. Confirm:
+Complete **Connect GitHub** in a browser with your GitHub account, then run steps 4–6 above. Confirm:
 
 - [ ] `/integrations` shows GitHub **connected**
 - [ ] Thread run timeline includes a completed Composio GitHub tool step
@@ -114,8 +116,9 @@ If Connect is stuck on **pending** or **error**:
 
 ## Related code
 
+- Catalog assembly: [`apps/api/src/composio/integration-catalog.ts`](../../apps/api/src/composio/integration-catalog.ts)
 - Curated tool: [`apps/api/src/composio/tool-catalog.ts`](../../apps/api/src/composio/tool-catalog.ts)
 - Preflight: [`apps/api/src/composio/tool-execution-service.ts`](../../apps/api/src/composio/tool-execution-service.ts)
-- Integration refresh: [`apps/api/src/composio/integration-service.ts`](../../apps/api/src/composio/integration-service.ts)
+- Connection lifecycle: [`apps/api/src/composio/integration-service.ts`](../../apps/api/src/composio/integration-service.ts)
 - Grant resolution: [`apps/api/src/agents/tool-grant-resolution.ts`](../../apps/api/src/agents/tool-grant-resolution.ts)
 - E2E: [`apps/web/e2e/composio-integrations.spec.ts`](../../apps/web/e2e/composio-integrations.spec.ts)
