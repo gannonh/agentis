@@ -45,3 +45,24 @@ export function shouldSuppressTextForToolResults(
   if (!trimmed) return false
   return looksLikeRawToolProviderJson(trimmed)
 }
+
+/** Agent boilerplate after document/artifact tools; the thread UI already surfaces links. */
+export function isRedundantArtifactLinkLine(line: string): boolean {
+  if (!line) return false
+  return (
+    /^view it here:\s*\/(?:documents|artifacts)\/\S+$/i.test(line) ||
+    /^download (?:markdown(?:\/html source)?|html source|markdown\/html source):\s*\/api\/(?:documents|artifacts)\/\S+\/download$/i.test(
+      line
+    )
+  )
+}
+
+export function stripRedundantArtifactLinkLines(text: string): string {
+  const kept = text
+    .split(/\r?\n/)
+    .filter((line) => !isRedundantArtifactLinkLine(line.trim()))
+  return kept
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trimEnd()
+}

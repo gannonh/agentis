@@ -92,6 +92,7 @@ export {
   findStaticArtifactsInputSchema,
   findStaticArtifactsOutputSchema,
   readStaticArtifactInputSchema,
+  readStaticArtifactMaxChars,
   readStaticArtifactOutputSchema,
   staticArtifactAssetReferenceSchema,
   staticArtifactErrorCodeSchema,

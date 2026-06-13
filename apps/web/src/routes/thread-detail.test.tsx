@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router"
 import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
@@ -195,6 +195,44 @@ vi.mock("@/lib/api/projects-client", () => ({
     return null
   },
   listArtifacts: vi.fn().mockResolvedValue([]),
+  getDocumentDetail: vi.fn().mockResolvedValue({
+    document: {
+      id: "document_123",
+      title: "Research brief",
+      type: "document",
+      contentFormat: "markdown",
+      mimeType: "text/markdown",
+      sizeBytes: 120,
+      visibilityScope: "thread",
+      threadId: "thread_test",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    content: "# Preview",
+    truncated: false,
+    currentVersion: 1,
+    selectedVersion: 1,
+    versions: [],
+  }),
+  getArtifactDetail: vi.fn().mockResolvedValue({
+    artifact: {
+      id: "artifact_deck",
+      title: "Deck",
+      type: "slides",
+      contentFormat: "html",
+      mimeType: "text/html",
+      sizeBytes: 120,
+      visibilityScope: "thread",
+      threadId: "thread_test",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    content: "<html></html>",
+    truncated: false,
+    currentVersion: 1,
+    selectedVersion: 1,
+    versions: [],
+  }),
 }))
 
 describe("ThreadDetailPage create-agent action", () => {
@@ -402,7 +440,7 @@ describe("ThreadDetailPage create-agent action", () => {
     )
   })
 
-  it("lists durable thread artifacts outside the run timeline", async () => {
+  it("lists working thread artifacts in the right rail", async () => {
     vi.mocked(listArtifacts).mockResolvedValueOnce([
       {
         id: "artifact_deck",
@@ -436,7 +474,7 @@ describe("ThreadDetailPage create-agent action", () => {
     )
 
     expect(
-      await screen.findByRole("heading", { name: "Durable artifacts" })
+      await screen.findByRole("heading", { name: "Working artifacts" })
     ).toBeInTheDocument()
     expect(listArtifacts).toHaveBeenCalledWith({ threadId: "thread_test" })
     expect(screen.getByText("How to Create a Good Changelog")).toBeInTheDocument()
@@ -445,5 +483,55 @@ describe("ThreadDetailPage create-agent action", () => {
       "href",
       "/artifacts/artifact_deck"
     )
+  })
+
+  it("shows a collapsed mobile working artifacts control above the transcript", async () => {
+    vi.mocked(listArtifacts).mockResolvedValueOnce([
+      {
+        id: "artifact_deck",
+        title: "How to Create a Good Changelog",
+        type: "slides",
+        description: null,
+        contentFormat: "html",
+        mimeType: "text/html",
+        sizeBytes: 2048,
+        previewText: null,
+        metadata: null,
+        visibilityScope: "thread",
+        threadId: "thread_test",
+        threadTitleSnapshot: "Investigate support backlog",
+        projectId: null,
+        projectNameSnapshot: null,
+        runId: "run_1",
+        agentId: GENERIC_AGENTIS_AGENT_ID,
+        agentNameSnapshot: "Agentis",
+        currentVersionId: "version_1",
+        currentVersion: 2,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ])
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <ThreadDetailPage />
+      </MemoryRouter>
+    )
+
+    const mobileToggle = await screen.findByRole("button", {
+      name: /working artifacts/i,
+    })
+    expect(mobileToggle).toHaveAttribute("aria-expanded", "false")
+    expect(
+      screen.queryByTestId("working-artifacts-mobile-panel")
+    ).not.toBeInTheDocument()
+
+    await user.click(mobileToggle)
+    expect(mobileToggle).toHaveAttribute("aria-expanded", "true")
+    const mobilePanel = await screen.findByTestId("working-artifacts-mobile-panel")
+    expect(
+      within(mobilePanel).getByText("How to Create a Good Changelog")
+    ).toBeInTheDocument()
   })
 })

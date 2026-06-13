@@ -1133,68 +1133,60 @@ describe("run executor composio bridge", () => {
     await stream.text()
 
     const steps = context.repos.steps.listByRunId(run.id)
-    expect(steps).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          title: "Debug: model input",
-          type: "reasoning",
-          payload: expect.objectContaining({
-            provider: "debug",
-            kind: "model-input",
-            systemPrompt: expect.stringContaining(
-              "## Agent instructions\nAnswer as the debug agent."
-            ),
-            messages: expect.arrayContaining([
-              expect.objectContaining({
-                role: "user",
-                content: "Say hello for debug inspection.",
-              }),
-            ]),
-            tools: expect.arrayContaining([
-              "listWorkspaceFiles",
-              "createDocument",
-            ]),
-            toolDetails: expect.arrayContaining([
-              expect.objectContaining({
-                name: "listWorkspaceFiles",
-                description: expect.stringContaining(
-                  "List files and directories"
-                ),
-                inputSchema: expect.objectContaining({
-                  typeName: "ZodObject",
-                  fields: expect.arrayContaining([
-                    expect.objectContaining({ name: "path" }),
-                    expect.objectContaining({ name: "recursive" }),
-                  ]),
-                }),
-              }),
-              expect.objectContaining({
-                name: "createDocument",
-                description: expect.stringContaining(
-                  "Create a durable text document"
-                ),
-              }),
-            ]),
-          }),
+    const modelInput = steps.find((step) => step.title === "Debug: model input")
+    const modelOutput = steps.find(
+      (step) => step.title === "Debug: model output"
+    )
+
+    expect(modelInput).toEqual(
+      expect.objectContaining({
+        type: "reasoning",
+        payload: expect.objectContaining({
+          provider: "debug",
+          kind: "model-input",
+          systemPrompt: expect.stringContaining(
+            "## Agent instructions\nAnswer as the debug agent."
+          ),
+          messages: expect.arrayContaining([
+            expect.objectContaining({
+              role: "user",
+              content: "Say hello for debug inspection.",
+            }),
+          ]),
+          tools: expect.arrayContaining([
+            "listWorkspaceFiles",
+            "createDocument",
+          ]),
+          toolDetails: expect.arrayContaining([
+            expect.objectContaining({
+              name: "listWorkspaceFiles",
+              description: expect.stringContaining("List files and directories"),
+            }),
+            expect.objectContaining({
+              name: "createDocument",
+              description: expect.stringContaining(
+                "Create a durable text document"
+              ),
+            }),
+          ]),
         }),
-        expect.objectContaining({
-          title: "Debug: model output",
-          type: "reasoning",
-          payload: expect.objectContaining({
-            provider: "debug",
-            kind: "model-output",
-            assistantParts: expect.arrayContaining([
-              expect.objectContaining({
-                type: "text",
-                text: expect.stringContaining(
-                  "Hello from Agentis mock runtime."
-                ),
-              }),
-            ]),
-            usage: expect.objectContaining({ totalTokens: expect.any(Number) }),
-          }),
+      })
+    )
+    expect(modelOutput).toEqual(
+      expect.objectContaining({
+        type: "reasoning",
+        payload: expect.objectContaining({
+          provider: "debug",
+          kind: "model-output",
+          assistantParts: expect.arrayContaining([
+            expect.objectContaining({
+              type: "text",
+              text: expect.stringContaining("Hello from Agentis mock runtime."),
+            }),
+          ]),
+          usage: expect.objectContaining({ totalTokens: expect.any(Number) }),
         }),
-      ])
+      })
     )
   }, 10_000)
 

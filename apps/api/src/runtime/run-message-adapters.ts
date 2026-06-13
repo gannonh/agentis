@@ -1,6 +1,7 @@
 import type { ModelMessage, UIMessage } from "ai"
 import {
   shouldSuppressTextForToolResults,
+  stripRedundantArtifactLinkLines,
   type Message,
   type MessagePart,
 } from "@workspace/shared"
@@ -14,8 +15,18 @@ export function getTextFromParts(parts: MessagePart[]) {
     .join("")
 }
 
+export function hasToolParts(parts: MessagePart[]) {
+  return parts.some(
+    (part) =>
+      part.type === "tool-call" ||
+      part.type === "tool-result" ||
+      part.type === "tool-error"
+  )
+}
+
 export function normalizeAssistantText(text: string) {
-  return text
+  return stripRedundantArtifactLinkLines(
+    text
     .replace(
       /\[([^\]]+)\]\(https?:\/\/yourworkspaceurl\/library\?documentId=([\w-]+)[^)]*\)/gi,
       "[$1](/documents/$2)"
@@ -33,12 +44,20 @@ export function normalizeAssistantText(text: string) {
       "/documents/$1"
     )
     .replace(/https?:\/\/yourworkspaceurl(\/[^\s)\]]*)/gi, "$1")
+  ).trim()
 }
 
-export function setTextPart(parts: MessagePart[], text: string): MessagePart[] {
+export function setTextPart(
+  parts: MessagePart[],
+  text: string,
+  options?: { normalize?: boolean }
+): MessagePart[] {
   const nonText = parts.filter((part) => part.type !== "text")
-  const normalizedText = normalizeAssistantText(text)
-  return normalizedText ? [{ type: "text", text: normalizedText }, ...nonText] : nonText
+  const normalizedText =
+    options?.normalize === false ? text : normalizeAssistantText(text)
+  return normalizedText
+    ? [{ type: "text", text: normalizedText }, ...nonText]
+    : nonText
 }
 
 function renderToolSummary(output: unknown): string {

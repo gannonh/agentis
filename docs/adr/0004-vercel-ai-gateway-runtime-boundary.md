@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, amended 2026-06-04
+Accepted, amended 2026-06-04 and 2026-06-13
 
 ## Context
 
@@ -20,6 +20,8 @@ Use configurable AI Gateway providers for live chat/run model execution:
 - `AGENTIS_MOCK_RUNTIME=1` remains the local and CI mock runtime path.
 
 Run execution constructs live language models through `apps/api/src/runtime/gateway-model.ts`, uses Gateway-compatible model ids such as `openai/gpt-4o-mini`, and normalizes known legacy OpenAI ids for existing local records.
+
+When `AI_GATEWAY_PROVIDER=cloudflare`, model transport routing and request normalization live in `apps/api/src/runtime/cloudflare-ai-gateway.ts` (see ADR 0006).
 
 Native web search remains behind `WebSearchProvider`:
 

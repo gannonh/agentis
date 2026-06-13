@@ -1,5 +1,8 @@
 import type { Message } from "@workspace/shared"
-import { shouldSuppressTextForToolResults } from "@workspace/shared"
+import {
+  shouldSuppressTextForToolResults,
+  stripRedundantArtifactLinkLines,
+} from "@workspace/shared"
 
 export function getTranscriptText(message: Message): string {
   return message.parts
@@ -13,7 +16,17 @@ export function getDisplayTranscriptText(message: Message): string {
   if (shouldSuppressTextForToolResults(text, message.parts)) {
     return ""
   }
-  return text
+  const hasToolParts = message.parts.some(
+    (part) =>
+      part.type === "tool-call" ||
+      part.type === "tool-result" ||
+      part.type === "tool-error"
+  )
+  const normalized =
+    message.role === "assistant" && hasToolParts
+      ? stripRedundantArtifactLinkLines(text)
+      : text
+  return normalized.trim()
 }
 
 export function messageHasVisibleContent(message: Message): boolean {

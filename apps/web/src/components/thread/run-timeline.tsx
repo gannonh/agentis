@@ -134,7 +134,7 @@ export function RunTimeline({
   const contentId = `run-timeline-content-${run.id}`
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col gap-3 bg-card/40 p-4">
+    <aside className="flex w-full shrink-0 flex-col gap-3 bg-card/40 p-4">
       <button
         type="button"
         aria-expanded={expanded}
