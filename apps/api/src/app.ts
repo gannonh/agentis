@@ -66,7 +66,7 @@ export function createApp(
   app.route("/api/integrations", createIntegrationRoutes(services, config))
   app.route("/api/threads", createThreadRoutes(repos, config))
   app.route("/api/threads", createThreadPromotionRoutes(repos, config))
-  app.route("/api/threads", createToolGrantRoutes(repos, services, config))
+  app.route("/api/threads", createToolGrantRoutes(repos, services))
   app.route(
     "/api/agent-promotion-drafts",
     createPromotionDraftRoutes(repos, config)

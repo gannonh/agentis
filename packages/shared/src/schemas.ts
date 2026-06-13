@@ -316,7 +316,7 @@ export const integrationToolkitSchema = z.object({
   category: z.string(),
   featured: z.boolean(),
   integrationType: integrationTypeSchema,
-  logoUrl: z.string().url().optional(),
+  logoUrl: z.string().min(1).optional(),
   status: connectionStatusSchema,
   connectedAccountCount: z.number(),
   availableTools: z.array(z.string()),
@@ -325,7 +325,15 @@ export const integrationToolkitSchema = z.object({
 export const integrationsListQuerySchema = z.object({
   q: z.string().optional(),
   category: z.string().optional(),
-  featured: z.coerce.boolean().optional(),
+  featured: z
+    .string()
+    .optional()
+    .transform((value) => {
+      if (value === undefined) return undefined
+      if (value === "true" || value === "1") return true
+      if (value === "false" || value === "0") return false
+      return undefined
+    }),
 })
 
 export const integrationConnectionSchema = z.object({

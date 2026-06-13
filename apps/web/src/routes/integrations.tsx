@@ -49,25 +49,30 @@ export function IntegrationsPage() {
     }
   }, [searchParams, setNotice, setSearchParams])
 
+  const activeIntegrations = useMemo(
+    () => toolkits.filter((integration) => integration.status !== "not_connected"),
+    [toolkits]
+  )
+
   const connectedIntegrations = useMemo(
     () => toolkits.filter((integration) => integration.status === "connected"),
     [toolkits]
   )
 
-  const connectedSlugs = useMemo(
-    () => new Set(connectedIntegrations.map((integration) => integration.slug)),
-    [connectedIntegrations]
+  const activeSlugs = useMemo(
+    () => new Set(activeIntegrations.map((integration) => integration.slug)),
+    [activeIntegrations]
   )
 
   const browseIntegrations = useMemo(() => {
     const browsing = toolkits.filter(
-      (integration) => !connectedSlugs.has(integration.slug)
+      (integration) => !activeSlugs.has(integration.slug)
     )
     if (query.trim() || category) {
       return browsing
     }
     return browsing.filter((integration) => integration.featured)
-  }, [category, connectedSlugs, query, toolkits])
+  }, [activeSlugs, category, query, toolkits])
 
   const connectedNames = useMemo(
     () => connectedIntegrations.map((integration) => integration.name),
@@ -102,6 +107,7 @@ export function IntegrationsPage() {
     : null
 
   const browseTitle = query.trim() || category ? "Results" : "Featured"
+  const hasActiveFilters = Boolean(query.trim() || category)
 
   return (
     <PageLayout className="gap-6">
@@ -165,7 +171,7 @@ export function IntegrationsPage() {
       />
 
       <FeaturedIntegrationsGrid
-        integrations={connectedIntegrations}
+        integrations={activeIntegrations}
         composioConfigured={composioConfigured}
         variant="connected"
         onConnect={(slug) => void handleConnect(slug)}
@@ -189,7 +195,9 @@ export function IntegrationsPage() {
 
       {!loading && browseIntegrations.length === 0 ? (
         <p className="text-muted-foreground rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm">
-          No integrations match your search.
+          {hasActiveFilters
+            ? "No integrations match your search."
+            : "No featured integrations to browse right now."}
         </p>
       ) : null}
 

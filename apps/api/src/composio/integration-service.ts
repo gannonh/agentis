@@ -96,8 +96,6 @@ export class IntegrationService {
       (connection) => connection.status === "connected"
     ).length
 
-    this.repos.integrationToolkits.upsertFromCatalog(summary)
-
     return {
       slug: summary.slug,
       name: summary.name,
@@ -115,18 +113,20 @@ export class IntegrationService {
   private async resolveToolkitSummary(
     slug: string
   ): Promise<ComposioToolkitSummary | null> {
+    const fromComposio = await this.composio.getToolkit(slug)
+    if (fromComposio) return fromComposio
+
     const row = this.repos.integrationToolkits.getBySlug(slug)
-    if (row) {
-      return {
-        slug: row.slug,
-        name: row.name,
-        description: row.description,
-        category: row.category,
-        featured: row.featured,
-        integrationType: "native",
-      }
+    if (!row) return null
+
+    return {
+      slug: row.slug,
+      name: row.name,
+      description: row.description,
+      category: row.category,
+      featured: row.featured,
+      integrationType: "native",
     }
-    return this.composio.getToolkit(slug)
   }
 
   async listToolkits(input: ListIntegrationsInput = {}): Promise<ListIntegrationsResult> {
@@ -162,12 +162,15 @@ export class IntegrationService {
       ),
     ]
 
-    for (const slug of connectedSlugs) {
-      if (toolkitSlugs.has(slug)) continue
-      const summary = await this.resolveToolkitSummary(slug)
+    const missingActiveSlugs = connectedSlugs.filter((slug) => !toolkitSlugs.has(slug))
+    const resolvedSummaries = await Promise.all(
+      missingActiveSlugs.map((slug) => this.resolveToolkitSummary(slug))
+    )
+
+    for (const summary of resolvedSummaries) {
       if (!summary) continue
       toolkits.push(this.buildIntegrationToolkit(summary, connections))
-      toolkitSlugs.add(slug)
+      toolkitSlugs.add(summary.slug)
     }
 
     return { toolkits, categories }
@@ -184,8 +187,10 @@ export class IntegrationService {
     ]
 
     const toolkits: IntegrationToolkit[] = []
-    for (const slug of connectedSlugs) {
-      const summary = await this.resolveToolkitSummary(slug)
+    const resolvedSummaries = await Promise.all(
+      connectedSlugs.map((slug) => this.resolveToolkitSummary(slug))
+    )
+    for (const summary of resolvedSummaries) {
       if (!summary) continue
       toolkits.push(this.buildIntegrationToolkit(summary, connections))
     }
@@ -324,10 +329,6 @@ export class IntegrationService {
   }
 
   async resetConnection(toolkitSlug: string): Promise<boolean> {
-    const toolkit = await this.composio.getToolkit(toolkitSlug)
-    if (!toolkit) {
-      throw new Error("Unsupported toolkit")
-    }
     return this.repos.integrationConnections.deleteByToolkitSlug(toolkitSlug)
   }
 

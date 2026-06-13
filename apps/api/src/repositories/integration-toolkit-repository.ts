@@ -3,9 +3,9 @@ import type { IntegrationToolkit } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
 import { integrationToolkits } from "../db/schema.js"
 import { nowIso } from "../lib/ids.js"
+import type { ComposioToolkitSummary } from "../composio/types.js"
 import {
   MOCK_COMPOSIO_TOOLKITS,
-  type MockCatalogToolkit,
 } from "./integration-seeds.js"
 
 type ToolkitRow = typeof integrationToolkits.$inferSelect
@@ -35,7 +35,7 @@ function mapToolkitRow(
 export class IntegrationToolkitRepository {
   constructor(private readonly db: AppDatabase) {}
 
-  upsertFromCatalog(toolkit: MockCatalogToolkit) {
+  upsertFromCatalog(toolkit: ComposioToolkitSummary) {
     const now = nowIso()
     this.db
       .insert(integrationToolkits)

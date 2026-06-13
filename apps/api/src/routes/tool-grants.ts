@@ -6,20 +6,12 @@ import {
 } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
 import type { Repositories } from "../repositories/index.js"
-import { IntegrationService } from "../composio/integration-service.js"
-import type { AppConfig } from "../config.js"
 
 export function createToolGrantRoutes(
   repos: Repositories,
-  services: ComposioServices,
-  config: AppConfig
+  services: ComposioServices
 ) {
   const app = new Hono()
-  const integrationService = new IntegrationService(
-    repos,
-    config,
-    services.composio
-  )
 
   app.get("/:id/tool-grants", async (c) => {
     const thread = repos.threads.getById(c.req.param("id"))
@@ -28,7 +20,7 @@ export function createToolGrantRoutes(
     }
 
     const grants = repos.toolAccessGrants.listByScope("thread", thread.id)
-    const availableToolkits = await integrationService.listConnectedToolkits()
+    const availableToolkits = await services.integrations.listConnectedToolkits()
 
     return c.json(
       threadToolGrantsResponseSchema.parse({
