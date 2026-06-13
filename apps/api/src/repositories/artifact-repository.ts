@@ -28,6 +28,7 @@ export type ArtifactListFilters = {
   threadId?: string
   agentId?: string
   source?: ArtifactSource
+  limit?: number
 }
 
 function documentTypeForArtifact(type: ArtifactType): string {
@@ -400,13 +401,20 @@ export class ArtifactRepository {
       .from(documents)
       .orderBy(desc(documents.updatedAt), desc(documents.createdAt))
 
+    const boundedQuery =
+      filters.limit === undefined ? query : query.limit(filters.limit)
+
     if (conditions.length === 0) {
-      return query.all().map(mapArtifact)
+      return boundedQuery.all().map(mapArtifact)
     }
 
-    return query
+    return boundedQuery
       .where(and(...conditions))
       .all()
       .map(mapArtifact)
+  }
+
+  search(query: string, limit: number): Artifact[] {
+    return this.list({ query, limit })
   }
 }

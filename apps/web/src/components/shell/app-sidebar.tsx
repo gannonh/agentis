@@ -42,6 +42,7 @@ import {
 import { cn } from "@workspace/ui/lib/utils"
 import { SidebarNavItem } from "@/components/shell/sidebar-nav-item"
 import { getWorkspace } from "@/fixtures"
+import { useGlobalSearch } from "@/hooks/use-global-search"
 import { useAgents } from "@/hooks/use-agents"
 import { useProjects } from "@/hooks/use-projects"
 import { listThreads } from "@/lib/api/client"
@@ -158,6 +159,7 @@ export function AppSidebar() {
     refresh: refreshAgents,
   } = useAgents()
   const location = useLocation()
+  const { setOpen, shortcutLabel } = useGlobalSearch()
   const [threads, setThreads] = useState<ThreadListItem[]>([])
   const { projects, refresh: refreshProjects } = useProjects()
   const activeProjectId = useActiveProjectId(threads)
@@ -204,10 +206,13 @@ export function AppSidebar() {
                 <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
                 <span>New thread</span>
               </SidebarNavItem>
-              <SidebarNavItem to="/search">
-                <HugeiconsIcon icon={Search01Icon} strokeWidth={2} />
-                <span>Search</span>
-              </SidebarNavItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={() => setOpen(true)}>
+                  <HugeiconsIcon icon={Search01Icon} strokeWidth={2} />
+                  <span>Search</span>
+                </SidebarMenuButton>
+                <SidebarMenuBadge>{shortcutLabel}</SidebarMenuBadge>
+              </SidebarMenuItem>
               <SidebarNavItem to="/library">
                 <HugeiconsIcon icon={BookOpen01Icon} strokeWidth={2} />
                 <span>Library</span>

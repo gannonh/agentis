@@ -7,7 +7,7 @@ import {
   DEFAULT_CUSTOM_AGENT_NATIVE_TOOLS,
   nativeToolsSchema,
 } from "@workspace/shared"
-import { and, asc, count, desc, eq, inArray, ne } from "drizzle-orm"
+import { and, asc, count, desc, eq, inArray, like, ne, or } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
 import {
   agentConfigurationVersions,
@@ -285,6 +285,29 @@ export class AgentRepository {
       }
       return mapAgent(row, currentVersion, toolGrantCounts.get(row.id) ?? 0)
     })
+  }
+
+  search(
+    query: string,
+    limit: number
+  ): { id: string; name: string; description: string | null }[] {
+    const pattern = `%${query.trim()}%`
+    return this.db
+      .select({
+        id: agents.id,
+        name: agents.name,
+        description: agents.description,
+      })
+      .from(agents)
+      .where(
+        and(
+          ne(agents.id, GENERIC_AGENTIS_AGENT_ID),
+          or(like(agents.name, pattern), like(agents.description, pattern))!
+        )
+      )
+      .orderBy(asc(agents.name), asc(agents.createdAt), asc(agents.id))
+      .limit(limit)
+      .all()
   }
 
   listConfigurationVersions(

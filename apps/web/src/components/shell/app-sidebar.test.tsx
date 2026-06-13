@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router"
 import { SidebarProvider } from "@workspace/ui/components/sidebar"
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import { AppSidebar } from "./app-sidebar"
+import { GlobalSearchProvider } from "@/components/shell/global-search-provider"
 import { beforeEach, vi } from "vitest"
 
 const { refreshAgents, useAgentsMock } = vi.hoisted(() => ({
@@ -71,9 +72,11 @@ function renderSidebar(initialPath = "/threads/new") {
   return render(
     <MemoryRouter initialEntries={[initialPath]}>
       <TooltipProvider>
-        <SidebarProvider>
-          <AppSidebar />
-        </SidebarProvider>
+        <GlobalSearchProvider>
+          <SidebarProvider>
+            <AppSidebar />
+          </SidebarProvider>
+        </GlobalSearchProvider>
       </TooltipProvider>
     </MemoryRouter>
   )

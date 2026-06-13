@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm"
+import { desc, eq, like, or } from "drizzle-orm"
 import type {
   Message,
   Run,
@@ -295,6 +295,23 @@ export class ThreadRepository {
       .select()
       .from(threads)
       .orderBy(desc(threads.updatedAt))
+      .all()
+      .map(mapThread)
+  }
+
+  search(query: string, limit: number): Thread[] {
+    const pattern = `%${query.trim()}%`
+    return this.db
+      .select()
+      .from(threads)
+      .where(
+        or(
+          like(threads.title, pattern),
+          like(threads.agentNameSnapshot, pattern)
+        )!
+      )
+      .orderBy(desc(threads.updatedAt))
+      .limit(limit)
       .all()
       .map(mapThread)
   }
