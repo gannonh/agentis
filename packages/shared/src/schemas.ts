@@ -384,9 +384,7 @@ export const connectIntegrationResponseSchema = z.object({
   redirectUrl: z.string(),
 })
 
-export const refreshIntegrationsResponseSchema = z.object({
-  toolkits: z.array(integrationToolkitSchema),
-})
+export const refreshIntegrationsResponseSchema = integrationsListResponseSchema
 
 export const threadToolGrantsResponseSchema = z.object({
   grants: z.array(toolAccessGrantSchema),
