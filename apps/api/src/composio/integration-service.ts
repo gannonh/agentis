@@ -60,6 +60,20 @@ export class IntegrationService {
     this.catalog = new IntegrationCatalog(repos, composio)
   }
 
+  private async ensureToolkitCatalogRow(toolkitSlug: string): Promise<boolean> {
+    try {
+      const toolkit = await this.composio.getToolkit(toolkitSlug)
+      if (toolkit) {
+        this.repos.integrationToolkits.upsertFromCatalog(toolkit)
+        return true
+      }
+    } catch {
+      // Keep refresh resilient to retired toolkits or transient per-toolkit lookups.
+    }
+
+    return Boolean(this.repos.integrationToolkits.getBySlug(toolkitSlug))
+  }
+
   async listToolkits(input: IntegrationsListQuery = {}) {
     if (!isComposioAvailable(this.config) && !this.config.mockComposio) {
       return { toolkits: [], categories: [] }
@@ -257,6 +271,9 @@ export class IntegrationService {
         })
         continue
       }
+
+      const hasCatalogRow = await this.ensureToolkitCatalogRow(toolkitSlug)
+      if (!hasCatalogRow) continue
 
       this.repos.integrationConnections.create({
         toolkitSlug,
