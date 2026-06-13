@@ -373,7 +373,6 @@ describe("integration routes", () => {
       description: "Removed from Composio",
       category: "developer",
       featured: false,
-      integrationType: "native",
     })
     ctx.repos.integrationConnections.create({
       toolkitSlug: "retired-toolkit",

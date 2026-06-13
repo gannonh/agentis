@@ -33,6 +33,7 @@ export type ComposioToolkitSummary = {
   name: string
   description: string
   category: string
+  /** True when the toolkit came from a featured catalog query, not a Composio "featured" flag. */
   featured: boolean
   integrationType: IntegrationType
   logoUrl?: string

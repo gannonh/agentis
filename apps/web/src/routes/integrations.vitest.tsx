@@ -49,6 +49,9 @@ vi.mock("@/lib/api/client", () => ({
   })),
   refreshIntegrations: vi.fn(async () => ({
     toolkits: mockToolkits,
+    categories: ["communication", "developer"],
+    composioConfigured: true,
+    composioMockEnabled: true,
   })),
   resetIntegrationConnection: vi.fn(async () => undefined),
 }))

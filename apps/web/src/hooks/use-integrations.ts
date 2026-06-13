@@ -92,13 +92,19 @@ export function useIntegrations() {
   const refreshStatuses = useCallback(async () => {
     setError(null)
     try {
-      await refreshIntegrations()
-      await refresh()
+      const data = await refreshIntegrations({
+        q: debouncedQuery || undefined,
+        category: category || undefined,
+      })
+      setToolkits(data.toolkits)
+      setCategories(data.categories)
+      setComposioConfigured(data.composioConfigured)
+      setComposioMockEnabled(data.composioMockEnabled)
       setNotice("Connection statuses refreshed.")
     } catch (refreshError) {
       setError(integrationErrorMessage(refreshError, "Failed to refresh integrations"))
     }
-  }, [refresh])
+  }, [category, debouncedQuery])
 
   return {
     toolkits,

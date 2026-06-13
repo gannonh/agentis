@@ -8,7 +8,6 @@ import {
   createThreadResponseSchema,
   createToolGrantRequestSchema,
   integrationsListResponseSchema,
-  refreshIntegrationsResponseSchema,
   runtimeHealthSchema,
   threadDetailSchema,
   threadListItemSchema,
@@ -196,11 +195,17 @@ export async function resetIntegrationConnection(toolkitSlug: string): Promise<v
   }
 }
 
-export async function refreshIntegrations() {
-  const response = await fetch(`${API_BASE}/api/integrations/refresh`, {
+export async function refreshIntegrations(
+  query: Pick<IntegrationsListQuery, "q" | "category"> = {}
+): Promise<IntegrationsListResponse> {
+  const params = new URLSearchParams()
+  if (query.q?.trim()) params.set("q", query.q.trim())
+  if (query.category?.trim()) params.set("category", query.category.trim())
+  const suffix = params.size > 0 ? `?${params.toString()}` : ""
+  const response = await fetch(`${API_BASE}/api/integrations/refresh${suffix}`, {
     method: "POST",
   })
-  return parseJson(response, refreshIntegrationsResponseSchema)
+  return parseJson(response, integrationsListResponseSchema)
 }
 
 export async function getThreadToolGrants(

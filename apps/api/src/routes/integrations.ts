@@ -3,7 +3,6 @@ import {
   connectIntegrationResponseSchema,
   integrationsListQuerySchema,
   integrationsListResponseSchema,
-  refreshIntegrationsResponseSchema,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import { getComposioUnavailableReason, isComposioAvailable } from "../config.js"
@@ -127,8 +126,21 @@ export function createIntegrationRoutes(
         503
       )
     }
-    const toolkits = await services.integrations.refreshAllConnections()
-    return c.json(refreshIntegrationsResponseSchema.parse({ toolkits }))
+
+    const query = integrationsListQuerySchema.parse({
+      q: c.req.query("q"),
+      category: c.req.query("category"),
+      featured: c.req.query("featured"),
+    })
+    const result = await services.integrations.refreshAllConnections(query)
+    return c.json(
+      integrationsListResponseSchema.parse({
+        toolkits: result.toolkits,
+        categories: result.categories,
+        composioConfigured: isComposioAvailable(config),
+        composioMockEnabled: config.mockComposio,
+      })
+    )
   })
 
   return app

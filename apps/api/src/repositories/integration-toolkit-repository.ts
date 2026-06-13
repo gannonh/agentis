@@ -2,13 +2,13 @@ import { eq } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
 import { integrationToolkits } from "../db/schema.js"
 import { nowIso } from "../lib/ids.js"
-import type { ComposioToolkitSummary } from "../composio/types.js"
+import type { CatalogToolkitRecord } from "./catalog-toolkit-record.js"
 import { MOCK_COMPOSIO_TOOLKITS } from "./integration-seeds.js"
 
 export class IntegrationToolkitRepository {
   constructor(private readonly db: AppDatabase) {}
 
-  upsertFromCatalog(toolkit: ComposioToolkitSummary) {
+  upsertFromCatalog(toolkit: CatalogToolkitRecord) {
     const now = nowIso()
     this.db
       .insert(integrationToolkits)
