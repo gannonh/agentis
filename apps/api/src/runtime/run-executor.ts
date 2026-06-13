@@ -70,6 +70,7 @@ import {
   formatToolResultFallback,
   getTextFromParts,
   hasPendingApprovalInParts,
+  hasToolParts,
   setTextPart,
   stripRedundantToolJsonText,
   suppressTextForPendingApproval,
@@ -78,14 +79,13 @@ import {
 } from "./run-message-adapters.js"
 import { RunCostLedger } from "../cost/run-cost-ledger.js"
 import {
+  anthropicCloudflareEmptyResponseHint,
+} from "./cloudflare-ai-gateway.js"
+import {
   createGatewayLanguageModel,
   prepareGatewayStreamPrompt,
 } from "./gateway-model.js"
-import {
-  anthropicCloudflareEmptyResponseHint,
-  DEFAULT_RUN_MAX_OUTPUT_TOKENS,
-  formatProviderErrorMessage,
-} from "./provider-error.js"
+import { formatProviderErrorMessage } from "./provider-error.js"
 import { createMockDocumentRunSuffix } from "./mock-document-run.js"
 import { evaluateCompletedRun } from "../evaluation/run-evaluator.js"
 import {
@@ -95,6 +95,8 @@ import {
 
 export { formatToolStepTitle } from "./run-tool-labels.js"
 export { suppressTextForPendingApproval } from "./run-message-adapters.js"
+
+const DEFAULT_RUN_MAX_OUTPUT_TOKENS = 8192
 
 const PLATFORM_SYSTEM_PROMPT =
   "You are Agentis, a helpful workspace assistant. Be concise. Use getWorkspaceSummary only for overall workspace status, not for data inside a connected integration. When a composio_* tool is available and the user asks for that integration's data, call the matching composio_* tool instead of guessing or refusing. Examples: composio_github for repos; composio_slack for channels. After calling a Composio tool, summarize the results for the user in plain language."
@@ -292,6 +294,45 @@ export class RunExecutor {
       title: input.title,
       payload: input.payload,
     })
+  }
+
+  private failStreamingRun(
+    runId: string,
+    threadId: string,
+    assistantMessageId: string,
+    assistantParts: MessagePart[],
+    message: string,
+    options?: { includeDebugOutput?: boolean }
+  ) {
+    this.repos.messages.updatePartsAndStatus(
+      assistantMessageId,
+      assistantParts,
+      "failed"
+    )
+    this.repos.runs.updateStatus(runId, "failed", {
+      finishedAt: nowIso(),
+      errorSummary: message,
+    })
+    if (options?.includeDebugOutput) {
+      this.createTimelineDebugStep(runId, {
+        status: "failed",
+        title: "Debug: model output",
+        payload: {
+          provider: "debug",
+          kind: "model-output",
+          assistantParts,
+          error: message,
+        },
+      })
+    }
+    this.repos.steps.create({
+      runId,
+      type: "error",
+      status: "failed",
+      title: "Run failed",
+      payload: { message },
+    })
+    this.repos.threads.touch(threadId, { status: "failed" })
   }
 
   async executeStream(runId: string) {
@@ -970,16 +1011,10 @@ export class RunExecutor {
           assistantParts = finalized.assistantParts
         }
         const responseText = getTextFromParts(assistantParts).trim()
-        const hasToolActivity = assistantParts.some(
-          (part) =>
-            part.type === "tool-call" ||
-            part.type === "tool-result" ||
-            part.type === "tool-error"
-        )
         const emptyProviderResponse =
           !hasPendingApproval &&
           !responseText &&
-          !hasToolActivity &&
+          !hasToolParts(assistantParts) &&
           (totalUsage.outputTokens ?? 0) > 0
         if (emptyProviderResponse) {
           const message =
@@ -987,23 +1022,13 @@ export class RunExecutor {
               run.model,
               this.config.aiGatewayProvider
             ) ?? "The model returned no content."
-          this.repos.messages.updatePartsAndStatus(
+          this.failStreamingRun(
+            runId,
+            run.threadId,
             assistantMessage.id,
             assistantParts,
-            "failed"
+            message
           )
-          this.repos.runs.updateStatus(runId, "failed", {
-            finishedAt: nowIso(),
-            errorSummary: message,
-          })
-          this.repos.steps.create({
-            runId,
-            type: "error",
-            status: "failed",
-            title: "Run failed",
-            payload: { message },
-          })
-          this.repos.threads.touch(run.threadId, { status: "failed" })
           return
         }
         this.repos.messages.updatePartsAndStatus(
@@ -1069,33 +1094,14 @@ export class RunExecutor {
       onError: async ({ error }) => {
         clearAbortController(runId)
         const message = formatProviderErrorMessage(error)
-        this.repos.messages.updatePartsAndStatus(
+        this.failStreamingRun(
+          runId,
+          run.threadId,
           assistantMessage.id,
           assistantParts,
-          "failed"
+          message,
+          { includeDebugOutput: true }
         )
-        this.repos.runs.updateStatus(runId, "failed", {
-          finishedAt: nowIso(),
-          errorSummary: message,
-        })
-        this.createTimelineDebugStep(runId, {
-          status: "failed",
-          title: "Debug: model output",
-          payload: {
-            provider: "debug",
-            kind: "model-output",
-            assistantParts,
-            error: message,
-          },
-        })
-        this.repos.steps.create({
-          runId,
-          type: "error",
-          status: "failed",
-          title: "Run failed",
-          payload: { message },
-        })
-        this.repos.threads.touch(run.threadId, { status: "failed" })
       },
     })
 

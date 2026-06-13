@@ -15,6 +15,15 @@ export function getTextFromParts(parts: MessagePart[]) {
     .join("")
 }
 
+export function hasToolParts(parts: MessagePart[]) {
+  return parts.some(
+    (part) =>
+      part.type === "tool-call" ||
+      part.type === "tool-result" ||
+      part.type === "tool-error"
+  )
+}
+
 export function normalizeAssistantText(text: string) {
   return stripRedundantArtifactLinkLines(
     text

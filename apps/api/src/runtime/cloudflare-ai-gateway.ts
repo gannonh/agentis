@@ -105,6 +105,16 @@ export function transformCloudflareOpenAiChatRequestBody(
   return result
 }
 
+export function anthropicCloudflareEmptyResponseHint(
+  modelId: string,
+  provider: "vercel" | "cloudflare"
+): string | null {
+  if (provider !== "cloudflare" || !modelId.startsWith("anthropic/")) {
+    return null
+  }
+  return "Anthropic models returned no content from Cloudflare AI Gateway. Add an Anthropic API key (BYOK) to your gateway, or choose an OpenAI or Gemini model."
+}
+
 export function usesCloudflareAnthropicMessagesTransport(
   config: AppConfig,
   modelId: string

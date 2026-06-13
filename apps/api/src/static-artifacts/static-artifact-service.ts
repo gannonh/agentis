@@ -426,6 +426,24 @@ function countSlidesInHtml(html: string): number {
   return 1
 }
 
+function renderStoredSlideDeck(
+  input: {
+    title: string
+    theme: string
+    sourceData?: string
+  },
+  sections: SlideSection[],
+  minSections: number
+): { html: string; slideCount: number } | null {
+  if (sections.length < minSections) return null
+  return renderSlidesHtml({
+    title: input.title,
+    sections,
+    sourceData: input.sourceData,
+    theme: input.theme,
+  })
+}
+
 function normalizeStoredSlideDeckHtml(input: {
   title: string
   html: string
@@ -446,15 +464,12 @@ function normalizeStoredSlideDeckHtml(input: {
         slideCount: Math.max(1, classSlideCount),
       }
     }
-    const sections = slideSectionsFromHtml(input.html)
-    if (sections.length >= 2) {
-      return renderSlidesHtml({
-        title: input.title,
-        sections,
-        sourceData: input.sourceData,
-        theme: input.theme,
-      })
-    }
+    const rendered = renderStoredSlideDeck(
+      input,
+      slideSectionsFromHtml(input.html),
+      2
+    )
+    if (rendered) return rendered
     return {
       html: input.html,
       slideCount: Math.max(1, classSlideCount),
@@ -467,14 +482,8 @@ function normalizeStoredSlideDeckHtml(input: {
         slideSectionFromHtml(match[1] ?? "", `Slide ${index + 1}`)
       )
     )
-    if (sections.length >= 2) {
-      return renderSlidesHtml({
-        title: input.title,
-        sections,
-        sourceData: input.sourceData,
-        theme: input.theme,
-      })
-    }
+    const rendered = renderStoredSlideDeck(input, sections, 2)
+    if (rendered) return rendered
     return {
       html: input.html,
       slideCount: 1,
@@ -483,14 +492,8 @@ function normalizeStoredSlideDeckHtml(input: {
 
   if (totalSectionCount > 0) {
     const sections = slideSectionsFromHtml(input.html)
-    if (sections.length > 0) {
-      return renderSlidesHtml({
-        title: input.title,
-        sections,
-        sourceData: input.sourceData,
-        theme: input.theme,
-      })
-    }
+    const rendered = renderStoredSlideDeck(input, sections, 1)
+    if (rendered) return rendered
   }
 
   return { html: input.html, slideCount: 1 }

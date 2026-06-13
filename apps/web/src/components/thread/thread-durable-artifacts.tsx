@@ -206,32 +206,38 @@ function WorkingArtifactPreviewLoader({ artifact }: { artifact: Artifact }) {
     setDocumentDetail(null)
     setArtifactDetail(null)
 
-    const load =
-      artifact.type === "document"
-        ? getDocumentDetail(artifact.id)
-        : getArtifactDetail(artifact.id)
+    const onFailure = (failure: unknown) => {
+      if (requestId !== requestRef.current) return
+      setError(
+        failure instanceof Error
+          ? failure.message
+          : "Could not load artifact preview."
+      )
+    }
+    const onFinally = () => {
+      if (requestId === requestRef.current) setLoading(false)
+    }
 
-    void load
+    if (artifact.type === "document") {
+      void getDocumentDetail(artifact.id)
+        .then((detail) => {
+          if (requestId !== requestRef.current) return
+          setDocumentDetail(detail)
+          setError(null)
+        })
+        .catch(onFailure)
+        .finally(onFinally)
+      return
+    }
+
+    void getArtifactDetail(artifact.id)
       .then((detail) => {
         if (requestId !== requestRef.current) return
-        if (artifact.type === "document") {
-          setDocumentDetail(detail as DocumentDetailResponse)
-        } else {
-          setArtifactDetail(detail as ArtifactDetailResponse)
-        }
+        setArtifactDetail(detail)
         setError(null)
       })
-      .catch((failure) => {
-        if (requestId !== requestRef.current) return
-        setError(
-          failure instanceof Error
-            ? failure.message
-            : "Could not load artifact preview."
-        )
-      })
-      .finally(() => {
-        if (requestId === requestRef.current) setLoading(false)
-      })
+      .catch(onFailure)
+      .finally(onFinally)
   }, [artifact.id, artifact.type, artifact.updatedAt])
 
   if (loading) {
