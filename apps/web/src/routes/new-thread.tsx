@@ -34,15 +34,10 @@ export function NewThreadPage() {
   const effectiveSelectedAgentId = selectedAgentId ?? urlAgentId
 
   useEffect(() => {
-    void (async () => {
-      try {
-        setThreads(await listThreads())
-      } catch {
-        setThreads([])
-      } finally {
-        setThreadsLoading(false)
-      }
-    })()
+    void listThreads()
+      .then(setThreads)
+      .catch(() => setThreads([]))
+      .finally(() => setThreadsLoading(false))
   }, [])
 
   function handleSelectChip(chip: SuggestionChip) {

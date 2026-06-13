@@ -7,8 +7,8 @@ import {
   runSchema,
   threadDetailSchema,
   threadListItemSchema,
-  threadSchema,
   threadListSummaryFromMessages,
+  threadSchema,
   updateThreadRequestSchema,
 } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"

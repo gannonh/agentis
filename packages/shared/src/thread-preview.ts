@@ -6,6 +6,8 @@ import {
 
 const PREVIEW_MAX_LENGTH = 160
 
+type ThreadSummaryMessage = Pick<Message, "role" | "parts">
+
 export function summarizeThreadPreview(text: string): string {
   const trimmed = text.trim().replace(/\s+/g, " ")
   if (!trimmed) return ""
@@ -20,29 +22,32 @@ function getTextFromParts(parts: MessagePart[]): string {
     .join("")
 }
 
-function getVisibleMessageText(message: Message): string {
-  const text = getTextFromParts(message.parts)
-  if (shouldSuppressTextForToolResults(text, message.parts)) {
-    return ""
-  }
-  const hasToolParts = message.parts.some(
+function hasToolParts(parts: MessagePart[]): boolean {
+  return parts.some(
     (part) =>
       part.type === "tool-call" ||
       part.type === "tool-result" ||
       part.type === "tool-error"
   )
+}
+
+function getVisibleMessageText(message: ThreadSummaryMessage): string {
+  const text = getTextFromParts(message.parts)
+  if (shouldSuppressTextForToolResults(text, message.parts)) {
+    return ""
+  }
   const normalized =
-    message.role === "assistant" && hasToolParts
+    message.role === "assistant" && hasToolParts(message.parts)
       ? stripRedundantArtifactLinkLines(text)
       : text
   return normalized.trim()
 }
 
 function lastMessageTextByRole(
-  messages: Message[],
+  messages: ThreadSummaryMessage[],
   role: Message["role"]
 ): string | null {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
+  for (let index = messages.length - 1; index >= 0; index--) {
     const message = messages[index]
     if (message.role !== role) continue
     const text = getVisibleMessageText(message)
@@ -52,11 +57,10 @@ function lastMessageTextByRole(
 }
 
 export function threadListSummaryFromMessages(
-  messages: Pick<Message, "role" | "parts">[]
+  messages: ThreadSummaryMessage[]
 ): string | null {
-  const typedMessages = messages as Message[]
   return (
-    lastMessageTextByRole(typedMessages, "assistant") ??
-    lastMessageTextByRole(typedMessages, "user")
+    lastMessageTextByRole(messages, "assistant") ??
+    lastMessageTextByRole(messages, "user")
   )
 }

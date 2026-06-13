@@ -1,4 +1,3 @@
-import type { AgentListItem, ThreadMode } from "@workspace/shared"
 import {
   BookOpen01Icon,
   FileEditIcon,
@@ -6,6 +5,7 @@ import {
   UserGroupIcon,
   WorkflowSquare01Icon,
 } from "@hugeicons/core-free-icons"
+import type { AgentListItem, ThreadMode } from "@workspace/shared"
 import { RESEARCH_TOPIC_PROMPT } from "./research-prompt"
 
 export type SuggestionChip = {
@@ -16,6 +16,8 @@ export type SuggestionChip = {
   agentId?: string
   mode?: ThreadMode
 }
+
+const MAX_SUGGESTION_CHIPS = 5
 
 const STATIC_SUGGESTION_CHIPS: SuggestionChip[] = [
   {
@@ -63,44 +65,41 @@ function normalizePrompt(prompt: string): string {
   return prompt.trim().replace(/\s+/g, " ").toLowerCase()
 }
 
-function chipsFromAgents(agents: AgentListItem[]): SuggestionChip[] {
-  return agents.flatMap((agent) => {
-    const prompt = agent.sourceWorkflow?.firstUserPrompt?.trim()
-    if (!prompt) return []
-
-    return [
-      {
-        id: `agent-${agent.id}`,
-        label: agent.name,
-        icon: WorkflowSquare01Icon,
-        prompt,
-        agentId: agent.id,
-        mode: "agent" as const,
-      },
-    ]
-  })
+function addUniqueChip(
+  chips: SuggestionChip[],
+  seenPrompts: Set<string>,
+  chip: SuggestionChip
+): void {
+  if (chips.length >= MAX_SUGGESTION_CHIPS) return
+  const key = normalizePrompt(chip.prompt)
+  if (seenPrompts.has(key)) return
+  seenPrompts.add(key)
+  chips.push(chip)
 }
 
 export function buildSuggestionChips(agents: AgentListItem[]): SuggestionChip[] {
   const seenPrompts = new Set<string>()
   const chips: SuggestionChip[] = []
 
-  for (const chip of chipsFromAgents(agents)) {
-    const key = normalizePrompt(chip.prompt)
-    if (seenPrompts.has(key)) continue
-    seenPrompts.add(key)
-    chips.push(chip)
+  for (const agent of agents) {
+    const prompt = agent.sourceWorkflow?.firstUserPrompt?.trim()
+    if (!prompt) continue
+
+    addUniqueChip(chips, seenPrompts, {
+      id: `agent-${agent.id}`,
+      label: agent.name,
+      icon: WorkflowSquare01Icon,
+      prompt,
+      agentId: agent.id,
+      mode: "agent",
+    })
   }
 
   for (const chip of STATIC_SUGGESTION_CHIPS) {
-    if (chips.length >= 5) break
-    const key = normalizePrompt(chip.prompt)
-    if (seenPrompts.has(key)) continue
-    seenPrompts.add(key)
-    chips.push(chip)
+    addUniqueChip(chips, seenPrompts, chip)
   }
 
-  return chips.slice(0, 5)
+  return chips
 }
 
 export { STATIC_SUGGESTION_CHIPS }

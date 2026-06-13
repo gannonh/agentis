@@ -1,10 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import { MemoryRouter } from "react-router"
 import { describe, expect, it } from "vitest"
-import {
-  RecentThreadsSection,
-  THREAD_SUMMARY_FALLBACK,
-} from "./recent-threads-section"
+import { RecentThreadsSection } from "./recent-threads-section"
 
 const threads = [
   {
@@ -47,7 +44,9 @@ describe("RecentThreadsSection", () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByText(THREAD_SUMMARY_FALLBACK)).toBeInTheDocument()
+    expect(
+      screen.getByText("Open this thread to continue the conversation.")
+    ).toBeInTheDocument()
   })
 
   it("shows loading state", () => {
