@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft pending user review.
+APPROVED
 
 ## Goal
 
@@ -141,13 +141,13 @@ Refresh behavior:
 
 ### Supported preview matrix
 
-| Artifact type | Inline preview | Detail endpoint | Workspace link |
-| --- | --- | --- | --- |
-| `document` with markdown | `DocumentViewer` | `/api/documents/:id/detail` | `/documents/:id` |
-| `webpage` | `StaticArtifactPreview` | `/api/artifacts/:id/detail` | `/artifacts/:id` |
-| `slides` | `StaticArtifactPreview` | `/api/artifacts/:id/detail` | `/artifacts/:id` |
-| `app` | Preview unavailable | none for this rail | `/artifacts/:id` |
-| `table`, `image`, `video`, `other` | Preview unavailable | none for this rail | link only when `artifactLaunchPath` supports it |
+| Artifact type                      | Inline preview          | Detail endpoint             | Workspace link                                  |
+| ---------------------------------- | ----------------------- | --------------------------- | ----------------------------------------------- |
+| `document` with markdown           | `DocumentViewer`        | `/api/documents/:id/detail` | `/documents/:id`                                |
+| `webpage`                          | `StaticArtifactPreview` | `/api/artifacts/:id/detail` | `/artifacts/:id`                                |
+| `slides`                           | `StaticArtifactPreview` | `/api/artifacts/:id/detail` | `/artifacts/:id`                                |
+| `app`                              | Preview unavailable     | none for this rail          | `/artifacts/:id`                                |
+| `table`, `image`, `video`, `other` | Preview unavailable     | none for this rail          | link only when `artifactLaunchPath` supports it |
 
 ## UX behavior
 
