@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { threadTranscript } from "./helpers/thread-transcript"
 
 test.describe("M04 projects and documents", () => {
   test("creates and updates a global document from another thread", async ({
@@ -15,7 +16,9 @@ test.describe("M04 projects and documents", () => {
     await page.getByRole("button", { name: /send message/i }).click()
 
     await expect(page).toHaveURL(/\/threads\/thread_/)
-    await expect(page.getByText(/Created document/i)).toBeVisible({
+    await expect(
+      threadTranscript(page).getByText(/Created document/i)
+    ).toBeVisible({
       timeout: 30_000,
     })
     await page.getByRole("button", { name: "Run timeline" }).click()
@@ -30,7 +33,9 @@ test.describe("M04 projects and documents", () => {
     await page.getByRole("button", { name: /send message/i }).click()
 
     await expect(page).toHaveURL(/\/threads\/thread_/)
-    await expect(page.getByText(/Updated document/i)).toBeVisible({
+    await expect(
+      threadTranscript(page).getByText(/Updated document/i)
+    ).toBeVisible({
       timeout: 30_000,
     })
 
@@ -65,10 +70,14 @@ test.describe("M04 projects and documents", () => {
     await page.getByRole("button", { name: /send message/i }).click()
 
     await expect(page).toHaveURL(/\/threads\/thread_/)
-    await expect(page.getByText(/Project context/i)).toBeVisible({
+    await expect(
+      page.locator('[data-slot="card-title"]', { hasText: "Project context" })
+    ).toBeVisible({
       timeout: 15_000,
     })
-    await expect(page.getByText(/Created document/i)).toBeVisible({
+    await expect(
+      threadTranscript(page).getByText(/Created document/i)
+    ).toBeVisible({
       timeout: 30_000,
     })
 
@@ -102,7 +111,9 @@ test.describe("M04 projects and documents", () => {
     await composer.fill("Write a project report document")
     await page.getByRole("button", { name: /send message/i }).click()
     await expect(page).toHaveURL(/\/threads\/thread_/)
-    await expect(page.getByText(/Created document/i)).toBeVisible({
+    await expect(
+      threadTranscript(page).getByText(/Created document/i)
+    ).toBeVisible({
       timeout: 30_000,
     })
 
