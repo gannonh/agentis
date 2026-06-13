@@ -47,4 +47,22 @@ describe("useGlobalSearch", () => {
     expect(result.current.open).toBe(false)
     expect(isEditableTarget(input)).toBe(true)
   })
+
+  it("toggles the palette closed from the global shortcut", () => {
+    const { result } = renderGlobalSearchHook()
+
+    act(() => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "k", metaKey: true })
+      )
+    })
+    expect(result.current.open).toBe(true)
+
+    act(() => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "k", metaKey: true })
+      )
+    })
+    expect(result.current.open).toBe(false)
+  })
 })

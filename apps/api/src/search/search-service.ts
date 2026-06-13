@@ -1,4 +1,10 @@
-import type { ArtifactType, SearchHit, SearchResponse } from "@workspace/shared"
+import {
+  emptySearchResponse,
+  normalizeSearchQuery,
+  type ArtifactType,
+  type SearchHit,
+  type SearchResponse,
+} from "@workspace/shared"
 import type { Repositories } from "../repositories/index.js"
 
 const SEARCH_LIMITS = {
@@ -36,16 +42,12 @@ export class SearchService {
   constructor(private readonly repos: Repositories) {}
 
   search(query: string): SearchResponse {
-    const trimmedQuery = query.trim()
-    if (!trimmedQuery) {
-      return {
-        query: "",
-        threads: [],
-        artifacts: [],
-        agents: [],
-        projects: [],
-      }
+    const normalized = normalizeSearchQuery(query)
+    if (normalized.status !== "ready") {
+      return emptySearchResponse()
     }
+
+    const trimmedQuery = normalized.query
 
     const [threads, artifacts, agents, projects] = [
       this.repos.threads.search(trimmedQuery, SEARCH_LIMITS.threads),

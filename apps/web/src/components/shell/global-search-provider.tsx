@@ -37,12 +37,12 @@ export function GlobalSearchProvider({ children }: { children: ReactNode }) {
       }
 
       event.preventDefault()
-      setOpen(true)
+      toggle()
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [])
+  }, [toggle])
 
   const value = useMemo(
     () => ({

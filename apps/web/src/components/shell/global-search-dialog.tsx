@@ -1,14 +1,7 @@
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import { useNavigate } from "react-router"
-import {
-  BookOpen01Icon,
-  BubbleChatIcon,
-  Folder01Icon,
-  Robot01Icon,
-  Search01Icon,
-} from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
-import type { SearchHit, SearchResponse } from "@workspace/shared"
+import { emptySearchResponse, type SearchHit } from "@workspace/shared"
 import {
   Command,
   CommandDialog,
@@ -18,63 +11,15 @@ import {
   CommandItem,
   CommandList,
 } from "@workspace/ui/components/command"
+import { useDebouncedWorkspaceSearch } from "@/hooks/use-debounced-workspace-search"
 import { useGlobalSearch } from "@/hooks/use-global-search"
-import { ApiError } from "@/lib/api/client"
-import { artifactLaunchPath } from "@/lib/api/projects-client"
-import { searchWorkspace } from "@/lib/api/search-client"
+import {
+  hasSearchResults,
+  SEARCH_RESULT_GROUPS,
+  searchHitIcon,
+  searchHitPath,
+} from "@/lib/search-entity"
 import { commandPaletteShortcutLabel } from "@/lib/keyboard"
-
-const EMPTY_RESULTS: SearchResponse = {
-  query: "",
-  threads: [],
-  artifacts: [],
-  agents: [],
-  projects: [],
-}
-
-function searchHitPath(hit: SearchHit): string | null {
-  switch (hit.entityType) {
-    case "thread":
-      return `/threads/${hit.id}`
-    case "agent":
-      return `/agents/${hit.id}`
-    case "project":
-      return `/projects/${hit.id}`
-    case "artifact":
-      if (!hit.artifactType) {
-        return "/library"
-      }
-      return (
-        artifactLaunchPath({ id: hit.id, type: hit.artifactType }) ?? "/library"
-      )
-    default:
-      return null
-  }
-}
-
-function hasResults(results: SearchResponse) {
-  return (
-    results.threads.length > 0 ||
-    results.artifacts.length > 0 ||
-    results.agents.length > 0 ||
-    results.projects.length > 0
-  )
-}
-
-function entityIcon(hit: SearchHit) {
-  switch (hit.entityType) {
-    case "thread":
-      return BubbleChatIcon
-    case "artifact":
-      return BookOpen01Icon
-    case "agent":
-      return Robot01Icon
-    case "project":
-      return Folder01Icon
-    default:
-      return Search01Icon
-  }
-}
 
 function SearchResultItem({
   hit,
@@ -89,7 +34,7 @@ function SearchResultItem({
       value={`${hit.entityType}:${hit.id}:${hit.title}`}
       onSelect={() => onSelect(hit)}
     >
-      <HugeiconsIcon icon={entityIcon(hit)} strokeWidth={2} />
+      <HugeiconsIcon icon={searchHitIcon(hit)} strokeWidth={2} />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate font-medium">{hit.title}</span>
         {hit.subtitle ? (
@@ -104,72 +49,20 @@ export function GlobalSearchDialog() {
   const navigate = useNavigate()
   const { open, setOpen } = useGlobalSearch()
   const [query, setQuery] = useState("")
-  const [results, setResults] = useState<SearchResponse>(EMPTY_RESULTS)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const requestGeneration = useRef(0)
+  const trimmedQuery = query.trim()
+  const isSearching = open && trimmedQuery.length > 0
+  const { results, loading, error, reset } = useDebouncedWorkspaceSearch({
+    enabled: isSearching,
+    query,
+  })
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)
     if (!nextOpen) {
-      requestGeneration.current += 1
       setQuery("")
-      setResults(EMPTY_RESULTS)
-      setLoading(false)
-      setError(null)
+      reset()
     }
   }
-
-  const handleQueryChange = (value: string) => {
-    setQuery(value)
-    requestGeneration.current += 1
-    if (!value.trim()) {
-      setResults(EMPTY_RESULTS)
-      setLoading(false)
-      setError(null)
-      return
-    }
-
-    setResults(EMPTY_RESULTS)
-    setLoading(true)
-    setError(null)
-  }
-
-  useEffect(() => {
-    const trimmedQuery = query.trim()
-    if (!open || !trimmedQuery) {
-      return
-    }
-
-    const generation = requestGeneration.current + 1
-    requestGeneration.current = generation
-
-    const timer = window.setTimeout(() => {
-      setLoading(true)
-      setError(null)
-      void searchWorkspace(trimmedQuery)
-        .then((response) => {
-          if (requestGeneration.current !== generation) return
-          setResults(response)
-          setError(null)
-        })
-        .catch((caught) => {
-          if (requestGeneration.current !== generation) return
-          setResults(EMPTY_RESULTS)
-          setError(
-            caught instanceof ApiError
-              ? caught.message
-              : "Search is unavailable right now."
-          )
-        })
-        .finally(() => {
-          if (requestGeneration.current !== generation) return
-          setLoading(false)
-        })
-    }, 200)
-
-    return () => window.clearTimeout(timer)
-  }, [open, query])
 
   const handleSelect = (hit: SearchHit) => {
     const path = searchHitPath(hit)
@@ -178,9 +71,7 @@ export function GlobalSearchDialog() {
     navigate(path)
   }
 
-  const trimmedQuery = query.trim()
-  const isSearching = open && trimmedQuery.length > 0
-  const displayResults = isSearching ? results : EMPTY_RESULTS
+  const displayResults = isSearching ? results : emptySearchResponse()
   const displayLoading = isSearching && loading
   const displayError = isSearching ? error : null
   const showIdleHint = open && !trimmedQuery && !displayLoading && !displayError
@@ -188,7 +79,7 @@ export function GlobalSearchDialog() {
     isSearching &&
     !displayLoading &&
     !displayError &&
-    !hasResults(displayResults)
+    !hasSearchResults(displayResults)
 
   return (
     <CommandDialog
@@ -202,7 +93,7 @@ export function GlobalSearchDialog() {
         <CommandInput
           placeholder="Search threads, library, agents, projects…"
           value={query}
-          onValueChange={handleQueryChange}
+          onValueChange={setQuery}
         />
         <CommandList>
           {showIdleHint ? (
@@ -228,37 +119,24 @@ export function GlobalSearchDialog() {
             <CommandEmpty>No results for “{trimmedQuery}”.</CommandEmpty>
           ) : null}
 
-          {displayResults.threads.length > 0 ? (
-            <CommandGroup heading="Threads">
-              {displayResults.threads.map((hit) => (
-                <SearchResultItem key={hit.id} hit={hit} onSelect={handleSelect} />
-              ))}
-            </CommandGroup>
-          ) : null}
+          {SEARCH_RESULT_GROUPS.map((group) => {
+            const hits = displayResults[group.key]
+            if (hits.length === 0) {
+              return null
+            }
 
-          {displayResults.artifacts.length > 0 ? (
-            <CommandGroup heading="Library">
-              {displayResults.artifacts.map((hit) => (
-                <SearchResultItem key={hit.id} hit={hit} onSelect={handleSelect} />
-              ))}
-            </CommandGroup>
-          ) : null}
-
-          {displayResults.agents.length > 0 ? (
-            <CommandGroup heading="Agents">
-              {displayResults.agents.map((hit) => (
-                <SearchResultItem key={hit.id} hit={hit} onSelect={handleSelect} />
-              ))}
-            </CommandGroup>
-          ) : null}
-
-          {displayResults.projects.length > 0 ? (
-            <CommandGroup heading="Projects">
-              {displayResults.projects.map((hit) => (
-                <SearchResultItem key={hit.id} hit={hit} onSelect={handleSelect} />
-              ))}
-            </CommandGroup>
-          ) : null}
+            return (
+              <CommandGroup key={group.key} heading={group.heading}>
+                {hits.map((hit) => (
+                  <SearchResultItem
+                    key={hit.id}
+                    hit={hit}
+                    onSelect={handleSelect}
+                  />
+                ))}
+              </CommandGroup>
+            )
+          })}
         </CommandList>
       </Command>
     </CommandDialog>

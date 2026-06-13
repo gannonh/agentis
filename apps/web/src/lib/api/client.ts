@@ -40,7 +40,7 @@ class ApiError extends Error {
   }
 }
 
-async function parseJson<T>(response: Response, schema: {
+export async function parseJson<T>(response: Response, schema: {
   parse: (data: unknown) => T
 }): Promise<T> {
   const data = await response.json()

@@ -1,5 +1,9 @@
 import { Hono } from "hono"
-import { MAX_SEARCH_QUERY_LENGTH, searchResponseSchema } from "@workspace/shared"
+import {
+  emptySearchResponse,
+  normalizeSearchQuery,
+  searchResponseSchema,
+} from "@workspace/shared"
 import type { Repositories } from "../repositories/index.js"
 import { SearchService } from "../search/search-service.js"
 
@@ -8,12 +12,14 @@ export function createSearchRoutes(repos: Repositories) {
   const searchService = new SearchService(repos)
 
   app.get("/", (c) => {
-    const query = c.req.query("q") ?? ""
-    const trimmedQuery = query.trim()
-    if (trimmedQuery.length > MAX_SEARCH_QUERY_LENGTH) {
+    const normalized = normalizeSearchQuery(c.req.query("q") ?? "")
+    if (normalized.status === "too_long") {
       return c.json({ error: "Search query is too long." }, 400)
     }
-    const response = searchService.search(query)
+    if (normalized.status === "empty") {
+      return c.json(searchResponseSchema.parse(emptySearchResponse()))
+    }
+    const response = searchService.search(normalized.query)
     return c.json(searchResponseSchema.parse(response))
   })
 

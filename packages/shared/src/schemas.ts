@@ -146,6 +146,8 @@ import {
 } from "./search-schemas.js"
 export {
   MAX_SEARCH_QUERY_LENGTH,
+  emptySearchResponse,
+  normalizeSearchQuery,
   searchEntityTypeSchema,
   searchHitSchema,
   searchResponseSchema,

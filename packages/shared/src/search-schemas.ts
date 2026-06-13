@@ -29,3 +29,29 @@ export const searchResponseSchema = z.object({
 export type SearchEntityType = z.infer<typeof searchEntityTypeSchema>
 export type SearchHit = z.infer<typeof searchHitSchema>
 export type SearchResponse = z.infer<typeof searchResponseSchema>
+
+export function emptySearchResponse(): SearchResponse {
+  return {
+    query: "",
+    threads: [],
+    artifacts: [],
+    agents: [],
+    projects: [],
+  }
+}
+
+export type NormalizedSearchQuery =
+  | { status: "empty" }
+  | { status: "too_long" }
+  | { status: "ready"; query: string }
+
+export function normalizeSearchQuery(raw: string): NormalizedSearchQuery {
+  const trimmedQuery = raw.trim()
+  if (!trimmedQuery) {
+    return { status: "empty" }
+  }
+  if (trimmedQuery.length > MAX_SEARCH_QUERY_LENGTH) {
+    return { status: "too_long" }
+  }
+  return { status: "ready", query: trimmedQuery }
+}
