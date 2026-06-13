@@ -16,6 +16,60 @@ const EMPTY_MEMORY_CATEGORIES = [
   count: 0,
 }))
 
+const INTEGRATIONS_CATEGORIES = ["communication", "developer", "productivity"]
+
+const INTEGRATIONS_TOOLKITS = [
+  {
+    slug: "slack",
+    name: "Slack",
+    description: "Send messages and read channel history.",
+    category: "communication",
+  },
+  {
+    slug: "gmail",
+    name: "Gmail",
+    description: "Search and draft email on your behalf.",
+    category: "communication",
+  },
+  {
+    slug: "google-drive",
+    name: "Google Drive",
+    description: "Browse, upload, and share files.",
+    category: "productivity",
+  },
+  {
+    slug: "github",
+    name: "GitHub",
+    description: "Manage repos, issues, and pull requests.",
+    category: "developer",
+  },
+  {
+    slug: "airtable",
+    name: "Airtable",
+    description: "Read and write records in Airtable bases.",
+    category: "productivity",
+  },
+  {
+    slug: "notion",
+    name: "Notion",
+    description: "Search pages and update workspace content.",
+    category: "productivity",
+  },
+  {
+    slug: "linear",
+    name: "Linear",
+    description: "Track issues and project work.",
+    category: "developer",
+  },
+].map((toolkit) => ({
+  ...toolkit,
+  featured: true,
+  integrationType: "native",
+  status: "not_connected",
+  connectedAccountCount: 0,
+  availableTools: [],
+}))
+
 async function fulfillJson(route: Route, json: unknown) {
   await route.fulfill({
     status: 200,
@@ -76,6 +130,17 @@ async function mockShellRouteData(page: Page, routeName: string) {
         totalCount: 0,
         totalPages: 0,
         skills: [],
+      })
+    )
+  }
+
+  if (routeName === "integrations") {
+    await page.route(/\/api\/integrations(?:\?.*)?$/, (route) =>
+      fulfillJson(route, {
+        toolkits: INTEGRATIONS_TOOLKITS,
+        categories: INTEGRATIONS_CATEGORIES,
+        composioConfigured: true,
+        composioMockEnabled: true,
       })
     )
   }
