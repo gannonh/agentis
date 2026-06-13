@@ -55,6 +55,7 @@ docs/              # Product docs, roadmap, UI comps
 - [Agent native tooling history](docs/specs/_done/agent-native-tooling.md)
 - [Document workspace](docs/specs/_done/2026-06-01-document-workspace-design.md)
 - [Static artifacts (webpages and slides)](docs/specs/_done/2026-06-04-agent-native-tooling-v4-static-artifacts-design.md)
+- [Thread working artifacts rail](docs/specs/2026-06-13-thread-working-artifacts-design.md)
 - [App artifact runtime](docs/specs/_done/2026-06-04-agent-native-tooling-v4-apps-design.md)
 - [Artifact Library primitive (ADR 0005)](docs/adr/0005-use-artifact-as-library-primitive.md)
 - [Architecture decisions](docs/adr/)

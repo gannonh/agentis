@@ -16,7 +16,8 @@ The first slice is frontend-first. It reuses existing artifact and document APIs
 
 - Roadmap: `docs/roadmap/hyperagent-gap-roadmap.md`, HA-GAP-08.
 - Thread route: `apps/web/src/routes/thread-detail.tsx`.
-- Current artifact rail: `apps/web/src/components/thread/thread-durable-artifacts.tsx`.
+- Transcript: `apps/web/src/components/thread/thread-transcript.tsx`.
+- Working artifacts rail: `apps/web/src/components/thread/thread-durable-artifacts.tsx`.
 - Thread route tests: `apps/web/src/routes/thread-detail.test.tsx`.
 - Artifact rail tests: `apps/web/src/components/thread/thread-durable-artifacts.test.tsx`.
 - API client helpers: `apps/web/src/lib/api/projects-client.ts`.
@@ -27,14 +28,12 @@ The first slice is frontend-first. It reuses existing artifact and document APIs
 
 ## Verified current state
 
-- `/threads/:threadId` renders a right rail containing project context, run timeline, and `ThreadDurableArtifacts`.
-- `ThreadDurableArtifacts` already calls `listArtifacts({ threadId })`, sorts artifacts by `updatedAt`, and renders workspace links.
+- `/threads/:threadId` renders a desktop right rail with project context, run timeline, and `WorkingArtifactsRailSidebar`; mobile uses `WorkingArtifactsRailMobile` above the transcript.
+- `WorkingArtifactsRailProvider` loads `listArtifacts({ threadId })`, sorts newest first, preserves selection across refreshes, and loads preview detail for the selected artifact.
+- `ThreadTranscript` groups user/assistant turns and hides completed messages with no visible content.
 - `GET /api/artifacts?threadId=<threadId>` is wired through `listArtifactsQuerySchema` and `ArtifactRepository.list`.
-- `getDocumentDetail(documentId)` fetches markdown document content from `GET /api/documents/:documentId/detail`.
-- `getArtifactDetail(artifactId)` fetches static artifact detail from `GET /api/artifacts/:artifactId/detail`.
-- `DocumentViewer` renders markdown preview and source views.
-- `StaticArtifactPreview` renders static webpages, HTML slides, and polished image slide decks from artifact detail.
-- The existing rail has no selectable inline preview and no mobile collapse behavior.
+- `getDocumentDetail(documentId)` and `getArtifactDetail(artifactId)` back inline preview via `DocumentViewer` and `StaticArtifactPreview`.
+- Apps, tables, images, videos, and other unsupported types show preview-unavailable copy with workspace links when available.
 
 ## Constraints
 
@@ -216,6 +215,7 @@ Focused tests to run during Build:
 
 ```bash
 pnpm vitest run apps/web/src/components/thread/thread-durable-artifacts.test.tsx
+pnpm vitest run apps/web/src/components/thread/thread-transcript.test.tsx
 pnpm vitest run apps/web/src/routes/thread-detail.test.tsx
 ```
 

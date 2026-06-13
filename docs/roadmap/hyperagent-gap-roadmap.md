@@ -17,7 +17,7 @@
 | Surface | HyperAgent (observed) | Agentis today | Gap severity |
 | --- | --- | --- | --- |
 | New thread home | Agent switcher, Plan/Execute, suggestion chips, AI thread summaries, capability showcase cards with cost/time | API-backed threads; simpler home | Medium |
-| Thread session | Model picker, Live mode, reasoning blocks, Working Doc side panel, inline artifact iframes, Plan vs Execute | API-backed streaming; human-readable native tool cards, document links in transcript, durable-artifact sidebar; inline Working Doc panel still missing | Medium–High |
+| Thread session | Model picker, Live mode, reasoning blocks, Working Doc side panel, inline artifact iframes, Plan vs Execute | API-backed streaming; human-readable native tool cards, turn-grouped transcript (`thread-transcript.tsx`), Working artifacts rail with inline document/static preview (HA-GAP-08); no draggable panel or in-thread app iframe | Medium |
 | Library | Search, Type/Visibility/Source filters, Save/bookmark, archived toggle, iframe previews | API-backed artifacts + workspaces | Low–Medium |
 | Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, rubric CRUD, and run evaluation scores on Overview when rubrics exist | Medium |
 | Command Center | Live roster, cost breakdown, needs-attention queue, pending improvements, recent runs, score trends | API-backed live run metrics, roster, recent runs, avg score, needs-attention queue (HA-GAP-07), and fleet score-trend + cost breakdown charts (HA-GAP-27) | Low–Medium |
@@ -48,7 +48,7 @@
 
 ## Recommended execution order
 
-Completed foundation: HA-GAP-00a through HA-GAP-07 and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, and Command Center charts.
+Completed foundation: HA-GAP-00a through HA-GAP-08 and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, and the thread Working artifacts rail.
 
 Start new work from the first open wave below. Within each wave, slices are parallel-safe unless a dependency is listed.
 
@@ -56,19 +56,21 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-08: Thread side panel for working documents and artifacts
 
+**Status:** Shipped (2026-06-13). Spec: `docs/specs/2026-06-13-thread-working-artifacts-design.md`.
+
 **HyperAgent reference:** Thread → draggable "Working Doc" + `hyperapps-guide.md` iframes with open/hide/fullscreen.
 
-**Agentis today:** Artifacts open in separate routes; limited inline thread preview.
+**Agentis today:** `/threads/:threadId` exposes a Working artifacts rail (`thread-durable-artifacts.tsx`) with thread-scoped artifact list, inline markdown and static webpage/slides preview, workspace links, and a collapsed mobile bar above the transcript.
 
 **Goal:** Thread session right rail lists run-linked artifacts/documents with inline preview.
 
 **Demo:** Agent creates document during run → panel shows live preview without leaving thread.
 
 **Acceptance:**
-- [ ] Panel lists artifacts for current thread (API).
-- [ ] Markdown document iframe or preview component.
-- [ ] Open in full workspace link.
-- [ ] Mobile: collapsible panel.
+- [x] Panel lists artifacts for current thread (API).
+- [x] Markdown document iframe or preview component.
+- [x] Open in full workspace link.
+- [x] Mobile: collapsible panel.
 
 **Depends on:** None; transcript tool cards are already shipped.
 
@@ -546,6 +548,6 @@ flowchart TD
 
 ## Next steps
 
-1. Open Wave 2: HA-GAP-08 (thread artifact side panel) and HA-GAP-09 (global ⌘K search) are the highest-impact picks.
+1. Open Wave 2: HA-GAP-09 (global ⌘K search) is the highest-impact pick; HA-GAP-08 shipped in 2026-06-13.
 2. Consider HA-GAP-10 (new thread home parity) and HA-GAP-11 (thread metadata) after the core thread/discovery slices.
 3. Keep this roadmap aligned as Wave 2 work begins.
