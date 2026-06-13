@@ -1,5 +1,6 @@
 import { Link } from "react-router"
 import type { ThreadListItem } from "@workspace/shared"
+import { selectRecentThreads } from "@/components/new-thread/demo-thread-utils"
 import { formatRelativeTime } from "@/fixtures"
 
 const RECENT_THREAD_LIMIT = 3
@@ -14,7 +15,7 @@ export function RecentThreadsSection({
   threads,
   loading = false,
 }: RecentThreadsSectionProps) {
-  const recentThreads = threads.slice(0, RECENT_THREAD_LIMIT)
+  const recentThreads = selectRecentThreads(threads, RECENT_THREAD_LIMIT)
 
   if (!loading && recentThreads.length === 0) {
     return null

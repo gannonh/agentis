@@ -1,7 +1,7 @@
 import { Link } from "react-router"
 import type { ThreadListItem } from "@workspace/shared"
+import { selectDemoThreads } from "@/components/new-thread/demo-thread-utils"
 
-const DEMO_THREAD_PREFIX = "seed_thread_"
 const DEMO_THREAD_LIMIT = 3
 const DEMO_THREAD_SUMMARY_FALLBACK = "Open this curated demo thread."
 
@@ -10,9 +10,7 @@ type DemoThreadsSectionProps = {
 }
 
 export function DemoThreadsSection({ threads }: DemoThreadsSectionProps) {
-  const demoThreads = threads
-    .filter((thread) => thread.id.startsWith(DEMO_THREAD_PREFIX))
-    .slice(0, DEMO_THREAD_LIMIT)
+  const demoThreads = selectDemoThreads(threads, DEMO_THREAD_LIMIT)
 
   if (demoThreads.length === 0) {
     return null

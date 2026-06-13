@@ -101,5 +101,3 @@ export function buildSuggestionChips(agents: AgentListItem[]): SuggestionChip[] 
 
   return chips
 }
-
-export { STATIC_SUGGESTION_CHIPS }
