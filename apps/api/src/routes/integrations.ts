@@ -32,11 +32,7 @@ export function createIntegrationRoutes(
     })
 
     try {
-      const result = await services.integrations.listToolkits({
-        q: query.q,
-        category: query.category,
-        featured: query.featured,
-      })
+      const result = await services.integrations.listToolkits(query)
       return c.json(
         integrationsListResponseSchema.parse({
           toolkits: result.toolkits,
@@ -114,17 +110,11 @@ export function createIntegrationRoutes(
   })
 
   app.delete("/:toolkitSlug/connection", (c) => {
-    try {
-      const reset = services.integrations.resetConnection(c.req.param("toolkitSlug"))
-      if (!reset) {
-        return c.json({ error: "not_found" }, 404)
-      }
-      return c.json({ ok: true })
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to reset connection"
-      return c.json({ error: message }, 400)
+    const reset = services.integrations.resetConnection(c.req.param("toolkitSlug"))
+    if (!reset) {
+      return c.json({ error: "not_found" }, 404)
     }
+    return c.json({ ok: true })
   })
 
   app.post("/refresh", async (c) => {

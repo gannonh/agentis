@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
+import { FEATURED_TOOLKIT_SLUGS } from "../repositories/integration-seeds.js"
 import { createTestContext, type TestContext } from "../test/setup.js"
 import { GENERIC_AGENTIS_WORKSPACE_ID } from "../workspaces/constants.js"
 import { WorkspaceService } from "../workspaces/workspace-service.js"
@@ -211,7 +212,7 @@ describe("debug seed routes", () => {
         connectedAccountCount: number
       }[]
     }
-    expect(integrationsBody.toolkits).toHaveLength(5)
+    expect(integrationsBody.toolkits).toHaveLength(FEATURED_TOOLKIT_SLUGS.length)
     expect(
       integrationsBody.toolkits.every(
         (toolkit) =>
@@ -337,7 +338,9 @@ describe("debug seed routes", () => {
     expect(ctx.repos.documents.list()).toHaveLength(0)
     expect(ctx.repos.savedMemories.list().memories).toHaveLength(0)
     expect(ctx.repos.integrationConnections.listByUserId()).toHaveLength(0)
-    expect(ctx.repos.integrationToolkits.listFeatured()).toHaveLength(5)
+    expect(ctx.repos.integrationToolkits.listFeatured()).toHaveLength(
+      FEATURED_TOOLKIT_SLUGS.length
+    )
   })
 
   it("mounts debug seeding routes in development mode", async () => {

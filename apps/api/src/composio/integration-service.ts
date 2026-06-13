@@ -2,6 +2,8 @@ import type {
   ConnectionStatus,
   IntegrationConnection,
   IntegrationToolkit,
+  IntegrationsListQuery,
+  IntegrationsListResponse,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import { isComposioAvailable } from "../config.js"
@@ -24,15 +26,21 @@ const CONNECTION_STATUS_PRIORITY: Record<ConnectionStatus, number> = {
 
 const CATALOG_LIMIT = 20
 
-export type ListIntegrationsInput = {
-  q?: string
-  category?: string
-  featured?: boolean
-}
+type ListIntegrationsResult = Pick<
+  IntegrationsListResponse,
+  "toolkits" | "categories"
+>
 
-export type ListIntegrationsResult = {
-  toolkits: IntegrationToolkit[]
-  categories: string[]
+function groupConnectionsByToolkitSlug(
+  connections: IntegrationConnection[]
+): Map<string, IntegrationConnection[]> {
+  const grouped = new Map<string, IntegrationConnection[]>()
+  for (const connection of connections) {
+    const toolkitConnections = grouped.get(connection.toolkitSlug) ?? []
+    toolkitConnections.push(connection)
+    grouped.set(connection.toolkitSlug, toolkitConnections)
+  }
+  return grouped
 }
 
 function pickPreferredRemoteAccount(
@@ -104,19 +112,11 @@ export class IntegrationService {
 
   private buildIntegrationToolkit(
     summary: ComposioToolkitSummary,
-    connections: IntegrationConnection[]
+    toolkitConnections: IntegrationConnection[]
   ): IntegrationToolkit {
-    const toolkitConnections: IntegrationConnection[] = []
-    let connectedAccountCount = 0
-
-    for (const connection of connections) {
-      if (connection.toolkitSlug !== summary.slug) continue
-      toolkitConnections.push(connection)
-      if (connection.status === "connected") {
-        connectedAccountCount++
-      }
-    }
-
+    const connectedAccountCount = toolkitConnections.filter(
+      (connection) => connection.status === "connected"
+    ).length
     const status = aggregateToolkitStatus(toolkitConnections)
 
     return {
@@ -154,7 +154,7 @@ export class IntegrationService {
 
   private async buildToolkitsForSlugs(
     slugs: string[],
-    connections: IntegrationConnection[]
+    connectionsBySlug: Map<string, IntegrationConnection[]>
   ): Promise<IntegrationToolkit[]> {
     const resolvedSummaries = await Promise.all(
       slugs.map((slug) => this.resolveToolkitSummary(slug))
@@ -162,10 +162,15 @@ export class IntegrationService {
 
     return resolvedSummaries
       .filter((summary): summary is ComposioToolkitSummary => summary !== null)
-      .map((summary) => this.buildIntegrationToolkit(summary, connections))
+      .map((summary) =>
+        this.buildIntegrationToolkit(
+          summary,
+          connectionsBySlug.get(summary.slug) ?? []
+        )
+      )
   }
 
-  async listToolkits(input: ListIntegrationsInput = {}): Promise<ListIntegrationsResult> {
+  async listToolkits(input: IntegrationsListQuery = {}): Promise<ListIntegrationsResult> {
     if (!isComposioAvailable(this.config) && !this.config.mockComposio) {
       return { toolkits: [], categories: [] }
     }
@@ -185,8 +190,12 @@ export class IntegrationService {
     ])
 
     const connections = this.repos.integrationConnections.listByUserId()
+    const connectionsBySlug = groupConnectionsByToolkitSlug(connections)
     const toolkits = catalogResult.items.map((summary) =>
-      this.buildIntegrationToolkit(summary, connections)
+      this.buildIntegrationToolkit(
+        summary,
+        connectionsBySlug.get(summary.slug) ?? []
+      )
     )
     const toolkitSlugs = new Set(toolkits.map((toolkit) => toolkit.slug))
 
@@ -198,7 +207,7 @@ export class IntegrationService {
     const missingActiveSlugs = connectedSlugs.filter((slug) => !toolkitSlugs.has(slug))
     const additionalToolkits = await this.buildToolkitsForSlugs(
       missingActiveSlugs,
-      connections
+      connectionsBySlug
     )
     toolkits.push(...additionalToolkits)
 
@@ -207,11 +216,12 @@ export class IntegrationService {
 
   async listConnectedToolkits(): Promise<IntegrationToolkit[]> {
     const connections = this.repos.integrationConnections.listByUserId()
+    const connectionsBySlug = groupConnectionsByToolkitSlug(connections)
     const connectedSlugs = uniqueToolkitSlugs(
       connections,
       (connection) => connection.status === "connected"
     )
-    return this.buildToolkitsForSlugs(connectedSlugs, connections)
+    return this.buildToolkitsForSlugs(connectedSlugs, connectionsBySlug)
   }
 
   async startConnection(toolkitSlug: string) {

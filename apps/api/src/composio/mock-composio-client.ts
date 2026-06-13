@@ -135,6 +135,8 @@ export class MockComposioClient implements ComposioClientAdapter {
   }
 
   async listToolkitCategories(): Promise<string[]> {
-    return [...MOCK_TOOLKIT_CATEGORIES]
+    return MOCK_TOOLKIT_CATEGORIES.map((category) =>
+      normalizeToolkitCategoryValue(category)
+    )
   }
 }

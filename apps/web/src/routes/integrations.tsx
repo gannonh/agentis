@@ -16,6 +16,33 @@ import { PageHeader } from "@/components/shell/page-header"
 import { PageLayout } from "@/components/shell/page-layout"
 import { useIntegrations } from "@/hooks/use-integrations"
 
+function partitionIntegrations(
+  toolkits: IntegrationToolkit[],
+  hasActiveFilters: boolean
+) {
+  const inUseIntegrations: IntegrationToolkit[] = []
+  const connectedIntegrations: IntegrationToolkit[] = []
+  const browseIntegrations: IntegrationToolkit[] = []
+
+  for (const integration of toolkits) {
+    if (integration.status === "connected") {
+      connectedIntegrations.push(integration)
+    }
+    if (integration.status !== "not_connected") {
+      inUseIntegrations.push(integration)
+    } else if (hasActiveFilters || integration.featured) {
+      browseIntegrations.push(integration)
+    }
+  }
+
+  return {
+    inUseIntegrations,
+    connectedIntegrations,
+    connectedNames: connectedIntegrations.map((integration) => integration.name),
+    browseIntegrations,
+  }
+}
+
 export function IntegrationsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [connectingSlug, setConnectingSlug] = useState<string | null>(null)
@@ -53,29 +80,10 @@ export function IntegrationsPage() {
   const hasActiveFilters = Boolean(query.trim() || category)
 
   const { inUseIntegrations, connectedIntegrations, connectedNames, browseIntegrations } =
-    useMemo(() => {
-      const inUse: IntegrationToolkit[] = []
-      const connected: IntegrationToolkit[] = []
-      const browse: IntegrationToolkit[] = []
-
-      for (const integration of toolkits) {
-        if (integration.status === "connected") {
-          connected.push(integration)
-        }
-        if (integration.status !== "not_connected") {
-          inUse.push(integration)
-        } else if (hasActiveFilters || integration.featured) {
-          browse.push(integration)
-        }
-      }
-
-      return {
-        inUseIntegrations: inUse,
-        connectedIntegrations: connected,
-        connectedNames: connected.map((integration) => integration.name),
-        browseIntegrations: browse,
-      }
-    }, [hasActiveFilters, toolkits])
+    useMemo(
+      () => partitionIntegrations(toolkits, hasActiveFilters),
+      [hasActiveFilters, toolkits]
+    )
 
   const handleConnect = async (slug: string) => {
     setConnectingSlug(slug)
