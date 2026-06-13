@@ -1,16 +1,21 @@
-export function normalizeToolkitCategoryValue(
-  value: string | { slug?: string; name?: string } | undefined
-): string {
-  if (!value) return "general"
-  if (typeof value === "string") {
-    return value.trim().toLowerCase().replace(/-/g, " ")
-  }
-  const raw = value.slug ?? value.name ?? "general"
+export type ToolkitCategoryInput = string | { slug?: string; name?: string }
+
+function normalizeCategoryToken(raw: string): string {
   return raw.trim().toLowerCase().replace(/-/g, " ")
 }
 
+export function normalizeToolkitCategoryValue(
+  value: ToolkitCategoryInput | undefined
+): string {
+  if (!value) return "general"
+  if (typeof value === "string") {
+    return normalizeCategoryToken(value)
+  }
+  return normalizeCategoryToken(value.slug ?? value.name ?? "general")
+}
+
 export function normalizeToolkitCategoryList(
-  categories?: Array<string | { slug?: string; name?: string }>
+  categories?: ToolkitCategoryInput[]
 ): string {
   if (!categories?.length) return "general"
   return normalizeToolkitCategoryValue(categories[0])

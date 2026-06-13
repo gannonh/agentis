@@ -1,36 +1,9 @@
 import { eq } from "drizzle-orm"
-import type { IntegrationToolkit } from "@workspace/shared"
 import type { AppDatabase } from "../db/client.js"
 import { integrationToolkits } from "../db/schema.js"
 import { nowIso } from "../lib/ids.js"
 import type { ComposioToolkitSummary } from "../composio/types.js"
-import {
-  MOCK_COMPOSIO_TOOLKITS,
-} from "./integration-seeds.js"
-
-type ToolkitRow = typeof integrationToolkits.$inferSelect
-
-function mapToolkitRow(
-  row: ToolkitRow,
-  status: IntegrationToolkit["status"],
-  connectedAccountCount: number,
-  availableTools: string[],
-  integrationType: IntegrationToolkit["integrationType"] = "native",
-  logoUrl?: string
-): IntegrationToolkit {
-  return {
-    slug: row.slug,
-    name: row.name,
-    description: row.description,
-    category: row.category,
-    featured: row.featured,
-    integrationType,
-    logoUrl,
-    status,
-    connectedAccountCount,
-    availableTools,
-  }
-}
+import { MOCK_COMPOSIO_TOOLKITS } from "./integration-seeds.js"
 
 export class IntegrationToolkitRepository {
   constructor(private readonly db: AppDatabase) {}
@@ -82,23 +55,5 @@ export class IntegrationToolkitRepository {
       .from(integrationToolkits)
       .where(eq(integrationToolkits.slug, slug))
       .get()
-  }
-
-  toIntegrationToolkit(
-    row: ToolkitRow,
-    status: IntegrationToolkit["status"],
-    connectedAccountCount: number,
-    availableTools: string[],
-    integrationType: IntegrationToolkit["integrationType"] = "native",
-    logoUrl?: string
-  ): IntegrationToolkit {
-    return mapToolkitRow(
-      row,
-      status,
-      connectedAccountCount,
-      availableTools,
-      integrationType,
-      logoUrl
-    )
   }
 }

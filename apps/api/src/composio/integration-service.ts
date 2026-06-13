@@ -66,15 +66,33 @@ function aggregateToolkitStatus(
   connections: IntegrationConnection[]
 ): ConnectionStatus {
   if (connections.length === 0) return "not_connected"
-  if (connections.some((c) => c.status === "connected")) return "connected"
-  if (connections.some((c) => c.status === "pending")) return "pending"
-  if (connections.some((c) => c.status === "expired")) return "expired"
-  if (connections.some((c) => c.status === "error")) return "error"
-  return "not_connected"
+
+  let best: ConnectionStatus = "not_connected"
+  for (const connection of connections) {
+    if (
+      CONNECTION_STATUS_PRIORITY[connection.status] <
+      CONNECTION_STATUS_PRIORITY[best]
+    ) {
+      best = connection.status
+    }
+  }
+  return best
 }
 
-function hasActiveConnectionStatus(status: ConnectionStatus) {
-  return status !== "not_connected"
+function uniqueToolkitSlugs(
+  connections: IntegrationConnection[],
+  predicate: (connection: IntegrationConnection) => boolean
+): string[] {
+  return [
+    ...new Set(
+      connections.filter(predicate).map((connection) => connection.toolkitSlug)
+    ),
+  ]
+}
+
+function optionalTrim(value?: string): string | undefined {
+  const trimmed = value?.trim()
+  return trimmed || undefined
 }
 
 export class IntegrationService {
@@ -88,13 +106,18 @@ export class IntegrationService {
     summary: ComposioToolkitSummary,
     connections: IntegrationConnection[]
   ): IntegrationToolkit {
-    const toolkitConnections = connections.filter(
-      (connection) => connection.toolkitSlug === summary.slug
-    )
+    const toolkitConnections: IntegrationConnection[] = []
+    let connectedAccountCount = 0
+
+    for (const connection of connections) {
+      if (connection.toolkitSlug !== summary.slug) continue
+      toolkitConnections.push(connection)
+      if (connection.status === "connected") {
+        connectedAccountCount++
+      }
+    }
+
     const status = aggregateToolkitStatus(toolkitConnections)
-    const connectedAccountCount = toolkitConnections.filter(
-      (connection) => connection.status === "connected"
-    ).length
 
     return {
       slug: summary.slug,
@@ -129,19 +152,32 @@ export class IntegrationService {
     }
   }
 
+  private async buildToolkitsForSlugs(
+    slugs: string[],
+    connections: IntegrationConnection[]
+  ): Promise<IntegrationToolkit[]> {
+    const resolvedSummaries = await Promise.all(
+      slugs.map((slug) => this.resolveToolkitSummary(slug))
+    )
+
+    return resolvedSummaries
+      .filter((summary): summary is ComposioToolkitSummary => summary !== null)
+      .map((summary) => this.buildIntegrationToolkit(summary, connections))
+  }
+
   async listToolkits(input: ListIntegrationsInput = {}): Promise<ListIntegrationsResult> {
     if (!isComposioAvailable(this.config) && !this.config.mockComposio) {
       return { toolkits: [], categories: [] }
     }
 
-    const hasSearch = Boolean(input.q?.trim())
-    const hasCategory = Boolean(input.category?.trim())
-    const featured = input.featured ?? (!hasSearch && !hasCategory)
+    const search = optionalTrim(input.q)
+    const category = optionalTrim(input.category)
+    const featured = input.featured ?? (!search && !category)
 
     const [catalogResult, categories] = await Promise.all([
       this.composio.listToolkits({
-        search: input.q?.trim() || undefined,
-        category: input.category?.trim() || undefined,
+        search,
+        category,
         featured,
         limit: CATALOG_LIMIT,
       }),
@@ -154,47 +190,28 @@ export class IntegrationService {
     )
     const toolkitSlugs = new Set(toolkits.map((toolkit) => toolkit.slug))
 
-    const connectedSlugs = [
-      ...new Set(
-        connections
-          .filter((connection) => hasActiveConnectionStatus(connection.status))
-          .map((connection) => connection.toolkitSlug)
-      ),
-    ]
-
-    const missingActiveSlugs = connectedSlugs.filter((slug) => !toolkitSlugs.has(slug))
-    const resolvedSummaries = await Promise.all(
-      missingActiveSlugs.map((slug) => this.resolveToolkitSummary(slug))
+    const connectedSlugs = uniqueToolkitSlugs(
+      connections,
+      (connection) => connection.status !== "not_connected"
     )
 
-    for (const summary of resolvedSummaries) {
-      if (!summary) continue
-      toolkits.push(this.buildIntegrationToolkit(summary, connections))
-      toolkitSlugs.add(summary.slug)
-    }
+    const missingActiveSlugs = connectedSlugs.filter((slug) => !toolkitSlugs.has(slug))
+    const additionalToolkits = await this.buildToolkitsForSlugs(
+      missingActiveSlugs,
+      connections
+    )
+    toolkits.push(...additionalToolkits)
 
     return { toolkits, categories }
   }
 
   async listConnectedToolkits(): Promise<IntegrationToolkit[]> {
     const connections = this.repos.integrationConnections.listByUserId()
-    const connectedSlugs = [
-      ...new Set(
-        connections
-          .filter((connection) => connection.status === "connected")
-          .map((connection) => connection.toolkitSlug)
-      ),
-    ]
-
-    const toolkits: IntegrationToolkit[] = []
-    const resolvedSummaries = await Promise.all(
-      connectedSlugs.map((slug) => this.resolveToolkitSummary(slug))
+    const connectedSlugs = uniqueToolkitSlugs(
+      connections,
+      (connection) => connection.status === "connected"
     )
-    for (const summary of resolvedSummaries) {
-      if (!summary) continue
-      toolkits.push(this.buildIntegrationToolkit(summary, connections))
-    }
-    return toolkits
+    return this.buildToolkitsForSlugs(connectedSlugs, connections)
   }
 
   async startConnection(toolkitSlug: string) {
@@ -328,7 +345,7 @@ export class IntegrationService {
     return updated!
   }
 
-  async resetConnection(toolkitSlug: string): Promise<boolean> {
+  resetConnection(toolkitSlug: string): boolean {
     return this.repos.integrationConnections.deleteByToolkitSlug(toolkitSlug)
   }
 

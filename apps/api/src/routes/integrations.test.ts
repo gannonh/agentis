@@ -11,20 +11,7 @@ let ctx: TestContext | undefined
 function extendComposioAdapter(
   overrides: Partial<ComposioClientAdapter> = {}
 ): ComposioClientAdapter {
-  const base = new MockComposioClient()
-  return {
-    authorizeToolkit:
-      overrides.authorizeToolkit ?? base.authorizeToolkit.bind(base),
-    refreshConnectedAccount:
-      overrides.refreshConnectedAccount ?? base.refreshConnectedAccount.bind(base),
-    listConnectedAccounts:
-      overrides.listConnectedAccounts ?? base.listConnectedAccounts.bind(base),
-    executeTool: overrides.executeTool ?? base.executeTool.bind(base),
-    listToolkits: overrides.listToolkits ?? base.listToolkits.bind(base),
-    getToolkit: overrides.getToolkit ?? base.getToolkit.bind(base),
-    listToolkitCategories:
-      overrides.listToolkitCategories ?? base.listToolkitCategories.bind(base),
-  }
+  return Object.assign(new MockComposioClient(), overrides)
 }
 
 afterEach(() => {

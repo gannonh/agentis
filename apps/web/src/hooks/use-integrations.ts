@@ -9,6 +9,10 @@ import {
 
 const SEARCH_DEBOUNCE_MS = 300
 
+function integrationErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
+
 export function useIntegrations() {
   const [toolkits, setToolkits] = useState<IntegrationToolkit[]>([])
   const [categories, setCategories] = useState<string[]>([])
@@ -42,11 +46,7 @@ export function useIntegrations() {
         setComposioConfigured(data.composioConfigured)
         setComposioMockEnabled(data.composioMockEnabled)
       } catch (refreshError) {
-        const message =
-          refreshError instanceof Error
-            ? refreshError.message
-            : "Failed to load integrations"
-        setError(message)
+        setError(integrationErrorMessage(refreshError, "Failed to load integrations"))
       } finally {
         setLoading(false)
       }
@@ -69,11 +69,7 @@ export function useIntegrations() {
         }
         await refresh()
       } catch (connectError) {
-        const message =
-          connectError instanceof Error
-            ? connectError.message
-            : "Failed to start connection"
-        setError(message)
+        setError(integrationErrorMessage(connectError, "Failed to start connection"))
       }
     },
     [refresh]
@@ -87,11 +83,7 @@ export function useIntegrations() {
         await refresh()
         setNotice("Connection reset. You can connect again.")
       } catch (resetError) {
-        const message =
-          resetError instanceof Error
-            ? resetError.message
-            : "Failed to reset connection"
-        setError(message)
+        setError(integrationErrorMessage(resetError, "Failed to reset connection"))
       }
     },
     [refresh]
@@ -104,11 +96,7 @@ export function useIntegrations() {
       await refresh()
       setNotice("Connection statuses refreshed.")
     } catch (refreshError) {
-      const message =
-        refreshError instanceof Error
-          ? refreshError.message
-          : "Failed to refresh integrations"
-      setError(message)
+      setError(integrationErrorMessage(refreshError, "Failed to refresh integrations"))
     }
   }, [refresh])
 
