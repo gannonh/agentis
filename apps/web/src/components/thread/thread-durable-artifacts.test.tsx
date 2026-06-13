@@ -390,4 +390,150 @@ describe("WorkingArtifactsRail", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "false")
     expect(screen.queryByText("Research brief: AI agents")).not.toBeInTheDocument()
   })
+
+  it("shows loading state on refresh and hides the stale artifact list", async () => {
+    let resolveRefresh: ((items: typeof baseArtifact[]) => void) | undefined
+    vi.mocked(listArtifacts)
+      .mockResolvedValueOnce([
+        {
+          ...baseArtifact,
+          id: "document_old",
+          title: "Stale document",
+          type: "document",
+          contentFormat: "markdown",
+          mimeType: "text/markdown",
+        },
+      ])
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveRefresh = (items) => resolve(items)
+          })
+      )
+
+    const { rerender } = render(
+      <MemoryRouter>
+        <WorkingArtifactsRailProvider threadId="thread_test" refreshKey="refresh-1">
+          <WorkingArtifactsRailSidebar />
+        </WorkingArtifactsRailProvider>
+      </MemoryRouter>
+    )
+
+    expect(await screen.findByText("Stale document")).toBeInTheDocument()
+
+    rerender(
+      <MemoryRouter>
+        <WorkingArtifactsRailProvider threadId="thread_test" refreshKey="refresh-2">
+          <WorkingArtifactsRailSidebar />
+        </WorkingArtifactsRailProvider>
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText("Loading artifacts...")).toBeInTheDocument()
+    expect(screen.queryByText("Stale document")).not.toBeInTheDocument()
+
+    resolveRefresh?.([
+      {
+        ...baseArtifact,
+        id: "document_new",
+        title: "Fresh document",
+        type: "document",
+        contentFormat: "markdown",
+        mimeType: "text/markdown",
+      },
+    ])
+
+    expect(await screen.findByText("Fresh document")).toBeInTheDocument()
+    expect(screen.queryByText("Loading artifacts...")).not.toBeInTheDocument()
+  })
+
+  it("clears the prior preview while the next artifact loads", async () => {
+    let resolveSecondPreview: ((detail: DocumentDetailResponse) => void) | undefined
+    type DocumentDetailResponse = Awaited<ReturnType<typeof getDocumentDetail>>
+
+    vi.mocked(listArtifacts).mockResolvedValueOnce([
+      {
+        ...baseArtifact,
+        id: "document_a",
+        title: "Document A",
+        type: "document",
+        contentFormat: "markdown",
+        mimeType: "text/markdown",
+        updatedAt: new Date("2026-06-02T00:00:00.000Z").toISOString(),
+      },
+      {
+        ...baseArtifact,
+        id: "document_b",
+        title: "Document B",
+        type: "document",
+        contentFormat: "markdown",
+        mimeType: "text/markdown",
+        updatedAt: new Date("2026-06-01T00:00:00.000Z").toISOString(),
+      },
+    ])
+
+    vi.mocked(getDocumentDetail).mockImplementation((id) => {
+      if (id === "document_b") {
+        return new Promise((resolve) => {
+          resolveSecondPreview = resolve
+        })
+      }
+      return Promise.resolve({
+        document: {
+          id: "document_a",
+          title: "Document A",
+          type: "document",
+          contentFormat: "markdown",
+          mimeType: "text/markdown",
+          sizeBytes: 120,
+          visibilityScope: "thread",
+          threadId: "thread_test",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        content: "# Document A\n\nAlpha body.",
+        truncated: false,
+        currentVersion: 1,
+        selectedVersion: 1,
+        versions: [],
+      })
+    })
+
+    const user = userEvent.setup()
+    renderRail(<WorkingArtifactsRailSidebar />)
+
+    await user.click(await screen.findByRole("button", { name: "Preview" }))
+    expect(await screen.findByTestId("document-preview")).toHaveTextContent(
+      "Alpha body."
+    )
+
+    await user.click(screen.getByRole("button", { name: /Document B/i }))
+
+    expect(screen.getByText("Loading preview...")).toBeInTheDocument()
+    expect(screen.queryByText("Alpha body.")).not.toBeInTheDocument()
+
+    resolveSecondPreview?.({
+      document: {
+        id: "document_b",
+        title: "Document B",
+        type: "document",
+        contentFormat: "markdown",
+        mimeType: "text/markdown",
+        sizeBytes: 120,
+        visibilityScope: "thread",
+        threadId: "thread_test",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      content: "# Document B\n\nBeta body.",
+      truncated: false,
+      currentVersion: 1,
+      selectedVersion: 1,
+      versions: [],
+    })
+
+    expect(await screen.findByTestId("document-preview")).toHaveTextContent(
+      "Beta body."
+    )
+  })
 })

@@ -971,7 +971,10 @@ export class RunExecutor {
         }
         const responseText = getTextFromParts(assistantParts).trim()
         const hasToolActivity = assistantParts.some(
-          (part) => part.type === "tool-call" || part.type === "tool-result"
+          (part) =>
+            part.type === "tool-call" ||
+            part.type === "tool-result" ||
+            part.type === "tool-error"
         )
         const emptyProviderResponse =
           !hasPendingApproval &&

@@ -101,6 +101,7 @@ export function WorkingArtifactsRailProvider({
 
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
     void listArtifacts({ threadId })
       .then((items) => {
         if (!cancelled) {
@@ -189,6 +190,10 @@ function WorkingArtifactPreviewLoader({ artifact }: { artifact: Artifact }) {
 
   useEffect(() => {
     const requestId = ++requestRef.current
+    setLoading(true)
+    setError(null)
+    setDocumentDetail(null)
+    setArtifactDetail(null)
 
     const load =
       artifact.type === "document"
@@ -216,7 +221,7 @@ function WorkingArtifactPreviewLoader({ artifact }: { artifact: Artifact }) {
       .finally(() => {
         if (requestId === requestRef.current) setLoading(false)
       })
-  }, [artifact])
+  }, [artifact.id, artifact.type, artifact.updatedAt])
 
   if (loading) {
     return (
@@ -363,7 +368,7 @@ function WorkingArtifactsRailPanel({
           No working artifacts yet.
         </p>
       ) : null}
-      {sortedArtifacts.length ? (
+      {!loading && sortedArtifacts.length ? (
         <ul
           className={cn(
             "flex min-h-0 flex-col gap-2 overflow-y-auto",
