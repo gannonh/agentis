@@ -12,8 +12,8 @@ import type {
 } from "./types.js"
 import { MockComposioClient } from "./mock-composio-client.js"
 import { normalizeToolkitCategoryValue, toComposioCategoryQuery } from "./category-normalize.js"
+import { mapComposioAccountStatus } from "./composio-account-status.js"
 import {
-  mapComposioAccountStatus,
   mapComposioToolkitSummary,
   matchesToolkitCatalogSearch,
   type ComposioToolkitResponse,
@@ -149,7 +149,7 @@ async function searchCatalogToolkits(
     pages++
   }
 
-  return { items, nextCursor: cursor }
+  return { items: items.slice(0, limit), nextCursor: cursor }
 }
 
 export async function resolveAuthConfigId(

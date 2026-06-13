@@ -1,4 +1,4 @@
-import type { ConnectionStatus, IntegrationType } from "@workspace/shared"
+import type { IntegrationType } from "@workspace/shared"
 import type { ComposioToolkitSummary } from "./types.js"
 import {
   normalizeToolkitCategoryList,
@@ -18,20 +18,6 @@ export function matchesToolkitCatalogSearch(
     toolkit.slug.toLowerCase().includes(normalized) ||
     toolkit.category.toLowerCase().includes(normalized)
   )
-}
-
-export function mapComposioAccountStatus(status: string): ConnectionStatus {
-  const normalized = status.trim().toUpperCase()
-  if (normalized === "ACTIVE") return "connected"
-  if (
-    normalized === "PENDING" ||
-    normalized === "INITIALIZING" ||
-    normalized === "INITIATED"
-  ) {
-    return "pending"
-  }
-  if (normalized === "EXPIRED") return "expired"
-  return "error"
 }
 
 function mapIntegrationType(managedBy?: string): IntegrationType {

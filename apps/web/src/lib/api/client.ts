@@ -19,6 +19,7 @@ import {
   type CreateFollowUpRequest,
   type CreateThreadRequest,
   type CreateToolGrantRequest,
+  type IntegrationsListQuery,
   type IntegrationsListResponse,
   type RuntimeHealth,
   type ThreadDetail,
@@ -157,7 +158,7 @@ export async function streamRun(runId: string, signal?: AbortSignal) {
 }
 
 export async function listIntegrations(
-  query: { q?: string; category?: string } = {}
+  query: Pick<IntegrationsListQuery, "q" | "category"> = {}
 ): Promise<IntegrationsListResponse> {
   const params = new URLSearchParams()
   if (query.q?.trim()) params.set("q", query.q.trim())
