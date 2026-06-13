@@ -15,6 +15,7 @@ import {
   mapComposioAccountStatus,
   mapComposioToolkitSummary,
 } from "./mock-composio-client.js"
+import { normalizeToolkitCategoryValue, toComposioCategoryQuery } from "./category-normalize.js"
 import { toAppToolkitSlug, toComposioToolkitSlug } from "./toolkit-slugs.js"
 
 function mapConnectionStatus(status: string): ConnectionStatus {
@@ -84,6 +85,24 @@ function matchesSearch(toolkit: ComposioToolkitSummary, search: string) {
     toolkit.slug.toLowerCase().includes(normalized) ||
     toolkit.category.toLowerCase().includes(normalized)
   )
+}
+
+const CATALOG_SEARCH_MAX_PAGES = 25
+const CATALOG_SEARCH_PAGE_SIZE = 50
+
+function buildToolkitListQuery(
+  input: ComposioListToolkitsInput,
+  featured: boolean,
+  limit: number,
+  cursor?: string
+) {
+  return {
+    category: input.category ? toComposioCategoryQuery(input.category) : undefined,
+    sortBy: featured ? ("usage" as const) : ("alphabetically" as const),
+    managedBy: featured ? ("composio" as const) : ("all" as const),
+    limit,
+    cursor,
+  }
 }
 
 export async function resolveAuthConfigId(
@@ -228,28 +247,66 @@ export class LiveComposioClient implements ComposioClientAdapter {
 
   async listToolkits(input: ComposioListToolkitsInput): Promise<ComposioListToolkitsResult> {
     const featured = input.featured ?? false
-    const response = await this.composio.toolkits.get({
-      category: input.category,
-      sortBy: featured ? "usage" : "alphabetically",
-      managedBy: featured ? "composio" : "all",
-      limit: input.limit ?? 20,
-      cursor: input.cursor,
-    })
+    const limit = input.limit ?? 20
+    const search = input.search?.trim()
 
-    if (!isToolkitListResponse(response)) {
-      return { items: [] }
-    }
-
-    const items = response.items
-      .map((toolkit) => mapComposioToolkitSummary(toolkit, featured))
-      .filter((toolkit): toolkit is ComposioToolkitSummary => toolkit !== null)
-      .filter((toolkit) =>
-        input.search ? matchesSearch(toolkit, input.search) : true
+    if (!search) {
+      const response = await this.composio.toolkits.get(
+        buildToolkitListQuery(input, featured, limit, input.cursor)
       )
 
+      if (!isToolkitListResponse(response)) {
+        return { items: [] }
+      }
+
+      const items = response.items
+        .map((toolkit) => mapComposioToolkitSummary(toolkit, featured))
+        .filter((toolkit): toolkit is ComposioToolkitSummary => toolkit !== null)
+
+      return {
+        items,
+        nextCursor: response.nextCursor ?? undefined,
+      }
+    }
+
+    const items: ComposioToolkitSummary[] = []
+    let cursor = input.cursor
+    let pages = 0
+
+    while (items.length < limit && pages < CATALOG_SEARCH_MAX_PAGES) {
+      const response = await this.composio.toolkits.get(
+        buildToolkitListQuery(
+          input,
+          featured,
+          Math.max(limit, CATALOG_SEARCH_PAGE_SIZE),
+          cursor
+        )
+      )
+
+      if (!isToolkitListResponse(response)) {
+        break
+      }
+
+      for (const toolkit of response.items) {
+        const summary = mapComposioToolkitSummary(toolkit, featured)
+        if (!summary || !matchesSearch(summary, search)) continue
+        items.push(summary)
+        if (items.length >= limit) break
+      }
+
+      cursor = response.nextCursor ?? undefined
+      if (!cursor || items.length >= limit) {
+        return {
+          items: items.slice(0, limit),
+          nextCursor: cursor,
+        }
+      }
+      pages++
+    }
+
     return {
-      items,
-      nextCursor: response.nextCursor ?? undefined,
+      items: items.slice(0, limit),
+      nextCursor: cursor,
     }
   }
 
@@ -264,7 +321,10 @@ export class LiveComposioClient implements ComposioClientAdapter {
   async listToolkitCategories(): Promise<string[]> {
     const response = await this.composio.toolkits.listCategories()
     return response.items
-      .map((category) => category.name)
+      .map((category) => {
+        const record = category as { slug?: string; name?: string }
+        return normalizeToolkitCategoryValue(record.slug ?? record.name)
+      })
       .filter((value): value is string => Boolean(value))
       .sort()
   }

@@ -41,13 +41,6 @@ export function FeaturedIntegrationsGrid({
     variant === "connected"
       ? "text-status-success-foreground size-3.5"
       : "text-status-warning-foreground size-3.5"
-  if (integrations.length === 0) {
-    return (
-      <p className="text-muted-foreground rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm">
-        No integrations match your search.
-      </p>
-    )
-  }
 
   return (
     <section aria-labelledby={resolvedHeadingId}>

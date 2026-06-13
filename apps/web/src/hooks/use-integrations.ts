@@ -100,10 +100,9 @@ export function useIntegrations() {
   const refreshStatuses = useCallback(async () => {
     setError(null)
     try {
-      const data = await refreshIntegrations()
-      setToolkits(data.toolkits)
-      setNotice("Connection statuses refreshed.")
+      await refreshIntegrations()
       await refresh()
+      setNotice("Connection statuses refreshed.")
     } catch (refreshError) {
       const message =
         refreshError instanceof Error

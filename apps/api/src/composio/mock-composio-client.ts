@@ -14,6 +14,7 @@ import {
   MOCK_COMPOSIO_TOOLKITS,
   MOCK_TOOLKIT_CATEGORIES,
 } from "../repositories/integration-seeds.js"
+import { normalizeToolkitCategoryList, normalizeToolkitCategoryValue } from "./category-normalize.js"
 import { toAppToolkitSlug } from "./toolkit-slugs.js"
 
 function filterMockToolkits(input: ComposioListToolkitsInput): ComposioToolkitSummary[] {
@@ -22,7 +23,9 @@ function filterMockToolkits(input: ComposioListToolkitsInput): ComposioToolkitSu
 
   return MOCK_COMPOSIO_TOOLKITS.filter((toolkit) => {
     if (featuredOnly && !toolkit.featured) return false
-    if (input.category && toolkit.category !== input.category) return false
+    if (input.category && toolkit.category !== normalizeToolkitCategoryValue(input.category)) {
+      return false
+    }
     if (!normalizedSearch) return true
     return (
       toolkit.name.toLowerCase().includes(normalizedSearch) ||
@@ -138,7 +141,9 @@ export class MockComposioClient implements ComposioClientAdapter {
   }
 
   async listToolkitCategories(): Promise<string[]> {
-    return [...MOCK_TOOLKIT_CATEGORIES]
+    return MOCK_TOOLKIT_CATEGORIES.map((category) =>
+      normalizeToolkitCategoryValue(category)
+    )
   }
 }
 
@@ -158,15 +163,6 @@ export function mapComposioAccountStatus(status: string): ConnectionStatus {
 
 function mapIntegrationType(managedBy?: string): IntegrationType {
   return managedBy === "project" ? "mcp" : "native"
-}
-
-function normalizeCategory(
-  categories?: Array<string | { slug?: string; name?: string }>
-): string {
-  if (!categories?.length) return "general"
-  const first = categories[0]!
-  if (typeof first === "string") return first.replace(/-/g, " ")
-  return (first.name ?? first.slug ?? "general").replace(/-/g, " ")
 }
 
 type ComposioToolkitResponse = {
@@ -201,7 +197,7 @@ export function mapComposioToolkitSummary(
     slug,
     name: toolkit.name,
     description,
-    category: normalizeCategory(categories),
+    category: normalizeToolkitCategoryList(categories),
     featured,
     integrationType: mapIntegrationType(toolkit.managedBy),
     logoUrl: logoUrl || undefined,

@@ -378,6 +378,33 @@ describe("integration routes", () => {
     expect(github?.connectedAccountCount).toBe(1)
   })
 
+  it("resets a local connection when the toolkit is no longer in the catalog", async () => {
+    ctx = createTestContext()
+    ctx.repos.integrationToolkits.upsertFromCatalog({
+      slug: "retired-toolkit",
+      name: "Retired Toolkit",
+      description: "Removed from Composio",
+      category: "developer",
+      featured: false,
+      integrationType: "native",
+    })
+    ctx.repos.integrationConnections.create({
+      toolkitSlug: "retired-toolkit",
+      status: "error",
+      errorCode: "connection_error",
+    })
+    const services = createComposioServices(ctx.repos, ctx.config)
+    const app = createApp(ctx.repos, ctx.config, services)
+
+    const reset = await app.request("/api/integrations/retired-toolkit/connection", {
+      method: "DELETE",
+    })
+    expect(reset.status).toBe(200)
+    expect(
+      ctx.repos.integrationConnections.getByToolkitSlug("retired-toolkit")
+    ).toBeNull()
+  })
+
   it("resets a pending connection so the toolkit shows not connected", async () => {
     ctx = createTestContext()
     ctx.repos.integrationToolkits.seedFeatured()
