@@ -1,25 +1,24 @@
-import { useEffect, useState } from "react"
 import { Link } from "react-router"
-import { Button } from "@workspace/ui/components/button"
 import type { ThreadListItem } from "@workspace/shared"
-import { listThreads } from "@/lib/api/client"
+import { formatRelativeTime } from "@/fixtures"
 
-export function RecentThreadsSection() {
-  const [threads, setThreads] = useState<ThreadListItem[]>([])
-  const [loading, setLoading] = useState(true)
+const THREAD_SUMMARY_FALLBACK = "Open this thread to continue the conversation."
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const items = await listThreads()
-        setThreads(items.slice(0, 3))
-      } catch {
-        setThreads([])
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [])
+type RecentThreadsSectionProps = {
+  threads: ThreadListItem[]
+  loading?: boolean
+}
+
+function formatRunStatus(status: string | undefined): string {
+  if (!status) return "Unknown"
+  return status.replace(/-/g, " ")
+}
+
+export function RecentThreadsSection({
+  threads,
+  loading = false,
+}: RecentThreadsSectionProps) {
+  const recentThreads = threads.slice(0, 3)
 
   if (loading) {
     return (
@@ -30,7 +29,7 @@ export function RecentThreadsSection() {
     )
   }
 
-  if (threads.length === 0) {
+  if (recentThreads.length === 0) {
     return null
   }
 
@@ -38,21 +37,26 @@ export function RecentThreadsSection() {
     <section className="flex w-full max-w-3xl flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">Recent threads</h2>
-        <Button variant="ghost" size="sm" disabled>
-          Show all
-        </Button>
       </div>
-      <ul className="grid gap-2">
-        {threads.map((thread) => (
+      <ul className="flex flex-col gap-3">
+        {recentThreads.map((thread) => (
           <li key={thread.id}>
             <Link
               to={`/threads/${thread.id}`}
-              className="hover:bg-muted/50 flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm transition-colors"
+              className="hover:bg-muted/40 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 transition-colors"
             >
-              <span className="truncate font-medium">{thread.title}</span>
-              <span className="text-muted-foreground text-xs capitalize">
-                {thread.lastRunStatus ?? thread.status}
-              </span>
+              <div className="flex flex-col gap-1.5 text-left">
+                <h3 className="text-sm font-medium leading-snug">{thread.title}</h3>
+                <p className="text-muted-foreground line-clamp-2 text-sm leading-relaxed">
+                  {thread.summary ?? THREAD_SUMMARY_FALLBACK}
+                </p>
+              </div>
+              <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-xs">
+                <span>{formatRelativeTime(thread.updatedAt)}</span>
+                <span className="capitalize">
+                  {formatRunStatus(thread.lastRunStatus ?? thread.status)}
+                </span>
+              </div>
             </Link>
           </li>
         ))}
@@ -60,3 +64,5 @@ export function RecentThreadsSection() {
     </section>
   )
 }
+
+export { THREAD_SUMMARY_FALLBACK }

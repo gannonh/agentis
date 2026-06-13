@@ -8,6 +8,7 @@ import {
   threadDetailSchema,
   threadListItemSchema,
   threadSchema,
+  threadListSummaryFromMessages,
   updateThreadRequestSchema,
 } from "@workspace/shared"
 import type { ComposioServices } from "../composio/index.js"
@@ -27,23 +28,6 @@ import { RunExecutor } from "../runtime/run-executor.js"
 import { GENERIC_AGENTIS_AGENT_ID } from "../workspaces/constants.js"
 import { WorkspaceError } from "../workspaces/workspace-service.js"
 
-function summarizeThreadPreview(prompt: string) {
-  const trimmed = prompt.trim().replace(/\s+/g, " ")
-  if (trimmed.length <= 160) return trimmed
-  return `${trimmed.slice(0, 157)}...`
-}
-
-function firstUserMessageText(
-  messages: { role: string; parts: { type: string; text?: string }[] }[]
-) {
-  const message = messages.find((item) => item.role === "user")
-  if (!message) return null
-  const textPart = message.parts.find(
-    (part) => part.type === "text" && typeof part.text === "string"
-  )
-  return textPart?.text?.trim() ? summarizeThreadPreview(textPart.text) : null
-}
-
 export function createThreadRoutes(
   repos: Repositories,
   config: AppConfig
@@ -60,7 +44,7 @@ export function createThreadRoutes(
         ...thread,
         messageCount: messages.length,
         lastRunStatus: latestRun?.status,
-        summary: firstUserMessageText(messages),
+        summary: threadListSummaryFromMessages(messages),
         documentCount,
       })
     })

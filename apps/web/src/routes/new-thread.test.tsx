@@ -29,6 +29,7 @@ vi.mock("@/lib/api/client", () => ({
     thread: { id: "thread_test" },
     run: { id: "run_test" },
   }),
+  listThreads: vi.fn().mockResolvedValue([]),
 }))
 
 vi.mock("@/hooks/use-agents", () => ({

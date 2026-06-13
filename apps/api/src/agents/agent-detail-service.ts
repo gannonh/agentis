@@ -1,5 +1,6 @@
 import {
   agentDetailResponseSchema,
+  threadListSummaryFromMessages,
   type AgentDetailResponse,
 } from "@workspace/shared"
 import { toPublicArtifact } from "../lib/public-artifacts.js"
@@ -26,6 +27,9 @@ export function buildAgentDetail(
     createdAt: thread.createdAt,
     updatedAt: thread.updatedAt,
     lastRunStatus: latestRuns.get(thread.id)?.status,
+    summary: threadListSummaryFromMessages(
+      repos.messages.listByThreadId(thread.id)
+    ),
     documentCount: documentCounts.get(thread.id) ?? 0,
   }))
 
