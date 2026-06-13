@@ -46,7 +46,6 @@ import {
   findStaticArtifactsInputSchema,
   findStaticArtifactsOutputSchema,
   readStaticArtifactInputSchema,
-  readStaticArtifactMaxChars,
   readStaticArtifactOutputSchema,
   staticArtifactMetadataSchema,
   staticArtifactRenderModeSchema,
