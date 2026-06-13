@@ -1,5 +1,5 @@
 import { createGateway, type LanguageModel } from "ai"
-import type { ModelMessage } from "ai"
+import type { ModelMessage, TextPart } from "ai"
 import type { AppConfig } from "../config.js"
 import {
   createCloudflareLanguageModel,
@@ -73,9 +73,10 @@ function prependSystemToFirstUserMessage(
       }
     }
     if (Array.isArray(message.content)) {
+      const systemPart: TextPart = { type: "text", text: trimmedSystem }
       return {
         ...message,
-        content: [{ type: "text", text: trimmedSystem }, ...message.content],
+        content: [systemPart, ...message.content],
       }
     }
     return message
