@@ -320,15 +320,33 @@ export const connectionStatusSchema = z.enum([
 
 export const toolAccessScopeTypeSchema = z.enum(["thread", "agent"])
 
+export const integrationTypeSchema = z.enum(["native", "mcp"])
+
 export const integrationToolkitSchema = z.object({
   slug: z.string(),
   name: z.string(),
   description: z.string(),
   category: z.string(),
   featured: z.boolean(),
+  integrationType: integrationTypeSchema,
+  logoUrl: z.string().min(1).optional(),
   status: connectionStatusSchema,
   connectedAccountCount: z.number(),
   availableTools: z.array(z.string()),
+})
+
+export const integrationsListQuerySchema = z.object({
+  q: z.string().optional(),
+  category: z.string().optional(),
+  featured: z
+    .string()
+    .optional()
+    .transform((value) => {
+      if (value === undefined) return undefined
+      if (value === "true" || value === "1") return true
+      if (value === "false" || value === "0") return false
+      return undefined
+    }),
 })
 
 export const integrationConnectionSchema = z.object({
@@ -356,6 +374,7 @@ export const toolAccessGrantSchema = z.object({
 
 export const integrationsListResponseSchema = z.object({
   toolkits: z.array(integrationToolkitSchema),
+  categories: z.array(z.string()),
   composioConfigured: z.boolean(),
   composioMockEnabled: z.boolean(),
 })
@@ -365,9 +384,7 @@ export const connectIntegrationResponseSchema = z.object({
   redirectUrl: z.string(),
 })
 
-export const refreshIntegrationsResponseSchema = z.object({
-  toolkits: z.array(integrationToolkitSchema),
-})
+export const refreshIntegrationsResponseSchema = integrationsListResponseSchema
 
 export const threadToolGrantsResponseSchema = z.object({
   grants: z.array(toolAccessGrantSchema),
@@ -899,6 +916,8 @@ export type DecideToolApprovalResponse = z.infer<
 export type ConnectionStatus = z.infer<typeof connectionStatusSchema>
 export type ToolAccessScopeType = z.infer<typeof toolAccessScopeTypeSchema>
 export type IntegrationToolkit = z.infer<typeof integrationToolkitSchema>
+export type IntegrationType = z.infer<typeof integrationTypeSchema>
+export type IntegrationsListQuery = z.infer<typeof integrationsListQuerySchema>
 export type IntegrationConnection = z.infer<typeof integrationConnectionSchema>
 export type ToolAccessGrant = z.infer<typeof toolAccessGrantSchema>
 export type IntegrationsListResponse = z.infer<

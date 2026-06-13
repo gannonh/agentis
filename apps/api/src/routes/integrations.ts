@@ -1,12 +1,21 @@
 import { Hono } from "hono"
 import {
   connectIntegrationResponseSchema,
+  integrationsListQuerySchema,
   integrationsListResponseSchema,
-  refreshIntegrationsResponseSchema,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import { getComposioUnavailableReason, isComposioAvailable } from "../config.js"
 import type { ComposioServices } from "../composio/index.js"
+
+function emptyIntegrationsListResponse(config: AppConfig) {
+  return integrationsListResponseSchema.parse({
+    toolkits: [],
+    categories: [],
+    composioConfigured: false,
+    composioMockEnabled: config.mockComposio,
+  })
+}
 
 export function createIntegrationRoutes(
   services: ComposioServices,
@@ -14,15 +23,31 @@ export function createIntegrationRoutes(
 ) {
   const app = new Hono()
 
-  app.get("/", (c) => {
-    const toolkits = services.integrations.listFeaturedToolkits()
-    return c.json(
-      integrationsListResponseSchema.parse({
-        toolkits,
-        composioConfigured: isComposioAvailable(config),
-        composioMockEnabled: config.mockComposio,
-      })
-    )
+  app.get("/", async (c) => {
+    const query = integrationsListQuerySchema.parse({
+      q: c.req.query("q"),
+      category: c.req.query("category"),
+      featured: c.req.query("featured"),
+    })
+
+    try {
+      const result = await services.integrations.listToolkits(query)
+      return c.json(
+        integrationsListResponseSchema.parse({
+          toolkits: result.toolkits,
+          categories: result.categories,
+          composioConfigured: isComposioAvailable(config),
+          composioMockEnabled: config.mockComposio,
+        })
+      )
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load integrations catalog"
+      if (isComposioAvailable(config) || config.mockComposio) {
+        return c.json({ error: message }, 502)
+      }
+      return c.json(emptyIntegrationsListResponse(config))
+    }
   })
 
   app.post("/:toolkitSlug/connect", async (c) => {
@@ -84,20 +109,11 @@ export function createIntegrationRoutes(
   })
 
   app.delete("/:toolkitSlug/connection", (c) => {
-    try {
-      const reset = services.integrations.resetConnection(c.req.param("toolkitSlug"))
-      if (!reset) {
-        return c.json({ error: "not_found" }, 404)
-      }
-      return c.json({ ok: true })
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to reset connection"
-      if (message === "Unsupported toolkit") {
-        return c.json({ error: message }, 404)
-      }
-      return c.json({ error: message }, 400)
+    const reset = services.integrations.resetConnection(c.req.param("toolkitSlug"))
+    if (!reset) {
+      return c.json({ error: "not_found" }, 404)
     }
+    return c.json({ ok: true })
   })
 
   app.post("/refresh", async (c) => {
@@ -110,8 +126,21 @@ export function createIntegrationRoutes(
         503
       )
     }
-    const toolkits = await services.integrations.refreshAllConnections()
-    return c.json(refreshIntegrationsResponseSchema.parse({ toolkits }))
+
+    const query = integrationsListQuerySchema.parse({
+      q: c.req.query("q"),
+      category: c.req.query("category"),
+      featured: c.req.query("featured"),
+    })
+    const result = await services.integrations.refreshAllConnections(query)
+    return c.json(
+      integrationsListResponseSchema.parse({
+        toolkits: result.toolkits,
+        categories: result.categories,
+        composioConfigured: isComposioAvailable(config),
+        composioMockEnabled: config.mockComposio,
+      })
+    )
   })
 
   return app

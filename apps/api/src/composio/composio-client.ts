@@ -1,19 +1,24 @@
 import { Composio } from "@composio/core"
-import type { ConnectionStatus } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import type {
   ComposioAuthorizeResult,
   ComposioClientAdapter,
   ComposioConnectedAccount,
+  ComposioListToolkitsInput,
+  ComposioListToolkitsResult,
   ComposioToolExecuteInput,
   ComposioToolExecuteResult,
+  ComposioToolkitSummary,
 } from "./types.js"
-import { mapComposioAccountStatus } from "./mock-composio-client.js"
+import { MockComposioClient } from "./mock-composio-client.js"
+import { normalizeToolkitCategoryValue, toComposioCategoryQuery } from "./category-normalize.js"
+import { mapComposioAccountStatus } from "./composio-account-status.js"
+import {
+  mapComposioToolkitSummary,
+  matchesToolkitCatalogSearch,
+  type ComposioToolkitResponse,
+} from "./toolkit-catalog-map.js"
 import { toAppToolkitSlug, toComposioToolkitSlug } from "./toolkit-slugs.js"
-
-function mapConnectionStatus(status: string): ConnectionStatus {
-  return mapComposioAccountStatus(status)
-}
 
 type AuthConfigLookupClient = {
   authConfigs: {
@@ -37,9 +42,122 @@ type ListedAuthConfig = {
   toolkitSlug?: string
 }
 
+type ComposioToolkitListResponse = {
+  items: ComposioToolkitResponse[]
+  nextCursor?: string | null
+}
+
+type ComposioAccountRecord = {
+  id: string
+  status: string
+  toolkit?: { slug?: string }
+  member?: { email?: string; name?: string }
+  scopes?: string[]
+}
+
+function mapComposioConnectedAccount(
+  account: ComposioAccountRecord
+): ComposioConnectedAccount {
+  return {
+    id: account.id,
+    toolkitSlug: toAppToolkitSlug(account.toolkit?.slug ?? "unknown"),
+    status: mapComposioAccountStatus(account.status),
+    accountLabel: account.member?.email ?? account.member?.name ?? undefined,
+    scopes: account.scopes,
+  }
+}
+
 function getAuthConfigToolkitSlug(authConfig: ListedAuthConfig) {
   if (typeof authConfig.toolkit === "string") return authConfig.toolkit
   return authConfig.toolkit?.slug ?? authConfig.toolkitSlug
+}
+
+function isToolkitListResponse(value: unknown): value is ComposioToolkitListResponse {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Array.isArray((value as ComposioToolkitListResponse).items)
+  )
+}
+
+function mapToolkitListPage(
+  response: unknown,
+  featured: boolean
+): { items: ComposioToolkitSummary[]; nextCursor?: string } | null {
+  const responseItems = Array.isArray(response)
+    ? response
+    : isToolkitListResponse(response)
+      ? response.items
+      : null
+  if (!responseItems) return null
+
+  const items = responseItems
+    .map((toolkit) => mapComposioToolkitSummary(toolkit, featured))
+    .filter((toolkit): toolkit is ComposioToolkitSummary => toolkit !== null)
+
+  return {
+    items,
+    nextCursor:
+      !Array.isArray(response) && isToolkitListResponse(response)
+        ? response.nextCursor ?? undefined
+        : undefined,
+  }
+}
+
+function buildToolkitListQuery(
+  input: ComposioListToolkitsInput,
+  featured: boolean,
+  limit: number,
+  cursor?: string
+) {
+  return {
+    category: input.category ? toComposioCategoryQuery(input.category) : undefined,
+    sortBy: featured ? ("usage" as const) : ("alphabetically" as const),
+    managedBy: featured ? ("composio" as const) : ("all" as const),
+    limit,
+    cursor,
+  }
+}
+
+const CATALOG_SEARCH_MAX_PAGES = 25
+const CATALOG_SEARCH_PAGE_SIZE = 50
+
+async function searchCatalogToolkits(
+  composio: Composio,
+  input: ComposioListToolkitsInput,
+  featured: boolean,
+  limit: number,
+  search: string
+): Promise<ComposioListToolkitsResult> {
+  const items: ComposioToolkitSummary[] = []
+  let cursor = input.cursor
+  let pages = 0
+
+  while (items.length < limit && pages < CATALOG_SEARCH_MAX_PAGES) {
+    const response = await composio.toolkits.get(
+      buildToolkitListQuery(
+        input,
+        featured,
+        Math.max(limit, CATALOG_SEARCH_PAGE_SIZE),
+        cursor
+      )
+    )
+
+    const page = mapToolkitListPage(response, featured)
+    if (!page) break
+
+    for (const summary of page.items) {
+      if (!matchesToolkitCatalogSearch(summary, search)) continue
+      items.push(summary)
+      if (items.length >= limit) break
+    }
+
+    cursor = page.nextCursor
+    if (!cursor || items.length >= limit) break
+    pages++
+  }
+
+  return { items: items.slice(0, limit), nextCursor: cursor }
 }
 
 export async function resolveAuthConfigId(
@@ -86,7 +204,10 @@ export class LiveComposioClient implements ComposioClientAdapter {
     const callback = new URL(callbackUrl)
     callback.searchParams.set("toolkitSlug", toolkitSlug)
 
-    const authConfigId = await resolveAuthConfigId(this.composio, toolkitSlug)
+    const authConfigId = await resolveAuthConfigId(
+      this.composio as unknown as AuthConfigLookupClient,
+      toolkitSlug
+    )
     const connectionRequest = await this.composio.connectedAccounts.link(
       userId,
       authConfigId,
@@ -117,39 +238,14 @@ export class LiveComposioClient implements ComposioClientAdapter {
     connectedAccountId: string
   ): Promise<ComposioConnectedAccount> {
     const account = await this.composio.connectedAccounts.get(connectedAccountId)
-    const toolkitSlug = toAppToolkitSlug(account.toolkit?.slug ?? "unknown")
-    const accountRecord = account as {
-      member?: { email?: string; name?: string }
-      scopes?: string[]
-    }
-    return {
-      id: account.id,
-      toolkitSlug,
-      status: mapConnectionStatus(account.status),
-      accountLabel:
-        accountRecord.member?.email ?? accountRecord.member?.name ?? undefined,
-      scopes: accountRecord.scopes,
-    }
+    return mapComposioConnectedAccount(account as ComposioAccountRecord)
   }
 
   async listConnectedAccounts(userId: string): Promise<ComposioConnectedAccount[]> {
     const response = await this.composio.connectedAccounts.list({ userIds: [userId] })
-    return response.items.map((account) => {
-      const accountRecord = account as {
-        member?: { email?: string; name?: string }
-        scopes?: string[]
-      }
-      return {
-        id: account.id,
-        toolkitSlug: toAppToolkitSlug(account.toolkit?.slug ?? "unknown"),
-        status: mapConnectionStatus(account.status),
-        accountLabel:
-          accountRecord.member?.email ??
-          accountRecord.member?.name ??
-          undefined,
-        scopes: accountRecord.scopes,
-      }
-    })
+    return response.items.map((account) =>
+      mapComposioConnectedAccount(account as ComposioAccountRecord)
+    )
   }
 
   async executeTool(
@@ -178,9 +274,38 @@ export class LiveComposioClient implements ComposioClientAdapter {
       }
     }
   }
-}
 
-import { MockComposioClient } from "./mock-composio-client.js"
+  async listToolkits(input: ComposioListToolkitsInput): Promise<ComposioListToolkitsResult> {
+    const featured = input.featured ?? false
+    const limit = input.limit ?? 20
+    const search = input.search?.trim()
+
+    if (!search) {
+      const response = await this.composio.toolkits.get(
+        buildToolkitListQuery(input, featured, limit, input.cursor)
+      )
+      const page = mapToolkitListPage(response, featured)
+      return page ?? { items: [] }
+    }
+
+    return searchCatalogToolkits(this.composio, input, featured, limit, search)
+  }
+
+  async getToolkit(toolkitSlug: string): Promise<ComposioToolkitSummary | null> {
+    const response = await this.composio.toolkits.get(
+      toComposioToolkitSlug(toolkitSlug)
+    )
+    if (isToolkitListResponse(response)) return null
+    return mapComposioToolkitSummary(response, false)
+  }
+
+  async listToolkitCategories(): Promise<string[]> {
+    const response = await this.composio.toolkits.listCategories()
+    return response.items
+      .map((category) => normalizeToolkitCategoryValue(category))
+      .sort()
+  }
+}
 
 export function createComposioClient(config: AppConfig): ComposioClientAdapter {
   if (config.mockComposio) {

@@ -2,16 +2,16 @@ import type {
   ConnectionStatus,
   IntegrationConnection,
   IntegrationToolkit,
+  IntegrationsListQuery,
 } from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import { isComposioAvailable } from "../config.js"
 import type { Repositories } from "../repositories/index.js"
-import { FEATURED_TOOLKIT_SLUGS } from "../repositories/integration-seeds.js"
 import type {
   ComposioClientAdapter,
   ComposioConnectedAccount,
 } from "./types.js"
-import { listAvailableToolsForToolkit } from "./tool-catalog.js"
+import { IntegrationCatalog } from "./integration-catalog.js"
 import { toAppToolkitSlug } from "./toolkit-slugs.js"
 
 const CONNECTION_STATUS_PRIORITY: Record<ConnectionStatus, number> = {
@@ -49,57 +49,55 @@ function pickRemoteAccountForConnection(
   return pickPreferredRemoteAccount(accounts)
 }
 
-function aggregateToolkitStatus(
-  connections: IntegrationConnection[]
-): ConnectionStatus {
-  if (connections.length === 0) return "not_connected"
-  if (connections.some((c) => c.status === "connected")) return "connected"
-  if (connections.some((c) => c.status === "pending")) return "pending"
-  if (connections.some((c) => c.status === "expired")) return "expired"
-  if (connections.some((c) => c.status === "error")) return "error"
-  return "not_connected"
-}
-
 export class IntegrationService {
+  private readonly catalog: IntegrationCatalog
+
   constructor(
     private readonly repos: Repositories,
     private readonly config: AppConfig,
     private readonly composio: ComposioClientAdapter
-  ) {}
+  ) {
+    this.catalog = new IntegrationCatalog(repos, composio)
+  }
 
-  listFeaturedToolkits(): IntegrationToolkit[] {
-    this.repos.integrationToolkits.seedFeatured()
-    const rows = this.repos.integrationToolkits.listFeatured()
-    const connections = this.repos.integrationConnections.listByUserId()
+  private async ensureToolkitCatalogRow(toolkitSlug: string): Promise<boolean> {
+    try {
+      const toolkit = await this.composio.getToolkit(toolkitSlug)
+      if (toolkit) {
+        this.repos.integrationToolkits.upsertFromCatalog(toolkit)
+        return true
+      }
+    } catch {
+      // Refresh should keep syncing other toolkits when one lookup fails.
+    }
 
-    return rows.map((row) => {
-      const toolkitConnections = connections.filter(
-        (connection) => connection.toolkitSlug === row.slug
-      )
-      const status = aggregateToolkitStatus(toolkitConnections)
-      const connectedAccountCount = toolkitConnections.filter(
-        (connection) => connection.status === "connected"
-      ).length
-      return this.repos.integrationToolkits.toIntegrationToolkit(
-        row,
-        status,
-        connectedAccountCount,
-        listAvailableToolsForToolkit(row.slug)
-      )
-    })
+    return Boolean(this.repos.integrationToolkits.getBySlug(toolkitSlug))
+  }
+
+  async listToolkits(input: IntegrationsListQuery = {}) {
+    if (!isComposioAvailable(this.config) && !this.config.mockComposio) {
+      return { toolkits: [], categories: [] }
+    }
+    return this.catalog.list(input)
+  }
+
+  async listConnectedToolkits(): Promise<IntegrationToolkit[]> {
+    if (!isComposioAvailable(this.config) && !this.config.mockComposio) {
+      return []
+    }
+    return this.catalog.listConnected()
   }
 
   async startConnection(toolkitSlug: string) {
-    if (
-      !FEATURED_TOOLKIT_SLUGS.includes(
-        toolkitSlug as (typeof FEATURED_TOOLKIT_SLUGS)[number]
-      )
-    ) {
-      throw new Error("Unsupported toolkit")
-    }
     if (!isComposioAvailable(this.config)) {
       throw new Error("composio_not_configured")
     }
+    const toolkit = await this.composio.getToolkit(toolkitSlug)
+    if (!toolkit) {
+      throw new Error("Unsupported toolkit")
+    }
+
+    this.repos.integrationToolkits.upsertFromCatalog(toolkit)
 
     const redirectBase =
       this.config.composioRedirectBaseUrl ??
@@ -222,22 +220,20 @@ export class IntegrationService {
   }
 
   resetConnection(toolkitSlug: string): boolean {
-    if (
-      !FEATURED_TOOLKIT_SLUGS.includes(
-        toolkitSlug as (typeof FEATURED_TOOLKIT_SLUGS)[number]
-      )
-    ) {
-      throw new Error("Unsupported toolkit")
-    }
     return this.repos.integrationConnections.deleteByToolkitSlug(toolkitSlug)
   }
 
-  async refreshAllConnections() {
+  async refreshAllConnections(input: IntegrationsListQuery = {}) {
     const remoteAccounts = await this.composio.listConnectedAccounts(
       this.config.composioUserId
     )
+    const connections = this.repos.integrationConnections.listByUserId()
+    const toolkitSlugs = new Set([
+      ...connections.map((connection) => connection.toolkitSlug),
+      ...remoteAccounts.map((account) => account.toolkitSlug),
+    ])
 
-    for (const toolkitSlug of FEATURED_TOOLKIT_SLUGS) {
+    for (const toolkitSlug of toolkitSlugs) {
       const remoteForToolkit = remoteAccounts.filter(
         (account) => account.toolkitSlug === toolkitSlug
       )
@@ -279,6 +275,9 @@ export class IntegrationService {
         continue
       }
 
+      const hasCatalogRow = await this.ensureToolkitCatalogRow(toolkitSlug)
+      if (!hasCatalogRow) continue
+
       this.repos.integrationConnections.create({
         toolkitSlug,
         status: remote.status,
@@ -289,7 +288,6 @@ export class IntegrationService {
     }
 
     const remoteAccountIds = new Set(remoteAccounts.map((account) => account.id))
-    const connections = this.repos.integrationConnections.listByUserId()
     for (const connection of connections) {
       if (!connection.composioConnectedAccountId) continue
       if (
@@ -321,6 +319,7 @@ export class IntegrationService {
         })
       }
     }
-    return this.listFeaturedToolkits()
+
+    return this.catalog.list(input)
   }
 }

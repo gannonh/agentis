@@ -1,4 +1,4 @@
-import type { ConnectionStatus } from "@workspace/shared"
+import type { ConnectionStatus, IntegrationType } from "@workspace/shared"
 
 export type ComposioAuthorizeResult = {
   connectionRequestId: string
@@ -28,6 +28,30 @@ export type ComposioToolExecuteResult = {
   durationMs: number
 }
 
+export type ComposioToolkitSummary = {
+  slug: string
+  name: string
+  description: string
+  category: string
+  /** True when the toolkit came from a featured catalog query, not a Composio "featured" flag. */
+  featured: boolean
+  integrationType: IntegrationType
+  logoUrl?: string
+}
+
+export type ComposioListToolkitsInput = {
+  search?: string
+  category?: string
+  featured?: boolean
+  limit?: number
+  cursor?: string
+}
+
+export type ComposioListToolkitsResult = {
+  items: ComposioToolkitSummary[]
+  nextCursor?: string
+}
+
 export interface ComposioClientAdapter {
   authorizeToolkit(
     userId: string,
@@ -39,4 +63,7 @@ export interface ComposioClientAdapter {
   ): Promise<ComposioConnectedAccount>
   listConnectedAccounts(userId: string): Promise<ComposioConnectedAccount[]>
   executeTool(input: ComposioToolExecuteInput): Promise<ComposioToolExecuteResult>
+  listToolkits(input: ComposioListToolkitsInput): Promise<ComposioListToolkitsResult>
+  getToolkit(toolkitSlug: string): Promise<ComposioToolkitSummary | null>
+  listToolkitCategories(): Promise<string[]>
 }

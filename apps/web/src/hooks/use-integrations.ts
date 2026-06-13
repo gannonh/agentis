@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { IntegrationToolkit } from "@workspace/shared"
 import {
   connectIntegration,
@@ -7,32 +7,59 @@ import {
   resetIntegrationConnection,
 } from "@/lib/api/client"
 
+const SEARCH_DEBOUNCE_MS = 300
+
+function integrationErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
+
 export function useIntegrations() {
   const [toolkits, setToolkits] = useState<IntegrationToolkit[]>([])
+  const [categories, setCategories] = useState<string[]>([])
   const [composioConfigured, setComposioConfigured] = useState(false)
   const [composioMockEnabled, setComposioMockEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [query, setQuery] = useState("")
+  const [category, setCategory] = useState<string | null>(null)
+  const [debouncedQuery, setDebouncedQuery] = useState("")
+  const latestRefreshId = useRef(0)
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await listIntegrations()
-      setToolkits(data.toolkits)
-      setComposioConfigured(data.composioConfigured)
-      setComposioMockEnabled(data.composioMockEnabled)
-    } catch (refreshError) {
-      const message =
-        refreshError instanceof Error
-          ? refreshError.message
-          : "Failed to load integrations"
-      setError(message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedQuery(query)
+    }, SEARCH_DEBOUNCE_MS)
+    return () => window.clearTimeout(timeout)
+  }, [query])
+
+  const refresh = useCallback(
+    async (searchQuery = debouncedQuery, selectedCategory = category) => {
+      const refreshId = latestRefreshId.current + 1
+      latestRefreshId.current = refreshId
+      setLoading(true)
+      setError(null)
+      try {
+        const data = await listIntegrations({
+          q: searchQuery || undefined,
+          category: selectedCategory || undefined,
+        })
+        if (refreshId !== latestRefreshId.current) return
+        setToolkits(data.toolkits)
+        setCategories(data.categories)
+        setComposioConfigured(data.composioConfigured)
+        setComposioMockEnabled(data.composioMockEnabled)
+      } catch (refreshError) {
+        if (refreshId !== latestRefreshId.current) return
+        setError(integrationErrorMessage(refreshError, "Failed to load integrations"))
+      } finally {
+        if (refreshId === latestRefreshId.current) {
+          setLoading(false)
+        }
+      }
+    },
+    [category, debouncedQuery]
+  )
 
   useEffect(() => {
     void refresh()
@@ -49,11 +76,7 @@ export function useIntegrations() {
         }
         await refresh()
       } catch (connectError) {
-        const message =
-          connectError instanceof Error
-            ? connectError.message
-            : "Failed to start connection"
-        setError(message)
+        setError(integrationErrorMessage(connectError, "Failed to start connection"))
       }
     },
     [refresh]
@@ -67,11 +90,7 @@ export function useIntegrations() {
         await refresh()
         setNotice("Connection reset. You can connect again.")
       } catch (resetError) {
-        const message =
-          resetError instanceof Error
-            ? resetError.message
-            : "Failed to reset connection"
-        setError(message)
+        setError(integrationErrorMessage(resetError, "Failed to reset connection"))
       }
     },
     [refresh]
@@ -80,20 +99,27 @@ export function useIntegrations() {
   const refreshStatuses = useCallback(async () => {
     setError(null)
     try {
-      const data = await refreshIntegrations()
+      const data = await refreshIntegrations({
+        q: debouncedQuery || undefined,
+        category: category || undefined,
+      })
       setToolkits(data.toolkits)
+      setCategories(data.categories)
+      setComposioConfigured(data.composioConfigured)
+      setComposioMockEnabled(data.composioMockEnabled)
       setNotice("Connection statuses refreshed.")
     } catch (refreshError) {
-      const message =
-        refreshError instanceof Error
-          ? refreshError.message
-          : "Failed to refresh integrations"
-      setError(message)
+      setError(integrationErrorMessage(refreshError, "Failed to refresh integrations"))
     }
-  }, [])
+  }, [category, debouncedQuery])
 
   return {
     toolkits,
+    categories,
+    query,
+    category,
+    setQuery,
+    setCategory,
     composioConfigured,
     composioMockEnabled,
     loading,

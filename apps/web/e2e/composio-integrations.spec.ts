@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { threadTranscript } from "./helpers/thread-transcript"
 
 const API_BASE = "http://127.0.0.1:3002"
 
@@ -45,7 +46,9 @@ test.describe("composio integrations", () => {
     await composer.fill("Help me plan a short status update")
     await page.getByRole("button", { name: /send message/i }).click()
     await expect(page).toHaveURL(/\/threads\/thread_/, { timeout: 30_000 })
-    await expect(page.getByText(/Hello from Agentis mock runtime/i)).toBeVisible({
+    await expect(
+      threadTranscript(page).getByText(/Hello from Agentis mock runtime/i)
+    ).toBeVisible({
       timeout: 30_000,
     })
 
@@ -58,8 +61,7 @@ test.describe("composio integrations", () => {
     await page.getByRole("button", { name: /send message/i }).click()
 
     await expect(
-      page
-        .getByRole("log")
+      threadTranscript(page)
         .getByText(/GitHub tool completed|Found \d+ repositories/i)
         .first()
     ).toBeVisible({ timeout: 30_000 })

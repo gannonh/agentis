@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { threadTranscript } from "./helpers/thread-transcript"
 
 test.describe("research golden path", () => {
   test("researches a topic and creates a library document", async ({ page }) => {
@@ -12,7 +13,9 @@ test.describe("research golden path", () => {
     await page.getByRole("button", { name: /send message/i }).click()
 
     await expect(page).toHaveURL(/\/threads\/thread_/)
-    await expect(page.getByText(/saved .* to the Library|Created document/i)).toBeVisible({
+    await expect(
+      threadTranscript(page).getByText(/saved .* to the Library|Created document/i)
+    ).toBeVisible({
       timeout: 30_000,
     })
 

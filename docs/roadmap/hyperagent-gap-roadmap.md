@@ -22,7 +22,7 @@
 | Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, rubric CRUD, and run evaluation scores on Overview when rubrics exist | Medium |
 | Command Center | Live roster, cost breakdown, needs-attention queue, pending improvements, recent runs, score trends | API-backed live run metrics, roster, recent runs, avg score, needs-attention queue (HA-GAP-07), and fleet score-trend + cost breakdown charts (HA-GAP-27) | Low–Medium |
 | Learning | Skills (19), categorized memories, rubrics, thread-derived suggestions with accept/dismiss | API-backed skills, memories, rubrics, post-run suggestions with accept/dismiss, and accepted-memory context injection | Low–Medium |
-| Integrations | NATIVE + MCP catalog, custom MCP server, 20+ apps | Composio-backed; fixture catalog UI | Medium |
+| Integrations | NATIVE + MCP catalog, custom MCP server, 20+ apps | Composio-backed catalog API with search, category filters, connected/in-use sections, NATIVE/MCP badges; Custom MCP coming-soon card (HA-GAP-12) | Low–Medium |
 | Projects | Sidebar grouping, thread counts, per-project threads | API-backed | Low |
 | Search (⌘K) | Global search entry point | `GET /api/search?q=` grouped results; ⌘K command palette from app shell (HA-GAP-09); `/search` browse page | Low–Medium |
 | Teams | Shared agents/skills spaces | Not present | Defer (multi-tenant) |
@@ -48,7 +48,7 @@
 
 ## Recommended execution order
 
-Completed foundation: HA-GAP-00a through HA-GAP-10 and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, the thread Working artifacts rail, global ⌘K search, and enriched new thread home summaries/chips.
+Completed foundation: HA-GAP-00a through HA-GAP-10, HA-GAP-12, and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, the thread Working artifacts rail, global ⌘K search, enriched new thread home summaries/chips, and a Composio-backed Integrations catalog (search, categories, connection status, NATIVE/MCP badges).
 
 Start new work from the first open wave below. Within each wave, slices are parallel-safe unless a dependency is listed.
 
@@ -141,21 +141,25 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-12: Integrations catalog API wire-up
 
+**Status:** Shipped (2026-06-13). PR #439.
+
 **HyperAgent reference:** `/settings/integrations` — featured apps, NATIVE vs MCP badges, connected section, custom MCP.
 
-**Agentis today:** Composio backend (M03); fixture catalog UI.
+**Agentis today:** `/integrations` reads `GET /api/integrations` (Composio catalog + local connection status) with `q`, `category`, and `featured` query params. UI shows connected/in-use toolkits, browse/search with category chips, NATIVE/MCP badges, and a Custom MCP coming-soon card. `POST /api/integrations/refresh` syncs remote Composio accounts and returns the same list shape as GET (honors active filters). Mock mode uses `MOCK_COMPOSIO_TOOLKITS` when `AGENTIS_MOCK_COMPOSIO=1`; live mode requires Composio credentials. Connect/reset works for any catalog toolkit (not a hardcoded featured slug list).
 
 **Goal:** Integrations screen reads live Composio catalog + connection status; honest NATIVE/MCP labeling.
 
-**Demo:** Connect Slack → appears under Connected; disconnect flow works.
+**Demo:** Connect Slack → appears under Connected; search and category filters work; disconnect flow works.
 
 **Acceptance:**
-- [ ] Featured + search + category from API.
-- [ ] Connection status per integration.
-- [ ] Remove fixture catalog from default path.
-- [ ] "Custom MCP" shown as coming soon OR scoped sub-slice (HA-GAP-16).
+- [x] Featured + search + category from API.
+- [x] Connection status per integration.
+- [x] Remove fixture catalog from default path.
+- [x] "Custom MCP" shown as coming soon (HA-GAP-16 remains for full MCP server CRUD).
 
 **Depends on:** HA-GAP-00c (golden path) recommended first.
+
+**Follow-ups (not blocking):** Expose catalog pagination beyond the default page size; full custom MCP connections (HA-GAP-16).
 
 ---
 
@@ -546,12 +550,12 @@ flowchart TD
   W4 --> G20[HA-GAP-20 browser automation]
 ```
 
-**Max parallelism now:** Wave 2 and Wave 3 can run in parallel. HA-GAP-15 and HA-GAP-16 wait on HA-GAP-12; HA-GAP-18 can share search infrastructure with HA-GAP-09.
+**Max parallelism now:** Wave 2 and Wave 3 can run in parallel. HA-GAP-15 and HA-GAP-16 wait on HA-GAP-12 (shipped); HA-GAP-18 can share search infrastructure with HA-GAP-09.
 
 ---
 
 ## Next steps
 
 1. Open Wave 2: HA-GAP-11 (thread metadata — star, status badges, agent chip) is the next pick; HA-GAP-08, HA-GAP-09, and HA-GAP-10 shipped in 2026-06-13.
-2. Wave 3 can run in parallel: HA-GAP-12 (integrations catalog API wire-up) remains the highest-impact integrations slice.
+2. Wave 3: HA-GAP-12 (integrations catalog API wire-up) shipped in 2026-06-13 (PR #439). Next integrations slices: HA-GAP-15 (Slack invocation) and HA-GAP-16 (custom MCP) are unblocked; HA-GAP-13/14 (schedule/webhook) can run in parallel.
 3. Keep this roadmap aligned as Wave 2 discovery work continues.
