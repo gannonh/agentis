@@ -856,3 +856,113 @@ describe("agent routes", () => {
     expect(body.code).toBe("agent_not_found")
   })
 })
+
+describe("agent schedule routes", () => {
+  it("creates, lists, updates, and deletes schedules", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Scheduled Agent",
+      systemPrompt: "Run on schedule.",
+      model: "gpt-4o-mini",
+    })
+    const app = createAgentTestApp(ctx)
+
+    const createResponse = await app.request(
+      `/api/agents/${agent.id}/schedules`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Morning digest",
+          cadence: "daily",
+          cadenceConfig: { cadence: "daily", time: "09:00" },
+          timezone: "UTC",
+          promptTemplate: "Summarize overnight activity.",
+        }),
+      }
+    )
+    expect(createResponse.status).toBe(201)
+    const created = (await createResponse.json()) as { id: string; name: string }
+    expect(created.name).toBe("Morning digest")
+
+    const listResponse = await app.request(`/api/agents/${agent.id}/schedules`)
+    expect(listResponse.status).toBe(200)
+    const schedules = (await listResponse.json()) as Array<{ id: string }>
+    expect(schedules).toHaveLength(1)
+
+    const patchResponse = await app.request(
+      `/api/agents/${agent.id}/schedules/${created.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "disabled" }),
+      }
+    )
+    expect(patchResponse.status).toBe(200)
+    const patched = (await patchResponse.json()) as { status: string }
+    expect(patched.status).toBe("disabled")
+
+    const deleteResponse = await app.request(
+      `/api/agents/${agent.id}/schedules/${created.id}`,
+      { method: "DELETE" }
+    )
+    expect(deleteResponse.status).toBe(204)
+    expect(ctx.repos.agentSchedules.listByAgentId(agent.id)).toHaveLength(0)
+  })
+
+  it("rejects invalid custom cron schedules", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Cron Agent",
+      systemPrompt: "Run on schedule.",
+      model: "gpt-4o-mini",
+    })
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}/schedules`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Broken cron",
+        cadence: "custom",
+        cadenceConfig: { cadence: "custom" },
+        cronExpression: "not valid",
+        timezone: "UTC",
+        promptTemplate: "Ping.",
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as { code: string }
+    expect(body.code).toBe("invalid_agent_schedule")
+  })
+
+  it("rejects archived project context", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Project Agent",
+      systemPrompt: "Run on schedule.",
+      model: "gpt-4o-mini",
+    })
+    const project = ctx.repos.projects.create({ name: "Archived project" })
+    ctx.repos.projects.archive(project.id)
+    const app = createAgentTestApp(ctx)
+
+    const response = await app.request(`/api/agents/${agent.id}/schedules`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "Archived project schedule",
+        cadence: "hourly",
+        cadenceConfig: { cadence: "hourly", minute: 0 },
+        timezone: "UTC",
+        promptTemplate: "Ping.",
+        projectId: project.id,
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    const body = (await response.json()) as { code: string }
+    expect(body.code).toBe("invalid_schedule_project")
+  })
+})
