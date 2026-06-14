@@ -11,6 +11,7 @@ import type { SuggestionChip } from "@/components/new-thread/suggestion-chips"
 import { ThreadComposer } from "@/components/new-thread/thread-composer"
 import { PageLayout } from "@/components/shell/page-layout"
 import { useAgents } from "@/hooks/use-agents"
+import { useThreadStarToggle } from "@/hooks/use-thread-star-toggle"
 import { listThreads } from "@/lib/api/client"
 
 export function NewThreadPage() {
@@ -22,6 +23,7 @@ export function NewThreadPage() {
   >()
   const [threads, setThreads] = useState<ThreadListItem[]>([])
   const [threadsLoading, setThreadsLoading] = useState(true)
+  const { toggleStar, starError } = useThreadStarToggle(setThreads)
   const { agents, loading: agentsLoading } = useAgents()
   const requestedAgentIsValid = Boolean(
     requestedAgentId &&
@@ -78,8 +80,17 @@ export function NewThreadPage() {
         <QuickActions agents={agents} onSelectChip={handleSelectChip} />
       </div>
 
-      <DemoThreadsSection threads={demoThreads} />
-      <RecentThreadsSection threads={recentThreads} loading={threadsLoading} />
+      <DemoThreadsSection
+        threads={demoThreads}
+        onToggleStar={toggleStar}
+        starError={starError}
+      />
+      <RecentThreadsSection
+        threads={recentThreads}
+        loading={threadsLoading}
+        onToggleStar={toggleStar}
+        starError={starError}
+      />
     </PageLayout>
   )
 }

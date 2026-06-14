@@ -263,6 +263,7 @@ export const threadSchema = z.object({
   agentConfigurationVersionId: z.string().nullable().optional(),
   sourceThread: agentSourceThreadSchema.optional(),
   sourceWorkflow: agentSourceWorkflowSchema.optional(),
+  starred: z.boolean().default(false),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -628,6 +629,7 @@ export const createFollowUpRequestSchema = z.object({
 
 export const updateThreadRequestSchema = z.object({
   projectId: z.string().nullable().optional(),
+  starred: z.boolean().optional(),
 })
 
 export const createFollowUpResponseSchema = z.object({
@@ -803,6 +805,7 @@ export const threadListItemSchema = threadSchema.extend({
   lastRunStatus: runStatusSchema.optional(),
   summary: z.string().nullable().optional(),
   documentCount: z.number().optional(),
+  hasPendingApproval: z.boolean().default(false),
 })
 
 export const agentRecentThreadSummarySchema = threadListItemSchema

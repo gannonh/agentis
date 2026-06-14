@@ -120,20 +120,20 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-11: Thread metadata — star, status badges, agent chip
 
-**Status:** Spec drafted. Spec: [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md).
+**Status:** Shipped (2026-06-14).
 
 **HyperAgent reference:** Star thread; "Waiting for your input" badges; agent emoji on thread rows.
 
-**Agentis today:** Plain thread list.
+**Agentis today:** Sidebar and `/threads/new` cards show persisted star state, derived `Waiting` badges for pending plan-mode approvals, and owning-agent chips. `GET /api/threads` returns `starred` and `hasPendingApproval`; `PATCH /api/threads/:id` accepts `starred`.
 
 **Goal:** Starred threads filter; plan-mode waiting state visible in sidebar.
 
 **Demo:** Star a thread → filter sidebar to starred; plan-mode thread shows waiting badge.
 
 **Acceptance:**
-- [ ] `starred` boolean on thread; toggle in UI.
-- [ ] Sidebar filter or section for starred.
-- [ ] Waiting-for-input derived from last run state (plan + pending approval).
+- [x] `starred` boolean on thread; toggle in UI.
+- [x] Sidebar filter or section for starred.
+- [x] Waiting-for-input derived from last run state (plan + pending approval).
 
 **Depends on:** None.
 
@@ -558,7 +558,7 @@ flowchart TD
 
 ## Next steps
 
-1. Open Wave 2: HA-GAP-11 (thread metadata — star, status badges, agent chip) is the next pick; HA-GAP-08, HA-GAP-09, and HA-GAP-10 shipped in 2026-06-13.
+1. Wave 2: HA-GAP-11 (thread metadata) shipped 2026-06-14. HA-GAP-08, HA-GAP-09, and HA-GAP-10 shipped in 2026-06-13.
 2. Wave 3: HA-GAP-12 (integrations catalog API wire-up) shipped in 2026-06-13 (PR #439). Next integrations slices: HA-GAP-15 (Slack invocation) and HA-GAP-16 (custom MCP) are unblocked; HA-GAP-13/14 (schedule/webhook) can run in parallel.
 3. Keep this roadmap aligned as discovery work continues.
 
@@ -572,7 +572,7 @@ Implementation specs, design docs, and build reports. Completed work lives in `_
 
 | Spec | Status | Notes |
 | --- | --- | --- |
-| [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md) | Draft | HA-GAP-11 — thread metadata, stars, waiting badges, agent chip |
+| [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md) | Shipped | HA-GAP-11 — thread metadata, stars, waiting badges, agent chip |
 | [2026-06-13-thread-working-artifacts-design.md](2026-06-13-thread-working-artifacts-design.md) | Shipped | HA-GAP-08 — thread Working artifacts rail |
 
 ### Completed (`_done/`)

@@ -9,7 +9,7 @@ timestamp: "2026-06-14T00:00:00Z"
 
 ## Status
 
-Draft, user-approved design direction for HA-GAP-11.
+Shipped (2026-06-14). Implements HA-GAP-11.
 
 ## Goal
 

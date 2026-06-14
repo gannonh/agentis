@@ -156,6 +156,7 @@ export const threads = sqliteTable("threads", {
   sourceThreadId: text("source_thread_id"),
   sourceThreadTitle: text("source_thread_title"),
   sourceWorkflowJson: text("source_workflow_json"),
+  starred: integer("starred", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 })

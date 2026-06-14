@@ -144,6 +144,7 @@ export class ThreadRepository {
       agentNameSnapshot: resolveAgentNameSnapshot(agentId, input.agentNameSnapshot),
       agentConfigurationVersionId: null,
       ...sourceWorkflowColumns(input),
+      starred: false,
       createdAt: now,
       updatedAt: now,
     }
@@ -166,6 +167,7 @@ export class ThreadRepository {
       agentNameSnapshot: resolveAgentNameSnapshot(agentId, input.agentNameSnapshot),
       agentConfigurationVersionId: input.agentConfigurationVersionId ?? null,
       ...sourceWorkflowColumns(input),
+      starred: false,
       createdAt: now,
       updatedAt: now,
     }
@@ -337,6 +339,7 @@ export class ThreadRepository {
       title?: string
       status?: ThreadStatus
       projectId?: string | null
+      starred?: boolean
     }
   ) {
     const existing = this.getById(id)
@@ -349,6 +352,7 @@ export class ThreadRepository {
         status: patch?.status ?? existing.status,
         projectId:
           patch?.projectId !== undefined ? patch.projectId : existing.projectId,
+        starred: patch?.starred !== undefined ? patch.starred : existing.starred,
         updatedAt,
       })
       .where(eq(threads.id, id))
