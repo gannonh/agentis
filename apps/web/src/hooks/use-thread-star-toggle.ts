@@ -1,9 +1,9 @@
-import { useCallback, useState } from "react"
+import { useCallback, useState, type Dispatch, type SetStateAction } from "react"
 import type { ThreadListItem } from "@workspace/shared"
 import { updateThread } from "@/lib/api/client"
 
 export function useThreadStarToggle(
-  setThreads: React.Dispatch<React.SetStateAction<ThreadListItem[]>>
+  setThreads: Dispatch<SetStateAction<ThreadListItem[]>>
 ) {
   const [starError, setStarError] = useState<string | null>(null)
 

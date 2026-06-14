@@ -168,9 +168,7 @@ function ThreadSidebarItem({
           ) : null}
         </span>
       </SidebarMenuButton>
-      <SidebarMenuBadge>
-        {thread.hasPendingApproval ? "Waiting" : statusLabel}
-      </SidebarMenuBadge>
+      <SidebarMenuBadge>{statusLabel}</SidebarMenuBadge>
     </SidebarMenuItem>
   )
 }
@@ -179,10 +177,12 @@ function ThreadSidebarGroup({
   label,
   threads,
   onToggleStar,
+  showAddIcon = false,
 }: {
   label: string
   threads: ThreadListItem[]
   onToggleStar: (threadId: string) => void
+  showAddIcon?: boolean
 }) {
   return (
     <Collapsible defaultOpen className="group/collapsible">
@@ -191,7 +191,7 @@ function ThreadSidebarGroup({
           render={
             <CollapsibleTrigger className="flex w-full items-center justify-between">
               <span>{label}</span>
-              {label === "Threads" ? (
+              {showAddIcon ? (
                 <HugeiconsIcon
                   icon={Add01Icon}
                   className="size-3.5"
@@ -420,6 +420,7 @@ export function AppSidebar() {
           label="Threads"
           threads={threads}
           onToggleStar={toggleStar}
+          showAddIcon
         />
         {starError ? (
           <p className="px-3 text-xs text-destructive" role="status">

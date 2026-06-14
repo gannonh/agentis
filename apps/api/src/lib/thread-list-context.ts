@@ -2,6 +2,7 @@ import {
   runStepsHavePendingApproval,
   threadListSummaryFromMessages,
   type RunStatus,
+  type RunStep,
 } from "@workspace/shared"
 import type { Repositories } from "../repositories/index.js"
 
@@ -30,13 +31,14 @@ export function loadThreadListContext(
   const latestRuns = repos.runs.listLatestByThreadIds(threadIds)
   const documentCounts = repos.documents.countByThreadIds(threadIds)
   const latestRunIds = [...latestRuns.values()].map((run) => run.id)
-  const stepsByRunId = new Map<string, ReturnType<typeof repos.steps.listByRunIds>>()
+  const stepsByRunId = new Map<string, RunStep[]>()
 
-  if (latestRunIds.length > 0) {
-    for (const step of repos.steps.listByRunIds(latestRunIds)) {
-      const existing = stepsByRunId.get(step.runId) ?? []
-      existing.push(step)
-      stepsByRunId.set(step.runId, existing)
+  for (const step of repos.steps.listByRunIds(latestRunIds)) {
+    const runSteps = stepsByRunId.get(step.runId)
+    if (runSteps) {
+      runSteps.push(step)
+    } else {
+      stepsByRunId.set(step.runId, [step])
     }
   }
 

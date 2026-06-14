@@ -1,24 +1,21 @@
 import type { RunStep } from "./schemas.js"
 
-function approvalPayload(step: RunStep): Record<string, unknown> | null {
+function stepPayloadHasPendingApproval(step: RunStep): boolean {
   const payload = step.payload
-  if (!payload || typeof payload !== "object") return null
+  if (!payload || typeof payload !== "object") return false
+
   const record = payload as Record<string, unknown>
   const approval =
     typeof record.approval === "object" && record.approval !== null
       ? (record.approval as Record<string, unknown>)
       : null
-  if (approval?.status !== "pending") return null
+  if (approval?.status !== "pending") return false
 
-  const toolCallId =
-    typeof record.toolCallId === "string" ? record.toolCallId : null
-  if (!toolCallId) return null
-
-  return record
+  return typeof record.toolCallId === "string"
 }
 
 export function stepHasPendingApproval(step: RunStep): boolean {
-  return approvalPayload(step) !== null
+  return stepPayloadHasPendingApproval(step)
 }
 
 export function runStepsHavePendingApproval(steps: RunStep[]): boolean {

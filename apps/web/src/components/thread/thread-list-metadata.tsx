@@ -17,6 +17,19 @@ export function ThreadListMetadata({
   const agentName = threadAgentDisplayName(thread)
   const statusLabel = threadListStatusLabel(thread)
 
+  let statusContent = null
+  if (statusLabel === "Waiting") {
+    statusContent = (
+      <Badge variant="secondary" className="text-[10px] font-medium">
+        Waiting
+      </Badge>
+    )
+  } else if (showStatus) {
+    statusContent = (
+      <span className="capitalize">{statusLabel.replace(/-/g, " ")}</span>
+    )
+  }
+
   return (
     <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
       {agentName ? (
@@ -24,13 +37,7 @@ export function ThreadListMetadata({
           {agentName}
         </Badge>
       ) : null}
-      {thread.hasPendingApproval ? (
-        <Badge variant="secondary" className="text-[10px] font-medium">
-          Waiting
-        </Badge>
-      ) : showStatus ? (
-        <span className="capitalize">{statusLabel.replace(/-/g, " ")}</span>
-      ) : null}
+      {statusContent}
     </div>
   )
 }
