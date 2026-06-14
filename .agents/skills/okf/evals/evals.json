@@ -18,6 +18,12 @@
       "prompt": "Initialize OKF docs for a small CLI repo that currently only has README.md, CHANGELOG.md, and a docs/usage.md file. Do not overbuild the taxonomy. I mainly want future coding agents to know where specs, ADRs, and durable guides live.",
       "expected_output": "Creates the required OKF shape with docs/index.md, docs/log.md, docs/specs, and docs/adrs; treats docs/usage.md as a guide/reference concept with frontmatter; keeps optional sections minimal; updates AGENTS.md or proposes creating it when missing.",
       "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Use /okf read before touching the billing code. I want to know which roadmap items, specs, ADRs, and runbooks are relevant to the invoice retry work.",
+      "expected_output": "Performs a read-only traversal starting from docs/index.md and docs/specs/index.md, follows relevant cross-links into specs, ADRs, runbooks, guides, reference docs, or domain concepts, then summarizes loaded context, constraints, docs gaps, and recommended next files without modifying logs or docs.",
+      "files": []
     }
   ]
 }

@@ -1,11 +1,11 @@
 ---
 name: okf
-description: Create and maintain Open Knowledge Format documentation bundles in repositories. Use this skill when the user asks for /okf, OKF, Open Knowledge Format, docs-as-knowledge, reorganizing docs into an agent-readable bundle, updating docs/specs/ADRs after a session or PR, or adding AGENTS.md instructions for agents to consume and maintain the docs bundle. Supports /okf init and /okf update workflows.
+description: Create, read, and maintain Open Knowledge Format documentation bundles in repositories. Use this skill when the user asks for /okf, OKF, Open Knowledge Format, docs-as-knowledge, reading project context from docs, reorganizing docs into an agent-readable bundle, updating docs/specs/ADRs after a session or PR, or adding AGENTS.md instructions for agents to consume and maintain the docs bundle. Supports /okf read, /okf init, and /okf update workflows.
 ---
 
 # OKF
 
-Use this skill to initialize or update an Open Knowledge Format bundle for a repository.
+Use this skill to read, initialize, or update an Open Knowledge Format bundle for a repository.
 
 Before editing, read `references/SPEC.md` from this skill directory. Treat that file as the source of truth for OKF v0.1 conformance.
 
@@ -21,8 +21,9 @@ Use `--strict-links` when broken local Markdown links should fail validation ins
 
 An OKF bundle is a directory tree of Markdown files with YAML frontmatter for concept documents, plus `index.md` and `log.md` files for navigation and history. In repositories, the bundle root is `./docs` unless the user explicitly chooses another path.
 
-The skill has two workflows:
+The skill has three workflows:
 
+- `/okf read`: read the OKF bundle to load project context before planning or changing code.
 - `/okf init`: reorganize existing project documentation into an OKF-compliant `./docs` bundle and add AGENTS.md instructions for future agents.
 - `/okf update`: update the OKF bundle at the end of a session, feature branch, or PR so the docs reflect completed work.
 
@@ -114,6 +115,32 @@ Do not invent relationships. If a link target is plausible but unsupported by th
 okf_version: "0.1"
 ---
 ```
+
+## `/okf read` workflow
+
+Use this read-only workflow when the user asks to load OKF context, understand the project before work, inspect the roadmap, review decisions, or prepare for a task in a repo that already has an OKF bundle.
+
+1. Locate the OKF bundle.
+   - Use `./docs` unless the user names another bundle root.
+   - If `./docs/index.md` is missing, report that no OKF bundle was found and suggest `/okf init` if appropriate.
+   - Do not edit files, update logs, or create new documents during `/okf read`.
+
+2. Read the top-level map.
+   - Read `./docs/index.md`.
+   - Read `./docs/specs/index.md` when present because it is the roadmap.
+   - Read `./docs/adrs/index.md` when present to identify relevant decisions.
+   - Skim other section indexes that appear relevant to the user's task, such as `architecture/`, `guides/`, `reference/`, `runbooks/`, or `domains/`.
+
+3. Follow relevant cross-links.
+   - Follow Markdown links from the roadmap and relevant indexes into specs, ADRs, architecture notes, guides, runbooks, reference docs, and domain concepts.
+   - Prefer documents directly related to the user's task, changed files, named features, architecture areas, APIs, migrations, or operational concerns.
+   - Stop when the context is sufficient for the requested work. Do not exhaustively read the whole bundle unless the user asks for a full audit.
+
+4. Report the loaded context.
+   - Summarize active roadmap items relevant to the task.
+   - List relevant specs, ADRs, runbooks, guides, references, and domain concepts read.
+   - Call out constraints, accepted decisions, open questions, stale links, missing docs, or docs gaps.
+   - Recommend the next source files or docs to inspect before implementation.
 
 ## `/okf init` workflow
 
@@ -220,7 +247,7 @@ Adapt this snippet during `/okf init`:
 
 This repository maintains an [OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) bundle at `./docs`.
 
-- Read `./docs/index.md` before substantial work to understand the current documentation map.
+- Use `/okf read` when available, or read `./docs/index.md` directly before substantial work, to understand the current documentation map.
 - Follow cross-links into relevant specs, ADRs, runbooks, guides, architecture notes, reference docs, and domain docs before changing related code.
 - Keep `./docs/specs/index.md` current as the roadmap for active, planned, blocked, and completed work.
 - Add or update ADRs in `./docs/adrs` for durable architecture decisions.
