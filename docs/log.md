@@ -4,6 +4,7 @@ Newest entries first.
 
 ## 2026-06-14
 
+- Finalized OKF docs for HA-GAP-11 after simplify and strict-quality-review: updated [2026-06-14-thread-metadata-design.md](specs/2026-06-14-thread-metadata-design.md) with delivered state, final module map, and test paths; refreshed [specs/index.md](specs/index.md) parity snapshot and completed-foundation list.
 - Shipped HA-GAP-11: thread list metadata (`starred`, `hasPendingApproval`), sidebar Starred section, and new-thread home card stars, Waiting badges, and agent chips.
 - Merged the HyperAgent gap roadmap into [specs/index.md](specs/index.md) and removed the separate roadmap section.
 - Initialized OKF bundle: added `index.md` and `log.md` at bundle root and in major sections.

@@ -4,6 +4,7 @@ Newest entries first.
 
 ## 2026-06-14
 
+- Finalized HA-GAP-11 OKF docs post-refactor: delivered state, module map (`thread-sidebar-section.tsx`, `thread-list-display.ts`, `thread-pending-approval.ts`), and focused test paths in [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md); updated [index.md](index.md) parity snapshot and foundation list.
 - Shipped HA-GAP-11 thread metadata: persisted `starred`, derived `hasPendingApproval`, sidebar Starred section, and new-thread home card metadata ([2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md)).
 - Drafted [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md) for HA-GAP-11 thread metadata.
 - Merged the HyperAgent gap roadmap into [index.md](index.md), making specs/index.md the primary roadmap.

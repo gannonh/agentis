@@ -16,7 +16,7 @@
 
 | Surface | HyperAgent (observed) | Agentis today | Gap severity |
 | --- | --- | --- | --- |
-| New thread home | Agent switcher, Plan/Execute, suggestion chips, AI thread summaries, capability showcase cards with cost/time | API-backed home with agent picker, suggestion chips, rule-based thread summaries, and demo/recent sections (HA-GAP-10); no capability showcase cards with cost/time | Low–Medium |
+| New thread home | Agent switcher, Plan/Execute, suggestion chips, AI thread summaries, capability showcase cards with cost/time | API-backed home with agent picker, suggestion chips, rule-based thread summaries, demo/recent sections (HA-GAP-10), and card/sidebar thread metadata — stars, Waiting badges, agent chips (HA-GAP-11); no capability showcase cards with cost/time | Low–Medium |
 | Thread session | Model picker, Live mode, reasoning blocks, Working Doc side panel, inline artifact iframes, Plan vs Execute | API-backed streaming; human-readable native tool cards, turn-grouped transcript (`thread-transcript.tsx`), Working artifacts rail with inline document/static preview (HA-GAP-08); no draggable panel or in-thread app iframe | Medium |
 | Library | Search, Type/Visibility/Source filters, Save/bookmark, archived toggle, iframe previews | API-backed artifacts + workspaces | Low–Medium |
 | Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, rubric CRUD, and run evaluation scores on Overview when rubrics exist | Medium |
@@ -48,7 +48,7 @@
 
 ## Recommended execution order
 
-Completed foundation: HA-GAP-00a through HA-GAP-10, HA-GAP-12, and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, the thread Working artifacts rail, global ⌘K search, enriched new thread home summaries/chips, and a Composio-backed Integrations catalog (search, categories, connection status, NATIVE/MCP badges).
+Completed foundation: HA-GAP-00a through HA-GAP-11, HA-GAP-12, and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, the thread Working artifacts rail, global ⌘K search, enriched new thread home summaries/chips, sidebar thread metadata (stars, Waiting badges, agent chips), and a Composio-backed Integrations catalog (search, categories, connection status, NATIVE/MCP badges).
 
 Start new work from the first open wave below. Within each wave, slices are parallel-safe unless a dependency is listed.
 
@@ -120,7 +120,7 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-11: Thread metadata — star, status badges, agent chip
 
-**Status:** Shipped (2026-06-14).
+**Status:** Shipped (2026-06-14). Spec: [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md).
 
 **HyperAgent reference:** Star thread; "Waiting for your input" badges; agent emoji on thread rows.
 
