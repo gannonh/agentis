@@ -22,7 +22,12 @@ export function threadAgentDisplayName(
   return null
 }
 
-export function threadListStatusLabel(thread: ThreadListItem): string {
+type ThreadListStatusSource = Pick<
+  ThreadListItem,
+  "hasPendingApproval" | "lastRunStatus" | "status"
+>
+
+export function threadListStatusLabel(thread: ThreadListStatusSource): string {
   if (thread.hasPendingApproval) {
     return "Waiting"
   }

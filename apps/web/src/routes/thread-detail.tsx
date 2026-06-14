@@ -22,6 +22,7 @@ import { useThreadSession } from "@/hooks/use-thread-session"
 import { useThreadToolGrants } from "@/hooks/use-thread-tool-grants"
 import {
   GENERIC_AGENTIS_AGENT_ID,
+  getPendingApprovalFromStep,
   resolveSelectableGatewayModel,
   type RunStep,
   type ThreadMode,
@@ -53,37 +54,6 @@ function ThreadAgentIndicator({
       )}
     </div>
   )
-}
-
-function getPendingApproval(step: RunStep) {
-  const payload = step.payload
-  if (!payload || typeof payload !== "object") return null
-  const record = payload as Record<string, unknown>
-  const approval =
-    typeof record.approval === "object" && record.approval !== null
-      ? (record.approval as Record<string, unknown>)
-      : null
-  if (approval?.status !== "pending") return null
-
-  const toolCallId =
-    typeof record.toolCallId === "string" ? record.toolCallId : null
-  if (!toolCallId) return null
-
-  const output =
-    typeof record.output === "object" && record.output !== null
-      ? (record.output as Record<string, unknown>)
-      : null
-  return {
-    toolCallId,
-    toolName:
-      typeof record.toolName === "string" ? record.toolName : "workspace edit",
-    path: typeof output?.path === "string" ? output.path : undefined,
-    actionType:
-      typeof record.toolName === "string" &&
-      record.toolName === "runWorkspaceCommand"
-        ? "execution"
-        : "edit",
-  }
 }
 
 type ThreadHeaderActionsProps = {
@@ -220,13 +190,13 @@ export function ThreadDetailPage() {
     detail?.thread?.agentId === GENERIC_AGENTIS_AGENT_ID
   )
   const pendingApprovals = steps
-    .map((step) => ({ step, approval: getPendingApproval(step) }))
+    .map((step) => ({ step, approval: getPendingApprovalFromStep(step) }))
     .filter(
       (
         item
       ): item is {
         step: RunStep
-        approval: NonNullable<ReturnType<typeof getPendingApproval>>
+        approval: NonNullable<ReturnType<typeof getPendingApprovalFromStep>>
       } => Boolean(item.approval)
     )
 

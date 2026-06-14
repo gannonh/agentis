@@ -9,19 +9,24 @@ export function useThreadStarToggle(
 
   const toggleStar = useCallback(
     async (threadId: string) => {
-      let nextStarred: boolean | undefined
+      let previousStarred = false
+      let nextStarred = false
+      let found = false
 
       setThreads((current) => {
         const thread = current.find((item) => item.id === threadId)
         if (!thread) return current
 
-        nextStarred = !(thread.starred ?? false)
+        found = true
+        previousStarred = thread.starred ?? false
+        nextStarred = !previousStarred
+
         return current.map((item) =>
-          item.id === threadId ? { ...item, starred: nextStarred! } : item
+          item.id === threadId ? { ...item, starred: nextStarred } : item
         )
       })
 
-      if (nextStarred === undefined) return
+      if (!found) return
 
       try {
         await updateThread(threadId, { starred: nextStarred })
@@ -29,7 +34,7 @@ export function useThreadStarToggle(
       } catch {
         setThreads((current) =>
           current.map((item) =>
-            item.id === threadId ? { ...item, starred: !nextStarred! } : item
+            item.id === threadId ? { ...item, starred: previousStarred } : item
           )
         )
         setStarError("Could not update star. Try again.")

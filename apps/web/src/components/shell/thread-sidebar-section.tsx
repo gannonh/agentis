@@ -17,17 +17,12 @@ import {
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar"
 import { cn } from "@workspace/ui/lib/utils"
+import { navLinkClass } from "@/components/shell/sidebar-nav-item"
 import { ThreadListStarButton } from "@/components/thread/thread-list-star-button"
 import {
   threadAgentDisplayName,
   threadListStatusLabel,
 } from "@/lib/thread-list-display"
-
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    isActive &&
-      "data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground"
-  )
 
 function ThreadSidebarItem({
   thread,

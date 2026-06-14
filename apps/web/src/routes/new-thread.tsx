@@ -10,6 +10,7 @@ import { RecentThreadsSection } from "@/components/new-thread/recent-threads-sec
 import type { SuggestionChip } from "@/components/new-thread/suggestion-chips"
 import { ThreadComposer } from "@/components/new-thread/thread-composer"
 import { PageLayout } from "@/components/shell/page-layout"
+import { ThreadStarErrorNotice } from "@/components/thread/thread-list-star-button"
 import { useAgents } from "@/hooks/use-agents"
 import { useThreadStarToggle } from "@/hooks/use-thread-star-toggle"
 import { listThreads } from "@/lib/api/client"
@@ -80,16 +81,12 @@ export function NewThreadPage() {
         <QuickActions agents={agents} onSelectChip={handleSelectChip} />
       </div>
 
-      <DemoThreadsSection
-        threads={demoThreads}
-        onToggleStar={toggleStar}
-        starError={starError}
-      />
+      <ThreadStarErrorNotice message={starError} />
+      <DemoThreadsSection threads={demoThreads} onToggleStar={toggleStar} />
       <RecentThreadsSection
         threads={recentThreads}
         loading={threadsLoading}
         onToggleStar={toggleStar}
-        starError={starError}
       />
     </PageLayout>
   )

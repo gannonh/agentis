@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { RunStep } from "./schemas.js"
 import {
+  getPendingApprovalFromStep,
   runStepsHavePendingApproval,
   stepHasPendingApproval,
 } from "./thread-pending-approval.js"
@@ -50,5 +51,14 @@ describe("thread pending approval helpers", () => {
   it("detects pending approval across run steps", () => {
     expect(runStepsHavePendingApproval([pendingStep])).toBe(true)
     expect(runStepsHavePendingApproval([])).toBe(false)
+  })
+
+  it("parses pending approval details for thread detail", () => {
+    expect(getPendingApprovalFromStep(pendingStep)).toEqual({
+      toolCallId: "tool-call-1",
+      toolName: "workspace edit",
+      path: undefined,
+      actionType: "edit",
+    })
   })
 })

@@ -39,8 +39,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@workspace/ui/components/sidebar"
-import { cn } from "@workspace/ui/lib/utils"
-import { SidebarNavItem } from "@/components/shell/sidebar-nav-item"
+import { SidebarNavItem, navLinkClass } from "@/components/shell/sidebar-nav-item"
 import { ThreadSidebarGroup } from "@/components/shell/thread-sidebar-section"
 import { ThreadStarErrorNotice } from "@/components/thread/thread-list-star-button"
 import { getWorkspace } from "@/fixtures"
@@ -62,12 +61,6 @@ function agentNavIcon(icon?: string) {
       : Search01Icon
   return <HugeiconsIcon icon={Icon} strokeWidth={2} />
 }
-
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    isActive &&
-      "data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground"
-  )
 
 function useActiveProjectId(threads: ThreadListItem[]) {
   const projectMatch = useMatch({ path: "/projects/:projectId", end: false })

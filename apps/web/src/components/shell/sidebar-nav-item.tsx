@@ -15,6 +15,8 @@ type SidebarNavItemProps = {
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(isActive && "data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground")
 
+export { navLinkClass }
+
 export function SidebarNavItem({ to, end, children }: SidebarNavItemProps) {
   const match = useMatch({ path: to, end: end ?? false })
 

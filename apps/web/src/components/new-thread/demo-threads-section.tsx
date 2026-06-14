@@ -1,10 +1,7 @@
 import { Link } from "react-router"
 import type { ThreadListItem } from "@workspace/shared"
 import { ThreadListMetadata } from "@/components/thread/thread-list-metadata"
-import {
-  ThreadListStarButton,
-  ThreadStarErrorNotice,
-} from "@/components/thread/thread-list-star-button"
+import { ThreadListStarButton } from "@/components/thread/thread-list-star-button"
 import { ThreadSummaryLines } from "@/components/new-thread/thread-summary-lines"
 
 const DEMO_THREAD_SUMMARY_FALLBACK = "Open this curated demo thread."
@@ -12,13 +9,11 @@ const DEMO_THREAD_SUMMARY_FALLBACK = "Open this curated demo thread."
 type DemoThreadsSectionProps = {
   threads: ThreadListItem[]
   onToggleStar?: (threadId: string) => void
-  starError?: string | null
 }
 
 export function DemoThreadsSection({
   threads,
   onToggleStar,
-  starError,
 }: DemoThreadsSectionProps) {
   if (threads.length === 0) {
     return null
@@ -32,7 +27,6 @@ export function DemoThreadsSection({
           Curated examples from the seeded workspace.
         </p>
       </div>
-      <ThreadStarErrorNotice message={starError} />
       <ul className="grid gap-2 sm:grid-cols-2">
         {threads.map((thread) => (
           <li key={thread.id}>
