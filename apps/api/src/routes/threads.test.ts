@@ -61,6 +61,7 @@ describe("thread routes", () => {
       model: "gpt-4o-mini",
       mode: "agent",
     })
+    const originalUpdatedAt = thread.updatedAt
 
     const patch = await app.request(`/api/threads/${thread.id}`, {
       method: "PATCH",
@@ -68,8 +69,12 @@ describe("thread routes", () => {
       body: JSON.stringify({ starred: true }),
     })
     expect(patch.status).toBe(200)
-    const patched = (await patch.json()) as { starred: boolean }
+    const patched = (await patch.json()) as {
+      starred: boolean
+      updatedAt: string
+    }
     expect(patched.starred).toBe(true)
+    expect(patched.updatedAt).toBe(originalUpdatedAt)
 
     const list = await app.request("/api/threads")
     const body = (await list.json()) as Array<{ id: string; starred: boolean }>

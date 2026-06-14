@@ -15,8 +15,12 @@ export function threadAgentDisplayName(
     return thread.agentNameSnapshot
   }
 
-  if (!thread.agentId || thread.agentId === GENERIC_AGENTIS_AGENT_ID) {
+  if (thread.agentId === GENERIC_AGENTIS_AGENT_ID) {
     return "Agentis"
+  }
+
+  if (!thread.agentId) {
+    return null
   }
 
   return null

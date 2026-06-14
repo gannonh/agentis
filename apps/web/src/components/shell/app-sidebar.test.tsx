@@ -251,12 +251,14 @@ describe("AppSidebar", () => {
     expect(screen.getAllByText("Research Agent").length).toBeGreaterThanOrEqual(
       1
     )
-    expect(screen.getAllByText("Agentis").length).toBeGreaterThanOrEqual(1)
+    // App chrome shows "Agentis"; thread-row metadata adds another instance.
+    expect(screen.getAllByText("Agentis").length).toBeGreaterThanOrEqual(2)
   })
 
   it("toggles star without navigating away", async () => {
     const user = userEvent.setup()
     renderSidebar("/threads/new")
+    const newThreadLink = screen.getByRole("link", { name: "New thread" })
 
     await waitFor(() => {
       expect(screen.getByLabelText("Star thread")).toBeInTheDocument()
@@ -269,5 +271,6 @@ describe("AppSidebar", () => {
         starred: true,
       })
     })
+    expect(newThreadLink).toHaveAttribute("aria-current", "page")
   })
 })

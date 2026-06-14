@@ -344,7 +344,12 @@ export class ThreadRepository {
   ) {
     const existing = this.getById(id)
     if (!existing) return null
-    const updatedAt = nowIso()
+    const starOnlyPatch =
+      patch?.starred !== undefined &&
+      patch.title === undefined &&
+      patch.status === undefined &&
+      patch.projectId === undefined
+    const updatedAt = starOnlyPatch ? existing.updatedAt : nowIso()
     this.db
       .update(threads)
       .set({
