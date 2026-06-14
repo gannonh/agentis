@@ -19,8 +19,7 @@ Open Knowledge Format bundle for durable product, architecture, and operational 
 
 | Section | Purpose |
 | --- | --- |
-| [specs/index.md](specs/index.md) | **Roadmap** — active, planned, blocked, and completed implementation work |
-| [roadmap/hyperagent-gap-roadmap.md](roadmap/hyperagent-gap-roadmap.md) | Ordered HyperAgent parity slices (HA-GAP-*) |
+| [specs/index.md](specs/index.md) | **Roadmap** — active, planned, blocked, and completed implementation work, including HA-GAP slices |
 
 ## Architecture decisions
 

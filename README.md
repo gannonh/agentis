@@ -50,7 +50,7 @@ docs/              # Product docs, roadmap, UI comps
 
 ## Documentation
 
-- [Active roadmap](docs/roadmap/hyperagent-gap-roadmap.md)
+- [Active roadmap](docs/specs/index.md)
 - [Product overview](docs/overview.md)
 - [Agent native tooling history](docs/specs/_done/agent-native-tooling.md)
 - [Document workspace](docs/specs/_done/2026-06-01-document-workspace-design.md)

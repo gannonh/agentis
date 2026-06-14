@@ -13,7 +13,7 @@ IMPLEMENTED (2026-06-13)
 
 ## Goal
 
-Implement HA-GAP-08 from `docs/roadmap/hyperagent-gap-roadmap.md`: the thread session should show run-linked documents and artifacts in an inline right rail so users can preview working outputs without leaving the thread.
+Implement HA-GAP-08 from `docs/specs/index.md`: the thread session should show run-linked documents and artifacts in an inline right rail so users can preview working outputs without leaving the thread.
 
 The first slice is frontend-first. It reuses existing artifact and document APIs unless Build discovers a concrete batching or freshness gap.
 
@@ -21,7 +21,7 @@ The first slice is frontend-first. It reuses existing artifact and document APIs
 
 ## Source of truth
 
-- Roadmap: `docs/roadmap/hyperagent-gap-roadmap.md`, HA-GAP-08.
+- Roadmap: [specs/index.md](index.md), HA-GAP-08.
 - Thread route: `apps/web/src/routes/thread-detail.tsx`.
 - Transcript: `apps/web/src/components/thread/thread-transcript.tsx`.
 - Working artifacts rail: `apps/web/src/components/thread/thread-durable-artifacts.tsx`.

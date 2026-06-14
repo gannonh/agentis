@@ -4,6 +4,7 @@ Newest entries first.
 
 ## 2026-06-14
 
+- Merged the HyperAgent gap roadmap into [specs/index.md](specs/index.md) and removed the separate roadmap section.
 - Initialized OKF bundle: added `index.md` and `log.md` at bundle root and in major sections.
 - Renamed `docs/adr/` → `docs/adrs/` for OKF conformance.
 - Added YAML frontmatter with `type` to all concept documents under `./docs`.

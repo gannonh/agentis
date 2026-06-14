@@ -1,13 +1,13 @@
 ---
 type: Spec
 title: Agent Native Tooling PRD and Roadmap
-description: "Historical completed roadmap. The active roadmap is `docs/roadmap/hyperagent-gap-roadmap.md`."
+description: "Historical completed roadmap. The active roadmap is `docs/specs/index.md`."
 tags: []
 timestamp: "2026-06-14T00:00:00Z"
 ---
 # Agent Native Tooling PRD and Roadmap
 
-Historical completed roadmap. The active roadmap is `docs/roadmap/hyperagent-gap-roadmap.md`.
+Historical completed roadmap. The active roadmap is `docs/specs/index.md`.
 
 ## Purpose
 

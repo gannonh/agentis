@@ -9,4 +9,3 @@ Exploratory notes that should remain discoverable but are not committed implemen
 ## Related
 
 - [Specs roadmap](../specs/index.md) — committed plans
-- [Roadmap](../roadmap/index.md) — ordered delivery slices
