@@ -166,4 +166,6 @@ export type UpdateAgentScheduleRequest = z.infer<
   typeof updateAgentScheduleRequestSchema
 >
 export type AgentInvocationRun = z.infer<typeof agentInvocationRunSchema>
-export type AgentInvocationSource = z.infer<typeof agentInvocationSourceSchema>
+export type AgentScheduleLastRunStatus = z.infer<
+  typeof agentScheduleLastRunStatusSchema
+>

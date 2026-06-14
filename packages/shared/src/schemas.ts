@@ -850,6 +850,7 @@ export const agentDetailInformationSchema = z.object({
   library: agentLibrarySummarySchema,
   memories: agentMemorySummarySchema.default({ agent: [], global: [] }),
   evaluations: z.array(agentRunEvaluationSummarySchema).default([]),
+  hasEnabledSchedules: z.boolean().default(false),
 })
 
 export const agentDetailResponseSchema = z.object({

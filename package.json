@@ -12,6 +12,7 @@
     "test": "turbo test",
     "test:coverage": "turbo test:coverage",
     "test:e2e": "playwright test",
+    "dev:worker": "pnpm --filter api dev:worker",
     "smoke:sandbox-container": "pnpm --filter api smoke:sandbox-container"
   },
   "devDependencies": {

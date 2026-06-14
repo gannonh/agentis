@@ -58,7 +58,7 @@ export function createAgentScheduleRoutes(repos: Repositories) {
   const app = new Hono()
 
   app.get("/", (c) => {
-    const agentId = c.req.param("agentId")
+    const agentId = c.req.param("agentId") ?? ""
     const agent = repos.agents.getById(agentId)
     if (!agent) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
@@ -72,7 +72,7 @@ export function createAgentScheduleRoutes(repos: Repositories) {
   })
 
   app.post("/", async (c) => {
-    const agentId = c.req.param("agentId")
+    const agentId = c.req.param("agentId") ?? ""
     const agent = repos.agents.getById(agentId)
     if (!agent) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
@@ -127,7 +127,7 @@ export function createAgentScheduleRoutes(repos: Repositories) {
   })
 
   app.patch("/:scheduleId", async (c) => {
-    const agentId = c.req.param("agentId")
+    const agentId = c.req.param("agentId") ?? ""
     const scheduleId = c.req.param("scheduleId")
     const agent = repos.agents.getById(agentId)
     if (!agent) {
@@ -200,7 +200,7 @@ export function createAgentScheduleRoutes(repos: Repositories) {
   })
 
   app.delete("/:scheduleId", (c) => {
-    const agentId = c.req.param("agentId")
+    const agentId = c.req.param("agentId") ?? ""
     const scheduleId = c.req.param("scheduleId")
     const agent = repos.agents.getById(agentId)
     if (!agent) {

@@ -1,7 +1,7 @@
 import type { AgentInvocationRun } from "@workspace/shared"
 import { and, eq, inArray, lte } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
-import { agentInvocationRuns } from "../db/schema.js"
+import { agentInvocationRuns, agentSchedules } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapAgentInvocationRun } from "../lib/schedule-mappers.js"
 
@@ -73,6 +73,36 @@ export class AgentInvocationRunRepository {
       )
       .all()
       .map(mapAgentInvocationRun)
+  }
+
+  getScheduleSourceByThreadId(
+    threadId: string
+  ): { scheduleId: string; scheduleName: string } | null {
+    const row = this.db
+      .select({
+        sourceId: agentInvocationRuns.sourceId,
+      })
+      .from(agentInvocationRuns)
+      .where(
+        and(
+          eq(agentInvocationRuns.threadId, threadId),
+          eq(agentInvocationRuns.sourceType, "schedule")
+        )
+      )
+      .get()
+    if (!row) return null
+
+    const schedule = this.db
+      .select({ id: agentSchedules.id, name: agentSchedules.name })
+      .from(agentSchedules)
+      .where(eq(agentSchedules.id, row.sourceId))
+      .get()
+    if (!schedule) return null
+
+    return {
+      scheduleId: schedule.id,
+      scheduleName: schedule.name,
+    }
   }
 
   listStaleClaims(claimedBefore: string): AgentInvocationRun[] {

@@ -23,12 +23,21 @@ export function buildAgentDetail(
     repos,
     threads.map((thread) => thread.id)
   )
-  const recentThreads = threads.map((thread) =>
-    agentRecentThreadSummarySchema.parse({
+  const recentThreads = threads.map((thread) => {
+    const scheduleSource =
+      repos.agentInvocationRuns.getScheduleSourceByThreadId(thread.id)
+    return agentRecentThreadSummarySchema.parse({
       ...thread,
       ...(contextByThreadId.get(thread.id) ?? EMPTY_THREAD_LIST_CONTEXT),
+      invocationSource: scheduleSource
+        ? {
+            type: "schedule" as const,
+            scheduleId: scheduleSource.scheduleId,
+            scheduleName: scheduleSource.scheduleName,
+          }
+        : undefined,
     })
-  )
+  })
 
   const memories = repos.savedMemories.listForAgent(agentId)
 
@@ -41,6 +50,7 @@ export function buildAgentDetail(
       library: { items: libraryItems, totalCount: libraryItems.length },
       memories,
       evaluations: repos.runs.listEvaluationsForAgent(agentId),
+      hasEnabledSchedules: repos.agentSchedules.hasEnabledSchedules(agentId),
     },
   })
 }

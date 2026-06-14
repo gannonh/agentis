@@ -3,8 +3,10 @@ import { ApiError } from "@/lib/api/client"
 import {
   createAgent,
   createAgentFromPromotionDraft,
+  createAgentSchedule,
   getAgent,
   getAgentUsage,
+  listAgentSchedules,
   startAgentTestThread,
 } from "@/lib/api/agents-client"
 
@@ -221,5 +223,39 @@ describe("agents client", () => {
     )
     expect(usage.totalCostUsd).toBe(1.25)
     expect(usage.byModel[0]?.model).toBe("gpt-4o-mini")
+  })
+
+  it("lists and creates agent schedules", async () => {
+    const now = new Date().toISOString()
+    const schedule = {
+      id: "schedule_1",
+      agentId: "agent_1",
+      name: "Morning digest",
+      status: "enabled",
+      cadence: "daily",
+      timezone: "UTC",
+      promptTemplate: "Summarize overnight activity.",
+      cadenceConfig: { cadence: "daily", time: "09:00" },
+      nextRunAt: now,
+      createdAt: now,
+      updatedAt: now,
+    }
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json([schedule]))
+      .mockResolvedValueOnce(Response.json(schedule, { status: 201 }))
+    vi.stubGlobal("fetch", fetchMock)
+
+    const listed = await listAgentSchedules("agent_1")
+    expect(listed).toHaveLength(1)
+
+    const created = await createAgentSchedule("agent_1", {
+      name: "Morning digest",
+      cadence: "daily",
+      cadenceConfig: { cadence: "daily", time: "09:00" },
+      timezone: "UTC",
+      promptTemplate: "Summarize overnight activity.",
+    })
+    expect(created.id).toBe("schedule_1")
   })
 })

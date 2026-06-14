@@ -167,23 +167,23 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-13: Scheduled agent invocations
 
-**Status:** Spec drafted (2026-06-14). Spec: [2026-06-14-scheduled-agent-invocations-design.md](2026-06-14-scheduled-agent-invocations-design.md).
+**Status:** Shipped (2026-06-14). Spec: [2026-06-14-scheduled-agent-invocations-design.md](_done/2026-06-14-scheduled-agent-invocations-design.md). Guide: [invocation-worker.md](../guides/invocation-worker.md).
 
 **HyperAgent reference:** Agent detail → Schedule → set up cadence.
 
-**Agentis today:** M07 not implemented. Agent Invocations shows Scheduled as a disabled placeholder; no invocation worker exists yet.
+**Agentis today:** Worker-backed schedules with Agent Detail CRUD, background run execution, and schedule source badges in recent activity.
 
 **Goal:** Worker-backed schedules create and execute agent runs from current agent configuration and project context.
 
 **Demo:** Schedule an agent to run hourly or via test cron → worker creates and completes the thread/run without a browser stream call → activity shows the schedule source.
 
 **Acceptance:**
-- [ ] Schedule CRUD on agent.
-- [ ] Hourly, Daily, Weekly, and Custom cron options with timezone support.
-- [ ] Worker/daemon claims due schedules, creates threads/runs, and executes runs to completion in the background.
-- [ ] Invocation run linked to agent + schedule id.
-- [ ] Duplicate due-slot execution is prevented.
-- [ ] Disable or fail visibly when agent/project/credentials/grants/cost-limit checks block execution.
+- [x] Schedule CRUD on agent.
+- [x] Hourly, Daily, Weekly, and Custom cron options with timezone support.
+- [x] Worker/daemon claims due schedules, creates threads/runs, and executes runs to completion in the background.
+- [x] Invocation run linked to agent + schedule id.
+- [x] Duplicate due-slot execution is prevented.
+- [x] Disable or fail visibly when agent/project/credentials/grants/cost-limit checks block execution.
 
 **Depends on:** HA-GAP-01 (cost visibility) nice-to-have.
 
@@ -563,7 +563,7 @@ flowchart TD
 ## Next steps
 
 1. Wave 2: HA-GAP-11 (thread metadata) shipped 2026-06-14. HA-GAP-08, HA-GAP-09, and HA-GAP-10 shipped in 2026-06-13.
-2. Wave 3: HA-GAP-12 (integrations catalog API wire-up) shipped in 2026-06-13 (PR #439). HA-GAP-13 (scheduled agent invocations) is spec-drafted and should establish the worker foundation for later invocation sources. HA-GAP-15 (Slack invocation), HA-GAP-16 (custom MCP), and HA-GAP-14 (webhook) remain unblocked follow-ups.
+2. Wave 3: HA-GAP-12 (integrations catalog API wire-up) shipped in 2026-06-13 (PR #439). HA-GAP-13 (scheduled agent invocations) shipped in 2026-06-14 and establishes the worker foundation for later invocation sources. HA-GAP-15 (Slack invocation), HA-GAP-16 (custom MCP), and HA-GAP-14 (webhook) remain unblocked follow-ups.
 3. Keep this roadmap aligned as discovery work continues.
 
 ---
@@ -576,7 +576,6 @@ Implementation specs, design docs, and build reports. Completed work lives in `_
 
 | Spec | Status | Notes |
 | --- | --- | --- |
-| [2026-06-14-scheduled-agent-invocations-design.md](2026-06-14-scheduled-agent-invocations-design.md) | Draft | HA-GAP-13 — worker-backed scheduled agent invocations |
 | [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md) | Shipped | HA-GAP-11 — thread metadata, stars, waiting badges, agent chip |
 | [2026-06-13-thread-working-artifacts-design.md](2026-06-13-thread-working-artifacts-design.md) | Shipped | HA-GAP-08 — thread Working artifacts rail |
 
@@ -586,6 +585,7 @@ Implementation specs, design docs, and build reports. Completed work lives in `_
 | --- | --- |
 | [agentis-prd-roadmap.md](_done/agentis-prd-roadmap.md) | Original PRD and MVP roadmap |
 | [agent-native-tooling.md](_done/agent-native-tooling.md) | Native tooling PRD and version roadmap (V1–V4) |
+| [2026-06-14-scheduled-agent-invocations-design.md](_done/2026-06-14-scheduled-agent-invocations-design.md) | HA-GAP-13 scheduled agent invocations |
 | [2026-05-21-m03-composio-integrations-tool-access.md](_done/2026-05-21-m03-composio-integrations-tool-access.md) | M03 Composio integrations |
 | [2026-05-22-m04-projects-context-artifacts.md](_done/2026-05-22-m04-projects-context-artifacts.md) | M04 projects, context, artifacts |
 | [2026-05-29-agent-native-tooling-design.md](_done/2026-05-29-agent-native-tooling-design.md) | V1 read-only workspace tools |

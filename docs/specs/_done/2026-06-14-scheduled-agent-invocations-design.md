@@ -9,7 +9,7 @@ timestamp: "2026-06-14T22:37:52Z"
 
 ## Status
 
-Draft, awaiting user review. Plans HA-GAP-13 from [specs/index.md](index.md).
+Shipped (2026-06-14). Implements HA-GAP-13 from [specs/index.md](../index.md).
 
 ## Goal
 
