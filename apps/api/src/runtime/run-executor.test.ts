@@ -1580,3 +1580,37 @@ describe("run executor composio bridge", () => {
     )
   }, 10_000)
 })
+
+describe("run executor background completion", () => {
+  it("completes mock runs without the streaming HTTP route", async () => {
+    const { context } = createMockRuntimeApp()
+    const services = createComposioServices(context.repos, {
+      ...context.config,
+      mockRuntime: true,
+    })
+    const { RunExecutor } = await import("./run-executor.js")
+    const { DocumentService } = await import("../documents/document-service.js")
+    const executor = new RunExecutor(
+      context.repos,
+      { ...context.config, mockRuntime: true },
+      services,
+      new DocumentService(context.repos, context.config)
+    )
+
+    const created = context.repos.threads.createWithInitialRun({
+      title: "Scheduled background run",
+      prompt: "Say hello in one short sentence.",
+      model: "gpt-4o-mini",
+      mode: "agent",
+    })
+
+    const completed = await executor.executeToCompletion(created.run.id)
+
+    expect(completed.status).toBe("completed")
+    expect(
+      context.repos.messages
+        .listByThreadId(created.thread.id)
+        .some((message) => message.role === "assistant")
+    ).toBe(true)
+  }, 15_000)
+})
