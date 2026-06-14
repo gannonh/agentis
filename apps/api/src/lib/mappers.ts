@@ -63,6 +63,7 @@ export function mapThread(row: ThreadRow): Thread {
     agentNameSnapshot: row.agentNameSnapshot ?? undefined,
     agentConfigurationVersionId: row.agentConfigurationVersionId ?? undefined,
     ...mapSourceWorkflowSnapshot(row),
+    starred: row.starred,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }

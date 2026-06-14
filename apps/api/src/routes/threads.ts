@@ -172,6 +172,7 @@ export function createThreadRoutes(
 
     const updated = repos.threads.touch(thread.id, {
       projectId: body.projectId,
+      starred: body.starred,
     })
     if (!updated) {
       return c.json({ error: "Thread not found" }, 404)

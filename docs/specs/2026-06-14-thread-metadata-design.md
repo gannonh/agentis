@@ -1,7 +1,7 @@
 ---
 type: Spec
 title: Thread metadata — star, status badges, agent chip
-description: Design for HA-GAP-11 thread metadata across sidebar and thread cards.
+description: Shipped HA-GAP-11 thread metadata — starred threads, Waiting badges, and agent chips in sidebar and home cards.
 tags: [threads, roadmap, ha-gap]
 timestamp: "2026-06-14T00:00:00Z"
 ---
@@ -9,7 +9,9 @@ timestamp: "2026-06-14T00:00:00Z"
 
 ## Status
 
-Draft, user-approved design direction for HA-GAP-11.
+Shipped (2026-06-14). Implements HA-GAP-11.
+
+**Shipped:** Persisted `starred` on threads (migration `0033_thread_starred.sql`); `GET /api/threads` returns `starred` and derived `hasPendingApproval`; `PATCH /api/threads/:id` accepts `starred`. Sidebar `Starred` section via `thread-sidebar-section.tsx`; shared display helpers in `thread-list-display.ts` and `thread-list-metadata.tsx`; optimistic star toggles via `use-thread-star-toggle.ts`; pending approval helpers in `packages/shared/src/thread-pending-approval.ts` (`stepHasPendingApproval`, `getPendingApprovalFromStep`, `runStepsHavePendingApproval`). Thread detail reuses `getPendingApprovalFromStep` for approval cards (local parser removed).
 
 ## Goal
 
@@ -20,23 +22,38 @@ This slice should make important threads easy to return to without introducing a
 ## Source of truth
 
 - Roadmap: [specs/index.md](index.md), HA-GAP-11.
-- Sidebar thread list: `apps/web/src/components/shell/app-sidebar.tsx`.
+- Sidebar shell: `apps/web/src/components/shell/app-sidebar.tsx`.
+- Sidebar thread sections: `apps/web/src/components/shell/thread-sidebar-section.tsx`.
+- Star toggle hook: `apps/web/src/hooks/use-thread-star-toggle.ts`.
+- Shared list display: `apps/web/src/lib/thread-list-display.ts`.
+- Shared metadata row: `apps/web/src/components/thread/thread-list-metadata.tsx`.
+- Star button: `apps/web/src/components/thread/thread-list-star-button.tsx`.
 - New-thread home: `apps/web/src/routes/new-thread.tsx`.
-- Recent thread cards: `apps/web/src/components/new-thread/recent-threads-section.tsx`.
+- Recent/demo cards: `apps/web/src/components/new-thread/recent-threads-section.tsx`, `demo-threads-section.tsx`.
 - Demo/recent partitioning: `apps/web/src/components/new-thread/demo-thread-utils.ts`.
 - Thread list API: `apps/api/src/routes/threads.ts`.
 - Thread list context: `apps/api/src/lib/thread-list-context.ts`.
+- Pending approval heuristic: `packages/shared/src/thread-pending-approval.ts`.
+- Thread detail approval cards: `apps/web/src/routes/thread-detail.tsx` (uses `getPendingApprovalFromStep`).
 - Shared thread schemas: `packages/shared/src/schemas.ts`.
-- Thread persistence: `apps/api/src/repositories/thread-repository.ts` and `apps/api/src/db/schema.ts`.
+- Thread persistence: `apps/api/src/repositories/thread-repository.ts`, `apps/api/src/db/schema.ts`, `apps/api/drizzle/0033_thread_starred.sql`.
 
-## Verified current state
+## Delivered state
 
-- `GET /api/threads` lists threads ordered by `updatedAt`, then enriches each row with `loadThreadListContext`.
-- `ThreadListItem` already includes `status`, `mode`, `agentId`, `agentNameSnapshot`, `lastRunStatus`, `summary`, `messageCount`, and `documentCount`.
-- `AppSidebar` renders all threads in one `Threads` section and refreshes on route changes.
-- `/threads/new` loads `GET /api/threads`, partitions demo threads by `seed_thread_`, and renders recent/demo cards from the same list item shape.
-- No `starred` field exists on the thread schema or database table.
-- Pending workspace approvals exist in run step payload metadata. Thread detail derives inline approvals from `step.payload.approval.status === "pending"`.
+- `GET /api/threads` lists threads ordered by `updatedAt`, enriches each row with `loadThreadListContext`, and returns `starred` plus derived `hasPendingApproval`.
+- `PATCH /api/threads/:id` accepts `starred` alongside existing `projectId` patch behavior.
+- `ThreadListItem` includes persisted `starred`, derived `hasPendingApproval`, and existing list fields (`status`, `mode`, `agentId`, `agentNameSnapshot`, `lastRunStatus`, `summary`, `messageCount`, `documentCount`).
+- `AppSidebar` renders a `Starred` section above `Threads` when starred threads exist; both sections use `thread-sidebar-section.tsx`.
+- `/threads/new` demo and recent cards reuse `ThreadListMetadata`, `ThreadListStarButton`, and `useThreadStarToggle` for consistent metadata and star toggles.
+- `hasPendingApproval` derives from latest-run steps via `runStepsHavePendingApproval` (`approval.status === "pending"` with a `toolCallId`).
+- Agent display falls back to `Agentis` for the built-in generic agent via `threadAgentDisplayName`.
+- `thread-detail.tsx` approval UI shares `getPendingApprovalFromStep` with list derivation so pending-approval parsing lives in one module.
+
+## Known follow-ups (not blocking HA-GAP-11)
+
+- **Canonical thread list state:** `app-sidebar.tsx` and `new-thread.tsx` each fetch `listThreads()` independently; star toggles update only the caller’s local state until route change. A shared `useThreadList` hook or `ThreadListProvider` in the app shell would dedupe fetches and keep sidebar + home stars in sync on `/threads/new`.
+- **Home card shell:** demo and recent sections still duplicate card markup; extract `HomeThreadCard` if a third surface needs the same layout.
+- **Sidebar status dot:** activity dot in `thread-sidebar-section.tsx` keys on `thread.status` while the badge uses `threadListStatusLabel`; align both to derived metadata if the dot remains.
 
 ## Constraints
 
@@ -135,25 +152,22 @@ New-thread home cards:
 
 ## Implementation phases
 
-1. Persist `starred` on threads.
-   - Likely files: `apps/api/src/db/schema.ts`, `apps/api/drizzle/0033_*.sql`, `apps/api/src/lib/mappers.ts`, `apps/api/src/repositories/thread-repository.ts`, `packages/shared/src/schemas.ts`.
-   - Acceptance: criteria 1, 7.
+All phases shipped on branch `feat/thread-metadata-2951`.
 
-2. Derive pending approval metadata.
-   - Likely files: `apps/api/src/lib/thread-list-context.ts`, repository helpers for run steps if needed, `apps/api/src/lib/thread-list-context.test.ts`.
-   - Acceptance: criteria 1, 5.
+1. Persist `starred` on threads — **done**.
+   - Files: `apps/api/src/db/schema.ts`, `apps/api/drizzle/0033_thread_starred.sql`, `apps/api/src/lib/mappers.ts`, `apps/api/src/repositories/thread-repository.ts`, `packages/shared/src/schemas.ts`.
 
-3. Extend thread patch API.
-   - Likely files: `packages/shared/src/schemas.ts`, `apps/api/src/routes/threads.ts`, `apps/api/src/routes/projects.test.ts` or `apps/api/src/app.test.ts`.
-   - Acceptance: criteria 2, 7.
+2. Derive pending approval metadata — **done**.
+   - Files: `apps/api/src/lib/thread-list-context.ts`, `packages/shared/src/thread-pending-approval.ts`, `apps/api/src/lib/thread-list-context.test.ts`, `packages/shared/src/thread-pending-approval.test.ts`.
 
-4. Update sidebar thread rows.
-   - Likely files: `apps/web/src/components/shell/app-sidebar.tsx`, `apps/web/src/components/shell/app-sidebar.test.tsx`.
-   - Acceptance: criteria 2, 3, 5, 6, 8.
+3. Extend thread patch API — **done**.
+   - Files: `packages/shared/src/schemas.ts`, `apps/api/src/routes/threads.ts`, `apps/api/src/routes/threads.test.ts`.
 
-5. Update new-thread home cards.
-   - Likely files: `apps/web/src/components/new-thread/recent-threads-section.tsx`, `apps/web/src/components/new-thread/demo-threads-section.tsx`, related tests under `apps/web/src/routes/new-thread.test.tsx` or component tests.
-   - Acceptance: criteria 4, 5, 6, 8.
+4. Update sidebar thread rows — **done**.
+   - Files: `apps/web/src/components/shell/app-sidebar.tsx`, `thread-sidebar-section.tsx`, `thread-list-star-button.tsx`, `use-thread-star-toggle.ts`, `app-sidebar.test.tsx`.
+
+5. Update new-thread home cards — **done**.
+   - Files: `recent-threads-section.tsx`, `demo-threads-section.tsx`, `thread-list-metadata.tsx`, `thread-list-display.ts`, component tests.
 
 ## Verification
 
@@ -166,11 +180,11 @@ pnpm lint
 pnpm test:coverage
 ```
 
-Focused tests during Build:
+Focused tests:
 
 ```bash
-pnpm vitest run apps/api/src/lib/thread-list-context.test.ts apps/api/src/app.test.ts
-pnpm vitest run apps/web/src/components/shell/app-sidebar.test.tsx apps/web/src/routes/new-thread.test.tsx
+pnpm vitest run apps/api/src/lib/thread-list-context.test.ts apps/api/src/routes/threads.test.ts packages/shared/src/thread-pending-approval.test.ts
+pnpm vitest run apps/web/src/components/shell/app-sidebar.test.tsx apps/web/src/lib/thread-list-display.test.ts apps/web/src/components/new-thread/recent-threads-section.test.tsx apps/web/src/components/new-thread/demo-threads-section.test.tsx
 ```
 
 Manual UAT:
@@ -210,4 +224,9 @@ Non-goals:
 - Global search changes.
 - Changes to approval mechanics in thread detail.
 
-Build should start by adding the API shape and tests, then wire the sidebar, then reuse the same display/toggle path for new-thread cards. If pending approval derivation cannot be expressed from latest run steps without inefficient queries, stop and document the blocker before widening backend scope.
+Build followed the API-first path: schema and list context, then sidebar sections, then shared display/toggle components reused on new-thread home cards.
+
+## Related
+
+- [HA-GAP-10 new thread home](index.md#ha-gap-10-new-thread-home-parity-lightweight) — card summaries and suggestion chips this slice extends with metadata.
+- [2026-06-13-thread-working-artifacts-design.md](2026-06-13-thread-working-artifacts-design.md) — adjacent thread-session UX (HA-GAP-08).

@@ -39,12 +39,15 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@workspace/ui/components/sidebar"
-import { cn } from "@workspace/ui/lib/utils"
 import { SidebarNavItem } from "@/components/shell/sidebar-nav-item"
+import { navLinkClass } from "@/components/shell/sidebar-nav-link-class"
+import { ThreadSidebarGroup } from "@/components/shell/thread-sidebar-section"
+import { ThreadStarErrorNotice } from "@/components/thread/thread-list-star-button"
 import { getWorkspace } from "@/fixtures"
 import { useGlobalSearch } from "@/hooks/use-global-search"
 import { useAgents } from "@/hooks/use-agents"
 import { useProjects } from "@/hooks/use-projects"
+import { useThreadStarToggle } from "@/hooks/use-thread-star-toggle"
 import { listThreads } from "@/lib/api/client"
 
 const agentIcons = {
@@ -59,12 +62,6 @@ function agentNavIcon(icon?: string) {
       : Search01Icon
   return <HugeiconsIcon icon={Icon} strokeWidth={2} />
 }
-
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    isActive &&
-      "data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground"
-  )
 
 function useActiveProjectId(threads: ThreadListItem[]) {
   const projectMatch = useMatch({ path: "/projects/:projectId", end: false })
@@ -121,35 +118,6 @@ function ProjectSidebarItem({
   )
 }
 
-function ThreadSidebarItem({ thread }: { thread: ThreadListItem }) {
-  const match = useMatch({ path: `/threads/${thread.id}`, end: true })
-
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        isActive={Boolean(match)}
-        render={
-          <NavLink to={`/threads/${thread.id}`} end className={navLinkClass} />
-        }
-      >
-        <span
-          className={cn(
-            "size-2 shrink-0 rounded-full",
-            thread.status === "finished"
-              ? "bg-muted-foreground"
-              : "bg-sidebar-primary"
-          )}
-          aria-hidden
-        />
-        <span>{thread.title}</span>
-      </SidebarMenuButton>
-      <SidebarMenuBadge>
-        {thread.status === "finished" ? "Finished" : thread.status}
-      </SidebarMenuBadge>
-    </SidebarMenuItem>
-  )
-}
-
 export function AppSidebar() {
   const workspace = getWorkspace()
   const {
@@ -161,8 +129,14 @@ export function AppSidebar() {
   const location = useLocation()
   const { setOpen, shortcutLabel } = useGlobalSearch()
   const [threads, setThreads] = useState<ThreadListItem[]>([])
+  const { toggleStar, starError } = useThreadStarToggle(setThreads)
   const { projects, refresh: refreshProjects } = useProjects()
   const activeProjectId = useActiveProjectId(threads)
+
+  const starredThreads = useMemo(
+    () => threads.filter((thread) => thread.starred),
+    [threads]
+  )
 
   const threadCountByProject = useMemo(() => {
     const counts = new Map<string, number>()
@@ -333,31 +307,21 @@ export function AppSidebar() {
           </SidebarGroup>
         </Collapsible>
 
-        <Collapsible defaultOpen className="group/collapsible">
-          <SidebarGroup>
-            <SidebarGroupLabel
-              render={
-                <CollapsibleTrigger className="flex w-full items-center justify-between">
-                  <span>Threads</span>
-                  <HugeiconsIcon
-                    icon={Add01Icon}
-                    className="size-3.5"
-                    strokeWidth={2}
-                  />
-                </CollapsibleTrigger>
-              }
-            />
-            <CollapsibleContent>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {threads.map((thread) => (
-                    <ThreadSidebarItem key={thread.id} thread={thread} />
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </SidebarGroup>
-        </Collapsible>
+        {starredThreads.length > 0 ? (
+          <ThreadSidebarGroup
+            label="Starred"
+            threads={starredThreads}
+            onToggleStar={toggleStar}
+          />
+        ) : null}
+
+        <ThreadSidebarGroup
+          label="Threads"
+          threads={threads}
+          onToggleStar={toggleStar}
+          showAddIcon
+        />
+        <ThreadStarErrorNotice message={starError} className="px-3" />
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>

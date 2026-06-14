@@ -1,15 +1,20 @@
 import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router"
 import { SidebarProvider } from "@workspace/ui/components/sidebar"
 import { TooltipProvider } from "@workspace/ui/components/tooltip"
+import { GENERIC_AGENTIS_AGENT_ID } from "@workspace/shared"
 import { AppSidebar } from "./app-sidebar"
 import { GlobalSearchProvider } from "@/components/shell/global-search-provider"
 import { beforeEach, vi } from "vitest"
 
-const { refreshAgents, useAgentsMock } = vi.hoisted(() => ({
-  refreshAgents: vi.fn(),
-  useAgentsMock: vi.fn(),
-}))
+const { refreshAgents, useAgentsMock, listThreadsMock, updateThreadMock } =
+  vi.hoisted(() => ({
+    refreshAgents: vi.fn(),
+    useAgentsMock: vi.fn(),
+    listThreadsMock: vi.fn(),
+    updateThreadMock: vi.fn(),
+  }))
 
 function apiAgent() {
   return {
@@ -33,18 +38,8 @@ function apiAgent() {
 }
 
 vi.mock("@/lib/api/client", () => ({
-  listThreads: vi.fn().mockResolvedValue([
-    {
-      id: "thread_demo",
-      title: "Creating Agent",
-      status: "active",
-      model: "gpt-4o-mini",
-      mode: "plan",
-      projectId: "project_demo",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ]),
+  listThreads: listThreadsMock,
+  updateThread: updateThreadMock,
 }))
 
 vi.mock("@/hooks/use-projects", () => ({
@@ -85,6 +80,23 @@ function renderSidebar(initialPath = "/threads/new") {
 describe("AppSidebar", () => {
   beforeEach(() => {
     refreshAgents.mockClear()
+    updateThreadMock.mockReset()
+    updateThreadMock.mockResolvedValue({})
+    listThreadsMock.mockResolvedValue([
+      {
+        id: "thread_demo",
+        title: "Creating Agent",
+        status: "active",
+        model: "gpt-4o-mini",
+        mode: "plan",
+        projectId: "project_demo",
+        starred: false,
+        hasPendingApproval: false,
+        agentId: GENERIC_AGENTIS_AGENT_ID,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ])
     useAgentsMock.mockReturnValue({
       agents: [apiAgent()],
       loading: false,
@@ -200,5 +212,65 @@ describe("AppSidebar", () => {
         screen.getAllByText("Creating Agent").length
       ).toBeGreaterThanOrEqual(1)
     })
+  })
+
+  it("renders a starred section and waiting badge metadata", async () => {
+    listThreadsMock.mockResolvedValue([
+      {
+        id: "thread_starred",
+        title: "Starred thread",
+        status: "active",
+        model: "gpt-4o-mini",
+        mode: "plan",
+        starred: true,
+        hasPendingApproval: true,
+        agentNameSnapshot: "Research Agent",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: "thread_generic",
+        title: "Generic thread",
+        status: "active",
+        model: "gpt-4o-mini",
+        mode: "agent",
+        starred: false,
+        hasPendingApproval: false,
+        agentId: GENERIC_AGENTIS_AGENT_ID,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ])
+
+    renderSidebar()
+
+    await waitFor(() => {
+      expect(screen.getByText("Starred")).toBeInTheDocument()
+      expect(screen.getAllByText("Waiting").length).toBeGreaterThanOrEqual(1)
+    })
+    expect(screen.getAllByText("Research Agent").length).toBeGreaterThanOrEqual(
+      1
+    )
+    // App chrome shows "Agentis"; thread-row metadata adds another instance.
+    expect(screen.getAllByText("Agentis").length).toBeGreaterThanOrEqual(2)
+  })
+
+  it("toggles star without navigating away", async () => {
+    const user = userEvent.setup()
+    renderSidebar("/threads/new")
+    const newThreadLink = screen.getByRole("link", { name: "New thread" })
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Star thread")).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByLabelText("Star thread"))
+
+    await waitFor(() => {
+      expect(updateThreadMock).toHaveBeenCalledWith("thread_demo", {
+        starred: true,
+      })
+    })
+    expect(newThreadLink).toHaveAttribute("aria-current", "page")
   })
 })
