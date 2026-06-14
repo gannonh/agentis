@@ -39,7 +39,8 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@workspace/ui/components/sidebar"
-import { SidebarNavItem, navLinkClass } from "@/components/shell/sidebar-nav-item"
+import { SidebarNavItem } from "@/components/shell/sidebar-nav-item"
+import { navLinkClass } from "@/components/shell/sidebar-nav-link-class"
 import { ThreadSidebarGroup } from "@/components/shell/thread-sidebar-section"
 import { ThreadStarErrorNotice } from "@/components/thread/thread-list-star-button"
 import { getWorkspace } from "@/fixtures"

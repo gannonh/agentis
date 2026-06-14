@@ -4,18 +4,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar"
-import { cn } from "@workspace/ui/lib/utils"
+import { navLinkClass } from "@/components/shell/sidebar-nav-link-class"
 
 type SidebarNavItemProps = {
   to: string
   end?: boolean
   children: ReactNode
 }
-
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cn(isActive && "data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground")
-
-export { navLinkClass }
 
 export function SidebarNavItem({ to, end, children }: SidebarNavItemProps) {
   const match = useMatch({ path: to, end: end ?? false })

@@ -17,7 +17,7 @@ import {
   SidebarMenuItem,
 } from "@workspace/ui/components/sidebar"
 import { cn } from "@workspace/ui/lib/utils"
-import { navLinkClass } from "@/components/shell/sidebar-nav-item"
+import { navLinkClass } from "@/components/shell/sidebar-nav-link-class"
 import { ThreadListStarButton } from "@/components/thread/thread-list-star-button"
 import {
   threadAgentDisplayName,
