@@ -11,7 +11,7 @@ timestamp: "2026-06-14T00:00:00Z"
 
 Shipped (2026-06-14). Implements HA-GAP-11.
 
-**Shipped:** Persisted `starred` on threads (migration `0033_thread_starred.sql`); `GET /api/threads` returns `starred` and derived `hasPendingApproval`; `PATCH /api/threads/:id` accepts `starred`. Sidebar `Starred` section via `thread-sidebar-section.tsx`; shared display helpers in `thread-list-display.ts` and `thread-list-metadata.tsx`; optimistic star toggles via `use-thread-star-toggle.ts`; pending approval heuristic in `packages/shared/src/thread-pending-approval.ts`.
+**Shipped:** Persisted `starred` on threads (migration `0033_thread_starred.sql`); `GET /api/threads` returns `starred` and derived `hasPendingApproval`; `PATCH /api/threads/:id` accepts `starred`. Sidebar `Starred` section via `thread-sidebar-section.tsx`; shared display helpers in `thread-list-display.ts` and `thread-list-metadata.tsx`; optimistic star toggles via `use-thread-star-toggle.ts`; pending approval helpers in `packages/shared/src/thread-pending-approval.ts` (`stepHasPendingApproval`, `getPendingApprovalFromStep`, `runStepsHavePendingApproval`). Thread detail reuses `getPendingApprovalFromStep` for approval cards (local parser removed).
 
 ## Goal
 
@@ -34,6 +34,7 @@ This slice should make important threads easy to return to without introducing a
 - Thread list API: `apps/api/src/routes/threads.ts`.
 - Thread list context: `apps/api/src/lib/thread-list-context.ts`.
 - Pending approval heuristic: `packages/shared/src/thread-pending-approval.ts`.
+- Thread detail approval cards: `apps/web/src/routes/thread-detail.tsx` (uses `getPendingApprovalFromStep`).
 - Shared thread schemas: `packages/shared/src/schemas.ts`.
 - Thread persistence: `apps/api/src/repositories/thread-repository.ts`, `apps/api/src/db/schema.ts`, `apps/api/drizzle/0033_thread_starred.sql`.
 
@@ -46,6 +47,13 @@ This slice should make important threads easy to return to without introducing a
 - `/threads/new` demo and recent cards reuse `ThreadListMetadata`, `ThreadListStarButton`, and `useThreadStarToggle` for consistent metadata and star toggles.
 - `hasPendingApproval` derives from latest-run steps via `runStepsHavePendingApproval` (`approval.status === "pending"` with a `toolCallId`).
 - Agent display falls back to `Agentis` for the built-in generic agent via `threadAgentDisplayName`.
+- `thread-detail.tsx` approval UI shares `getPendingApprovalFromStep` with list derivation so pending-approval parsing lives in one module.
+
+## Known follow-ups (not blocking HA-GAP-11)
+
+- **Canonical thread list state:** `app-sidebar.tsx` and `new-thread.tsx` each fetch `listThreads()` independently; star toggles update only the caller’s local state until route change. A shared `useThreadList` hook or `ThreadListProvider` in the app shell would dedupe fetches and keep sidebar + home stars in sync on `/threads/new`.
+- **Home card shell:** demo and recent sections still duplicate card markup; extract `HomeThreadCard` if a third surface needs the same layout.
+- **Sidebar status dot:** activity dot in `thread-sidebar-section.tsx` keys on `thread.status` while the badge uses `threadListStatusLabel`; align both to derived metadata if the dot remains.
 
 ## Constraints
 
