@@ -3,6 +3,22 @@ import { StarIcon } from "@hugeicons/core-free-icons"
 import { Button } from "@workspace/ui/components/button"
 import { cn } from "@workspace/ui/lib/utils"
 
+export function ThreadStarErrorNotice({
+  message,
+  className,
+}: {
+  message: string | null | undefined
+  className?: string
+}) {
+  if (!message) return null
+
+  return (
+    <p className={cn("text-destructive text-xs", className)} role="status">
+      {message}
+    </p>
+  )
+}
+
 type ThreadListStarButtonProps = {
   starred: boolean
   onToggle: () => void

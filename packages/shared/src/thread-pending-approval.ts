@@ -1,6 +1,6 @@
 import type { RunStep } from "./schemas.js"
 
-function stepPayloadHasPendingApproval(step: RunStep): boolean {
+export function stepHasPendingApproval(step: RunStep): boolean {
   const payload = step.payload
   if (!payload || typeof payload !== "object") return false
 
@@ -12,10 +12,6 @@ function stepPayloadHasPendingApproval(step: RunStep): boolean {
   if (approval?.status !== "pending") return false
 
   return typeof record.toolCallId === "string"
-}
-
-export function stepHasPendingApproval(step: RunStep): boolean {
-  return stepPayloadHasPendingApproval(step)
 }
 
 export function runStepsHavePendingApproval(steps: RunStep[]): boolean {

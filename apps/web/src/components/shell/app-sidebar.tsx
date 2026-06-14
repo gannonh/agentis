@@ -41,17 +41,14 @@ import {
 } from "@workspace/ui/components/sidebar"
 import { cn } from "@workspace/ui/lib/utils"
 import { SidebarNavItem } from "@/components/shell/sidebar-nav-item"
-import { ThreadListStarButton } from "@/components/thread/thread-list-star-button"
+import { ThreadSidebarGroup } from "@/components/shell/thread-sidebar-section"
+import { ThreadStarErrorNotice } from "@/components/thread/thread-list-star-button"
 import { getWorkspace } from "@/fixtures"
 import { useGlobalSearch } from "@/hooks/use-global-search"
 import { useAgents } from "@/hooks/use-agents"
 import { useProjects } from "@/hooks/use-projects"
 import { useThreadStarToggle } from "@/hooks/use-thread-star-toggle"
 import { listThreads } from "@/lib/api/client"
-import {
-  threadAgentDisplayName,
-  threadListStatusLabel,
-} from "@/lib/thread-list-display"
 
 const agentIcons = {
   search: Search01Icon,
@@ -124,98 +121,6 @@ function ProjectSidebarItem({
       </SidebarMenuButton>
       <SidebarMenuBadge>{threadCount}</SidebarMenuBadge>
     </SidebarMenuItem>
-  )
-}
-
-function ThreadSidebarItem({
-  thread,
-  onToggleStar,
-}: {
-  thread: ThreadListItem
-  onToggleStar: (threadId: string) => void
-}) {
-  const match = useMatch({ path: `/threads/${thread.id}`, end: true })
-  const agentName = threadAgentDisplayName(thread)
-  const statusLabel = threadListStatusLabel(thread)
-
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        isActive={Boolean(match)}
-        render={
-          <NavLink to={`/threads/${thread.id}`} end className={navLinkClass} />
-        }
-      >
-        <ThreadListStarButton
-          starred={thread.starred ?? false}
-          onToggle={() => onToggleStar(thread.id)}
-        />
-        <span
-          className={cn(
-            "size-2 shrink-0 rounded-full",
-            thread.status === "finished"
-              ? "bg-muted-foreground"
-              : "bg-sidebar-primary"
-          )}
-          aria-hidden
-        />
-        <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="truncate">{thread.title}</span>
-          {agentName ? (
-            <span className="truncate text-[10px] text-muted-foreground">
-              {agentName}
-            </span>
-          ) : null}
-        </span>
-      </SidebarMenuButton>
-      <SidebarMenuBadge>{statusLabel}</SidebarMenuBadge>
-    </SidebarMenuItem>
-  )
-}
-
-function ThreadSidebarGroup({
-  label,
-  threads,
-  onToggleStar,
-  showAddIcon = false,
-}: {
-  label: string
-  threads: ThreadListItem[]
-  onToggleStar: (threadId: string) => void
-  showAddIcon?: boolean
-}) {
-  return (
-    <Collapsible defaultOpen className="group/collapsible">
-      <SidebarGroup>
-        <SidebarGroupLabel
-          render={
-            <CollapsibleTrigger className="flex w-full items-center justify-between">
-              <span>{label}</span>
-              {showAddIcon ? (
-                <HugeiconsIcon
-                  icon={Add01Icon}
-                  className="size-3.5"
-                  strokeWidth={2}
-                />
-              ) : null}
-            </CollapsibleTrigger>
-          }
-        />
-        <CollapsibleContent>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {threads.map((thread) => (
-                <ThreadSidebarItem
-                  key={`${label}-${thread.id}`}
-                  thread={thread}
-                  onToggleStar={onToggleStar}
-                />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </CollapsibleContent>
-      </SidebarGroup>
-    </Collapsible>
   )
 }
 
@@ -422,11 +327,7 @@ export function AppSidebar() {
           onToggleStar={toggleStar}
           showAddIcon
         />
-        {starError ? (
-          <p className="px-3 text-xs text-destructive" role="status">
-            {starError}
-          </p>
-        ) : null}
+        <ThreadStarErrorNotice message={starError} className="px-3" />
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border">
         <SidebarMenu>

@@ -21,6 +21,21 @@ export const EMPTY_THREAD_LIST_CONTEXT: ThreadListContext = {
   hasPendingApproval: false,
 }
 
+function groupRunStepsByRunId(steps: RunStep[]): Map<string, RunStep[]> {
+  const stepsByRunId = new Map<string, RunStep[]>()
+
+  for (const step of steps) {
+    const runSteps = stepsByRunId.get(step.runId)
+    if (runSteps) {
+      runSteps.push(step)
+    } else {
+      stepsByRunId.set(step.runId, [step])
+    }
+  }
+
+  return stepsByRunId
+}
+
 export function loadThreadListContext(
   repos: Repositories,
   threadIds: string[]
@@ -31,16 +46,9 @@ export function loadThreadListContext(
   const latestRuns = repos.runs.listLatestByThreadIds(threadIds)
   const documentCounts = repos.documents.countByThreadIds(threadIds)
   const latestRunIds = [...latestRuns.values()].map((run) => run.id)
-  const stepsByRunId = new Map<string, RunStep[]>()
-
-  for (const step of repos.steps.listByRunIds(latestRunIds)) {
-    const runSteps = stepsByRunId.get(step.runId)
-    if (runSteps) {
-      runSteps.push(step)
-    } else {
-      stepsByRunId.set(step.runId, [step])
-    }
-  }
+  const stepsByRunId = groupRunStepsByRunId(
+    repos.steps.listByRunIds(latestRunIds)
+  )
 
   const contextByThreadId = new Map<string, ThreadListContext>()
 

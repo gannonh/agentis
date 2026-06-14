@@ -18,7 +18,7 @@ export function ThreadListMetadata({
   const statusLabel = threadListStatusLabel(thread)
 
   let statusContent = null
-  if (statusLabel === "Waiting") {
+  if (thread.hasPendingApproval) {
     statusContent = (
       <Badge variant="secondary" className="text-[10px] font-medium">
         Waiting

@@ -1,7 +1,10 @@
 import { Link } from "react-router"
 import type { ThreadListItem } from "@workspace/shared"
 import { ThreadListMetadata } from "@/components/thread/thread-list-metadata"
-import { ThreadListStarButton } from "@/components/thread/thread-list-star-button"
+import {
+  ThreadListStarButton,
+  ThreadStarErrorNotice,
+} from "@/components/thread/thread-list-star-button"
 import { formatRelativeTime } from "@/fixtures"
 
 const THREAD_SUMMARY_FALLBACK = "Open this thread to continue the conversation."
@@ -26,11 +29,7 @@ export function RecentThreadsSection({
   return (
     <section className="flex w-full max-w-3xl flex-col gap-3">
       <h2 className="text-sm font-medium">Recent threads</h2>
-      {starError ? (
-        <p className="text-destructive text-xs" role="status">
-          {starError}
-        </p>
-      ) : null}
+      <ThreadStarErrorNotice message={starError} />
       {loading ? (
         <p className="text-muted-foreground text-xs">Loading…</p>
       ) : (
