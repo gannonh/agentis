@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { agentInvocationSourceSchema } from "./schedule-schemas.js"
 import {
   DEFAULT_GATEWAY_MODEL,
   gatewayModelOptionSchema,
@@ -820,7 +821,10 @@ export const agentRecentThreadSummarySchema = threadListItemSchema
     lastRunStatus: true,
     summary: true,
   })
-  .extend({ documentCount: nonNegativeInteger })
+  .extend({
+    documentCount: nonNegativeInteger,
+    invocationSource: agentInvocationSourceSchema.optional(),
+  })
 
 export const agentLibrarySummarySchema = z.object({
   items: z.array(artifactPublicSchema),

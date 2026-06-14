@@ -511,3 +511,72 @@ export const learningSuggestions = sqliteTable(
   },
   (table) => [index("learning_suggestions_status_idx").on(table.status)]
 )
+
+export const agentSchedules = sqliteTable(
+  "agent_schedules",
+  {
+    id: text("id").primaryKey(),
+    agentId: text("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    status: text("status").notNull(),
+    cadence: text("cadence").notNull(),
+    cronExpression: text("cron_expression"),
+    timezone: text("timezone").notNull(),
+    promptTemplate: text("prompt_template").notNull(),
+    projectId: text("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
+    cadenceConfigJson: text("cadence_config_json").notNull(),
+    nextRunAt: text("next_run_at"),
+    lastRunAt: text("last_run_at"),
+    lastRunStatus: text("last_run_status"),
+    lastFailureReason: text("last_failure_reason"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("agent_schedules_agent_id_idx").on(table.agentId),
+    index("agent_schedules_status_next_run_at_idx").on(
+      table.status,
+      table.nextRunAt
+    ),
+  ]
+)
+
+export const agentInvocationRuns = sqliteTable(
+  "agent_invocation_runs",
+  {
+    id: text("id").primaryKey(),
+    sourceType: text("source_type").notNull(),
+    sourceId: text("source_id").notNull(),
+    dueAt: text("due_at").notNull(),
+    status: text("status").notNull(),
+    threadId: text("thread_id").references(() => threads.id, {
+      onDelete: "set null",
+    }),
+    runId: text("run_id").references(() => runs.id, { onDelete: "set null" }),
+    failureReason: text("failure_reason"),
+    claimedAt: text("claimed_at"),
+    startedAt: text("started_at"),
+    finishedAt: text("finished_at"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("agent_invocation_runs_source_idx").on(
+      table.sourceType,
+      table.sourceId
+    ),
+    index("agent_invocation_runs_status_claimed_at_idx").on(
+      table.status,
+      table.claimedAt
+    ),
+    uniqueIndex("agent_invocation_runs_source_due_unique").on(
+      table.sourceType,
+      table.sourceId,
+      table.dueAt
+    ),
+  ]
+)
