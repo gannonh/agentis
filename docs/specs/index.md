@@ -120,6 +120,8 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-11: Thread metadata — star, status badges, agent chip
 
+**Status:** Spec drafted. Spec: [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md).
+
 **HyperAgent reference:** Star thread; "Waiting for your input" badges; agent emoji on thread rows.
 
 **Agentis today:** Plain thread list.
@@ -570,6 +572,7 @@ Implementation specs, design docs, and build reports. Completed work lives in `_
 
 | Spec | Status | Notes |
 | --- | --- | --- |
+| [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md) | Draft | HA-GAP-11 — thread metadata, stars, waiting badges, agent chip |
 | [2026-06-13-thread-working-artifacts-design.md](2026-06-13-thread-working-artifacts-design.md) | Shipped | HA-GAP-08 — thread Working artifacts rail |
 
 ### Completed (`_done/`)
