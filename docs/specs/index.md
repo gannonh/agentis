@@ -167,19 +167,23 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-13: Scheduled agent invocations
 
+**Status:** Spec drafted (2026-06-14). Spec: [2026-06-14-scheduled-agent-invocations-design.md](2026-06-14-scheduled-agent-invocations-design.md).
+
 **HyperAgent reference:** Agent detail → Schedule → set up cadence.
 
-**Agentis today:** M07 not implemented.
+**Agentis today:** M07 not implemented. Agent Invocations shows Scheduled as a disabled placeholder; no invocation worker exists yet.
 
-**Goal:** Cron-style schedule creates thread/run from agent template + project context.
+**Goal:** Worker-backed schedules create and execute agent runs from current agent configuration and project context.
 
-**Demo:** Schedule agent every 5 min (test cron) → run appears in activity.
+**Demo:** Schedule an agent to run hourly or via test cron → worker creates and completes the thread/run without a browser stream call → activity shows the schedule source.
 
 **Acceptance:**
 - [ ] Schedule CRUD on agent.
-- [ ] Background scheduler (in-process OK for MVP with documented limits).
+- [ ] Hourly, Daily, Weekly, and Custom cron options with timezone support.
+- [ ] Worker/daemon claims due schedules, creates threads/runs, and executes runs to completion in the background.
 - [ ] Invocation run linked to agent + schedule id.
-- [ ] Disable when agent archived or credentials missing.
+- [ ] Duplicate due-slot execution is prevented.
+- [ ] Disable or fail visibly when agent/project/credentials/grants/cost-limit checks block execution.
 
 **Depends on:** HA-GAP-01 (cost visibility) nice-to-have.
 
@@ -559,7 +563,7 @@ flowchart TD
 ## Next steps
 
 1. Wave 2: HA-GAP-11 (thread metadata) shipped 2026-06-14. HA-GAP-08, HA-GAP-09, and HA-GAP-10 shipped in 2026-06-13.
-2. Wave 3: HA-GAP-12 (integrations catalog API wire-up) shipped in 2026-06-13 (PR #439). Next integrations slices: HA-GAP-15 (Slack invocation) and HA-GAP-16 (custom MCP) are unblocked; HA-GAP-13/14 (schedule/webhook) can run in parallel.
+2. Wave 3: HA-GAP-12 (integrations catalog API wire-up) shipped in 2026-06-13 (PR #439). HA-GAP-13 (scheduled agent invocations) is spec-drafted and should establish the worker foundation for later invocation sources. HA-GAP-15 (Slack invocation), HA-GAP-16 (custom MCP), and HA-GAP-14 (webhook) remain unblocked follow-ups.
 3. Keep this roadmap aligned as discovery work continues.
 
 ---
@@ -572,6 +576,7 @@ Implementation specs, design docs, and build reports. Completed work lives in `_
 
 | Spec | Status | Notes |
 | --- | --- | --- |
+| [2026-06-14-scheduled-agent-invocations-design.md](2026-06-14-scheduled-agent-invocations-design.md) | Draft | HA-GAP-13 — worker-backed scheduled agent invocations |
 | [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md) | Shipped | HA-GAP-11 — thread metadata, stars, waiting badges, agent chip |
 | [2026-06-13-thread-working-artifacts-design.md](2026-06-13-thread-working-artifacts-design.md) | Shipped | HA-GAP-08 — thread Working artifacts rail |
 
