@@ -1,3 +1,10 @@
+---
+type: Spec
+title: Configurable AI Gateway migration
+description: Approved.
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Configurable AI Gateway migration
 
 ## Status
@@ -251,7 +258,7 @@ Likely files:
 - `apps/api/.env.example`
 - `README.md`
 - `AGENTS.md`
-- `docs/adr/0004-vercel-ai-gateway-runtime-boundary.md` or a new ADR superseding it
+- `docs/adrs/0004-vercel-ai-gateway-runtime-boundary.md` or a new ADR superseding it
 
 Tasks:
 

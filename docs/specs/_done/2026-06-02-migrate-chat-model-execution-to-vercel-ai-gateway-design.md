@@ -1,3 +1,10 @@
+---
+type: Spec
+title: Migrate chat model execution to Vercel AI Gateway
+description: Verified
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Migrate chat model execution to Vercel AI Gateway
 
 ## Status
@@ -272,7 +279,7 @@ Build should implement the phases above, keep edits surgical, and verify the acc
 3. UI and docs
    - Updated thread composer missing-key copy to `AI_GATEWAY_API_KEY`.
    - Updated `.env.example`, `apps/api/.env.example`, `README.md`, `CONTRIBUTING.md`, and `AGENTS.md` for the Gateway credential path.
-   - Added `docs/adr/0004-vercel-ai-gateway-runtime-boundary.md` for the Gateway runtime boundary decision.
+   - Added `docs/adrs/0004-vercel-ai-gateway-runtime-boundary.md` for the Gateway runtime boundary decision.
 4. Review and verification
    - Spec compliance review passed.
    - Code quality review passed after fixing model validation order and agent setup model id consistency.
@@ -305,7 +312,7 @@ Build should implement the phases above, keep edits surgical, and verify the acc
 - `README.md`
 - `CONTRIBUTING.md`
 - `AGENTS.md`
-- `docs/adr/0004-vercel-ai-gateway-runtime-boundary.md`
+- `docs/adrs/0004-vercel-ai-gateway-runtime-boundary.md`
 - `pnpm-lock.yaml`
 
 ### Verification run

@@ -1,3 +1,10 @@
+---
+type: Spec
+title: M04 Projects, Context, and Artifacts Spec
+description: Implemented
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # M04 Projects, Context, and Artifacts Spec
 ## Status
 Implemented

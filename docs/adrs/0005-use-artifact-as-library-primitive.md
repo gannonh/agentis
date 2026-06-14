@@ -1,3 +1,10 @@
+---
+type: ADR
+title: "ADR 0005: Use Artifact as the durable Library primitive"
+description: Accepted
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # ADR 0005: Use Artifact as the durable Library primitive
 
 ## Status

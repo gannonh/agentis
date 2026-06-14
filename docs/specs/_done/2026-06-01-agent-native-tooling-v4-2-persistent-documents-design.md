@@ -1,3 +1,10 @@
+---
+type: Spec
+title: "Agent native tooling V4.2: persistent documents"
+description: Implemented.
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Agent native tooling V4.2: persistent documents
 
 ## Status
@@ -13,7 +20,7 @@ This is a Data-category V4 slice. It targets Hyperagent-style persistent documen
 ## Source of truth
 
 - Roadmap: `docs/specs/_done/agent-native-tooling.md`, V4 Data category.
-- Decision record: `docs/adr/0003-persistent-documents-library-primitive.md`.
+- Decision record: `docs/adrs/0003-persistent-documents-library-primitive.md`.
 - Product reference: Hyperagent Documents described as persistent, section-based, versioned markdown files that can be thread, project, or global scoped.
 - Existing Agentis Library and generated Library item implementation should be renamed and evolved into Documents rather than split into a second primitive.
 

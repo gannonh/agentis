@@ -1,3 +1,10 @@
+---
+type: Spec
+title: "Agent native tooling V4.x: App artifact runtime"
+description: Implemented.
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Agent native tooling V4.x: App artifact runtime
 
 ## Status
@@ -14,8 +21,8 @@ This spec targets the App artifact runtime primitive. Product-specific templates
 
 - Roadmap: `docs/specs/_done/agent-native-tooling.md`, V4 Interactive category.
 - Domain language: `CONTEXT.md`, especially **App**, **App state**, and **Artifact workspace**.
-- Native tool permission decision: `docs/adr/0002-version-native-tool-permissions-with-agent-configuration.md`.
-- Artifact primitive decision: `docs/adr/0005-use-artifact-as-library-primitive.md`.
+- Native tool permission decision: `docs/adrs/0002-version-native-tool-permissions-with-agent-configuration.md`.
+- Artifact primitive decision: `docs/adrs/0005-use-artifact-as-library-primitive.md`.
 - Static artifact precedent (frozen HTML sibling type): `docs/specs/_done/2026-06-04-agent-native-tooling-v4-static-artifacts-design.md`.
 - Existing native runtime plumbing:
   - `apps/api/src/runtime/run-executor.ts`

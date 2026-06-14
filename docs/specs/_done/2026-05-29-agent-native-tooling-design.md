@@ -1,3 +1,10 @@
+---
+type: Spec
+title: Agent Native Tooling v1
+description: "https://github.com/gannonh/agentis/issues/385"
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Agent Native Tooling v1
 https://github.com/gannonh/agentis/issues/385
 

@@ -1,3 +1,10 @@
+---
+type: Guide
+title: Composio GitHub golden path — Manual UAT
+description: "1. Repo root `.env` with live services (no mocks):"
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Composio GitHub golden path — Manual UAT
 
 **Issue:** [#413](https://github.com/gannonh/agentis/issues/413) — One Composio integration golden path on generic Agentis threads.

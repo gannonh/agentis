@@ -1,3 +1,10 @@
+---
+type: ADR
+title: "ADR 0001: Sandboxed Workspace Execution"
+description: Accepted
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # ADR 0001: Sandboxed Workspace Execution
 
 ## Status

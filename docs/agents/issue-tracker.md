@@ -1,3 +1,10 @@
+---
+type: Guide
+title: "Issue tracker: GitHub"
+description: "Issues and PRDs for this repo live as GitHub issues on [gannonh/agentis](https://github.com/gannonh/agentis). Use the..."
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Issue tracker: GitHub
 
 Issues and PRDs for this repo live as GitHub issues on [gannonh/agentis](https://github.com/gannonh/agentis). Use the `gh` CLI for all operations.

@@ -1,3 +1,10 @@
+---
+type: Guide
+title: Self-host research golden path
+description: Use this path to run Agentis locally with Cloudflare AI Gateway for model execution and Tavily keyless search for nat...
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Self-host research golden path
 
 Use this path to run Agentis locally with Cloudflare AI Gateway for model execution and Tavily keyless search for native web search. It does not require a Vercel AI Gateway key.

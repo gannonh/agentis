@@ -1,3 +1,10 @@
+---
+type: Spec
+title: Library artifact domain refactor
+description: Verified.
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Library artifact domain refactor
 
 ## Status
@@ -13,8 +20,8 @@ This refactor must happen before the static webpages/slides and App specs are bu
 ## Source of truth
 
 - User clarification on 2026-06-04: webpages and slides are Artifacts of type `webpage` and `slides`, sibling to `document`; Documents are markdown documents.
-- Superseding decision: `docs/adr/0005-use-artifact-as-library-primitive.md`.
-- Superseded decision: `docs/adr/0003-persistent-documents-library-primitive.md`.
+- Superseding decision: `docs/adrs/0005-use-artifact-as-library-primitive.md`.
+- Superseded decision: `docs/adrs/0003-persistent-documents-library-primitive.md`.
 - Domain language: `CONTEXT.md`.
 - Current document implementation:
   - `packages/shared/src/document-schemas.ts`
@@ -213,7 +220,7 @@ Preferred UI routes after the refactor:
 
 Likely files:
 
-- `docs/adr/0005-use-artifact-as-library-primitive.md`
+- `docs/adrs/0005-use-artifact-as-library-primitive.md`
 - `CONTEXT.md`
 - `packages/shared/src/artifact-schemas.ts`
 - `packages/shared/src/schemas.ts`

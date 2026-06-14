@@ -1,3 +1,10 @@
+---
+type: Spec
+title: "Agent native tooling V2: safe file edits"
+description: "V2 adds text-only workspace mutation tools scoped to `AGENTIS_STORAGE_ROOT/workspaces/{id}/files/` through the existi..."
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Agent native tooling V2: safe file edits
 
 ## Scope

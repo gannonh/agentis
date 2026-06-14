@@ -1,3 +1,10 @@
+---
+type: Spec
+title: "Agent native tooling V4.1: provider-neutral web search"
+description: Implemented.
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Agent native tooling V4.1: provider-neutral web search
 
 ## Status

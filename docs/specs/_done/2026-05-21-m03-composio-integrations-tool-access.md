@@ -1,3 +1,10 @@
+---
+type: Spec
+title: M03 Composio Integrations and Tool Access Spec
+description: Implemented
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # M03 Composio Integrations and Tool Access Spec
 
 ## Status

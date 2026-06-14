@@ -1,3 +1,10 @@
+---
+type: Spec
+title: Cloudflare AI Gateway POC
+description: Implemented
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Cloudflare AI Gateway POC
 
 ## Status
@@ -25,7 +32,7 @@ Agentis currently uses Vercel AI Gateway as the normal live runtime boundary:
 - Chat/run execution constructs live language models in `apps/api/src/runtime/gateway-model.ts` using `createGateway` from the Vercel AI SDK package.
 - Native web search uses `apps/api/src/research/vercel-gateway-web-search-provider.ts`, which depends on Vercel AI Gateway search tools such as Perplexity and Parallel search.
 - Runtime availability, UI copy, local docs, and `.env.example` center on `AI_GATEWAY_API_KEY`.
-- `docs/adr/0004-vercel-ai-gateway-runtime-boundary.md` records the current accepted Vercel AI Gateway runtime boundary.
+- `docs/adrs/0004-vercel-ai-gateway-runtime-boundary.md` records the current accepted Vercel AI Gateway runtime boundary.
 
 The repo has a provider-neutral web search boundary through `WebSearchService` and `WebSearchProvider`, which gives the POC a safe place to test alternate search providers without changing agent-facing tool contracts.
 

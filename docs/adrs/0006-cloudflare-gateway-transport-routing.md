@@ -1,3 +1,10 @@
+---
+type: ADR
+title: "ADR 0006: Route Cloudflare AI Gateway models by native REST transport"
+description: Accepted
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # ADR 0006: Route Cloudflare AI Gateway models by native REST transport
 
 ## Status

@@ -1,10 +1,14 @@
 ---
+type: Research Note
+title: "Ideation: Agentis (surprise-me)"
+description: Decomposition skipped — surprise-me mode
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
 date: 2026-06-08
-topic: open-ideation
 focus: surprise-me
 mode: repo-grounded
+topic: open-ideation
 ---
-
 # Ideation: Agentis (surprise-me)
 
 ## Grounding Context

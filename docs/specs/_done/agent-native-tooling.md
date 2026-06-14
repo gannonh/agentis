@@ -1,3 +1,10 @@
+---
+type: Spec
+title: Agent Native Tooling PRD and Roadmap
+description: "Historical completed roadmap. The active roadmap is `docs/roadmap/hyperagent-gap-roadmap.md`."
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Agent Native Tooling PRD and Roadmap
 
 Historical completed roadmap. The active roadmap is `docs/roadmap/hyperagent-gap-roadmap.md`.
@@ -44,7 +51,7 @@ Acceptance:
 
 ### ✅ V2: Safe file edits
 
-Spec: `[docs/specs/_done/2026-05-30-agent-native-tooling-v2-safe-file-edits.md](_done/2026-05-30-agent-native-tooling-v2-safe-file-edits.md)`
+Spec: `[docs/specs/_done/2026-05-30-agent-native-tooling-v2-safe-file-edits.md](2026-05-30-agent-native-tooling-v2-safe-file-edits.md)`
 
 Plan: `[.cursor/plans/_done/V2 Safe File Edits-c58edf88.plan.md](../../.cursor/plans/_done/V2%20Safe%20File%20Edits-c58edf88.plan.md)`
 
@@ -64,7 +71,7 @@ Scope:
 
 Plan: `[.cursor/plans/_done/V3 Sandboxed Execution-eda6664c.plan.md](../../.cursor/plans/_done/V3%20Sandboxed%20Execution-eda6664c.plan.md)`
 
-Decision record: `[docs/adr/0001-sandboxed-workspace-execution.md](../adr/0001-sandboxed-workspace-execution.md)`
+Decision record: `[docs/adrs/0001-sandboxed-workspace-execution.md](../../adrs/0001-sandboxed-workspace-execution.md)`
 
 Status: V3 vertical slice implemented for local demo and verification.
 
@@ -128,7 +135,7 @@ tests and local wiring.
 
 Spec: `docs/specs/_done/2026-06-01-agent-native-tooling-v4-2-persistent-documents-design.md`
 
-Decision record: `docs/adr/0003-persistent-documents-library-primitive.md` (superseded by `docs/adr/0005-use-artifact-as-library-primitive.md` for the Library primitive decision)
+Decision record: `docs/adrs/0003-persistent-documents-library-primitive.md` (superseded by `docs/adrs/0005-use-artifact-as-library-primitive.md` for the Library primitive decision)
 
 V4.2 implemented persistent markdown documents. The Library Artifact refactor makes Artifact the durable Library primitive and narrows Document to the markdown-specific Artifact subtype. Documents retain thread, project, and global visibility, version history, find/read/create/update runtime tools, targeted markdown section updates, real download paths, and Library Type, Source, and Scope filters.
 

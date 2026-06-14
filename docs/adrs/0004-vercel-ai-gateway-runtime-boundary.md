@@ -1,3 +1,10 @@
+---
+type: ADR
+title: "ADR 0004: Use configurable AI Gateway providers as the live runtime boundary"
+description: Accepted, amended 2026-06-04 and 2026-06-13
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # ADR 0004: Use configurable AI Gateway providers as the live runtime boundary
 
 ## Status

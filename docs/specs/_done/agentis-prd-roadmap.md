@@ -1,3 +1,10 @@
+---
+type: Spec
+title: Agentis PRD and MVP Roadmap
+description: Agentis is an open-source, self-hosted agent workspace for teams that want long-running autonomous work, reusable age...
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Agentis PRD and MVP Roadmap
 
 Agentis is an open-source, self-hosted agent workspace for teams that want long-running autonomous work, reusable agents, connected tools, and visible quality controls.

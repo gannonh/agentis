@@ -1,3 +1,10 @@
+---
+type: Spec
+title: "Agent native tooling V4.x: static webpages and slides"
+description: Implemented.
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Agent native tooling V4.x: static webpages and slides
 
 ## Status
@@ -16,8 +23,8 @@ Static generated outputs are frozen at creation time. They may include links, st
 
 - Roadmap: `docs/specs/_done/agent-native-tooling.md`, V4 Interactive category.
 - Domain language: `CONTEXT.md`, especially Artifact as the durable Library primitive and Document as the markdown artifact subtype.
-- Artifact primitive decision: `docs/adr/0005-use-artifact-as-library-primitive.md`.
-- Native tool permission decision: `docs/adr/0002-version-native-tool-permissions-with-agent-configuration.md`.
+- Artifact primitive decision: `docs/adrs/0005-use-artifact-as-library-primitive.md`.
+- Native tool permission decision: `docs/adrs/0002-version-native-tool-permissions-with-agent-configuration.md`.
 - App adjacent spec: `docs/specs/_done/2026-06-04-agent-native-tooling-v4-apps-design.md`.
 - Existing document implementation:
   - `packages/shared/src/artifact-schemas.ts`

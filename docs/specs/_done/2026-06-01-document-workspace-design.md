@@ -1,3 +1,10 @@
+---
+type: Spec
+title: "Document workspace: rich view, edit, and actions surface"
+description: Implemented
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Document workspace: rich view, edit, and actions surface
 
 ## Status
@@ -13,7 +20,7 @@ This is a follow-on to V4.2 persistent documents. V4.2 established the durable `
 ## Source of truth
 
 - Persistent document spec: `docs/specs/_done/2026-06-01-agent-native-tooling-v4-2-persistent-documents-design.md`
-- Document primitive ADR: `docs/adr/0003-persistent-documents-library-primitive.md`
+- Document primitive ADR: `docs/adrs/0003-persistent-documents-library-primitive.md`
 - Current route: `apps/web/src/routes/library.tsx`
 - Current project documents panel: `apps/web/src/components/projects/project-documents-panel.tsx`
 - Current runtime evidence/timeline surface: `apps/web/src/components/thread/run-timeline.tsx`

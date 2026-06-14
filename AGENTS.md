@@ -16,7 +16,18 @@ Canonical triage roles map 1:1 to GitHub labels (`needs-triage`, `needs-info`, `
 
 ### Domain docs
 
-Single-context: root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
+Single-context: root `CONTEXT.md` and `docs/adrs/`. See `docs/agents/domain.md`.
+
+## Open Knowledge Format docs
+
+This repository maintains an [OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) bundle at `./docs`.
+
+- Read `./docs/index.md` before substantial work to understand the current documentation map.
+- Follow links into relevant specs, ADRs, runbooks, guides, and domain docs before changing related code.
+- Keep `./docs/specs/index.md` current as the roadmap for active, planned, blocked, and completed work.
+- Add or update ADRs in `./docs/adrs` for durable architecture decisions.
+- After substantial work, PRs, behavior changes, architecture decisions, migrations, or documentation moves, update the OKF bundle and add concise entries to the relevant `log.md` files.
+- Every non-reserved Markdown file under `./docs` should have OKF frontmatter with at least a non-empty `type` field. `index.md` and `log.md` are reserved navigation/history files.
 
 ## Frontend and API
 

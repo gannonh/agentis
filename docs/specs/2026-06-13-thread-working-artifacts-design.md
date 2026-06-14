@@ -1,3 +1,10 @@
+---
+type: Spec
+title: Thread working artifacts side panel
+description: IMPLEMENTED (2026-06-13)
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Thread working artifacts side panel
 
 ## Status

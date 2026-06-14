@@ -1,3 +1,10 @@
+---
+type: ADR
+title: "ADR 0003: Use Document as the durable Library primitive"
+description: "Superseded by [ADR 0005: Use Artifact as the durable Library primitive](0005-use-artifact-as-library-primitive.md)"
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # ADR 0003: Use Document as the durable Library primitive
 
 ## Status

@@ -1,3 +1,10 @@
+---
+type: Plan
+title: HyperAgent gap roadmap
+description: "Ordered vertical slices to close meaningful gaps between HyperAgent and Agentis."
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # HyperAgent gap roadmap
 
 **Purpose:** Ordered vertical slices to close meaningful gaps between [HyperAgent](https://hyperagent.com) and Agentis. Each slice is demo-able, scoped for a single GitHub issue, and safe for parallel agent execution.

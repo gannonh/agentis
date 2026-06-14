@@ -1,3 +1,10 @@
+---
+type: Spec
+title: "Build completion report: App artifact runtime"
+description: "`docs/specs/_done/2026-06-04-agent-native-tooling-v4-apps-design.md`"
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Build completion report: App artifact runtime
 
 ## Spec

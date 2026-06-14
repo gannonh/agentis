@@ -1,3 +1,10 @@
+---
+type: Domain Concept
+title: Agentis
+description: Agentis is a platform for building, deploying, and managing AI agents, made by the team at Airtable. You get a powerf...
+tags: []
+timestamp: "2026-06-14T00:00:00Z"
+---
 # Agentis
 
 Agentis is a platform for building, deploying, and managing AI agents, made by the team at Airtable. You get a powerful autonomous agent that can run for extended periods on open-ended work, doing in minutes or hours what would take a person days. It uses a full computing environment, learns new tools and APIs as it goes, and chains them together to produce finished deliverables.
