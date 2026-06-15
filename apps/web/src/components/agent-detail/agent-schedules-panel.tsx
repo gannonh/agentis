@@ -54,11 +54,23 @@ function buildCadenceConfig(
 function buildUpdateSchedulePayload(
   form: ScheduleFormState
 ): UpdateAgentScheduleRequest {
-  const { status: _status, ...payload } = buildSchedulePayload(form)
+  const {
+    name,
+    cadence,
+    timezone,
+    promptTemplate,
+    projectId,
+    cadenceConfig,
+    cronExpression,
+  } = buildSchedulePayload(form)
   return {
-    ...payload,
-    cronExpression:
-      payload.cadence === "custom" ? (payload.cronExpression ?? null) : null,
+    name,
+    cadence,
+    timezone,
+    promptTemplate,
+    projectId,
+    cadenceConfig,
+    cronExpression: cadence === "custom" ? (cronExpression ?? null) : null,
   }
 }
 
