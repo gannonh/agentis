@@ -5,6 +5,8 @@ import {
   type AgentScheduleCadenceConfig,
 } from "@workspace/shared"
 
+export type { AgentScheduleCadence, AgentScheduleCadenceConfig }
+
 export class ScheduleValidationError extends Error {
   constructor(message: string) {
     super(message)
@@ -64,6 +66,21 @@ export function cadenceConfigToCronExpression(
   }
 }
 
+function formatCronValidationError(error: unknown): string {
+  const message =
+    error instanceof Error ? error.message : "Invalid cron expression."
+  const aliasMatch = message.match(/cannot resolve alias "([^"]+)"/i)
+  if (aliasMatch) {
+    return `Invalid cron expression: "${aliasMatch[1]}" is not a recognized month or weekday name. Use numbers (0-6 for weekday, 1-12 for month) or abbreviations like MON or JAN.`
+  }
+  if (message.startsWith("Validation error, ")) {
+    return `Invalid cron expression: ${message.slice("Validation error, ".length)}`
+  }
+  return message.startsWith("Invalid cron")
+    ? message
+    : `Invalid cron expression: ${message}`
+}
+
 export function validateCronExpression(
   expression: string,
   timezone: string
@@ -72,10 +89,23 @@ export function validateCronExpression(
   try {
     CronExpressionParser.parse(expression, { tz: timezone })
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Invalid cron expression."
-    throw new ScheduleValidationError(message)
+    throw new ScheduleValidationError(formatCronValidationError(error))
   }
+}
+
+export function validateScheduleTiming(input: {
+  cadence: AgentScheduleCadence
+  cadenceConfig: AgentScheduleCadenceConfig
+  timezone: string
+  cronExpression?: string | null
+}): void {
+  assertValidTimezone(input.timezone)
+  const expression = cadenceConfigToCronExpression(
+    input.cadence,
+    input.cadenceConfig,
+    input.cadence === "custom" ? input.cronExpression : null
+  )
+  validateCronExpression(expression, input.timezone)
 }
 
 export function computeNextRunAt(input: {
@@ -90,7 +120,7 @@ export function computeNextRunAt(input: {
   const expression = cadenceConfigToCronExpression(
     input.cadence,
     input.cadenceConfig,
-    input.cronExpression
+    input.cadence === "custom" ? input.cronExpression : null
   )
   validateCronExpression(expression, input.timezone)
   const interval = CronExpressionParser.parse(expression, {

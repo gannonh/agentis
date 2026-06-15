@@ -3,11 +3,12 @@ import {
   agentScheduleSchema,
   createAgentScheduleRequestSchema,
   updateAgentScheduleRequestSchema,
+  type AgentSchedule,
+  type AgentScheduleCadenceConfig,
 } from "@workspace/shared"
 import {
-  assertValidTimezone,
   ScheduleValidationError,
-  validateCronExpression,
+  validateScheduleTiming,
 } from "../invocations/schedule-calculator.js"
 import type { Repositories } from "../repositories/index.js"
 
@@ -37,21 +38,26 @@ function validateScheduleProject(
   return null
 }
 
-function validateScheduleTiming(input: {
-  cadence: string
-  cadenceConfig: { cadence: string }
-  timezone: string
-  cronExpression?: string | null
-}): ScheduleValidationError | null {
-  try {
-    assertValidTimezone(input.timezone)
-    if (input.cadence === "custom") {
-      validateCronExpression(input.cronExpression ?? "", input.timezone)
-    }
-    return null
-  } catch (error) {
-    return error instanceof ScheduleValidationError ? error : null
+function resolveScheduleTiming(
+  existing: AgentSchedule,
+  patch: {
+    cadence?: AgentSchedule["cadence"]
+    cadenceConfig?: AgentScheduleCadenceConfig
+    timezone?: string
+    cronExpression?: string | null
   }
+) {
+  const cadence = patch.cadence ?? existing.cadence
+  const cadenceConfig = patch.cadenceConfig ?? existing.cadenceConfig
+  const timezone = patch.timezone ?? existing.timezone
+  const cronExpression =
+    cadence === "custom"
+      ? patch.cronExpression !== undefined
+        ? patch.cronExpression
+        : (existing.cronExpression ?? null)
+      : null
+
+  return { cadence, cadenceConfig, timezone, cronExpression }
 }
 
 export function createAgentScheduleRoutes(repos: Repositories) {
@@ -107,15 +113,31 @@ export function createAgentScheduleRoutes(repos: Repositories) {
     const projectError = validateScheduleProject(repos, parsed.data.projectId)
     if (projectError) return projectError
 
-    const timingError = validateScheduleTiming(parsed.data)
-    if (timingError) {
-      return c.json(scheduleValidationErrorResponse(timingError), 400)
+    try {
+      validateScheduleTiming({
+        cadence: parsed.data.cadence,
+        cadenceConfig: parsed.data.cadenceConfig,
+        timezone: parsed.data.timezone,
+        cronExpression:
+          parsed.data.cadence === "custom"
+            ? parsed.data.cronExpression
+            : null,
+      })
+    } catch (error) {
+      if (error instanceof ScheduleValidationError) {
+        return c.json(scheduleValidationErrorResponse(error), 400)
+      }
+      throw error
     }
 
     try {
       const created = repos.agentSchedules.create({
         ...parsed.data,
         agentId,
+        cronExpression:
+          parsed.data.cadence === "custom"
+            ? parsed.data.cronExpression
+            : undefined,
       })
       return c.json(agentScheduleSchema.parse(created), 201)
     } catch (error) {
@@ -175,21 +197,28 @@ export function createAgentScheduleRoutes(repos: Repositories) {
     const projectError = validateScheduleProject(repos, projectId)
     if (projectError) return projectError
 
-    const timingError = validateScheduleTiming({
-      cadence: parsed.data.cadence ?? existing.cadence,
-      cadenceConfig: parsed.data.cadenceConfig ?? existing.cadenceConfig,
-      timezone: parsed.data.timezone ?? existing.timezone,
+    const timing = resolveScheduleTiming(existing, parsed.data)
+    try {
+      validateScheduleTiming(timing)
+    } catch (error) {
+      if (error instanceof ScheduleValidationError) {
+        return c.json(scheduleValidationErrorResponse(error), 400)
+      }
+      throw error
+    }
+
+    const patch = {
+      ...parsed.data,
       cronExpression:
-        parsed.data.cronExpression !== undefined
-          ? parsed.data.cronExpression
-          : existing.cronExpression,
-    })
-    if (timingError) {
-      return c.json(scheduleValidationErrorResponse(timingError), 400)
+        parsed.data.cadence !== undefined
+          ? timing.cadence === "custom"
+            ? timing.cronExpression
+            : null
+          : parsed.data.cronExpression,
     }
 
     try {
-      const updated = repos.agentSchedules.update(scheduleId, parsed.data)
+      const updated = repos.agentSchedules.update(scheduleId, patch)
       return c.json(agentScheduleSchema.parse(updated))
     } catch (error) {
       if (error instanceof ScheduleValidationError) {

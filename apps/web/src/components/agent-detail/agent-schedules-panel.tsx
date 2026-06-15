@@ -14,6 +14,7 @@ import type {
   AgentSchedule,
   AgentScheduleCadence,
   CreateAgentScheduleRequest,
+  UpdateAgentScheduleRequest,
 } from "@workspace/shared"
 import { useAgentSchedules } from "@/hooks/use-agent-schedules"
 import { useProjects } from "@/hooks/use-projects"
@@ -29,7 +30,23 @@ const WEEKDAY_OPTIONS = [
 ] as const
 
 function defaultTimezone() {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+  return "UTC"
+}
+
+function buildUpdateSchedulePayload(
+  form: ScheduleFormState
+): UpdateAgentScheduleRequest {
+  const base = buildSchedulePayload(form)
+  return {
+    name: base.name,
+    cadence: base.cadence,
+    timezone: base.timezone,
+    promptTemplate: base.promptTemplate,
+    projectId: base.projectId,
+    cadenceConfig: base.cadenceConfig,
+    cronExpression:
+      base.cadence === "custom" ? (base.cronExpression ?? null) : null,
+  }
 }
 
 function cadenceLabel(schedule: AgentSchedule): string {
@@ -191,7 +208,7 @@ export function AgentSchedulesPanel({ agentId }: { agentId: string }) {
       if (editingSchedule) {
         await saveSchedule(
           editingSchedule.id,
-          buildSchedulePayload(form, editingSchedule.status)
+          buildUpdateSchedulePayload(form)
         )
       } else {
         await createSchedule(buildSchedulePayload(form, "enabled"))

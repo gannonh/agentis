@@ -79,6 +79,32 @@ describe("AgentScheduleRepository", () => {
     expect(disabled?.lastFailureReason).toBe("Agent was removed.")
   })
 
+  it("clears stored cron expressions when cadence is not custom", () => {
+    const ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Preset Agent",
+      systemPrompt: "Run on schedule.",
+      model: "gpt-4o-mini",
+    })
+    const schedule = ctx.repos.agentSchedules.create({
+      agentId: agent.id,
+      name: "Custom first",
+      cadence: "custom",
+      cadenceConfig: { cadence: "custom" },
+      cronExpression: "0 */6 * * *",
+      timezone: "UTC",
+      promptTemplate: "Ping.",
+    })
+
+    const updated = ctx.repos.agentSchedules.update(schedule.id, {
+      cadence: "hourly",
+      cadenceConfig: { cadence: "hourly", minute: 10 },
+    })
+
+    expect(updated?.cadence).toBe("hourly")
+    expect(updated?.cronExpression).toBeUndefined()
+  })
+
   it("rejects invalid custom cron on create", () => {
     const ctx = createTestContext()
     const agent = ctx.repos.agents.create({

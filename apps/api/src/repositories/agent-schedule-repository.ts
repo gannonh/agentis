@@ -35,7 +35,8 @@ export class AgentScheduleRepository {
             cadence: input.cadence,
             cadenceConfig,
             timezone: input.timezone,
-            cronExpression: input.cronExpression,
+            cronExpression:
+              input.cadence === "custom" ? input.cronExpression : null,
           })
         : null
 
@@ -45,7 +46,8 @@ export class AgentScheduleRepository {
       name: input.name,
       status,
       cadence: input.cadence,
-      cronExpression: input.cronExpression ?? null,
+      cronExpression:
+        input.cadence === "custom" ? (input.cronExpression ?? null) : null,
       timezone: input.timezone,
       promptTemplate: input.promptTemplate,
       projectId: input.projectId ?? null,
@@ -119,9 +121,11 @@ export class AgentScheduleRepository {
       : existing.cadenceConfig
     const timezone = patch.timezone ?? existing.timezone
     const cronExpression =
-      patch.cronExpression !== undefined
-        ? patch.cronExpression
-        : (existing.cronExpression ?? null)
+      cadence === "custom"
+        ? patch.cronExpression !== undefined
+          ? patch.cronExpression
+          : (existing.cronExpression ?? null)
+        : null
     const status = patch.status ?? existing.status
     const updatedAt = nowIso()
     const nextRunAt =
@@ -174,7 +178,8 @@ export class AgentScheduleRepository {
             cadence: existing.cadence,
             cadenceConfig: existing.cadenceConfig,
             timezone: existing.timezone,
-            cronExpression: existing.cronExpression,
+            cronExpression:
+              existing.cadence === "custom" ? existing.cronExpression : null,
             from: new Date(input.ranAt),
           })
         : existing.nextRunAt ?? null

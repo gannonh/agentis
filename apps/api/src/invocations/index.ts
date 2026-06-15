@@ -12,4 +12,5 @@ export {
   isValidTimezone,
   ScheduleValidationError,
   validateCronExpression,
+  validateScheduleTiming,
 } from "./schedule-calculator.js"

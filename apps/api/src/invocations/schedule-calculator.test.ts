@@ -5,6 +5,7 @@ import {
   computeNextRunAt,
   ScheduleValidationError,
   validateCronExpression,
+  validateScheduleTiming,
 } from "./schedule-calculator.js"
 
 describe("schedule-calculator", () => {
@@ -57,6 +58,20 @@ describe("schedule-calculator", () => {
     expect(() =>
       validateCronExpression("not a cron", "UTC")
     ).toThrow(ScheduleValidationError)
+    expect(() => validateCronExpression("0 9 * * val", "UTC")).toThrow(
+      /not a recognized month or weekday name/i
+    )
+  })
+
+  it("validates preset cadence timing via validateScheduleTiming", () => {
+    expect(() =>
+      validateScheduleTiming({
+        cadence: "hourly",
+        cadenceConfig: { cadence: "hourly", minute: 15 },
+        timezone: "UTC",
+        cronExpression: "0 9 * * val",
+      })
+    ).not.toThrow()
   })
 
   it("rejects invalid timezones", () => {
