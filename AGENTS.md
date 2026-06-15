@@ -167,35 +167,36 @@ Follow [DESIGN.md](DESIGN.md): restrained workbench UI, IBM Plex Sans, functiona
 
 No separate database or Redis process: SQLite and document files are owned by the API.
 
-### Environment files (one-time per VM)
+### Environment variables (provided by cloud secrets — do NOT create `.env`)
 
-If `/workspace/.env` is missing, copy samples before starting dev:
+In the Cursor Cloud Agent VM, all required environment variables (ports, `AI_GATEWAY_PROVIDER`, AI Gateway keys, `COMPOSIO_API_KEY`, web-search config, and the `AGENTIS_MOCK_*` flags) are injected directly into the shell from cloud secrets. They are already present in `process.env`; the running secret names are listed in `CLOUD_AGENT_INJECTED_SECRET_NAMES`.
+
+Do **not** create or copy `.env` files (`cp .env.example .env`, `apps/web/.env`, or `apps/api/.env`) in this environment. Doing so overrides the injected secrets and breaks live runs:
+
+- `apps/api/src/load-env.ts` loads `apps/api/.env` with `override: true`, so an API-local `.env` clobbers injected secrets outright.
+- The root `.env` re-applies `AGENTIS_MOCK_RUNTIME` / `AGENTIS_MOCK_COMPOSIO`, so a copied sample can silently flip the VM from live to mock mode (or vice versa).
+
+The injected secrets default to **live** mode (`AGENTIS_MOCK_RUNTIME=0`, `AGENTIS_MOCK_COMPOSIO=0`) with real AI Gateway and Composio credentials, which is what UAT/verification expects. No env file step is needed. Only create a local `.env` when working outside the cloud VM (e.g. a laptop) without injected secrets.
+
+**Critical gotcha — Turborepo strict env mode strips injected secrets.** Turbo 2.x defaults to `--env-mode=strict`, which only passes env vars declared in `turbo.json` through to each task's process. Since secrets like `COMPOSIO_API_KEY` and `AI_GATEWAY_API_KEY` are **not** declared there, a plain `pnpm dev` starts the API with the secrets stripped and it crashes at boot (`ComposioNoAPIKeyError: No Composio API key provided`). The repo's normal flow avoids this because `load-env.ts` reads `.env` from disk directly (bypassing turbo), but in the cloud VM we deliberately have no `.env`. So in the cloud VM, run turbo with **loose** env mode so the injected secrets reach the API/web tasks:
 
 ```bash
-cp .env.example .env
-cp apps/web/.env.example apps/web/.env
+NODE_ENV=development pnpm exec turbo dev --env-mode=loose
 ```
 
-For Cloud Agent verification **without** live AI Gateway credentials, append mock flags to root `.env` so thread runs work:
-
-```bash
-AGENTIS_MOCK_RUNTIME=1
-AGENTIS_MOCK_COMPOSIO=1
-```
-
-Use `pnpm dev:live` only when selected AI Gateway credentials (and optionally Composio keys) are available.
+(`pnpm dev -- --env-mode=loose` does **not** work — pnpm forwards the flag to vite, not turbo.) Build/typecheck/lint/test do not need secrets and work with a plain `pnpm <task>`.
 
 ### Running dev servers
 
-`pnpm dev` is long-lived; start it in **tmux** (not a one-shot background shell):
+The dev servers are long-lived; start them in **tmux** (not a one-shot background shell). In the cloud VM use `--env-mode=loose` (see the env gotcha above) so injected secrets reach the tasks:
 
 ```bash
 SESSION_NAME="agentis-dev"
 tmux -f /exec-daemon/tmux.portal.conf new-session -d -s "$SESSION_NAME" -c /workspace -- "${SHELL:-bash}" -l
-tmux -f /exec-daemon/tmux.portal.conf send-keys -t "$SESSION_NAME:0.0" 'pnpm dev' C-m
+tmux -f /exec-daemon/tmux.portal.conf send-keys -t "$SESSION_NAME:0.0" 'NODE_ENV=development pnpm exec turbo dev --env-mode=loose' C-m
 ```
 
-Health check: `curl -sf http://localhost:${AGENTIS_API_PORT:-3101}/api/health` → `{"ok":true}`; open the web app on port **5177** (see `AGENTIS_WEB_PORT`).
+Health check: `curl -sf http://localhost:${AGENTIS_API_PORT:-3101}/api/health` → `{"ok":true}`; open the web app on port **5177** (see `AGENTIS_WEB_PORT`). A live thread run can be smoke-tested via `POST /api/threads` then `POST /api/runs/<runId>/stream` (SSE).
 
 ### Playwright
 
