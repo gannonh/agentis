@@ -33,8 +33,9 @@ export function useAgentSchedules(agentId: string) {
           : "Failed to load schedules"
       )
     } finally {
-      if (requestId !== latestRefreshRequest.current) return
-      setLoading(false)
+      if (requestId === latestRefreshRequest.current) {
+        setLoading(false)
+      }
     }
   }, [agentId])
 
