@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skills": {
+    "address-pr-comments": {
+      "source": "gannonh/skills",
+      "sourceType": "github",
+      "skillPath": "address-pr-comments/SKILL.md",
+      "computedHash": "0670bef9964b1f922cebd5887bfefef7763925ca85b5318254e836ee9bf2d630"
+    },
+    "babysit-pr": {
+      "source": "gannonh/skills",
+      "sourceType": "github",
+      "skillPath": "babysit-pr/SKILL.md",
+      "computedHash": "e3f2bfdd46bcabccec1918dc6bce9b5faaf22c1d9a0bafaa3754124ec9b4bfbd"
+    },
+    "finalize": {
+      "source": "gannonh/skills",
+      "sourceType": "github",
+      "skillPath": "finalize/SKILL.md",
+      "computedHash": "ce6d09aa59a4ca56fc3ba37810d562893e488ff0ac01e5936101996b590c5c60"
+    },
+    "fix-github-ci": {
+      "source": "gannonh/skills",
+      "sourceType": "github",
+      "skillPath": "fix-github-ci/SKILL.md",
+      "computedHash": "c9ac2169c65a49982ec0e4cb1a04540e47c2ff062b4e1eaa8d8727a441600d8d"
+    },
+    "okf": {
+      "source": "gannonh/skills",
+      "sourceType": "github",
+      "skillPath": "okf/SKILL.md",
+      "computedHash": "01118b2afa2535299d00048ef4d534e093e2c8433961a5ee2186dda356617d64"
+    },
+    "plan-build-verify": {
+      "source": "gannonh/skills",
+      "sourceType": "github",
+      "skillPath": "plan-build-verify/SKILL.md",
+      "computedHash": "0e02ff8cba126124b606c6612def5f7410a76367f053744690a14c9aa3069c17"
+    },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "ac9d0d69caac7de1d1e5647f3db3bcd2f13af355d6b3a78780fbf7fc80e8dca0"
+    },
+    "simplify": {
+      "source": "gannonh/skills",
+      "sourceType": "github",
+      "skillPath": "simplify/SKILL.md",
+      "computedHash": "63f407c67abd8022d48aa1b253c4bef1c226f8198b98517cb469f58c38d2692b"
+    },
+    "strict-quality-review": {
+      "source": "gannonh/skills",
+      "sourceType": "github",
+      "skillPath": "strict-quality-review/SKILL.md",
+      "computedHash": "68228db536c6a502470a1d051909e335f4079de0c22e6b55d48a3353847d06dd"
+    },
+    "user-acceptance": {
+      "source": "gannonh/skills",
+      "sourceType": "github",
+      "skillPath": "user-acceptance/SKILL.md",
+      "computedHash": "5fbdc22e5c1ea5c59b8d57397d39c7b497e628d529dbd3f9c2b593aba45b77aa"
+    }
+  }
+}
