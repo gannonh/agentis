@@ -2,9 +2,14 @@
 
 Newest entries first.
 
+## 2026-06-15
+
+- Post-simplify and strict-quality-review OKF refresh for HA-GAP-13: delivered state, cron helper consolidation, and follow-ups in [_done/2026-06-14-scheduled-agent-invocations-design.md](_done/2026-06-14-scheduled-agent-invocations-design.md); updated [index.md](index.md) Agents parity row and completed-foundation list.
+
 ## 2026-06-14
 
-- Drafted [2026-06-14-scheduled-agent-invocations-design.md](2026-06-14-scheduled-agent-invocations-design.md) for HA-GAP-13 scheduled agent invocations and updated [index.md](index.md) with worker-backed schedule scope.
+- Shipped HA-GAP-13 scheduled agent invocations in [_done/2026-06-14-scheduled-agent-invocations-design.md](_done/2026-06-14-scheduled-agent-invocations-design.md); updated [index.md](index.md) acceptance checklist and worker guide link.
+- Drafted [2026-06-14-scheduled-agent-invocations-design.md](_done/2026-06-14-scheduled-agent-invocations-design.md) for HA-GAP-13 scheduled agent invocations and updated [index.md](index.md) with worker-backed schedule scope.
 - Post-simplify OKF refresh: noted `getPendingApprovalFromStep` reuse in thread detail and documented strict-quality-review follow-ups in [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md).
 - Finalized HA-GAP-11 OKF docs post-refactor: delivered state, module map (`thread-sidebar-section.tsx`, `thread-list-display.ts`, `thread-pending-approval.ts`), and focused test paths in [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md); updated [index.md](index.md) parity snapshot and foundation list.
 - Shipped HA-GAP-11 thread metadata: persisted `starred`, derived `hasPendingApproval`, sidebar Starred section, and new-thread home card metadata ([2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md)).

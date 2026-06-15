@@ -9,7 +9,6 @@ import {
   AiSearchIcon,
   ArrowDown01Icon,
   BrowserIcon,
-  Calendar03Icon,
   ChatIcon,
   CheckmarkCircle02Icon,
   ComputerTerminal01Icon,
@@ -45,6 +44,7 @@ import {
   type UpdateAgentRequest,
 } from "@workspace/shared"
 import { useIntegrations } from "@/hooks/use-integrations"
+import { AgentSchedulesPanel } from "@/components/agent-detail/agent-schedules-panel"
 
 type AgentToolGrant = AgentDetailResponse["toolGrants"][number]
 
@@ -306,6 +306,18 @@ export function AgentIdentityTab({
   )
 }
 
+function threadActivityLabel(
+  thread: AgentDetailInformation["recentThreads"][number]
+): string {
+  if (thread.invocationSource) {
+    return `Scheduled: ${thread.invocationSource.scheduleName}`
+  }
+  if (thread.lastRunStatus) {
+    return `Latest run: ${thread.lastRunStatus}`
+  }
+  return "Agent test thread"
+}
+
 export function AgentActivityTab({
   information,
 }: {
@@ -356,9 +368,7 @@ export function AgentActivityTab({
                 className="size-4"
                 strokeWidth={2}
               />
-              {thread.lastRunStatus
-                ? `Latest run: ${thread.lastRunStatus}`
-                : "Agent test thread"}
+              {threadActivityLabel(thread)}
             </p>
             <h2 className="mt-2 text-lg font-medium">{thread.title}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -503,13 +513,6 @@ const INVOCATION_OPTIONS = [
     icon: TelegramIcon,
   },
   {
-    title: "Scheduled",
-    description: "Run this agent on a schedule.",
-    status: "Planned for a later milestone",
-    action: "Create schedule",
-    icon: Calendar03Icon,
-  },
-  {
     title: "Webhook",
     description: "Trigger this agent from an HTTP request.",
     status: "Planned for a later milestone",
@@ -525,9 +528,11 @@ const INVOCATION_OPTIONS = [
   },
 ] as const
 
-export function AgentInvocationsTab() {
+export function AgentInvocationsTab({ agentId }: { agentId: string }) {
   return (
-    <div data-testid="agent-invocations-tab" className="flex flex-col gap-2">
+    <div data-testid="agent-invocations-tab" className="flex flex-col gap-4">
+      <AgentSchedulesPanel agentId={agentId} />
+      <div className="flex flex-col gap-2">
       {INVOCATION_OPTIONS.map((option) => (
         <article
           key={option.title}
@@ -566,6 +571,7 @@ export function AgentInvocationsTab() {
           )}
         </article>
       ))}
+      </div>
     </div>
   )
 }

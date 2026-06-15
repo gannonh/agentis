@@ -32,6 +32,7 @@ Open Knowledge Format bundle for durable product, architecture, and operational 
 | Section | Purpose |
 | --- | --- |
 | [self-host/golden-path-research.md](self-host/golden-path-research.md) | Self-host golden path: Cloudflare AI Gateway + Tavily keyless search |
+| [guides/invocation-worker.md](guides/invocation-worker.md) | Run the invocation worker for scheduled agent runs |
 | [agents/index.md](agents/index.md) | How agents should consume domain docs, triage labels, and issues |
 | [uat/index.md](uat/index.md) | Manual UAT evidence and golden-path checklists |
 

@@ -2,6 +2,8 @@ import type { AppConfig } from "../config.js"
 import type { AppDatabase } from "../db/client.js"
 import { AgentPromotionDraftRepository } from "./agent-promotion-draft-repository.js"
 import { AgentRepository } from "./agent-repository.js"
+import { AgentScheduleRepository } from "./agent-schedule-repository.js"
+import { AgentInvocationRunRepository } from "./agent-invocation-run-repository.js"
 import { AppStateRepository } from "../artifact-apps/app-state-repository.js"
 import { ArtifactRepository } from "./artifact-repository.js"
 import { DocumentRepository } from "./document-repository.js"
@@ -40,6 +42,8 @@ export function createRepositories(db: AppDatabase, config?: AppConfig) {
     appState: new AppStateRepository(db),
     documents: new DocumentRepository(db),
     agents: new AgentRepository(db),
+    agentSchedules: new AgentScheduleRepository(db),
+    agentInvocationRuns: new AgentInvocationRunRepository(db),
     workspaces: new WorkspaceRepository(db),
     workspaceEdits: new WorkspaceEditRepository(db),
     workspaceExecutions: new WorkspaceExecutionRepository(db),

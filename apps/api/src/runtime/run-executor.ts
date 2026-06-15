@@ -336,6 +336,25 @@ export class RunExecutor {
   }
 
   async executeStream(runId: string) {
+    return this.runExecution(runId, { mode: "stream" })
+  }
+
+  async executeToCompletion(runId: string): Promise<Run> {
+    const response = await this.runExecution(runId, { mode: "background" })
+    if (response) {
+      await drainResponseBody(response)
+    }
+    const completedRun = this.repos.runs.getById(runId)
+    if (!completedRun) {
+      throw new Error("Run not found")
+    }
+    return completedRun
+  }
+
+  private async runExecution(
+    runId: string,
+    options: { mode: "stream" | "background" }
+  ) {
     const run = this.repos.runs.getById(runId)
     if (!run) {
       throw new Error("Run not found")
@@ -345,9 +364,9 @@ export class RunExecutor {
       throw new Error(formatMissingEnvVarsMessage(missingRuntimeEnv))
     }
     if (run.status !== "queued") {
-      throw new Error(`Run is not streamable: ${run.status}`)
+      throw new Error(`Run cannot be executed: status is "${run.status}"`)
     }
-    if (getAbortSignal(runId)) {
+    if (options.mode === "stream" && getAbortSignal(runId)) {
       throw new Error("Stream already in progress")
     }
 
@@ -1364,4 +1383,8 @@ export class RunExecutor {
     })
     this.repos.threads.touch(threadId)
   }
+}
+
+async function drainResponseBody(response: Response): Promise<void> {
+  await response.text()
 }

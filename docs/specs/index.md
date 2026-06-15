@@ -19,7 +19,7 @@
 | New thread home | Agent switcher, Plan/Execute, suggestion chips, AI thread summaries, capability showcase cards with cost/time | API-backed home with agent picker, suggestion chips, rule-based thread summaries, demo/recent sections (HA-GAP-10), and card/sidebar thread metadata — stars, Waiting badges, agent chips (HA-GAP-11); no capability showcase cards with cost/time | Low–Medium |
 | Thread session | Model picker, Live mode, reasoning blocks, Working Doc side panel, inline artifact iframes, Plan vs Execute | API-backed streaming; human-readable native tool cards, turn-grouped transcript (`thread-transcript.tsx`), Working artifacts rail with inline document/static preview (HA-GAP-08); no draggable panel or in-thread app iframe | Medium |
 | Library | Search, Type/Visibility/Source filters, Save/bookmark, archived toggle, iframe previews | API-backed artifacts + workspaces | Low–Medium |
-| Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, rubric CRUD, and run evaluation scores on Overview when rubrics exist | Medium |
+| Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, rubric CRUD, run evaluation scores on Overview when rubrics exist, and worker-backed scheduled invocations with Agent Detail CRUD (HA-GAP-13) | Medium |
 | Command Center | Live roster, cost breakdown, needs-attention queue, pending improvements, recent runs, score trends | API-backed live run metrics, roster, recent runs, avg score, needs-attention queue (HA-GAP-07), and fleet score-trend + cost breakdown charts (HA-GAP-27) | Low–Medium |
 | Learning | Skills (19), categorized memories, rubrics, thread-derived suggestions with accept/dismiss | API-backed skills, memories, rubrics, post-run suggestions with accept/dismiss, and accepted-memory context injection | Low–Medium |
 | Integrations | NATIVE + MCP catalog, custom MCP server, 20+ apps | Composio-backed catalog API with search, category filters, connected/in-use sections, NATIVE/MCP badges; Custom MCP coming-soon card (HA-GAP-12) | Low–Medium |
@@ -48,7 +48,7 @@
 
 ## Recommended execution order
 
-Completed foundation: HA-GAP-00a through HA-GAP-11, HA-GAP-12, and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, the thread Working artifacts rail, global ⌘K search, enriched new thread home summaries/chips, sidebar thread metadata (stars, Waiting badges, agent chips), and a Composio-backed Integrations catalog (search, categories, connection status, NATIVE/MCP badges).
+Completed foundation: HA-GAP-00a through HA-GAP-11, HA-GAP-12, HA-GAP-13, and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, the thread Working artifacts rail, global ⌘K search, enriched new thread home summaries/chips, sidebar thread metadata (stars, Waiting badges, agent chips), a Composio-backed Integrations catalog (search, categories, connection status, NATIVE/MCP badges), and worker-backed scheduled agent invocations.
 
 Start new work from the first open wave below. Within each wave, slices are parallel-safe unless a dependency is listed.
 
@@ -167,23 +167,23 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-13: Scheduled agent invocations
 
-**Status:** Spec drafted (2026-06-14). Spec: [2026-06-14-scheduled-agent-invocations-design.md](2026-06-14-scheduled-agent-invocations-design.md).
+**Status:** Shipped (2026-06-14). Spec: [2026-06-14-scheduled-agent-invocations-design.md](_done/2026-06-14-scheduled-agent-invocations-design.md). Guide: [invocation-worker.md](../guides/invocation-worker.md).
 
 **HyperAgent reference:** Agent detail → Schedule → set up cadence.
 
-**Agentis today:** M07 not implemented. Agent Invocations shows Scheduled as a disabled placeholder; no invocation worker exists yet.
+**Agentis today:** Worker-backed schedules with Agent Detail CRUD, background run execution, and schedule source badges in recent activity.
 
 **Goal:** Worker-backed schedules create and execute agent runs from current agent configuration and project context.
 
 **Demo:** Schedule an agent to run hourly or via test cron → worker creates and completes the thread/run without a browser stream call → activity shows the schedule source.
 
 **Acceptance:**
-- [ ] Schedule CRUD on agent.
-- [ ] Hourly, Daily, Weekly, and Custom cron options with timezone support.
-- [ ] Worker/daemon claims due schedules, creates threads/runs, and executes runs to completion in the background.
-- [ ] Invocation run linked to agent + schedule id.
-- [ ] Duplicate due-slot execution is prevented.
-- [ ] Disable or fail visibly when agent/project/credentials/grants/cost-limit checks block execution.
+- [x] Schedule CRUD on agent.
+- [x] Hourly, Daily, Weekly, and Custom cron options with timezone support.
+- [x] Worker/daemon claims due schedules, creates threads/runs, and executes runs to completion in the background.
+- [x] Invocation run linked to agent + schedule id.
+- [x] Duplicate due-slot execution is prevented.
+- [x] Disable or fail visibly when agent/project/credentials/grants/cost-limit checks block execution.
 
 **Depends on:** HA-GAP-01 (cost visibility) nice-to-have.
 
@@ -563,7 +563,7 @@ flowchart TD
 ## Next steps
 
 1. Wave 2: HA-GAP-11 (thread metadata) shipped 2026-06-14. HA-GAP-08, HA-GAP-09, and HA-GAP-10 shipped in 2026-06-13.
-2. Wave 3: HA-GAP-12 (integrations catalog API wire-up) shipped in 2026-06-13 (PR #439). HA-GAP-13 (scheduled agent invocations) is spec-drafted and should establish the worker foundation for later invocation sources. HA-GAP-15 (Slack invocation), HA-GAP-16 (custom MCP), and HA-GAP-14 (webhook) remain unblocked follow-ups.
+2. Wave 3: HA-GAP-12 (integrations catalog API wire-up) shipped in 2026-06-13 (PR #439). HA-GAP-13 (scheduled agent invocations) shipped in 2026-06-14 and establishes the worker foundation for later invocation sources. HA-GAP-15 (Slack invocation), HA-GAP-16 (custom MCP), and HA-GAP-14 (webhook) remain unblocked follow-ups.
 3. Keep this roadmap aligned as discovery work continues.
 
 ---
@@ -576,7 +576,6 @@ Implementation specs, design docs, and build reports. Completed work lives in `_
 
 | Spec | Status | Notes |
 | --- | --- | --- |
-| [2026-06-14-scheduled-agent-invocations-design.md](2026-06-14-scheduled-agent-invocations-design.md) | Draft | HA-GAP-13 — worker-backed scheduled agent invocations |
 | [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md) | Shipped | HA-GAP-11 — thread metadata, stars, waiting badges, agent chip |
 | [2026-06-13-thread-working-artifacts-design.md](2026-06-13-thread-working-artifacts-design.md) | Shipped | HA-GAP-08 — thread Working artifacts rail |
 
@@ -586,6 +585,7 @@ Implementation specs, design docs, and build reports. Completed work lives in `_
 | --- | --- |
 | [agentis-prd-roadmap.md](_done/agentis-prd-roadmap.md) | Original PRD and MVP roadmap |
 | [agent-native-tooling.md](_done/agent-native-tooling.md) | Native tooling PRD and version roadmap (V1–V4) |
+| [2026-06-14-scheduled-agent-invocations-design.md](_done/2026-06-14-scheduled-agent-invocations-design.md) | HA-GAP-13 scheduled agent invocations |
 | [2026-05-21-m03-composio-integrations-tool-access.md](_done/2026-05-21-m03-composio-integrations-tool-access.md) | M03 Composio integrations |
 | [2026-05-22-m04-projects-context-artifacts.md](_done/2026-05-22-m04-projects-context-artifacts.md) | M04 projects, context, artifacts |
 | [2026-05-29-agent-native-tooling-design.md](_done/2026-05-29-agent-native-tooling-design.md) | V1 read-only workspace tools |

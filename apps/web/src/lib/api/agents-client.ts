@@ -1,24 +1,30 @@
 import {
   agentDetailResponseSchema,
   agentListItemSchema,
+  agentScheduleSchema,
   agentUsageResponseSchema,
   createAgentFromPromotionDraftRequestSchema,
   createAgentPromotionDraftResponseSchema,
   createAgentRequestSchema,
+  createAgentScheduleRequestSchema,
   createAgentTestThreadRequestSchema,
   createThreadResponseSchema,
   updateAgentPromotionDraftRequestSchema,
   updateAgentRequestSchema,
+  updateAgentScheduleRequestSchema,
   type AgentDetailResponse,
   type AgentListItem,
+  type AgentSchedule,
   type AgentUsageResponse,
   type CreateAgentFromPromotionDraftRequest,
   type CreateAgentPromotionDraftResponse,
   type CreateAgentRequest,
+  type CreateAgentScheduleRequest,
   type CreateAgentTestThreadRequest,
   type CreateThreadResponse,
   type UpdateAgentPromotionDraftRequest,
   type UpdateAgentRequest,
+  type UpdateAgentScheduleRequest,
 } from "@workspace/shared"
 import { ApiError } from "@/lib/api/client"
 
@@ -182,4 +188,73 @@ export async function startAgentTestThread(
     body: JSON.stringify(payload),
   })
   return parseJson(response, createThreadResponseSchema)
+}
+
+export async function listAgentSchedules(
+  agentId: string
+): Promise<AgentSchedule[]> {
+  const response = await fetch(`${agentPath(agentId)}/schedules`)
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : response.statusText
+    throw new ApiError(message, response.status)
+  }
+  return parseArray(agentScheduleSchema, await response.json())
+}
+
+export async function createAgentSchedule(
+  agentId: string,
+  body: CreateAgentScheduleRequest
+): Promise<AgentSchedule> {
+  const payload = createAgentScheduleRequestSchema.parse(body)
+  const response = await fetch(`${agentPath(agentId)}/schedules`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  return parseJson(response, agentScheduleSchema)
+}
+
+export async function updateAgentSchedule(
+  agentId: string,
+  scheduleId: string,
+  body: UpdateAgentScheduleRequest
+): Promise<AgentSchedule> {
+  const payload = updateAgentScheduleRequestSchema.parse(body)
+  const response = await fetch(
+    `${agentPath(agentId)}/schedules/${encodeURIComponent(scheduleId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
+  return parseJson(response, agentScheduleSchema)
+}
+
+export async function deleteAgentSchedule(
+  agentId: string,
+  scheduleId: string
+): Promise<void> {
+  const response = await fetch(
+    `${agentPath(agentId)}/schedules/${encodeURIComponent(scheduleId)}`,
+    { method: "DELETE" }
+  )
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : response.statusText
+    throw new ApiError(message, response.status)
+  }
 }

@@ -58,7 +58,9 @@ function mapApiAgentDetailToAgent(detail: AgentDetailResponse): Agent {
     qualityScore: null,
     totalCost: 0,
     tools: detail.toolGrants.map((grant) => grant.toolkitSlug),
-    invocations: ["Thread"],
+    invocations: detail.information.hasEnabledSchedules
+      ? ["Thread", "Scheduled"]
+      : ["Thread"],
     skillsCount: 0,
     memoriesCount: 0,
     libraryCount: detail.information.library.totalCount,
@@ -339,7 +341,7 @@ export function AgentDetailPage() {
                   />
                 </TabsContent>
                 <TabsContent value="invocations" className="pt-4">
-                  <AgentInvocationsTab />
+                  <AgentInvocationsTab agentId={apiAgentDetail.agent.id} />
                 </TabsContent>
                 <TabsContent value="tools" className="pt-4">
                   <AgentToolsTab

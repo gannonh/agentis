@@ -19,8 +19,18 @@ const AGENT_DETAIL_INTERACTION_TIMEOUT_MS = 30_000
 vi.mock("@/lib/api/agents-client", () => ({
   getAgent: vi.fn(),
   getAgentUsage: vi.fn(),
+  listAgentSchedules: vi.fn().mockResolvedValue([]),
   startAgentTestThread: vi.fn(),
   updateAgent: vi.fn(),
+}))
+
+vi.mock("@/hooks/use-projects", () => ({
+  useProjects: () => ({
+    projects: [],
+    loading: false,
+    error: null,
+    refresh: vi.fn(),
+  }),
 }))
 
 vi.mock("@/hooks/use-integrations", () => ({
@@ -178,6 +188,9 @@ function apiAgentDetail({
     information: information ?? {
       recentThreads: [],
       library: { items: [], totalCount: 0 },
+      memories: { agent: [], global: [] },
+      evaluations: [],
+      hasEnabledSchedules: false,
     },
   }
 }
@@ -628,12 +641,12 @@ describe("AgentDetailPage", () => {
     expect(screen.getByText("Subagent model")).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("tab", { name: "Invocations" }))
+    expect(screen.getByRole("heading", { name: "Schedules" })).toBeInTheDocument()
     for (const label of [
       "Live mode",
       "Thread",
       "Slack",
       "Telegram",
-      "Scheduled",
       "Webhook",
       "Email",
     ]) {

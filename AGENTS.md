@@ -45,6 +45,7 @@ This repository maintains an [OKF](https://github.com/GoogleCloudPlatform/knowle
 - **M04/V4 Library artifacts:** API-backed projects, project memories, project context on runs, local artifact storage (`AGENTIS_STORAGE_ROOT`), Artifact-backed Library upload/list/filter/detail/download, and type-specific workspaces. Markdown documents (`document`) use `/documents/:documentId` for viewing, editing, version history, and scope management. Static webpages and slides (`webpage`, `slides`) and interactive Apps (`app`) open at `/artifacts/:artifactId` with frozen HTML preview or sandboxed App runtime, respectively. Slide deck HTML from agents is normalized in `static-artifact-service.ts` (bare `<section>` / `div.slide` parsing, page-marker splits, navigable deck template) before storage. Document, static artifact, and App runtime tools are API-backed.
 - **Native workspace tooling:** V1 read-only file tools, V2 safe file edits, V3 sandboxed command/script execution, and V4 document/static/App artifacts are API-backed. See [agent-native-tooling.md](docs/specs/_done/agent-native-tooling.md).
 - **Composio integrations:** API-backed catalog via `GET /api/integrations` (`q`, `category`, `featured` query params) with Composio toolkit metadata, local connection status, category list, and NATIVE/MCP badges. `/integrations` shows connected/in-use toolkits, browse/search with category chips, and a Custom MCP coming-soon card. `POST /api/integrations/refresh` syncs remote Composio accounts and returns the same list shape as GET (honors active filters). Connect/reset works for any catalog toolkit (not a hardcoded featured slug list). GitHub remains the golden-path toolkit for grants and tool execution. Generic thread creation accepts optional `toolGrants` on `POST /api/threads`; the composer **Tools** picker on `/threads/new` and thread follow-ups grants connected toolkits per thread. Preflight remediation blocks runs with human sentences in the timeline (not machine codes). Grant resolution failures return a human-readable `error` plus machine `code`. Integration refresh syncs remote Composio accounts but does not retarget a granted `connectionId` to a different Composio account — stale granted connections are marked `expired` instead. Mock mode uses `MOCK_COMPOSIO_TOOLKITS` when `AGENTIS_MOCK_COMPOSIO=1`. UAT: [docs/uat/2026-06-08-composio-github-golden-path.md](docs/uat/2026-06-08-composio-github-golden-path.md).
+- **Scheduled invocations:** Worker-backed agent schedules (HA-GAP-13). Agent detail **Invocations** tab CRUD for API-backed agents; `GET/POST/PATCH/DELETE /api/agents/:agentId/schedules`; separate invocation worker (`pnpm dev:worker`). See [docs/guides/invocation-worker.md](docs/guides/invocation-worker.md).
 - **MSW:** `apps/web/src/mocks/` — stubs non-thread `/api/*` routes in dev; thread routes proxy to `apps/api`.
 
 ## Routes
@@ -129,7 +130,7 @@ After install:
 ## Local runtime
 
 1. Set `AI_GATEWAY_PROVIDER` plus selected provider credentials in the repo root `.env` (see `.env.example`) for live model runs. Use `AI_GATEWAY_PROVIDER=vercel` with `VERCEL_AI_GATEWAY_API_KEY`, or `AI_GATEWAY_PROVIDER=cloudflare` with `CLOUDFLARE_API_KEY` and `CLOUDFLARE_ACCOUNT_ID`. The API loads that file on startup; `apps/api/.env` is optional for overrides. For no-key dev search, use `AGENTIS_WEB_SEARCH_PROVIDER=tavily` and `AGENTIS_WEB_SEARCH_BACKEND=keyless`.
-2. `pnpm dev` starts **api** (port 3101) and **web** (port 5177); Vite proxies `/api` to the API.
+2. `pnpm dev` starts **api** (port 3101) and **web** (port 5177); Vite proxies `/api` to the API. Scheduled invocations also need `pnpm dev:worker` in a separate terminal.
 3. For E2E/CI without live Gateway credentials, Playwright starts the API with `AGENTIS_MOCK_RUNTIME=1`.
 
 ## Native workspace execution
@@ -167,16 +168,16 @@ Follow [DESIGN.md](DESIGN.md): restrained workbench UI, IBM Plex Sans, functiona
 
 No separate database or Redis process: SQLite and document files are owned by the API.
 
-### Environment variables (provided by cloud secrets — do NOT create `.env`)
+### Environment files
 
-In the Cursor Cloud Agent VM, all required environment variables (ports, `AI_GATEWAY_PROVIDER`, AI Gateway keys, `COMPOSIO_API_KEY`, web-search config, and the `AGENTIS_MOCK_*` flags) are injected directly into the shell from cloud secrets. They are already present in `process.env`; the running secret names are listed in `CLOUD_AGENT_INJECTED_SECRET_NAMES`.
+**Cursor Cloud Agents:** In the Cursor Cloud Agent VM, required environment variables (ports, `AI_GATEWAY_PROVIDER`, AI Gateway keys, `COMPOSIO_API_KEY`, web-search config, and the `AGENTIS_MOCK_*` flags) are injected directly into the shell from cloud secrets. They are already present in `process.env`; the running secret names are listed in `CLOUD_AGENT_INJECTED_SECRET_NAMES`.
 
-Do **not** create or copy `.env` files (`cp .env.example .env`, `apps/web/.env`, or `apps/api/.env`) in this environment. Doing so overrides the injected secrets and breaks live runs:
+Configure secrets in the Cursor Cloud console (`AGENTIS_MOCK_RUNTIME=0`, `AGENTIS_MOCK_COMPOSIO=0`, AI Gateway keys, Composio key, etc.). Do **not** create or copy `.env` files (`cp .env.example .env`, `apps/web/.env`, or `apps/api/.env`) in this environment — a repo `.env` can shadow console-injected credentials. See `.env.example` for the variable reference only.
 
 - `apps/api/src/load-env.ts` loads `apps/api/.env` with `override: true`, so an API-local `.env` clobbers injected secrets outright.
 - The root `.env` re-applies `AGENTIS_MOCK_RUNTIME` / `AGENTIS_MOCK_COMPOSIO`, so a copied sample can silently flip the VM from live to mock mode (or vice versa).
 
-The injected secrets default to **live** mode (`AGENTIS_MOCK_RUNTIME=0`, `AGENTIS_MOCK_COMPOSIO=0`) with real AI Gateway and Composio credentials, which is what UAT/verification expects. No env file step is needed. Only create a local `.env` when working outside the cloud VM (e.g. a laptop) without injected secrets.
+The injected secrets default to **live** mode (`AGENTIS_MOCK_RUNTIME=0`, `AGENTIS_MOCK_COMPOSIO=0`) with real AI Gateway and Composio credentials, which is what UAT/verification expects. No env file step is needed.
 
 **Critical gotcha — Turborepo strict env mode strips injected secrets.** Turbo 2.x defaults to `--env-mode=strict`, which only passes env vars declared in `turbo.json` through to each task's process. Since secrets like `COMPOSIO_API_KEY` and `AI_GATEWAY_API_KEY` are **not** declared there, a plain `pnpm dev` starts the API with the secrets stripped and it crashes at boot (`ComposioNoAPIKeyError: No Composio API key provided`). The repo's normal flow avoids this because `load-env.ts` reads `.env` from disk directly (bypassing turbo), but in the cloud VM we deliberately have no `.env`. So in the cloud VM, run turbo with **loose** env mode so the injected secrets reach the API/web tasks:
 
@@ -185,6 +186,15 @@ NODE_ENV=development pnpm exec turbo dev --env-mode=loose
 ```
 
 (`pnpm dev -- --env-mode=loose` does **not** work — pnpm forwards the flag to vite, not turbo.) Build/typecheck/lint/test do not need secrets and work with a plain `pnpm <task>`.
+
+**Local development (outside Cloud):** copy samples and fill in credentials:
+
+```bash
+cp .env.example .env
+cp apps/web/.env.example apps/web/.env
+```
+
+Use `pnpm dev:live` when live AI Gateway and Composio credentials are configured. E2E/CI uses `AGENTIS_MOCK_RUNTIME=1` via Playwright, not via a committed `.env`.
 
 ### Running dev servers
 

@@ -1,10 +1,18 @@
 import { render, screen, within } from "@testing-library/react"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { AgentInvocationsTab, AgentSkillsTab } from "./agent-edit-tabs"
+
+vi.mock("@/components/agent-detail/agent-schedules-panel", () => ({
+  AgentSchedulesPanel: () => (
+    <section data-testid="agent-schedules-panel">Schedules panel</section>
+  ),
+}))
 
 describe("agent future-surface placeholders", () => {
   it("keeps Thread available and disables later invocation channels", () => {
-    render(<AgentInvocationsTab />)
+    render(<AgentInvocationsTab agentId="agent_test" />)
+
+    expect(screen.getByTestId("agent-schedules-panel")).toBeInTheDocument()
 
     const thread = screen.getByRole("article", { name: "Thread" })
     expect(within(thread).getByText("Available now")).toBeInTheDocument()
@@ -18,7 +26,6 @@ describe("agent future-surface placeholders", () => {
       "Live mode",
       "Slack",
       "Telegram",
-      "Scheduled",
       "Webhook",
       "Email",
     ]) {
