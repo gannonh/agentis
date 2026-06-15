@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import type {
-  AgentWebhook,
-  CreateAgentWebhookRequest,
-  CreateAgentWebhookResponse,
-  RotateAgentWebhookSecretResponse,
-  UpdateAgentWebhookRequest,
+import {
+  agentWebhookSchema,
+  type AgentWebhook,
+  type CreateAgentWebhookRequest,
+  type CreateAgentWebhookResponse,
+  type RotateAgentWebhookSecretResponse,
+  type UpdateAgentWebhookRequest,
 } from "@workspace/shared"
 import {
   createAgentWebhook,
@@ -13,6 +14,10 @@ import {
   rotateAgentWebhookSecret,
   updateAgentWebhook,
 } from "@/lib/api/agents-client"
+
+function webhookErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
 
 export function useAgentWebhooks(agentId: string) {
   const [webhooks, setWebhooks] = useState<AgentWebhook[]>([])
@@ -30,11 +35,7 @@ export function useAgentWebhooks(agentId: string) {
       setWebhooks(data)
     } catch (loadError) {
       if (requestId !== latestRefreshRequest.current) return
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Failed to load webhooks"
-      )
+      setError(webhookErrorMessage(loadError, "Failed to load webhooks"))
     } finally {
       if (requestId === latestRefreshRequest.current) {
         setLoading(false)
@@ -48,8 +49,7 @@ export function useAgentWebhooks(agentId: string) {
 
   async function createWebhook(body: CreateAgentWebhookRequest) {
     const created = await createAgentWebhook(agentId, body)
-    const { secret, ...webhook } = created
-    void secret
+    const webhook = agentWebhookSchema.parse(created)
     setWebhooks((current) => [webhook, ...current])
     return created
   }

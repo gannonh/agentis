@@ -104,8 +104,7 @@ export function verifyWebhookSignature(input: {
 }
 
 export function parseWebhookTimestamp(
-  value: string,
-  nowMs = Date.now()
+  value: string
 ): { ok: true; epochSeconds: number } | { ok: false; reason: string } {
   const trimmed = value.trim()
   if (/^\d+$/.test(trimmed)) {

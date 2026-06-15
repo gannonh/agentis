@@ -74,14 +74,13 @@ export class AgentWebhookDeliveryRepository {
   }
 
   getLatestForWebhook(webhookId: string): AgentWebhookDelivery | null {
-    const rows = this.db
+    const row = this.db
       .select()
       .from(agentWebhookDeliveries)
       .where(eq(agentWebhookDeliveries.webhookId, webhookId))
       .orderBy(desc(agentWebhookDeliveries.createdAt))
       .limit(1)
-      .all()
-    const row = rows[0]
+      .get()
     return row ? mapAgentWebhookDelivery(row) : null
   }
 

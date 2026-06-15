@@ -1,5 +1,8 @@
 import { Hono } from "hono"
-import { webhookDeliveryAcceptedResponseSchema } from "@workspace/shared"
+import {
+  webhookDeliveryAcceptedResponseSchema,
+  type AgentWebhookDelivery,
+} from "@workspace/shared"
 import type { AppConfig } from "../config.js"
 import { createId, nowIso } from "../lib/ids.js"
 import {
@@ -13,6 +16,24 @@ import { tryQueueAuthenticatedDelivery } from "../repositories/agent-webhook-del
 const TIMESTAMP_HEADER = "x-agentis-webhook-timestamp"
 const SIGNATURE_HEADER = "x-agentis-webhook-signature"
 const DELIVERY_ID_HEADER = "x-agentis-delivery-id"
+
+function acceptedDeliveryResponse(
+  delivery: Pick<AgentWebhookDelivery, "id" | "status">,
+  status: 200 | 202
+) {
+  return new Response(
+    JSON.stringify(
+      webhookDeliveryAcceptedResponseSchema.parse({
+        deliveryId: delivery.id,
+        status: delivery.status,
+      })
+    ),
+    {
+      status,
+      headers: { "Content-Type": "application/json" },
+    }
+  )
+}
 
 export function createPublicWebhookRoutes(
   repos: Repositories,
@@ -115,11 +136,8 @@ export function createPublicWebhookRoutes(
     })
 
     if (!queued.ok) {
-      return c.json(
-        webhookDeliveryAcceptedResponseSchema.parse({
-          deliveryId: queued.duplicate.id,
-          status: queued.duplicate.status,
-        }),
+      return acceptedDeliveryResponse(
+        queued.duplicate,
         queued.duplicate.status === "queued" ? 202 : 200
       )
     }
@@ -131,13 +149,7 @@ export function createPublicWebhookRoutes(
       lastFailureReason: null,
     })
 
-    return c.json(
-      webhookDeliveryAcceptedResponseSchema.parse({
-        deliveryId: queued.delivery.id,
-        status: queued.delivery.status,
-      }),
-      202
-    )
+    return acceptedDeliveryResponse(queued.delivery, 202)
   })
 
   return app

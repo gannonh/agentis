@@ -46,6 +46,16 @@ function formatTimestamp(value?: string | null) {
   return new Date(value).toLocaleString()
 }
 
+function submitButtonLabel(saving: boolean, editing: boolean): string {
+  if (saving) return "Saving…"
+  if (editing) return "Save changes"
+  return "Create webhook"
+}
+
+function actionErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
+
 async function copyText(value: string) {
   await navigator.clipboard.writeText(value)
 }
@@ -125,11 +135,7 @@ export function AgentWebhooksPanel({ agentId }: { agentId: string }) {
         })
       }
     } catch (submitError) {
-      setFormError(
-        submitError instanceof Error
-          ? submitError.message
-          : "Failed to save webhook"
-      )
+      setFormError(actionErrorMessage(submitError, "Failed to save webhook"))
     } finally {
       setSaving(false)
     }
@@ -142,11 +148,7 @@ export function AgentWebhooksPanel({ agentId }: { agentId: string }) {
         status: webhook.status === "enabled" ? "disabled" : "enabled",
       })
     } catch (toggleError) {
-      setActionError(
-        toggleError instanceof Error
-          ? toggleError.message
-          : "Failed to update webhook"
-      )
+      setActionError(actionErrorMessage(toggleError, "Failed to update webhook"))
     }
   }
 
@@ -155,11 +157,7 @@ export function AgentWebhooksPanel({ agentId }: { agentId: string }) {
     try {
       await removeWebhook(webhookId)
     } catch (removeError) {
-      setActionError(
-        removeError instanceof Error
-          ? removeError.message
-          : "Failed to delete webhook"
-      )
+      setActionError(actionErrorMessage(removeError, "Failed to delete webhook"))
     }
   }
 
@@ -175,11 +173,7 @@ export function AgentWebhooksPanel({ agentId }: { agentId: string }) {
         secret: rotated.secret,
       })
     } catch (rotateError) {
-      setActionError(
-        rotateError instanceof Error
-          ? rotateError.message
-          : "Failed to rotate secret"
-      )
+      setActionError(actionErrorMessage(rotateError, "Failed to rotate secret"))
     } finally {
       setSaving(false)
     }
@@ -359,11 +353,7 @@ export function AgentWebhooksPanel({ agentId }: { agentId: string }) {
             ) : null}
             <DialogFooter>
               <Button type="submit" size="sm" disabled={saving}>
-                {saving
-                  ? "Saving…"
-                  : editingWebhook
-                    ? "Save changes"
-                    : "Create webhook"}
+                {submitButtonLabel(saving, Boolean(editingWebhook))}
               </Button>
             </DialogFooter>
           </form>

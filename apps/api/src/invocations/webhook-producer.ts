@@ -46,7 +46,7 @@ export class WebhookProducer {
 
       const webhook = this.repos.agentWebhooks.getById(delivery.webhookId)
       if (!webhook || webhook.status !== "enabled") {
-        await this.failInvocation({
+        this.failInvocation({
           deliveryId: delivery.id,
           webhookId: delivery.webhookId,
           ranAt: now,
@@ -73,7 +73,7 @@ export class WebhookProducer {
 
       const runtimeError = validateRuntimeForExecution(this.config)
       if (runtimeError) {
-        await this.failInvocation({
+        this.failInvocation({
           deliveryId: delivery.id,
           webhookId: webhook.id,
           claimId: claim.id,
@@ -101,7 +101,7 @@ export class WebhookProducer {
           error instanceof Error
             ? error.message
             : "Failed to render webhook prompt."
-        await this.failInvocation({
+        this.failInvocation({
           deliveryId: delivery.id,
           webhookId: webhook.id,
           claimId: claim.id,
@@ -123,7 +123,7 @@ export class WebhookProducer {
         if (started.code === "agent_not_found") {
           this.repos.agentWebhooks.disable(webhook.id, started.message)
         }
-        await this.failInvocation({
+        this.failInvocation({
           deliveryId: delivery.id,
           webhookId: webhook.id,
           claimId: claim.id,
@@ -183,7 +183,7 @@ export class WebhookProducer {
           const failureReason =
             completedRun.errorSummary ??
             `Webhook run finished with status ${completedRun.status}.`
-          await this.failInvocation({
+          this.failInvocation({
             deliveryId: delivery.id,
             webhookId: webhook.id,
             claimId: claim.id,
@@ -196,7 +196,7 @@ export class WebhookProducer {
       } catch (error) {
         const failureReason =
           error instanceof Error ? error.message : "Webhook run failed."
-        await this.failInvocation({
+        this.failInvocation({
           deliveryId: delivery.id,
           webhookId: webhook.id,
           claimId: claim.id,
@@ -211,7 +211,7 @@ export class WebhookProducer {
     return result
   }
 
-  private async failInvocation(input: {
+  private failInvocation(input: {
     deliveryId: string
     webhookId: string
     claimId?: string

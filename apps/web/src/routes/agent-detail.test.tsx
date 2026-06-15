@@ -643,12 +643,12 @@ describe("AgentDetailPage", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Invocations" }))
     expect(screen.getByRole("heading", { name: "Schedules" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Webhooks" })).toBeInTheDocument()
     for (const label of [
       "Live mode",
       "Thread",
       "Slack",
       "Telegram",
-      "Webhook",
       "Email",
     ]) {
       expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(1)

@@ -1,12 +1,22 @@
 import { Hono } from "hono"
+import type { z } from "zod"
 import {
   agentWebhookSchema,
   createAgentWebhookRequestSchema,
   createAgentWebhookResponseSchema,
   rotateAgentWebhookSecretResponseSchema,
   updateAgentWebhookRequestSchema,
+  type AgentWebhook,
 } from "@workspace/shared"
 import type { Repositories } from "../repositories/index.js"
+
+function invalidAgentWebhookPayload(issues: z.ZodIssue[] = []) {
+  return {
+    error: "Invalid agent webhook payload",
+    code: "invalid_agent_webhook",
+    issues,
+  } as const
+}
 
 function validateWebhookProject(
   repos: Repositories,
@@ -24,6 +34,16 @@ function validateWebhookProject(
     )
   }
   return null
+}
+
+function getOwnedWebhook(
+  repos: Repositories,
+  agentId: string,
+  webhookId: string
+): AgentWebhook | null {
+  const webhook = repos.agentWebhooks.getById(webhookId)
+  if (!webhook || webhook.agentId !== agentId) return null
+  return webhook
 }
 
 export function createAgentWebhookRoutes(repos: Repositories) {
@@ -54,26 +74,12 @@ export function createAgentWebhookRoutes(repos: Repositories) {
     try {
       payload = await c.req.json()
     } catch {
-      return c.json(
-        {
-          error: "Invalid agent webhook payload",
-          code: "invalid_agent_webhook",
-          issues: [],
-        },
-        400
-      )
+      return c.json(invalidAgentWebhookPayload(), 400)
     }
 
     const parsed = createAgentWebhookRequestSchema.safeParse(payload)
     if (!parsed.success) {
-      return c.json(
-        {
-          error: "Invalid agent webhook payload",
-          code: "invalid_agent_webhook",
-          issues: parsed.error.issues,
-        },
-        400
-      )
+      return c.json(invalidAgentWebhookPayload(parsed.error.issues), 400)
     }
 
     const projectError = validateWebhookProject(repos, parsed.data.projectId)
@@ -100,8 +106,8 @@ export function createAgentWebhookRoutes(repos: Repositories) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
     }
 
-    const existing = repos.agentWebhooks.getById(webhookId)
-    if (!existing || existing.agentId !== agentId) {
+    const existing = getOwnedWebhook(repos, agentId, webhookId)
+    if (!existing) {
       return c.json(
         { error: "Webhook not found", code: "agent_webhook_not_found" },
         404
@@ -112,26 +118,12 @@ export function createAgentWebhookRoutes(repos: Repositories) {
     try {
       payload = await c.req.json()
     } catch {
-      return c.json(
-        {
-          error: "Invalid agent webhook payload",
-          code: "invalid_agent_webhook",
-          issues: [],
-        },
-        400
-      )
+      return c.json(invalidAgentWebhookPayload(), 400)
     }
 
     const parsed = updateAgentWebhookRequestSchema.safeParse(payload)
     if (!parsed.success) {
-      return c.json(
-        {
-          error: "Invalid agent webhook payload",
-          code: "invalid_agent_webhook",
-          issues: parsed.error.issues,
-        },
-        400
-      )
+      return c.json(invalidAgentWebhookPayload(parsed.error.issues), 400)
     }
 
     const projectId =
@@ -160,8 +152,8 @@ export function createAgentWebhookRoutes(repos: Repositories) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
     }
 
-    const existing = repos.agentWebhooks.getById(webhookId)
-    if (!existing || existing.agentId !== agentId) {
+    const existing = getOwnedWebhook(repos, agentId, webhookId)
+    if (!existing) {
       return c.json(
         { error: "Webhook not found", code: "agent_webhook_not_found" },
         404
@@ -180,8 +172,8 @@ export function createAgentWebhookRoutes(repos: Repositories) {
       return c.json({ error: "Agent not found", code: "agent_not_found" }, 404)
     }
 
-    const existing = repos.agentWebhooks.getById(webhookId)
-    if (!existing || existing.agentId !== agentId) {
+    const existing = getOwnedWebhook(repos, agentId, webhookId)
+    if (!existing) {
       return c.json(
         { error: "Webhook not found", code: "agent_webhook_not_found" },
         404

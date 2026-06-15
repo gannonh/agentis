@@ -1,6 +1,5 @@
 import {
   type AgentWebhook,
-  type AgentWebhookDelivery,
   type AgentWebhookLastDeliveryStatus,
   type AgentWebhookStatus,
   type CreateAgentWebhookRequest,
