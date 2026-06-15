@@ -191,6 +191,7 @@ function apiAgentDetail({
       memories: { agent: [], global: [] },
       evaluations: [],
       hasEnabledSchedules: false,
+      hasEnabledWebhooks: false,
     },
   }
 }

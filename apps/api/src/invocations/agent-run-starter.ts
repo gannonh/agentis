@@ -40,7 +40,7 @@ export function createRunExecutor(
   )
 }
 
-export function startAgentScheduledRun(
+export function startAgentInvocationRun(
   repos: Repositories,
   input: {
     agentId: string
@@ -62,8 +62,8 @@ export function startAgentScheduledRun(
     if (!project || project.status === "archived") {
       return {
         ok: false,
-        code: "invalid_schedule_project",
-        message: "Project is not available for scheduled runs.",
+        code: "invalid_invocation_project",
+        message: "Project is not available for invocation runs.",
       }
     }
   }
@@ -103,14 +103,17 @@ export function startAgentScheduledRun(
   } catch (error) {
     return {
       ok: false,
-      code: "scheduled_run_creation_failed",
+      code: "invocation_run_creation_failed",
       message:
         error instanceof Error
           ? error.message
-          : "Failed to create scheduled run.",
+          : "Failed to create invocation run.",
     }
   }
 }
+
+/** @deprecated Use startAgentInvocationRun */
+export const startAgentScheduledRun = startAgentInvocationRun
 
 export function validateRuntimeForExecution(config: AppConfig): string | null {
   const missingRuntimeEnv = getRuntimeMissingEnvVars(config)

@@ -7,7 +7,7 @@ timestamp: "2026-06-15T17:30:00Z"
 ---
 # Invocation worker
 
-The invocation worker is a separate API process that claims due agent schedules, creates threads/runs, and executes them in the background without a browser streaming call.
+The invocation worker is a separate API process that claims due agent schedules and queued webhook deliveries, creates threads/runs, and executes them in the background without a browser streaming call.
 
 ## Local development
 
@@ -20,13 +20,15 @@ pnpm --filter api dev:worker
 
 For mock-runtime verification in local E2E/CI, use `AGENTIS_MOCK_RUNTIME=1` via Playwright config — not a repo `.env` on Cursor Cloud VMs. Cloud Agents should use console-injected secrets with `AGENTIS_MOCK_RUNTIME=0`.
 
-Create a schedule from an API-backed agent's **Invocations** tab, then wait for the worker poll interval. The worker creates a thread/run and completes it via `RunExecutor.executeToCompletion`.
+Create a schedule or webhook from an API-backed agent's **Invocations** tab, then wait for the worker poll interval. The worker creates a thread/run and completes it via `RunExecutor.executeToCompletion`.
+
+Webhook callers POST signed JSON to `POST /api/webhooks/agents/:webhookId`. See [2026-06-15-webhook-agent-invocation.md](../uat/2026-06-15-webhook-agent-invocation.md) for a `curl` example.
 
 ## Environment variables
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `AGENTIS_WORKER_POLL_MS` | `30000` | Poll interval for due schedules and stale-claim recovery |
+| `AGENTIS_WORKER_POLL_MS` | `30000` | Poll interval for due schedules, queued webhook deliveries, and stale-claim recovery |
 | `AGENTIS_WORKER_STALE_CLAIM_MS` | `900000` (15m) | Mark `claimed`/`running` invocation rows failed when older than this threshold |
 
 The worker uses the same SQLite database and `.env` loading path as the API (`apps/api/src/worker.ts`).
@@ -52,4 +54,5 @@ Run the worker alongside the API server. It does not expose HTTP routes.
 ## Related
 
 - Spec: [2026-06-14-scheduled-agent-invocations-design.md](../specs/_done/2026-06-14-scheduled-agent-invocations-design.md)
+- Webhook UAT: [2026-06-15-webhook-agent-invocation.md](../uat/2026-06-15-webhook-agent-invocation.md)
 - Code: `apps/api/src/invocations/`, `apps/api/src/worker.ts`

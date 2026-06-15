@@ -23,6 +23,9 @@ export type AppConfig = {
   composioToolkitVersions: Record<string, string>
   mockComposio: boolean
   webAppOrigin: string
+  apiPublicOrigin: string
+  webhookReplayWindowSeconds: number
+  webhookMaxPayloadBytes: number
   storageRoot: string
   documentMaxUploadBytes: number
   documentPreviewMaxChars: number
@@ -178,6 +181,18 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     composioToolkitVersions: resolveComposioToolkitVersions(env),
     mockComposio: env.AGENTIS_MOCK_COMPOSIO === "1",
     webAppOrigin: env.AGENTIS_WEB_ORIGIN ?? "http://127.0.0.1:5177",
+    apiPublicOrigin:
+      env.AGENTIS_API_PUBLIC_ORIGIN ?? `http://127.0.0.1:${port}`,
+    webhookReplayWindowSeconds: clampNumber(
+      Number(env.AGENTIS_WEBHOOK_REPLAY_WINDOW_SECONDS ?? 300),
+      60,
+      3600
+    ),
+    webhookMaxPayloadBytes: clampNumber(
+      Number(env.AGENTIS_WEBHOOK_MAX_PAYLOAD_BYTES ?? 65_536),
+      1_024,
+      1_048_576
+    ),
     storageRoot: env.AGENTIS_STORAGE_ROOT ?? "./data/storage",
     documentMaxUploadBytes: Number(
       env.AGENTIS_DOCUMENT_MAX_UPLOAD_BYTES ??

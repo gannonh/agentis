@@ -4,7 +4,8 @@ Newest entries first.
 
 ## 2026-06-15
 
-- Marked [2026-06-15-webhook-agent-invocation-design.md](2026-06-15-webhook-agent-invocation-design.md) approved for HA-GAP-14 Build.
+- Shipped HA-GAP-14 webhook agent invocation in [_done/2026-06-15-webhook-agent-invocation-design.md](_done/2026-06-15-webhook-agent-invocation-design.md); added UAT [2026-06-15-webhook-agent-invocation.md](../uat/2026-06-15-webhook-agent-invocation.md); updated [index.md](index.md) acceptance checklist and invocation worker guide.
+- Marked [2026-06-15-webhook-agent-invocation-design.md](_done/2026-06-15-webhook-agent-invocation-design.md) approved for HA-GAP-14 Build.
 - Drafted [2026-06-15-webhook-agent-invocation-design.md](2026-06-15-webhook-agent-invocation-design.md) for HA-GAP-14 signed webhook agent invocation through the shared invocation worker foundation.
 - Post-simplify and strict-quality-review OKF refresh for HA-GAP-13: delivered state, cron helper consolidation, and follow-ups in [_done/2026-06-14-scheduled-agent-invocations-design.md](_done/2026-06-14-scheduled-agent-invocations-design.md); updated [index.md](index.md) Agents parity row and completed-foundation list.
 

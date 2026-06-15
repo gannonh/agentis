@@ -580,3 +580,68 @@ export const agentInvocationRuns = sqliteTable(
     ),
   ]
 )
+
+export const agentWebhooks = sqliteTable(
+  "agent_webhooks",
+  {
+    id: text("id").primaryKey(),
+    agentId: text("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    status: text("status").notNull(),
+    secretCiphertext: text("secret_ciphertext").notNull(),
+    secretPrefix: text("secret_prefix").notNull(),
+    promptTemplate: text("prompt_template").notNull(),
+    projectId: text("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
+    lastDeliveryAt: text("last_delivery_at"),
+    lastDeliveryStatus: text("last_delivery_status"),
+    lastFailureReason: text("last_failure_reason"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("agent_webhooks_agent_id_idx").on(table.agentId),
+    index("agent_webhooks_status_idx").on(table.status),
+  ]
+)
+
+export const agentWebhookDeliveries = sqliteTable(
+  "agent_webhook_deliveries",
+  {
+    id: text("id").primaryKey(),
+    webhookId: text("webhook_id")
+      .notNull()
+      .references(() => agentWebhooks.id, { onDelete: "cascade" }),
+    agentId: text("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    deliveryKey: text("delivery_key").notNull(),
+    status: text("status").notNull(),
+    requestTimestamp: text("request_timestamp").notNull(),
+    payloadJson: text("payload_json").notNull(),
+    payloadSummary: text("payload_summary").notNull(),
+    threadId: text("thread_id").references(() => threads.id, {
+      onDelete: "set null",
+    }),
+    runId: text("run_id").references(() => runs.id, { onDelete: "set null" }),
+    failureReason: text("failure_reason"),
+    claimedAt: text("claimed_at"),
+    startedAt: text("started_at"),
+    finishedAt: text("finished_at"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [
+    index("agent_webhook_deliveries_webhook_status_idx").on(
+      table.webhookId,
+      table.status
+    ),
+    uniqueIndex("agent_webhook_deliveries_webhook_delivery_key_unique").on(
+      table.webhookId,
+      table.deliveryKey
+    ),
+  ]
+)

@@ -1,12 +1,17 @@
 import type { AgentInvocationRun } from "@workspace/shared"
 import { and, eq, inArray, lte } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
-import { agentInvocationRuns, agentSchedules } from "../db/schema.js"
+import {
+  agentInvocationRuns,
+  agentSchedules,
+  agentWebhookDeliveries,
+  agentWebhooks,
+} from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapAgentInvocationRun } from "../lib/schedule-mappers.js"
 
 type ClaimInput = {
-  sourceType: "schedule"
+  sourceType: "schedule" | "webhook"
   sourceId: string
   dueAt: string
 }
@@ -61,7 +66,10 @@ export class AgentInvocationRunRepository {
     return row ? mapAgentInvocationRun(row) : null
   }
 
-  listBySource(sourceType: "schedule", sourceId: string): AgentInvocationRun[] {
+  listBySource(
+    sourceType: "schedule" | "webhook",
+    sourceId: string
+  ): AgentInvocationRun[] {
     return this.db
       .select()
       .from(agentInvocationRuns)
@@ -73,6 +81,47 @@ export class AgentInvocationRunRepository {
       )
       .all()
       .map(mapAgentInvocationRun)
+  }
+
+  getWebhookSourceByThreadId(
+    threadId: string
+  ): { webhookId: string; webhookName: string; deliveryId: string } | null {
+    const row = this.db
+      .select({
+        sourceId: agentInvocationRuns.sourceId,
+      })
+      .from(agentInvocationRuns)
+      .where(
+        and(
+          eq(agentInvocationRuns.threadId, threadId),
+          eq(agentInvocationRuns.sourceType, "webhook")
+        )
+      )
+      .get()
+    if (!row) return null
+
+    const delivery = this.db
+      .select({
+        id: agentWebhookDeliveries.id,
+        webhookId: agentWebhookDeliveries.webhookId,
+      })
+      .from(agentWebhookDeliveries)
+      .where(eq(agentWebhookDeliveries.id, row.sourceId))
+      .get()
+    if (!delivery) return null
+
+    const webhook = this.db
+      .select({ id: agentWebhooks.id, name: agentWebhooks.name })
+      .from(agentWebhooks)
+      .where(eq(agentWebhooks.id, delivery.webhookId))
+      .get()
+    if (!webhook) return null
+
+    return {
+      webhookId: webhook.id,
+      webhookName: webhook.name,
+      deliveryId: delivery.id,
+    }
   }
 
   getScheduleSourceByThreadId(

@@ -851,6 +851,7 @@ export const agentDetailInformationSchema = z.object({
   memories: agentMemorySummarySchema.default({ agent: [], global: [] }),
   evaluations: z.array(agentRunEvaluationSummarySchema).default([]),
   hasEnabledSchedules: z.boolean().default(false),
+  hasEnabledWebhooks: z.boolean().default(false),
 })
 
 export const agentDetailResponseSchema = z.object({

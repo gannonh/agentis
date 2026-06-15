@@ -9,7 +9,9 @@ timestamp: "2026-06-15T00:00:00Z"
 
 ## Status
 
-Approved (2026-06-15). Implements HA-GAP-14 from [specs/index.md](index.md).
+Shipped (2026-06-15). Implements HA-GAP-14 from [specs/index.md](../index.md).
+
+**Shipped:** Migration `0035_agent_webhooks.sql` adds `agent_webhooks` and `agent_webhook_deliveries`; webhook CRUD at `GET/POST/PATCH/DELETE /api/agents/:agentId/webhooks` plus `POST /api/agents/:agentId/webhooks/:webhookId/rotate-secret`; public signed ingress at `POST /api/webhooks/agents/:webhookId`; `WebhookProducer` in `InvocationWorker`; Agent Detail webhooks panel; webhook `invocationSource` on recent threads. UAT: [2026-06-15-webhook-agent-invocation.md](../../uat/2026-06-15-webhook-agent-invocation.md).
 
 ## Goal
 

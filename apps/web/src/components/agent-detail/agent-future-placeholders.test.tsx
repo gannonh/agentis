@@ -8,11 +8,18 @@ vi.mock("@/components/agent-detail/agent-schedules-panel", () => ({
   ),
 }))
 
+vi.mock("@/components/agent-detail/agent-webhooks-panel", () => ({
+  AgentWebhooksPanel: () => (
+    <section data-testid="agent-webhooks-panel">Webhooks panel</section>
+  ),
+}))
+
 describe("agent future-surface placeholders", () => {
   it("keeps Thread available and disables later invocation channels", () => {
     render(<AgentInvocationsTab agentId="agent_test" />)
 
     expect(screen.getByTestId("agent-schedules-panel")).toBeInTheDocument()
+    expect(screen.getByTestId("agent-webhooks-panel")).toBeInTheDocument()
 
     const thread = screen.getByRole("article", { name: "Thread" })
     expect(within(thread).getByText("Available now")).toBeInTheDocument()
@@ -22,13 +29,7 @@ describe("agent future-surface placeholders", () => {
       )
     ).toBeInTheDocument()
 
-    for (const label of [
-      "Live mode",
-      "Slack",
-      "Telegram",
-      "Webhook",
-      "Email",
-    ]) {
+    for (const label of ["Live mode", "Slack", "Telegram", "Email"]) {
       const option = screen.getByRole("article", { name: label })
       expect(
         within(option).getByText("Planned for a later milestone")

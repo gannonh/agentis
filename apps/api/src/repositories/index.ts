@@ -4,6 +4,8 @@ import { AgentPromotionDraftRepository } from "./agent-promotion-draft-repositor
 import { AgentRepository } from "./agent-repository.js"
 import { AgentScheduleRepository } from "./agent-schedule-repository.js"
 import { AgentInvocationRunRepository } from "./agent-invocation-run-repository.js"
+import { AgentWebhookRepository } from "./agent-webhook-repository.js"
+import { AgentWebhookDeliveryRepository } from "./agent-webhook-delivery-repository.js"
 import { AppStateRepository } from "../artifact-apps/app-state-repository.js"
 import { ArtifactRepository } from "./artifact-repository.js"
 import { DocumentRepository } from "./document-repository.js"
@@ -27,6 +29,7 @@ import { WorkspaceExecutionRepository } from "./workspace-execution-repository.j
 
 export function createRepositories(db: AppDatabase, config?: AppConfig) {
   const composioUserId = config?.composioUserId ?? "agentis-local-user"
+  const agentWebhookDeliveries = new AgentWebhookDeliveryRepository(db)
   return {
     threads: new ThreadRepository(db),
     messages: new MessageRepository(db),
@@ -43,6 +46,12 @@ export function createRepositories(db: AppDatabase, config?: AppConfig) {
     documents: new DocumentRepository(db),
     agents: new AgentRepository(db),
     agentSchedules: new AgentScheduleRepository(db),
+    agentWebhooks: new AgentWebhookRepository(
+      db,
+      config?.apiPublicOrigin ?? "http://127.0.0.1:3101",
+      agentWebhookDeliveries
+    ),
+    agentWebhookDeliveries,
     agentInvocationRuns: new AgentInvocationRunRepository(db),
     workspaces: new WorkspaceRepository(db),
     workspaceEdits: new WorkspaceEditRepository(db),

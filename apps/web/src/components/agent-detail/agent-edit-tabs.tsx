@@ -29,7 +29,6 @@ import {
   TableIcon,
   TelegramIcon,
   Video01Icon,
-  WebhookIcon,
   ZapIcon,
 } from "@hugeicons/core-free-icons"
 import {
@@ -45,6 +44,7 @@ import {
 } from "@workspace/shared"
 import { useIntegrations } from "@/hooks/use-integrations"
 import { AgentSchedulesPanel } from "@/components/agent-detail/agent-schedules-panel"
+import { AgentWebhooksPanel } from "@/components/agent-detail/agent-webhooks-panel"
 
 type AgentToolGrant = AgentDetailResponse["toolGrants"][number]
 
@@ -309,8 +309,11 @@ export function AgentIdentityTab({
 function threadActivityLabel(
   thread: AgentDetailInformation["recentThreads"][number]
 ): string {
-  if (thread.invocationSource) {
+  if (thread.invocationSource?.type === "schedule") {
     return `Scheduled: ${thread.invocationSource.scheduleName}`
+  }
+  if (thread.invocationSource?.type === "webhook") {
+    return `Webhook: ${thread.invocationSource.webhookName}`
   }
   if (thread.lastRunStatus) {
     return `Latest run: ${thread.lastRunStatus}`
@@ -513,13 +516,6 @@ const INVOCATION_OPTIONS = [
     icon: TelegramIcon,
   },
   {
-    title: "Webhook",
-    description: "Trigger this agent from an HTTP request.",
-    status: "Planned for a later milestone",
-    action: "Create webhook",
-    icon: WebhookIcon,
-  },
-  {
     title: "Email",
     description: "Let this agent respond from email.",
     status: "Planned for a later milestone",
@@ -532,6 +528,7 @@ export function AgentInvocationsTab({ agentId }: { agentId: string }) {
   return (
     <div data-testid="agent-invocations-tab" className="flex flex-col gap-4">
       <AgentSchedulesPanel agentId={agentId} />
+      <AgentWebhooksPanel agentId={agentId} />
       <div className="flex flex-col gap-2">
       {INVOCATION_OPTIONS.map((option) => (
         <article
