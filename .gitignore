@@ -5,6 +5,7 @@ node_modules
 
 # Local env files
 .env
+.env.cloud
 .env.local
 .env.development.local
 .env.test.local

@@ -1,0 +1,3 @@
+{
+  "install": "pnpm install && node scripts/materialize-cloud-runtime-env.mjs"
+}

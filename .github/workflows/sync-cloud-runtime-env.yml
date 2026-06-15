@@ -1,0 +1,48 @@
+name: Sync cloud runtime env
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync GitHub secrets to cloud-readable variables
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
+          CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_AI_GATEWAY_ID: ${{ secrets.CLOUDFLARE_AI_GATEWAY_ID }}
+          VERCEL_AI_GATEWAY_API_KEY: ${{ secrets.VERCEL_AI_GATEWAY_API_KEY }}
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          set_if_present() {
+            local value="$1"
+            local name="$2"
+            if [ -n "${value}" ]; then
+              gh variable set "$name" --body "$value"
+              echo "synced $name"
+            fi
+          }
+
+          set_if_present "$COMPOSIO_API_KEY" AGENTIS_RUNTIME_COMPOSIO_API_KEY
+          set_if_present "$CLOUDFLARE_API_KEY" AGENTIS_RUNTIME_CLOUDFLARE_API_KEY
+          set_if_present "$CLOUDFLARE_ACCOUNT_ID" AGENTIS_RUNTIME_CLOUDFLARE_ACCOUNT_ID
+          set_if_present "$CLOUDFLARE_AI_GATEWAY_ID" AGENTIS_RUNTIME_CLOUDFLARE_AI_GATEWAY_ID
+          set_if_present "$VERCEL_AI_GATEWAY_API_KEY" AGENTIS_RUNTIME_VERCEL_AI_GATEWAY_API_KEY
+          set_if_present "$AI_GATEWAY_API_KEY" AGENTIS_RUNTIME_AI_GATEWAY_API_KEY
+
+          gh variable set AGENTIS_RUNTIME_AI_GATEWAY_PROVIDER --body "cloudflare"
+          gh variable set AGENTIS_RUNTIME_AGENTIS_MOCK_RUNTIME --body "0"
+          gh variable set AGENTIS_RUNTIME_AGENTIS_MOCK_COMPOSIO --body "0"
+          gh variable set AGENTIS_RUNTIME_AGENTIS_WEB_SEARCH_PROVIDER --body "tavily"
+          gh variable set AGENTIS_RUNTIME_AGENTIS_WEB_SEARCH_BACKEND --body "keyless"
+          gh variable set AGENTIS_RUNTIME_COMPOSIO_REDIRECT_BASE_URL --body "http://127.0.0.1:3101"
+
+          echo "Cloud runtime variable sync complete."

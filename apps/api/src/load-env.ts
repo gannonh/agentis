@@ -21,6 +21,12 @@ const repoRoot = findRepoRoot(
 const rootEnvPath = resolve(repoRoot, ".env")
 config({ path: rootEnvPath })
 
+const cloudEnvPath = resolve(repoRoot, ".env.cloud")
+if (existsSync(cloudEnvPath)) {
+  // Materialized on Cursor Cloud when console secrets are not injected.
+  config({ path: cloudEnvPath })
+}
+
 const localEnvPath = resolve(repoRoot, "apps/api/.env")
 if (existsSync(localEnvPath)) {
   config({ path: localEnvPath, override: true })
