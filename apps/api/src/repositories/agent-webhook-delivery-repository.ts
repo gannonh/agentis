@@ -6,6 +6,7 @@ import { and, asc, desc, eq } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
 import { agentWebhookDeliveries, agentWebhooks } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
+import { isUniqueConstraintError } from "../lib/sqlite-errors.js"
 import {
   mapAgentWebhookDelivery,
   summarizeWebhookPayload,
@@ -183,14 +184,6 @@ export class AgentWebhookDeliveryRepository {
       .run()
     return this.getById(id)
   }
-}
-
-function isUniqueConstraintError(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    (error.message.includes("UNIQUE constraint failed") ||
-      error.message.includes("SQLITE_CONSTRAINT_UNIQUE"))
-  )
 }
 
 export function tryQueueAuthenticatedDelivery(

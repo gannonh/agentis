@@ -8,6 +8,7 @@ import {
   agentWebhooks,
 } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
+import { isUniqueConstraintError } from "../lib/sqlite-errors.js"
 import { mapAgentInvocationRun } from "../lib/schedule-mappers.js"
 
 type ClaimInput = {
@@ -214,12 +215,4 @@ export class AgentInvocationRunRepository {
       .run()
     return this.getById(id)
   }
-}
-
-function isUniqueConstraintError(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    (error.message.includes("UNIQUE constraint failed") ||
-      error.message.includes("SQLITE_CONSTRAINT_UNIQUE"))
-  )
 }

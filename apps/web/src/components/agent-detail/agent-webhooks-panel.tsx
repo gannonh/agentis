@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react"
+import { useState, type FormEvent } from "react"
 import { Link } from "react-router"
 import { Badge } from "@workspace/ui/components/badge"
 import { Button } from "@workspace/ui/components/button"
@@ -84,14 +84,6 @@ export function AgentWebhooksPanel({ agentId }: { agentId: string }) {
     secret: string
   } | null>(null)
   const [rotateTarget, setRotateTarget] = useState<AgentWebhook | null>(null)
-
-  const sortedWebhooks = useMemo(
-    () =>
-      [...webhooks].sort((left, right) =>
-        right.updatedAt.localeCompare(left.updatedAt)
-      ),
-    [webhooks]
-  )
 
   function openCreateDialog() {
     setEditingWebhook(null)
@@ -204,12 +196,12 @@ export function AgentWebhooksPanel({ agentId }: { agentId: string }) {
         <p className="rounded-xl border border-border bg-card/70 px-4 py-5 text-sm text-muted-foreground">
           Loading webhooks…
         </p>
-      ) : sortedWebhooks.length === 0 ? (
+      ) : webhooks.length === 0 ? (
         <p className="rounded-xl border border-border bg-card/70 px-4 py-5 text-sm text-muted-foreground">
           No webhooks yet. Create one to invoke this agent from automation.
         </p>
       ) : (
-        sortedWebhooks.map((webhook) => (
+        webhooks.map((webhook) => (
           <article
             key={webhook.id}
             className="rounded-xl border border-border bg-card/70 p-4"
