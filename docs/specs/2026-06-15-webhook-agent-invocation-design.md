@@ -1,7 +1,7 @@
 ---
 type: Spec
 title: Webhook agent invocation
-description: Planned HA-GAP-14 signed webhook endpoints for invoking API-backed agents through the shared invocation worker.
+description: Approved HA-GAP-14 signed webhook endpoints for invoking API-backed agents through the shared invocation worker.
 tags: [agents, invocations, roadmap, ha-gap]
 timestamp: "2026-06-15T00:00:00Z"
 ---
@@ -9,7 +9,7 @@ timestamp: "2026-06-15T00:00:00Z"
 
 ## Status
 
-Planned. Implements HA-GAP-14 from [specs/index.md](index.md).
+Approved (2026-06-15). Implements HA-GAP-14 from [specs/index.md](index.md).
 
 ## Goal
 

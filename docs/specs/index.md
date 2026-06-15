@@ -191,7 +191,7 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-14: Webhook agent invocation
 
-**Status:** Planned. Spec: [2026-06-15-webhook-agent-invocation-design.md](2026-06-15-webhook-agent-invocation-design.md).
+**Status:** Approved. Spec: [2026-06-15-webhook-agent-invocation-design.md](2026-06-15-webhook-agent-invocation-design.md).
 
 **HyperAgent reference:** Agent → Create webhooks.
 
@@ -578,7 +578,7 @@ Implementation specs, design docs, and build reports. Completed work lives in `_
 
 | Spec | Status | Notes |
 | --- | --- | --- |
-| [2026-06-15-webhook-agent-invocation-design.md](2026-06-15-webhook-agent-invocation-design.md) | Planned | HA-GAP-14 — signed webhook invocation through the worker foundation |
+| [2026-06-15-webhook-agent-invocation-design.md](2026-06-15-webhook-agent-invocation-design.md) | Approved | HA-GAP-14 — signed webhook invocation through the worker foundation |
 | [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md) | Shipped | HA-GAP-11 — thread metadata, stars, waiting badges, agent chip |
 | [2026-06-13-thread-working-artifacts-design.md](2026-06-13-thread-working-artifacts-design.md) | Shipped | HA-GAP-08 — thread Working artifacts rail |
 
