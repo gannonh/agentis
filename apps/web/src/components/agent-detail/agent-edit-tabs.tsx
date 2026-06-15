@@ -306,6 +306,18 @@ export function AgentIdentityTab({
   )
 }
 
+function threadActivityLabel(
+  thread: AgentDetailInformation["recentThreads"][number]
+): string {
+  if (thread.invocationSource) {
+    return `Scheduled: ${thread.invocationSource.scheduleName}`
+  }
+  if (thread.lastRunStatus) {
+    return `Latest run: ${thread.lastRunStatus}`
+  }
+  return "Agent test thread"
+}
+
 export function AgentActivityTab({
   information,
 }: {
@@ -356,11 +368,7 @@ export function AgentActivityTab({
                 className="size-4"
                 strokeWidth={2}
               />
-              {thread.invocationSource
-                ? `Scheduled: ${thread.invocationSource.scheduleName}`
-                : thread.lastRunStatus
-                  ? `Latest run: ${thread.lastRunStatus}`
-                  : "Agent test thread"}
+              {threadActivityLabel(thread)}
             </p>
             <h2 className="mt-2 text-lg font-medium">{thread.title}</h2>
             <p className="mt-2 text-sm text-muted-foreground">

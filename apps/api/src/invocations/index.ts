@@ -10,6 +10,7 @@ export {
   cadenceConfigToCronExpression,
   computeNextRunAt,
   isValidTimezone,
+  resolveScheduleCronExpression,
   ScheduleValidationError,
   validateCronExpression,
   validateScheduleTiming,

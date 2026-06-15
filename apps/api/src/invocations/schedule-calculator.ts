@@ -29,6 +29,32 @@ export function assertValidTimezone(timezone: string): void {
   }
 }
 
+export function resolveScheduleCronExpression(input: {
+  cadence: AgentScheduleCadence
+  cronExpression?: string | null
+  existingCronExpression?: string | null
+}): string | null {
+  if (input.cadence !== "custom") {
+    return null
+  }
+  if (input.cronExpression !== undefined) {
+    return input.cronExpression
+  }
+  return input.existingCronExpression ?? null
+}
+
+function scheduleCronExpression(input: {
+  cadence: AgentScheduleCadence
+  cadenceConfig: AgentScheduleCadenceConfig
+  cronExpression?: string | null
+}): string {
+  return cadenceConfigToCronExpression(
+    input.cadence,
+    input.cadenceConfig,
+    input.cadence === "custom" ? input.cronExpression : null
+  )
+}
+
 export function cadenceConfigToCronExpression(
   cadence: AgentScheduleCadence,
   cadenceConfig: AgentScheduleCadenceConfig,
@@ -100,12 +126,10 @@ export function validateScheduleTiming(input: {
   cronExpression?: string | null
 }): void {
   assertValidTimezone(input.timezone)
-  const expression = cadenceConfigToCronExpression(
-    input.cadence,
-    input.cadenceConfig,
-    input.cadence === "custom" ? input.cronExpression : null
+  validateCronExpression(
+    scheduleCronExpression(input),
+    input.timezone
   )
-  validateCronExpression(expression, input.timezone)
 }
 
 export function computeNextRunAt(input: {
@@ -117,11 +141,7 @@ export function computeNextRunAt(input: {
 }): string {
   const from = input.from ?? new Date()
   assertValidTimezone(input.timezone)
-  const expression = cadenceConfigToCronExpression(
-    input.cadence,
-    input.cadenceConfig,
-    input.cadence === "custom" ? input.cronExpression : null
-  )
+  const expression = scheduleCronExpression(input)
   validateCronExpression(expression, input.timezone)
   const interval = CronExpressionParser.parse(expression, {
     tz: input.timezone,

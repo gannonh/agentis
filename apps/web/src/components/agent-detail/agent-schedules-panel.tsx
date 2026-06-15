@@ -13,6 +13,7 @@ import { Textarea } from "@workspace/ui/components/textarea"
 import type {
   AgentSchedule,
   AgentScheduleCadence,
+  AgentScheduleCadenceConfig,
   CreateAgentScheduleRequest,
   UpdateAgentScheduleRequest,
 } from "@workspace/shared"
@@ -29,23 +30,40 @@ const WEEKDAY_OPTIONS = [
   { value: 6, label: "Saturday" },
 ] as const
 
-function defaultTimezone() {
-  return "UTC"
+const DEFAULT_TIMEZONE = "UTC"
+
+function buildCadenceConfig(
+  form: ScheduleFormState
+): AgentScheduleCadenceConfig {
+  switch (form.cadence) {
+    case "hourly":
+      return { cadence: "hourly", minute: Number(form.minute) }
+    case "daily":
+      return { cadence: "daily", time: form.time }
+    case "weekly":
+      return {
+        cadence: "weekly",
+        weekday: Number(form.weekday),
+        time: form.time,
+      }
+    case "custom":
+      return { cadence: "custom" }
+  }
 }
 
 function buildUpdateSchedulePayload(
   form: ScheduleFormState
 ): UpdateAgentScheduleRequest {
-  const base = buildSchedulePayload(form)
+  const payload = buildSchedulePayload(form)
   return {
-    name: base.name,
-    cadence: base.cadence,
-    timezone: base.timezone,
-    promptTemplate: base.promptTemplate,
-    projectId: base.projectId,
-    cadenceConfig: base.cadenceConfig,
+    name: payload.name,
+    cadence: payload.cadence,
+    timezone: payload.timezone,
+    promptTemplate: payload.promptTemplate,
+    projectId: payload.projectId,
+    cadenceConfig: payload.cadenceConfig,
     cronExpression:
-      base.cadence === "custom" ? (base.cronExpression ?? null) : null,
+      payload.cadence === "custom" ? (payload.cronExpression ?? null) : null,
   }
 }
 
@@ -95,7 +113,7 @@ function emptyFormState(): ScheduleFormState {
   return {
     name: "",
     cadence: "hourly",
-    timezone: defaultTimezone(),
+    timezone: DEFAULT_TIMEZONE,
     promptTemplate: "",
     projectId: "",
     minute: "0",
@@ -134,18 +152,7 @@ function buildSchedulePayload(
   form: ScheduleFormState,
   status?: AgentSchedule["status"]
 ): CreateAgentScheduleRequest {
-  const cadenceConfig =
-    form.cadence === "hourly"
-      ? { cadence: "hourly" as const, minute: Number(form.minute) }
-      : form.cadence === "daily"
-        ? { cadence: "daily" as const, time: form.time }
-        : form.cadence === "weekly"
-          ? {
-              cadence: "weekly" as const,
-              weekday: Number(form.weekday),
-              time: form.time,
-            }
-          : { cadence: "custom" as const }
+  const cadenceConfig = buildCadenceConfig(form)
 
   return {
     name: form.name.trim(),

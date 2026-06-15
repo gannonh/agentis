@@ -7,6 +7,7 @@ import {
   type AgentScheduleCadenceConfig,
 } from "@workspace/shared"
 import {
+  resolveScheduleCronExpression,
   ScheduleValidationError,
   validateScheduleTiming,
 } from "../invocations/schedule-calculator.js"
@@ -50,12 +51,11 @@ function resolveScheduleTiming(
   const cadence = patch.cadence ?? existing.cadence
   const cadenceConfig = patch.cadenceConfig ?? existing.cadenceConfig
   const timezone = patch.timezone ?? existing.timezone
-  const cronExpression =
-    cadence === "custom"
-      ? patch.cronExpression !== undefined
-        ? patch.cronExpression
-        : (existing.cronExpression ?? null)
-      : null
+  const cronExpression = resolveScheduleCronExpression({
+    cadence,
+    cronExpression: patch.cronExpression,
+    existingCronExpression: existing.cronExpression,
+  })
 
   return { cadence, cadenceConfig, timezone, cronExpression }
 }
@@ -207,14 +207,10 @@ export function createAgentScheduleRoutes(repos: Repositories) {
       throw error
     }
 
-    const patch = {
-      ...parsed.data,
-      cronExpression:
-        parsed.data.cadence !== undefined
-          ? timing.cadence === "custom"
-            ? timing.cronExpression
-            : null
-          : parsed.data.cronExpression,
+    const patch = { ...parsed.data }
+    if (parsed.data.cadence !== undefined) {
+      patch.cronExpression =
+        timing.cadence === "custom" ? timing.cronExpression : null
     }
 
     try {

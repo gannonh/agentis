@@ -12,7 +12,10 @@ import type { AppDatabase } from "../db/client.js"
 import { agentSchedules } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"
 import { mapAgentSchedule } from "../lib/schedule-mappers.js"
-import { computeNextRunAt } from "../invocations/schedule-calculator.js"
+import {
+  computeNextRunAt,
+  resolveScheduleCronExpression,
+} from "../invocations/schedule-calculator.js"
 
 type ScheduleCreateInput = CreateAgentScheduleRequest & {
   agentId: string
@@ -35,8 +38,10 @@ export class AgentScheduleRepository {
             cadence: input.cadence,
             cadenceConfig,
             timezone: input.timezone,
-            cronExpression:
-              input.cadence === "custom" ? input.cronExpression : null,
+            cronExpression: resolveScheduleCronExpression({
+              cadence: input.cadence,
+              cronExpression: input.cronExpression,
+            }),
           })
         : null
 
@@ -120,12 +125,11 @@ export class AgentScheduleRepository {
       ? agentScheduleCadenceConfigSchema.parse(patch.cadenceConfig)
       : existing.cadenceConfig
     const timezone = patch.timezone ?? existing.timezone
-    const cronExpression =
-      cadence === "custom"
-        ? patch.cronExpression !== undefined
-          ? patch.cronExpression
-          : (existing.cronExpression ?? null)
-        : null
+    const cronExpression = resolveScheduleCronExpression({
+      cadence,
+      cronExpression: patch.cronExpression,
+      existingCronExpression: existing.cronExpression,
+    })
     const status = patch.status ?? existing.status
     const updatedAt = nowIso()
     const nextRunAt =
@@ -178,8 +182,10 @@ export class AgentScheduleRepository {
             cadence: existing.cadence,
             cadenceConfig: existing.cadenceConfig,
             timezone: existing.timezone,
-            cronExpression:
-              existing.cadence === "custom" ? existing.cronExpression : null,
+            cronExpression: resolveScheduleCronExpression({
+              cadence: existing.cadence,
+              existingCronExpression: existing.cronExpression,
+            }),
             from: new Date(input.ranAt),
           })
         : existing.nextRunAt ?? null
