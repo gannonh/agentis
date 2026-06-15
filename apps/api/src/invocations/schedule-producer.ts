@@ -83,13 +83,6 @@ export class ScheduleProducer {
             schedule.id,
             started.message
           )
-        } else {
-          this.repos.agentSchedules.recordRunResult({
-            id: schedule.id,
-            lastRunStatus: "failed",
-            lastFailureReason: started.message,
-            ranAt: now,
-          })
         }
         await this.failInvocation({
           claimId: claim.id,

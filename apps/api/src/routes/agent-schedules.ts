@@ -118,10 +118,10 @@ export function createAgentScheduleRoutes(repos: Repositories) {
         cadence: parsed.data.cadence,
         cadenceConfig: parsed.data.cadenceConfig,
         timezone: parsed.data.timezone,
-        cronExpression:
-          parsed.data.cadence === "custom"
-            ? parsed.data.cronExpression
-            : null,
+        cronExpression: resolveScheduleCronExpression({
+          cadence: parsed.data.cadence,
+          cronExpression: parsed.data.cronExpression,
+        }),
       })
     } catch (error) {
       if (error instanceof ScheduleValidationError) {
@@ -134,10 +134,6 @@ export function createAgentScheduleRoutes(repos: Repositories) {
       const created = repos.agentSchedules.create({
         ...parsed.data,
         agentId,
-        cronExpression:
-          parsed.data.cadence === "custom"
-            ? parsed.data.cronExpression
-            : undefined,
       })
       return c.json(agentScheduleSchema.parse(created), 201)
     } catch (error) {

@@ -107,16 +107,27 @@ function formatCronValidationError(error: unknown): string {
     : `Invalid cron expression: ${message}`
 }
 
+function parseCronInterval(
+  expression: string,
+  timezone: string,
+  from: Date
+) {
+  assertValidTimezone(timezone)
+  try {
+    return CronExpressionParser.parse(expression, {
+      tz: timezone,
+      currentDate: from,
+    })
+  } catch (error) {
+    throw new ScheduleValidationError(formatCronValidationError(error))
+  }
+}
+
 export function validateCronExpression(
   expression: string,
   timezone: string
 ): void {
-  assertValidTimezone(timezone)
-  try {
-    CronExpressionParser.parse(expression, { tz: timezone })
-  } catch (error) {
-    throw new ScheduleValidationError(formatCronValidationError(error))
-  }
+  parseCronInterval(expression, timezone, new Date())
 }
 
 export function validateScheduleTiming(input: {
@@ -140,14 +151,11 @@ export function computeNextRunAt(input: {
   from?: Date
 }): string {
   const from = input.from ?? new Date()
-  assertValidTimezone(input.timezone)
   const expression = scheduleCronExpression(input)
-  validateCronExpression(expression, input.timezone)
-  const interval = CronExpressionParser.parse(expression, {
-    tz: input.timezone,
-    currentDate: from,
-  })
-  return interval.next().toDate().toISOString()
+  return parseCronInterval(expression, input.timezone, from)
+    .next()
+    .toDate()
+    .toISOString()
 }
 
 function parseLocalTime(time: string): [number, number] {

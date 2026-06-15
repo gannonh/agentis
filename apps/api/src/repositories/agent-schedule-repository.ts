@@ -1,7 +1,6 @@
 import {
   agentScheduleCadenceConfigSchema,
   type AgentSchedule,
-  type AgentScheduleCadenceConfig,
   type AgentScheduleLastRunStatus,
   type AgentScheduleStatus,
   type CreateAgentScheduleRequest,
@@ -32,16 +31,17 @@ export class AgentScheduleRepository {
     const cadenceConfig = agentScheduleCadenceConfigSchema.parse(
       input.cadenceConfig
     )
+    const cronExpression = resolveScheduleCronExpression({
+      cadence: input.cadence,
+      cronExpression: input.cronExpression,
+    })
     const nextRunAt =
       status === "enabled"
         ? computeNextRunAt({
             cadence: input.cadence,
             cadenceConfig,
             timezone: input.timezone,
-            cronExpression: resolveScheduleCronExpression({
-              cadence: input.cadence,
-              cronExpression: input.cronExpression,
-            }),
+            cronExpression,
           })
         : null
 
@@ -51,8 +51,7 @@ export class AgentScheduleRepository {
       name: input.name,
       status,
       cadence: input.cadence,
-      cronExpression:
-        input.cadence === "custom" ? (input.cronExpression ?? null) : null,
+      cronExpression,
       timezone: input.timezone,
       promptTemplate: input.promptTemplate,
       projectId: input.projectId ?? null,
@@ -230,5 +229,3 @@ export class AgentScheduleRepository {
     return result.changes > 0
   }
 }
-
-export type { AgentScheduleCadenceConfig }
