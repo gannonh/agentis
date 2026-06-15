@@ -52,7 +52,8 @@ This slice intentionally establishes the daemon boundary that later Slack, Disco
 
 ## Known follow-ups (not blocking HA-GAP-13)
 
-- **Webhook and Slack producers:** HA-GAP-14/15 reuse the worker boundary; only `schedule` `source_type` is implemented.
+- **Webhook producer:** shipped in HA-GAP-14; see [_done/2026-06-15-webhook-agent-invocation-design.md](2026-06-15-webhook-agent-invocation-design.md).
+- **Slack producer:** HA-GAP-15 reuses the worker boundary.
 - **Docker Compose worker topology:** HA-GAP-25 should run API + worker as separate Compose services; local dev uses `pnpm dev` + `pnpm dev:worker`.
 - **Predictive cost preflight:** `maxCostPerRunUsd` is not enforced before background execution; only runtime/grant/project blockers run today.
 - **Preset agent schedules:** fixture-backed preset agents still show planned/unavailable copy on the Invocations tab.
@@ -333,7 +334,6 @@ Real-service UAT should run with `AGENTIS_MOCK_RUNTIME=0` when live Gateway cred
 
 ## Explicitly deferred work
 
-- HA-GAP-14 webhook invocation.
 - HA-GAP-15 Slack invocation via Composio.
 - Discord and other listener daemons.
 - Custom MCP server connections.
@@ -365,4 +365,5 @@ Build followed persistence → routes → worker → shared background execution
 ## Related
 
 - [invocation-worker.md](../../guides/invocation-worker.md) — local and production worker operation.
-- [HA-GAP-14 webhook](../index.md#ha-gap-14-webhook-agent-invocation) and [HA-GAP-15 Slack](../index.md#ha-gap-15-slack-invocation-via-composio) — next invocation producers on the shared worker foundation.
+- [HA-GAP-14 webhook](2026-06-15-webhook-agent-invocation-design.md) — shipped signed webhook producer on the shared worker foundation.
+- [HA-GAP-15 Slack](../index.md#ha-gap-15-slack-invocation-via-composio) — next invocation producer on the shared worker foundation.

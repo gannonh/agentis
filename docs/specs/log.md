@@ -4,9 +4,10 @@ Newest entries first.
 
 ## 2026-06-15
 
+- Post-simplify and strict-quality-review OKF refresh for HA-GAP-14: delivered state, module map, and follow-ups in [_done/2026-06-15-webhook-agent-invocation-design.md](_done/2026-06-15-webhook-agent-invocation-design.md); updated HA-GAP-13 cross-links; refreshed [index.md](index.md) completed-foundation list and [invocation-worker.md](../guides/invocation-worker.md) webhook env vars.
 - Shipped HA-GAP-14 webhook agent invocation in [_done/2026-06-15-webhook-agent-invocation-design.md](_done/2026-06-15-webhook-agent-invocation-design.md); added UAT [2026-06-15-webhook-agent-invocation.md](../uat/2026-06-15-webhook-agent-invocation.md); updated [index.md](index.md) acceptance checklist and invocation worker guide.
-- Marked [2026-06-15-webhook-agent-invocation-design.md](_done/2026-06-15-webhook-agent-invocation-design.md) approved for HA-GAP-14 Build.
-- Drafted [2026-06-15-webhook-agent-invocation-design.md](2026-06-15-webhook-agent-invocation-design.md) for HA-GAP-14 signed webhook agent invocation through the shared invocation worker foundation.
+- Marked [_done/2026-06-15-webhook-agent-invocation-design.md](_done/2026-06-15-webhook-agent-invocation-design.md) approved for HA-GAP-14 Build.
+- Drafted [_done/2026-06-15-webhook-agent-invocation-design.md](_done/2026-06-15-webhook-agent-invocation-design.md) for HA-GAP-14 signed webhook agent invocation through the shared invocation worker foundation.
 - Post-simplify and strict-quality-review OKF refresh for HA-GAP-13: delivered state, cron helper consolidation, and follow-ups in [_done/2026-06-14-scheduled-agent-invocations-design.md](_done/2026-06-14-scheduled-agent-invocations-design.md); updated [index.md](index.md) Agents parity row and completed-foundation list.
 
 ## 2026-06-14

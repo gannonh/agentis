@@ -48,7 +48,7 @@
 
 ## Recommended execution order
 
-Completed foundation: HA-GAP-00a through HA-GAP-11, HA-GAP-12, HA-GAP-13, and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, the thread Working artifacts rail, global ⌘K search, enriched new thread home summaries/chips, sidebar thread metadata (stars, Waiting badges, agent chips), a Composio-backed Integrations catalog (search, categories, connection status, NATIVE/MCP badges), and worker-backed scheduled agent invocations.
+Completed foundation: HA-GAP-00a through HA-GAP-11, HA-GAP-12, HA-GAP-13, HA-GAP-14, and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, the thread Working artifacts rail, global ⌘K search, enriched new thread home summaries/chips, sidebar thread metadata (stars, Waiting badges, agent chips), a Composio-backed Integrations catalog (search, categories, connection status, NATIVE/MCP badges), worker-backed scheduled agent invocations, and signed webhook invocation with Agent Detail CRUD.
 
 Start new work from the first open wave below. Within each wave, slices are parallel-safe unless a dependency is listed.
 
