@@ -3,7 +3,7 @@ type: Guide
 title: Invocation worker
 description: Run the Agentis invocation worker for scheduled agent runs in local and self-host deployments.
 tags: [invocations, worker, schedules, self-host]
-timestamp: "2026-06-14T23:10:00Z"
+timestamp: "2026-06-15T17:30:00Z"
 ---
 # Invocation worker
 

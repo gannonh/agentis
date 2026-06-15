@@ -3,13 +3,26 @@ type: Spec
 title: Scheduled agent invocations
 description: Planned HA-GAP-13 worker-backed scheduled agent invocations with Hourly, Daily, Weekly, and Custom cron schedules.
 tags: [agents, invocations, roadmap, ha-gap]
-timestamp: "2026-06-14T22:37:52Z"
+timestamp: "2026-06-15T17:30:00Z"
 ---
 # Scheduled agent invocations
 
 ## Status
 
 Shipped (2026-06-14). Implements HA-GAP-13 from [specs/index.md](../index.md).
+
+**Shipped:** Migration `0034_agent_schedules.sql` adds `agent_schedules` and `agent_invocation_runs`; schedule CRUD at `GET/POST/PATCH/DELETE /api/agents/:agentId/schedules`; `InvocationWorker` + `ScheduleProducer` poll and claim due slots; `RunExecutor.executeToCompletion` shares lifecycle with streaming; Agent Detail **Invocations** tab schedule UI (`agent-schedules-panel.tsx`); `invocationSource` on agent recent threads. Operations guide: [invocation-worker.md](../../guides/invocation-worker.md).
+
+## Delivered state
+
+- `agent_schedules` stores cadence presets (hourly/daily/weekly/custom), timezone, prompt template, optional project, `next_run_at`, and last-run status fields.
+- `agent_invocation_runs` enforces unique `(source_type, source_id, due_at)` claims for duplicate-safe scheduling.
+- `schedule-calculator.ts` uses `cron-parser` for custom cron and preset-to-cron conversion; `resolveScheduleCronExpression` centralizes custom-cron resolution on create, update, and next-run recompute.
+- `agent-schedules.ts` validates timing via `validateScheduleTiming`, archived projects, and agent existence before persistence.
+- `schedule-producer.ts` claims due schedules, starts runs via `startAgentScheduledRun`, executes with `executeToCompletion`, and records schedule/invocation outcomes; missing agents disable the schedule without double-recording failure on the schedule row.
+- `agent-detail-service.ts` attaches `invocationSource` (`scheduleId`, `scheduleName`) to recent threads; `agent-edit-tabs.tsx` shows `Scheduled: {name}` in activity.
+- Shared schemas live in `packages/shared/src/schedule-schemas.ts`; mappers in `apps/api/src/lib/schedule-mappers.ts`.
+- Worker entrypoint: `apps/api/src/worker.ts` (`pnpm dev:worker` / `pnpm --filter api start:worker`).
 
 ## Goal
 
@@ -19,31 +32,30 @@ This slice intentionally establishes the daemon boundary that later Slack, Disco
 
 ## Source of truth
 
-- Roadmap: [specs/index.md](index.md), HA-GAP-13.
-- Product milestone: [_done/agentis-prd-roadmap.md](_done/agentis-prd-roadmap.md), M07 Invocations and Deployment.
-- Agent routes: `apps/api/src/routes/agents.ts`.
-- Thread/run creation: `apps/api/src/routes/threads.ts`, `apps/api/src/repositories/thread-repository.ts`.
-- Run execution: `apps/api/src/runtime/run-executor.ts`.
-- Agent configuration snapshots: `apps/api/src/repositories/agent-repository.ts`.
-- App wiring: `apps/api/src/app.ts`, `apps/api/src/index.ts`.
-- Agent detail UI: `apps/web/src/routes/agent-detail.tsx`, `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`.
-- Agent API client: `apps/web/src/lib/api/agents-client.ts`.
-- Shared schemas: `packages/shared/src/schemas.ts`.
+- Roadmap: [specs/index.md](../index.md), HA-GAP-13.
+- Operations: [guides/invocation-worker.md](../../guides/invocation-worker.md).
+- Product milestone: [agentis-prd-roadmap.md](agentis-prd-roadmap.md), M07 Invocations and Deployment.
+- Schedule routes: `apps/api/src/routes/agent-schedules.ts`.
+- Schedule persistence: `apps/api/src/repositories/agent-schedule-repository.ts`, `apps/api/src/repositories/agent-invocation-run-repository.ts`.
+- Invocation worker: `apps/api/src/invocations/` (`invocation-worker.ts`, `schedule-producer.ts`, `schedule-calculator.ts`, `agent-run-starter.ts`), `apps/api/src/worker.ts`.
+- Thread/run creation: `apps/api/src/repositories/thread-repository.ts` via `startAgentScheduledRun`.
+- Run execution: `apps/api/src/runtime/run-executor.ts` (`executeStream`, `executeToCompletion`).
+- Agent detail metadata: `apps/api/src/agents/agent-detail-service.ts`.
+- Agent detail UI: `apps/web/src/routes/agent-detail.tsx`, `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`, `apps/web/src/components/agent-detail/agent-schedules-panel.tsx`.
+- Schedule hook/client: `apps/web/src/hooks/use-agent-schedules.ts`, `apps/web/src/lib/api/agents-client.ts`.
+- Shared schemas: `packages/shared/src/schedule-schemas.ts`, re-exported from `packages/shared/src/schemas.ts`.
+- Migration: `apps/api/drizzle/0034_agent_schedules.sql`.
 - Governing ADRs:
-  - [ADR 0002: Version Native Tool Permissions With Agent Configuration](../adrs/0002-version-native-tool-permissions-with-agent-configuration.md)
-  - [ADR 0004: Use configurable AI Gateway providers as the live runtime boundary](../adrs/0004-vercel-ai-gateway-runtime-boundary.md)
-  - [ADR 0006: Route Cloudflare AI Gateway models by native REST transport](../adrs/0006-cloudflare-gateway-transport-routing.md)
+  - [ADR 0002: Version Native Tool Permissions With Agent Configuration](../../adrs/0002-version-native-tool-permissions-with-agent-configuration.md)
+  - [ADR 0004: Use configurable AI Gateway providers as the live runtime boundary](../../adrs/0004-vercel-ai-gateway-runtime-boundary.md)
+  - [ADR 0006: Route Cloudflare AI Gateway models by native REST transport](../../adrs/0006-cloudflare-gateway-transport-routing.md)
 
-## Verified current state
+## Known follow-ups (not blocking HA-GAP-13)
 
-- There are no schedule, webhook, or invocation-run persistence tables today.
-- `AgentInvocationsTab` renders `Scheduled` and `Webhook` as disabled future placeholders.
-- `POST /api/agents/:agentId/test-thread` already creates a thread plus queued run from the agent's current configuration snapshot and tool grants.
-- `ThreadRepository.createWithInitialRun` creates the thread, initial user message, queued run, queued run step, and thread-scoped tool grants transactionally.
-- `RunExecutor.executeStream(runId)` owns runtime validation, prompt assembly, tool construction, run status updates, assistant message persistence, run cost ledger finalization, learning suggestions, and evaluation.
-- Run execution is currently exposed through the HTTP streaming route. Scheduled invocations need a background execution path that does not require an open browser response.
-- `maxCostPerRunUsd` exists on agents and configuration versions, but no complete pre-execution cost-limit enforcement path was found during planning.
-- No archived-agent field was found during planning. Missing agents must block execution now; archived-agent behavior should reuse an existing or separately added archived state if one exists by Build time.
+- **Webhook and Slack producers:** HA-GAP-14/15 reuse the worker boundary; only `schedule` `source_type` is implemented.
+- **Docker Compose worker topology:** HA-GAP-25 should run API + worker as separate Compose services; local dev uses `pnpm dev` + `pnpm dev:worker`.
+- **Predictive cost preflight:** `maxCostPerRunUsd` is not enforced before background execution; only runtime/grant/project blockers run today.
+- **Preset agent schedules:** fixture-backed preset agents still show planned/unavailable copy on the Invocations tab.
 
 ## Constraints
 
@@ -163,7 +175,7 @@ Support these schedule modes:
 - Weekly: selected weekday and local time.
 - Custom: cron expression plus timezone.
 
-The implementation should use deterministic helper functions for next-run calculation and validate timezone names. If a cron parsing dependency is added, keep it small and covered by tests. The repository currently has no verified cron parser dependency.
+The implementation uses `cron-parser` (`apps/api/package.json`) with deterministic helpers in `schedule-calculator.ts`. `parseCronInterval` shares parse/validate logic between `validateCronExpression` and `computeNextRunAt`. Preset cadences compile to cron via `cadenceConfigToCronExpression`; custom cadences store the user expression. Timezone names validate through `Intl.DateTimeFormat`.
 
 ### Schedule CRUD API
 
@@ -272,7 +284,7 @@ Build should choose the smallest representation that satisfies Agent Detail acti
 7. Documentation and operations.
    - Document how to run the worker locally and in self-host mode.
    - Document single-node MVP limits and expected environment variables.
-   - Update [specs/index.md](index.md), logs, and relevant runbooks/guides as part of Build closeout.
+   - Update [specs/index.md](../index.md), logs, and relevant runbooks/guides as part of Build closeout.
 
 ## Verification
 
@@ -348,4 +360,9 @@ Non-goals:
 - Natural-language schedule authoring.
 - Broad agent lifecycle redesign.
 
-Build should start with persistence, schedule calculation, and route tests, then add the worker and shared background execution path before UI. Do not ship UI-only schedule configuration that cannot execute runs in the background.
+Build followed persistence → routes → worker → shared background execution → UI → invocation metadata. Post-ship simplify/strict-quality-review consolidated cron resolution (`resolveScheduleCronExpression`), deduped cron parsing (`parseCronInterval`), tightened edit PATCH payloads (`buildUpdateSchedulePayload` omits `status`), and removed duplicate schedule failure recording when a missing agent triggers `disable`.
+
+## Related
+
+- [invocation-worker.md](../../guides/invocation-worker.md) — local and production worker operation.
+- [HA-GAP-14 webhook](../index.md#ha-gap-14-webhook-agent-invocation) and [HA-GAP-15 Slack](../index.md#ha-gap-15-slack-invocation-via-composio) — next invocation producers on the shared worker foundation.

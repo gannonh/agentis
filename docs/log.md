@@ -2,6 +2,10 @@
 
 Newest entries first.
 
+## 2026-06-15
+
+- Post-simplify and strict-quality-review OKF refresh for HA-GAP-13: documented delivered state, final module map (`resolveScheduleCronExpression`, `parseCronInterval`, `agent-schedules-panel.tsx`), and known follow-ups in [specs/_done/2026-06-14-scheduled-agent-invocations-design.md](specs/_done/2026-06-14-scheduled-agent-invocations-design.md); refreshed [specs/index.md](specs/index.md) parity snapshot and completed-foundation list.
+
 ## 2026-06-14
 
 - Shipped HA-GAP-13 scheduled agent invocations: worker entrypoint, schedule CRUD, background run execution, and Agent Detail schedule UI. Added [guides/invocation-worker.md](guides/invocation-worker.md) and moved the spec to [specs/_done/2026-06-14-scheduled-agent-invocations-design.md](specs/_done/2026-06-14-scheduled-agent-invocations-design.md).
