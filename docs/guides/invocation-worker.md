@@ -18,12 +18,7 @@ pnpm dev
 pnpm --filter api dev:worker
 ```
 
-For mock-runtime verification without live AI Gateway credentials, ensure repo `.env` includes:
-
-```bash
-AGENTIS_MOCK_RUNTIME=1
-AGENTIS_MOCK_COMPOSIO=1
-```
+For mock-runtime verification in local E2E/CI, use `AGENTIS_MOCK_RUNTIME=1` via Playwright config — not a repo `.env` on Cursor Cloud VMs. Cloud Agents should use console-injected secrets with `AGENTIS_MOCK_RUNTIME=0`.
 
 Create a schedule from an API-backed agent's **Invocations** tab, then wait for the worker poll interval. The worker creates a thread/run and completes it via `RunExecutor.executeToCompletion`.
 

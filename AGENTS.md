@@ -167,16 +167,16 @@ Follow [DESIGN.md](DESIGN.md): restrained workbench UI, IBM Plex Sans, functiona
 
 No separate database or Redis process: SQLite and document files are owned by the API.
 
-### Environment variables (provided by cloud secrets — do NOT create `.env`)
+### Environment files
 
-In the Cursor Cloud Agent VM, all required environment variables (ports, `AI_GATEWAY_PROVIDER`, AI Gateway keys, `COMPOSIO_API_KEY`, web-search config, and the `AGENTIS_MOCK_*` flags) are injected directly into the shell from cloud secrets. They are already present in `process.env`; the running secret names are listed in `CLOUD_AGENT_INJECTED_SECRET_NAMES`.
+**Cursor Cloud Agents:** In the Cursor Cloud Agent VM, required environment variables (ports, `AI_GATEWAY_PROVIDER`, AI Gateway keys, `COMPOSIO_API_KEY`, web-search config, and the `AGENTIS_MOCK_*` flags) are injected directly into the shell from cloud secrets. They are already present in `process.env`; the running secret names are listed in `CLOUD_AGENT_INJECTED_SECRET_NAMES`.
 
-Do **not** create or copy `.env` files (`cp .env.example .env`, `apps/web/.env`, or `apps/api/.env`) in this environment. Doing so overrides the injected secrets and breaks live runs:
+Configure secrets in the Cursor Cloud console (`AGENTIS_MOCK_RUNTIME=0`, `AGENTIS_MOCK_COMPOSIO=0`, AI Gateway keys, Composio key, etc.). Do **not** create or copy `.env` files (`cp .env.example .env`, `apps/web/.env`, or `apps/api/.env`) in this environment — a repo `.env` can shadow console-injected credentials. See `.env.example` for the variable reference only.
 
 - `apps/api/src/load-env.ts` loads `apps/api/.env` with `override: true`, so an API-local `.env` clobbers injected secrets outright.
 - The root `.env` re-applies `AGENTIS_MOCK_RUNTIME` / `AGENTIS_MOCK_COMPOSIO`, so a copied sample can silently flip the VM from live to mock mode (or vice versa).
 
-The injected secrets default to **live** mode (`AGENTIS_MOCK_RUNTIME=0`, `AGENTIS_MOCK_COMPOSIO=0`) with real AI Gateway and Composio credentials, which is what UAT/verification expects. No env file step is needed. Only create a local `.env` when working outside the cloud VM (e.g. a laptop) without injected secrets.
+The injected secrets default to **live** mode (`AGENTIS_MOCK_RUNTIME=0`, `AGENTIS_MOCK_COMPOSIO=0`) with real AI Gateway and Composio credentials, which is what UAT/verification expects. No env file step is needed.
 
 **Critical gotcha — Turborepo strict env mode strips injected secrets.** Turbo 2.x defaults to `--env-mode=strict`, which only passes env vars declared in `turbo.json` through to each task's process. Since secrets like `COMPOSIO_API_KEY` and `AI_GATEWAY_API_KEY` are **not** declared there, a plain `pnpm dev` starts the API with the secrets stripped and it crashes at boot (`ComposioNoAPIKeyError: No Composio API key provided`). The repo's normal flow avoids this because `load-env.ts` reads `.env` from disk directly (bypassing turbo), but in the cloud VM we deliberately have no `.env`. So in the cloud VM, run turbo with **loose** env mode so the injected secrets reach the API/web tasks:
 
@@ -185,6 +185,15 @@ NODE_ENV=development pnpm exec turbo dev --env-mode=loose
 ```
 
 (`pnpm dev -- --env-mode=loose` does **not** work — pnpm forwards the flag to vite, not turbo.) Build/typecheck/lint/test do not need secrets and work with a plain `pnpm <task>`.
+
+**Local development (outside Cloud):** copy samples and fill in credentials:
+
+```bash
+cp .env.example .env
+cp apps/web/.env.example apps/web/.env
+```
+
+Use `pnpm dev:live` when live AI Gateway and Composio credentials are configured. E2E/CI uses `AGENTIS_MOCK_RUNTIME=1` via Playwright, not via a committed `.env`.
 
 ### Running dev servers
 
