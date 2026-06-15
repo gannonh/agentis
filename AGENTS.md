@@ -167,23 +167,16 @@ Follow [DESIGN.md](DESIGN.md): restrained workbench UI, IBM Plex Sans, functiona
 
 No separate database or Redis process: SQLite and document files are owned by the API.
 
-### Environment files (one-time per VM)
+### Environment variables (provided by cloud secrets — do NOT create `.env`)
 
-If `/workspace/.env` is missing, copy samples before starting dev:
+In the Cursor Cloud Agent VM, all required environment variables (ports, `AI_GATEWAY_PROVIDER`, AI Gateway keys, `COMPOSIO_API_KEY`, web-search config, and the `AGENTIS_MOCK_*` flags) are injected directly into the shell from cloud secrets. They are already present in `process.env`; the running secret names are listed in `CLOUD_AGENT_INJECTED_SECRET_NAMES`.
 
-```bash
-cp .env.example .env
-cp apps/web/.env.example apps/web/.env
-```
+Do **not** create or copy `.env` files (`cp .env.example .env`, `apps/web/.env`, or `apps/api/.env`) in this environment. Doing so overrides the injected secrets and breaks live runs:
 
-For Cloud Agent verification **without** live AI Gateway credentials, append mock flags to root `.env` so thread runs work:
+- `apps/api/src/load-env.ts` loads `apps/api/.env` with `override: true`, so an API-local `.env` clobbers injected secrets outright.
+- The root `.env` re-applies `AGENTIS_MOCK_RUNTIME` / `AGENTIS_MOCK_COMPOSIO`, so a copied sample can silently flip the VM from live to mock mode (or vice versa).
 
-```bash
-AGENTIS_MOCK_RUNTIME=1
-AGENTIS_MOCK_COMPOSIO=1
-```
-
-Use `pnpm dev:live` only when selected AI Gateway credentials (and optionally Composio keys) are available.
+The injected secrets default to **live** mode (`AGENTIS_MOCK_RUNTIME=0`, `AGENTIS_MOCK_COMPOSIO=0`) with real AI Gateway and Composio credentials, which is what UAT/verification expects. Just run `pnpm dev` — no env file step is needed. Only create a local `.env` when working outside the cloud VM (e.g. a laptop) without injected secrets.
 
 ### Running dev servers
 
