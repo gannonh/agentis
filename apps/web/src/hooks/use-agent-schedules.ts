@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type {
   AgentSchedule,
   CreateAgentScheduleRequest,
@@ -15,20 +15,25 @@ export function useAgentSchedules(agentId: string) {
   const [schedules, setSchedules] = useState<AgentSchedule[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const latestRefreshRequest = useRef(0)
 
   const refresh = useCallback(async () => {
+    const requestId = ++latestRefreshRequest.current
     setLoading(true)
     setError(null)
     try {
       const data = await listAgentSchedules(agentId)
+      if (requestId !== latestRefreshRequest.current) return
       setSchedules(data)
     } catch (loadError) {
+      if (requestId !== latestRefreshRequest.current) return
       setError(
         loadError instanceof Error
           ? loadError.message
           : "Failed to load schedules"
       )
     } finally {
+      if (requestId !== latestRefreshRequest.current) return
       setLoading(false)
     }
   }, [agentId])

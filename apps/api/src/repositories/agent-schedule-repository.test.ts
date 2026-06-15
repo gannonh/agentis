@@ -105,6 +105,37 @@ describe("AgentScheduleRepository", () => {
     expect(updated?.cronExpression).toBeUndefined()
   })
 
+  it("preserves nextRunAt when updating non-timing fields", () => {
+    const ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Timing Agent",
+      systemPrompt: "Run on schedule.",
+      model: "gpt-4o-mini",
+    })
+    const schedule = ctx.repos.agentSchedules.create({
+      agentId: agent.id,
+      name: "Due soon",
+      cadence: "hourly",
+      cadenceConfig: { cadence: "hourly", minute: 0 },
+      timezone: "UTC",
+      promptTemplate: "Ping.",
+    })
+    const dueAt = "2020-01-01T00:00:00.000Z"
+    ctx.db
+      .update(agentSchedules)
+      .set({ nextRunAt: dueAt })
+      .where(eq(agentSchedules.id, schedule.id))
+      .run()
+
+    const updated = ctx.repos.agentSchedules.update(schedule.id, {
+      name: "Renamed schedule",
+      promptTemplate: "Updated prompt.",
+    })
+
+    expect(updated?.name).toBe("Renamed schedule")
+    expect(updated?.nextRunAt).toBe(dueAt)
+  })
+
   it("rejects invalid custom cron on create", () => {
     const ctx = createTestContext()
     const agent = ctx.repos.agents.create({

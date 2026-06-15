@@ -95,7 +95,7 @@ export function cadenceConfigToCronExpression(
 function formatCronValidationError(error: unknown): string {
   const message =
     error instanceof Error ? error.message : "Invalid cron expression."
-  const aliasMatch = message.match(/cannot resolve alias "([^"]+)"/i)
+  const aliasMatch = message.match(/cannot resolve alias ['"]([^'"]+)['"]/i)
   if (aliasMatch) {
     return `Invalid cron expression: "${aliasMatch[1]}" is not a recognized month or weekday name. Use numbers (0-6 for weekday, 1-12 for month) or abbreviations like MON or JAN.`
   }

@@ -965,4 +965,47 @@ describe("agent schedule routes", () => {
     const body = (await response.json()) as { code: string }
     expect(body.code).toBe("invalid_schedule_project")
   })
+
+  it("allows disabling schedules tied to archived projects", async () => {
+    ctx = createTestContext()
+    const agent = ctx.repos.agents.create({
+      name: "Project Agent",
+      systemPrompt: "Run on schedule.",
+      model: "gpt-4o-mini",
+    })
+    const project = ctx.repos.projects.create({ name: "Later archived project" })
+    const app = createAgentTestApp(ctx)
+
+    const createResponse = await app.request(
+      `/api/agents/${agent.id}/schedules`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Project schedule",
+          cadence: "hourly",
+          cadenceConfig: { cadence: "hourly", minute: 0 },
+          timezone: "UTC",
+          promptTemplate: "Ping.",
+          projectId: project.id,
+        }),
+      }
+    )
+    expect(createResponse.status).toBe(201)
+    const created = (await createResponse.json()) as { id: string }
+
+    ctx.repos.projects.archive(project.id)
+
+    const patchResponse = await app.request(
+      `/api/agents/${agent.id}/schedules/${created.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "disabled" }),
+      }
+    )
+    expect(patchResponse.status).toBe(200)
+    const patched = (await patchResponse.json()) as { status: string }
+    expect(patched.status).toBe("disabled")
+  })
 })

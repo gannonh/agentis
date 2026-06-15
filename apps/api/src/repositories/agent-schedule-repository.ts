@@ -131,15 +131,24 @@ export class AgentScheduleRepository {
     })
     const status = patch.status ?? existing.status
     const updatedAt = nowIso()
+    const timingChanged =
+      patch.cadence !== undefined ||
+      patch.cadenceConfig !== undefined ||
+      patch.timezone !== undefined ||
+      patch.cronExpression !== undefined
+    const enabledTransition =
+      existing.status !== "enabled" && status === "enabled"
     const nextRunAt =
-      status === "enabled"
-        ? computeNextRunAt({
-            cadence,
-            cadenceConfig,
-            timezone,
-            cronExpression,
-          })
-        : null
+      status !== "enabled"
+        ? null
+        : timingChanged || enabledTransition || !existing.nextRunAt
+          ? computeNextRunAt({
+              cadence,
+              cadenceConfig,
+              timezone,
+              cronExpression,
+            })
+          : existing.nextRunAt
 
     this.db
       .update(agentSchedules)

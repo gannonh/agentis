@@ -190,8 +190,15 @@ export function createAgentScheduleRoutes(repos: Repositories) {
       parsed.data.projectId !== undefined
         ? parsed.data.projectId
         : existing.projectId
-    const projectError = validateScheduleProject(repos, projectId)
-    if (projectError) return projectError
+    const nextStatus = parsed.data.status ?? existing.status
+    const projectAssignmentChanged = parsed.data.projectId !== undefined
+    const shouldValidateProject =
+      Boolean(projectId) &&
+      (nextStatus === "enabled" || projectAssignmentChanged)
+    if (shouldValidateProject) {
+      const projectError = validateScheduleProject(repos, projectId)
+      if (projectError) return projectError
+    }
 
     const timing = resolveScheduleTiming(existing, parsed.data)
     try {

@@ -32,9 +32,13 @@ export class InvocationWorker {
 
   start() {
     if (this.timer) return
-    void this.tick()
+    void this.tick().catch((error) => {
+      console.error("[agentis-worker] initial tick failed", error)
+    })
     this.timer = setInterval(() => {
-      void this.tick()
+      void this.tick().catch((error) => {
+        console.error("[agentis-worker] scheduled tick failed", error)
+      })
     }, this.pollIntervalMs)
   }
 

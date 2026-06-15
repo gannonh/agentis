@@ -59,11 +59,23 @@ export class ScheduleProducer {
         continue
       }
 
+      if (
+        !currentSchedule.nextRunAt ||
+        currentSchedule.nextRunAt !== dueAt
+      ) {
+        this.repos.agentInvocationRuns.markStatus(claim.id, {
+          status: "skipped",
+          failureReason: "Schedule due time changed.",
+        })
+        result.skipped += 1
+        continue
+      }
+
       const runtimeError = validateRuntimeForExecution(this.config)
       if (runtimeError) {
         await this.failInvocation({
           claimId: claim.id,
-          scheduleId: schedule.id,
+          scheduleId: currentSchedule.id,
           ranAt: now,
           failureReason: runtimeError,
         })
@@ -72,21 +84,21 @@ export class ScheduleProducer {
       }
 
       const started = startAgentScheduledRun(this.repos, {
-        agentId: schedule.agentId,
-        prompt: schedule.promptTemplate,
-        projectId: schedule.projectId,
+        agentId: currentSchedule.agentId,
+        prompt: currentSchedule.promptTemplate,
+        projectId: currentSchedule.projectId,
       })
 
       if (!started.ok) {
         if (started.code === "agent_not_found") {
           this.repos.agentSchedules.disable(
-            schedule.id,
+            currentSchedule.id,
             started.message
           )
         }
         await this.failInvocation({
           claimId: claim.id,
-          scheduleId: schedule.id,
+          scheduleId: currentSchedule.id,
           ranAt: now,
           failureReason: started.message,
         })
@@ -99,19 +111,18 @@ export class ScheduleProducer {
         runId: started.runId,
       })
 
-      this.repos.steps.create({
-        runId: started.runId,
-        type: "reasoning",
-        status: "completed",
-        title: "Scheduled invocation",
-        payload: {
-          scheduleId: schedule.id,
-          scheduleName: schedule.name,
-          dueAt,
-        },
-      })
-
       try {
+        this.repos.steps.create({
+          runId: started.runId,
+          type: "reasoning",
+          status: "completed",
+          title: "Scheduled invocation",
+          payload: {
+            scheduleId: currentSchedule.id,
+            scheduleName: currentSchedule.name,
+            dueAt,
+          },
+        })
         const executor = createRunExecutor(
           this.repos,
           this.config,
@@ -125,7 +136,7 @@ export class ScheduleProducer {
             finishedAt,
           })
           this.repos.agentSchedules.recordRunResult({
-            id: schedule.id,
+            id: currentSchedule.id,
             lastRunStatus: "completed",
             ranAt: finishedAt,
             lastFailureReason: null,
@@ -137,7 +148,7 @@ export class ScheduleProducer {
             `Scheduled run finished with status ${completedRun.status}.`
           await this.failInvocation({
             claimId: claim.id,
-            scheduleId: schedule.id,
+            scheduleId: currentSchedule.id,
             ranAt: finishedAt,
             failureReason,
           })
@@ -148,7 +159,7 @@ export class ScheduleProducer {
           error instanceof Error ? error.message : "Scheduled run failed."
         await this.failInvocation({
           claimId: claim.id,
-          scheduleId: schedule.id,
+          scheduleId: currentSchedule.id,
           ranAt: nowIso(),
           failureReason,
         })

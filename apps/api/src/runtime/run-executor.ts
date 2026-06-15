@@ -364,7 +364,7 @@ export class RunExecutor {
       throw new Error(formatMissingEnvVarsMessage(missingRuntimeEnv))
     }
     if (run.status !== "queued") {
-      throw new Error(`Run is not streamable: ${run.status}`)
+      throw new Error(`Run cannot be executed: status is "${run.status}"`)
     }
     if (options.mode === "stream" && getAbortSignal(runId)) {
       throw new Error("Stream already in progress")

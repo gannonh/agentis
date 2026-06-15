@@ -190,6 +190,7 @@ export function AgentSchedulesPanel({ agentId }: { agentId: string }) {
   )
   const [form, setForm] = useState<ScheduleFormState>(emptyFormState)
   const [formError, setFormError] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const sortedSchedules = useMemo(
@@ -240,9 +241,31 @@ export function AgentSchedulesPanel({ agentId }: { agentId: string }) {
   }
 
   async function toggleSchedule(schedule: AgentSchedule) {
-    await saveSchedule(schedule.id, {
-      status: schedule.status === "enabled" ? "disabled" : "enabled",
-    })
+    setActionError(null)
+    try {
+      await saveSchedule(schedule.id, {
+        status: schedule.status === "enabled" ? "disabled" : "enabled",
+      })
+    } catch (toggleError) {
+      setActionError(
+        toggleError instanceof Error
+          ? toggleError.message
+          : "Failed to update schedule"
+      )
+    }
+  }
+
+  async function handleRemoveSchedule(scheduleId: string) {
+    setActionError(null)
+    try {
+      await removeSchedule(scheduleId)
+    } catch (removeError) {
+      setActionError(
+        removeError instanceof Error
+          ? removeError.message
+          : "Failed to delete schedule"
+      )
+    }
   }
 
   return (
@@ -258,6 +281,12 @@ export function AgentSchedulesPanel({ agentId }: { agentId: string }) {
           Create schedule
         </Button>
       </div>
+
+      {actionError ? (
+        <p className="rounded-xl border border-border bg-card/70 px-4 py-3 text-sm text-destructive">
+          {actionError}
+        </p>
+      ) : null}
 
       {loading ? (
         <p className="rounded-xl border border-border bg-card/70 px-4 py-5 text-sm text-muted-foreground">
@@ -327,7 +356,7 @@ export function AgentSchedulesPanel({ agentId }: { agentId: string }) {
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => void removeSchedule(schedule.id)}
+                  onClick={() => void handleRemoveSchedule(schedule.id)}
                 >
                   Delete
                 </Button>

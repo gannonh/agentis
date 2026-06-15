@@ -147,12 +147,18 @@ export class AgentInvocationRunRepository {
     }
   ): AgentInvocationRun | null {
     const updatedAt = nowIso()
+    const isTerminalStatus =
+      input.status === "completed" ||
+      input.status === "failed" ||
+      input.status === "skipped"
     this.db
       .update(agentInvocationRuns)
       .set({
         status: input.status,
         failureReason: input.failureReason ?? null,
-        finishedAt: input.finishedAt ?? updatedAt,
+        ...(isTerminalStatus
+          ? { finishedAt: input.finishedAt ?? updatedAt }
+          : {}),
         updatedAt,
       })
       .where(eq(agentInvocationRuns.id, id))
