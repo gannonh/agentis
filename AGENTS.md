@@ -173,26 +173,22 @@ No separate database or Redis process: SQLite and document files are owned by th
 
 ### Environment files
 
-**Cursor Cloud Agents:** Do **not** create or copy `.env` files (`cp .env.example .env`, `apps/web/.env`, or `apps/api/.env`) in this environment — a repo `.env` can shadow injected credentials. See `.env.example` for the variable reference only.
+**Cursor Cloud Agents:** In the Cursor Cloud Agent VM, required environment variables (ports, `AI_GATEWAY_PROVIDER`, AI Gateway keys, `COMPOSIO_API_KEY`, web-search config, and the `AGENTIS_MOCK_*` flags) are injected directly into the shell from cloud secrets. They are already present in `process.env`; the running secret names are listed in `CLOUD_AGENT_INJECTED_SECRET_NAMES`.
 
-Cursor **should** inject runtime secrets from the Cloud console, but automation-launched agents often receive only `GH_TOKEN` (see [forum.cursor.com/t/163026](https://forum.cursor.com/t/automation-launched-cloud-agents-get-none-of-their-environments-secrets-env-vars-api-launches-into-the-same-environment-get-all-of-them-multi-repo-environments/163026)). Check with:
-
-```bash
-pnpm cloud:env-check
-```
-
-**Automatic bootstrap (repo fallback):** When `CURSOR_AGENT=1`, `pnpm dev` and `pnpm dev:worker` run `scripts/materialize-cloud-runtime-env.mjs` first. If live runtime vars are missing, the script reads GitHub Actions **variables** prefixed with `AGENTIS_RUNTIME_` using `GH_TOKEN` and writes `.env.cloud` (gitignored). `apps/api/src/load-env.ts` loads `.env.cloud` after the root `.env`.
-
-**One-time setup for cloud sessions:**
-
-1. Add runtime credentials to GitHub Actions **secrets** (same values as the Cursor Cloud console): `COMPOSIO_API_KEY`, `CLOUDFLARE_API_KEY`, `CLOUDFLARE_ACCOUNT_ID`, and any gateway aliases you use.
-2. Run the **Sync cloud runtime env** workflow (`.github/workflows/sync-cloud-runtime-env.yml`) from the Actions tab. It copies those secrets into `AGENTIS_RUNTIME_*` variables that cloud agents can read.
-3. Re-run `pnpm cloud:env-check` — tracked vars should show as set.
-
-`pnpm dev` already uses `turbo dev --env-mode=loose` and `turbo.json` declares `globalPassThroughEnv` for runtime prefixes so Turbo does not strip injected or materialized secrets.
+Configure secrets in the Cursor Cloud console (`AGENTIS_MOCK_RUNTIME=0`, `AGENTIS_MOCK_COMPOSIO=0`, AI Gateway keys, Composio key, etc.). Do **not** create or copy `.env` files (`cp .env.example .env`, `apps/web/.env`, or `apps/api/.env`) in this environment — a repo `.env` can shadow console-injected credentials. See `.env.example` for the variable reference only.
 
 - `apps/api/src/load-env.ts` loads `apps/api/.env` with `override: true`, so an API-local `.env` clobbers injected secrets outright.
 - The root `.env` re-applies `AGENTIS_MOCK_RUNTIME` / `AGENTIS_MOCK_COMPOSIO`, so a copied sample can silently flip the VM from live to mock mode (or vice versa).
+
+The injected secrets default to **live** mode (`AGENTIS_MOCK_RUNTIME=0`, `AGENTIS_MOCK_COMPOSIO=0`) with real AI Gateway and Composio credentials, which is what UAT/verification expects. No env file step is needed.
+
+**Critical gotcha — Turborepo strict env mode strips injected secrets.** Turbo 2.x defaults to `--env-mode=strict`, which only passes env vars declared in `turbo.json` through to each task's process. Since secrets like `COMPOSIO_API_KEY` and `AI_GATEWAY_API_KEY` are **not** declared there, a plain `pnpm dev` starts the API with the secrets stripped and it crashes at boot (`ComposioNoAPIKeyError: No Composio API key provided`). The repo's normal flow avoids this because `load-env.ts` reads `.env` from disk directly (bypassing turbo), but in the cloud VM we deliberately have no `.env`. So in the cloud VM, run turbo with **loose** env mode so the injected secrets reach the API/web tasks:
+
+```bash
+NODE_ENV=development pnpm exec turbo dev --env-mode=loose
+```
+
+(`pnpm dev -- --env-mode=loose` does **not** work — pnpm forwards the flag to vite, not turbo.) Build/typecheck/lint/test do not need secrets and work with a plain `pnpm <task>`.
 
 **Local development (outside Cloud):** copy samples and fill in credentials:
 
@@ -205,12 +201,12 @@ Use `pnpm dev:live` when live AI Gateway and Composio credentials are configured
 
 ### Running dev servers
 
-The dev servers are long-lived; start them in **tmux** (not a one-shot background shell):
+The dev servers are long-lived; start them in **tmux** (not a one-shot background shell). In the cloud VM use `--env-mode=loose` (see the env gotcha above) so injected secrets reach the tasks:
 
 ```bash
 SESSION_NAME="agentis-dev"
 tmux -f /exec-daemon/tmux.portal.conf new-session -d -s "$SESSION_NAME" -c /workspace -- "${SHELL:-bash}" -l
-tmux -f /exec-daemon/tmux.portal.conf send-keys -t "$SESSION_NAME:0.0" 'pnpm dev' C-m
+tmux -f /exec-daemon/tmux.portal.conf send-keys -t "$SESSION_NAME:0.0" 'NODE_ENV=development pnpm exec turbo dev --env-mode=loose' C-m
 ```
 
 Health check: `curl -sf http://localhost:${AGENTIS_API_PORT:-3101}/api/health` → `{"ok":true}`; open the web app on port **5177** (see `AGENTIS_WEB_PORT`). A live thread run can be smoke-tested via `POST /api/threads` then `POST /api/runs/<runId>/stream` (SSE).

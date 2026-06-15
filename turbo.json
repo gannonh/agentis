@@ -1,19 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
-  "globalPassThroughEnv": [
-    "AGENTIS_*",
-    "AI_GATEWAY_*",
-    "CLOUDFLARE_*",
-    "COMPOSIO_*",
-    "VERCEL_AI_*",
-    "SUPPORT_AGENT_MODEL",
-    "DATABASE_URL",
-    "NODE_ENV",
-    "GH_TOKEN",
-    "GITHUB_TOKEN",
-    "GITHUB_REPOSITORY"
-  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

@@ -4,17 +4,15 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
-    "predev": "node scripts/materialize-cloud-runtime-env.mjs",
-    "dev": "NODE_ENV=development turbo dev --env-mode=loose",
-    "dev:live": "NODE_ENV=development AGENTIS_MOCK_COMPOSIO=0 AGENTIS_MOCK_RUNTIME=0 turbo dev --env-mode=loose",
-    "cloud:env-check": "node scripts/cloud-env-check.mjs",
+    "dev": "NODE_ENV=development turbo dev",
+    "dev:live": "NODE_ENV=development AGENTIS_MOCK_COMPOSIO=0 AGENTIS_MOCK_RUNTIME=0 turbo dev",
     "lint": "turbo lint",
     "format": "turbo format",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "test:coverage": "turbo test:coverage",
     "test:e2e": "playwright test",
-    "dev:worker": "node scripts/materialize-cloud-runtime-env.mjs && pnpm --filter api dev:worker",
+    "dev:worker": "pnpm --filter api dev:worker",
     "smoke:sandbox-container": "pnpm --filter api smoke:sandbox-container"
   },
   "devDependencies": {
