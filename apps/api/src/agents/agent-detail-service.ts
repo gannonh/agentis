@@ -26,6 +26,8 @@ export function buildAgentDetail(
   const recentThreads = threads.map((thread) => {
     const scheduleSource =
       repos.agentInvocationRuns.getScheduleSourceByThreadId(thread.id)
+    const webhookSource =
+      repos.agentInvocationRuns.getWebhookSourceByThreadId(thread.id)
     return agentRecentThreadSummarySchema.parse({
       ...thread,
       ...(contextByThreadId.get(thread.id) ?? EMPTY_THREAD_LIST_CONTEXT),
@@ -35,7 +37,14 @@ export function buildAgentDetail(
             scheduleId: scheduleSource.scheduleId,
             scheduleName: scheduleSource.scheduleName,
           }
-        : undefined,
+        : webhookSource
+          ? {
+              type: "webhook" as const,
+              webhookId: webhookSource.webhookId,
+              webhookName: webhookSource.webhookName,
+              deliveryId: webhookSource.deliveryId,
+            }
+          : undefined,
     })
   })
 
@@ -51,6 +60,7 @@ export function buildAgentDetail(
       memories,
       evaluations: repos.runs.listEvaluationsForAgent(agentId),
       hasEnabledSchedules: repos.agentSchedules.hasEnabledSchedules(agentId),
+      hasEnabledWebhooks: repos.agentWebhooks.hasEnabledWebhooks(agentId),
     },
   })
 }

@@ -17,7 +17,7 @@ export const agentScheduleLastRunStatusSchema = z.enum([
   "skipped",
 ])
 
-export const agentInvocationSourceTypeSchema = z.enum(["schedule"])
+export const agentInvocationSourceTypeSchema = z.enum(["schedule", "webhook"])
 
 export const agentInvocationRunStatusSchema = z.enum([
   "claimed",
@@ -147,11 +147,19 @@ export const agentInvocationRunSchema = z.object({
   updatedAt: z.string(),
 })
 
-export const agentInvocationSourceSchema = z.object({
-  type: z.literal("schedule"),
-  scheduleId: z.string(),
-  scheduleName: z.string(),
-})
+export const agentInvocationSourceSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("schedule"),
+    scheduleId: z.string(),
+    scheduleName: z.string(),
+  }),
+  z.object({
+    type: z.literal("webhook"),
+    webhookId: z.string(),
+    webhookName: z.string(),
+    deliveryId: z.string(),
+  }),
+])
 
 export type AgentScheduleStatus = z.infer<typeof agentScheduleStatusSchema>
 export type AgentScheduleCadence = z.infer<typeof agentScheduleCadenceSchema>

@@ -58,9 +58,11 @@ function mapApiAgentDetailToAgent(detail: AgentDetailResponse): Agent {
     qualityScore: null,
     totalCost: 0,
     tools: detail.toolGrants.map((grant) => grant.toolkitSlug),
-    invocations: detail.information.hasEnabledSchedules
-      ? ["Thread", "Scheduled"]
-      : ["Thread"],
+    invocations: [
+      "Thread",
+      ...(detail.information.hasEnabledSchedules ? ["Scheduled"] : []),
+      ...(detail.information.hasEnabledWebhooks ? ["Webhook"] : []),
+    ],
     skillsCount: 0,
     memoriesCount: 0,
     libraryCount: detail.information.library.totalCount,

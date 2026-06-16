@@ -2,6 +2,14 @@
 
 Newest entries first.
 
+## 2026-06-16
+
+- Extended [2026-06-15-webhook-agent-invocation.md](2026-06-15-webhook-agent-invocation.md) checklist with empty-body and structured error-code checks after PR #444 review fixes.
+
+## 2026-06-15
+
+- [2026-06-15-webhook-agent-invocation.md](2026-06-15-webhook-agent-invocation.md) — HA-GAP-14 signed webhook golden path UAT with `curl` example.
+
 ## 2026-06-14
 
 - OKF init: added section [index.md](index.md) listing UAT documents.

@@ -3,13 +3,42 @@ type: Spec
 title: Webhook agent invocation
 description: Approved HA-GAP-14 signed webhook endpoints for invoking API-backed agents through the shared invocation worker.
 tags: [agents, invocations, roadmap, ha-gap]
-timestamp: "2026-06-15T00:00:00Z"
+timestamp: "2026-06-15T18:45:00Z"
 ---
 # Webhook agent invocation
 
 ## Status
 
-Approved (2026-06-15). Implements HA-GAP-14 from [specs/index.md](index.md).
+Shipped (2026-06-15). Implements HA-GAP-14 from [specs/index.md](../index.md).
+
+**Shipped:** Migration `0035_agent_webhooks.sql` adds `agent_webhooks` and `agent_webhook_deliveries`; webhook CRUD at `GET/POST/PATCH/DELETE /api/agents/:agentId/webhooks` plus `POST /api/agents/:agentId/webhooks/:webhookId/rotate-secret`; public signed ingress at `POST /api/webhooks/agents/:webhookId`; `WebhookProducer` in `InvocationWorker`; Agent Detail webhooks panel (`agent-webhooks-panel.tsx`); webhook `invocationSource` on recent threads. Operations: [invocation-worker.md](../../guides/invocation-worker.md). UAT: [2026-06-15-webhook-agent-invocation.md](../../uat/2026-06-15-webhook-agent-invocation.md).
+
+## Delivered state
+
+- `agent_webhooks` stores name, enabled/disabled status, AES-256-GCM encrypted secret material, `secret_prefix`, prompt template, optional project, and last-delivery status fields; `agent_webhook_deliveries` queues authenticated payloads with idempotent `delivery_key`, bounded `payload_json`, and thread/run linkage.
+- `agent_invocation_runs` claims webhook deliveries with `source_type: webhook`, using delivery id as `source_id` and delivery `created_at` as `due_at` for duplicate-safe execution.
+- `webhook-secret.ts` generates `whsec_` secrets, encrypts at rest (`AGENTIS_WEBHOOK_SECRET_KEY` required outside explicit `development`/`test`; unset `NODE_ENV` defaults to production semantics), verifies HMAC `sha256` over `<timestamp>.<rawBody>`, and builds public URLs from `AGENTIS_API_PUBLIC_ORIGIN`.
+- `webhook-prompt-template.ts` renders `{{payload}}`, `{{deliveryId}}`, and `{{receivedAt}}` only; unsupported variables throw; templates without variables append a bounded payload block.
+- `public-webhook.ts` reads the raw body before JSON parse, rejects oversized bodies via `Content-Length` when present and via post-read byte length, enforces replay window (`AGENTIS_WEBHOOK_REPLAY_WINDOW_SECONDS`, default 300s) and payload size (`AGENTIS_WEBHOOK_MAX_PAYLOAD_BYTES`, default 64 KiB), normalizes empty bodies to stored `"{}"`, returns machine-readable error codes (including `stale_webhook_timestamp`), and queues via `tryQueueAuthenticatedDelivery` without storing invalid-signature bodies.
+- `agent-webhooks.ts` owns agent-scoped CRUD with shared `getOwnedWebhook` / `invalidAgentWebhookPayload` helpers, archived-project validation, explicit rejection of empty `projectId`, and a 404 when update races delete.
+- `webhook-producer.ts` claims queued deliveries, starts runs through `startAgentInvocationRun`, renders prompts, records a `Webhook invocation` run step, executes with `RunExecutor.executeToCompletion`, and counts disabled-webhook failures in `failed` (not `skipped`) when a claimed delivery cannot run.
+- `agent-run-starter.ts` exposes `startAgentInvocationRun` for schedules and webhooks; `startAgentScheduledRun` remains as a deprecated alias.
+- `sqlite-errors.ts` centralizes `isUniqueConstraintError` for duplicate delivery keys and invocation claims in `agent-webhook-delivery-repository.ts` and `agent-invocation-run-repository.ts`.
+- `agent-detail-service.ts` attaches webhook `invocationSource` (`webhookId`, `webhookName`, `deliveryId`); `agent-edit-tabs.tsx` shows `Webhook: {name}` in activity.
+- Shared schemas live in `packages/shared/src/webhook-schemas.ts`; mappers in `apps/api/src/lib/webhook-mappers.ts`.
+- UI: `agent-webhooks-panel.tsx` and `use-agent-webhooks.ts` (API-sorted list, one-time secret on create/rotate, secret stripped from list state after create, refresh invalidation before mutations, clipboard failure feedback).
+- Tests: `agent-webhooks.test.ts` (including empty body and empty `projectId` cases), `public-webhook` coverage via route tests, `webhook-producer.test.ts` (shared `TestContext` cleanup), `agent-webhook-repository.test.ts`, `agent-activity-tab.test.tsx`.
+
+## Known follow-ups (not blocking HA-GAP-14)
+
+- **Stale `claimed` delivery recovery:** if the worker exits after marking a delivery `claimed` but before inserting an invocation claim, stale recovery today only scans `agent_invocation_runs`; orphaned `claimed` deliveries need a dedicated follow-up.
+- **Per-webhook rate limiting:** deferred; disabled webhooks return `410` today.
+- **Production secret key:** `AGENTIS_WEBHOOK_SECRET_KEY` is required outside explicit `development`/`test`; unset `NODE_ENV` is treated as production.
+- **Predictive cost preflight:** `maxCostPerRunUsd` is not enforced before background execution (shared with HA-GAP-13).
+- **Delivery schema integrity:** `agent_webhook_deliveries.agentId` is denormalized for worker queries; a composite FK or column removal is a future migration.
+- **Agent detail webhook source lookup:** three sequential reads per thread; a joined query is optional optimization.
+- **Preset agent webhooks:** fixture-backed preset agents remain read-only on the Invocations tab.
+- **Slack producer:** HA-GAP-15 is the next invocation channel on the shared worker foundation.
 
 ## Goal
 
@@ -19,28 +48,25 @@ This slice should make webhook invocation useful for self-hosted automation whil
 
 ## Source of truth
 
-- Roadmap: [specs/index.md](index.md), HA-GAP-14.
-- Scheduled invocation foundation: [_done/2026-06-14-scheduled-agent-invocations-design.md](_done/2026-06-14-scheduled-agent-invocations-design.md).
-- Invocation worker: `apps/api/src/invocations/invocation-worker.ts`.
-- Schedule producer reference: `apps/api/src/invocations/schedule-producer.ts`.
-- Agent run starter reference: `apps/api/src/invocations/agent-run-starter.ts`.
-- Invocation claim repository: `apps/api/src/repositories/agent-invocation-run-repository.ts`.
-- Schedule routes reference: `apps/api/src/routes/agent-schedules.ts`.
+- Roadmap: [specs/index.md](../index.md), HA-GAP-14.
+- Operations: [guides/invocation-worker.md](../../guides/invocation-worker.md).
+- Scheduled invocation foundation: [2026-06-14-scheduled-agent-invocations-design.md](2026-06-14-scheduled-agent-invocations-design.md).
+- Webhook routes: `apps/api/src/routes/agent-webhooks.ts`, `apps/api/src/routes/public-webhook.ts`.
+- Webhook persistence: `apps/api/src/repositories/agent-webhook-repository.ts`, `apps/api/src/repositories/agent-webhook-delivery-repository.ts`.
+- Signing and secrets: `apps/api/src/lib/webhook-secret.ts`, `apps/api/src/lib/webhook-prompt-template.ts`, `apps/api/src/lib/webhook-mappers.ts`, `apps/api/src/lib/sqlite-errors.ts`.
+- Invocation worker: `apps/api/src/invocations/invocation-worker.ts`, `apps/api/src/invocations/webhook-producer.ts`.
+- Agent run starter: `apps/api/src/invocations/agent-run-starter.ts` (`startAgentInvocationRun`).
+- Invocation claims: `apps/api/src/repositories/agent-invocation-run-repository.ts`.
+- Agent detail metadata: `apps/api/src/agents/agent-detail-service.ts`.
+- Agent Detail UI: `apps/web/src/components/agent-detail/agent-webhooks-panel.tsx`, `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`.
+- Webhook hook/client: `apps/web/src/hooks/use-agent-webhooks.ts`, `apps/web/src/lib/api/agents-client.ts`.
+- Shared schemas: `packages/shared/src/webhook-schemas.ts`, `packages/shared/src/schedule-schemas.ts` (`AgentInvocationSource` union).
+- Migration: `apps/api/drizzle/0035_agent_webhooks.sql`.
 - App route registration: `apps/api/src/app.ts`.
-- Persistence schema: `apps/api/src/db/schema.ts`.
-- Shared schedule/invocation schemas: `packages/shared/src/schedule-schemas.ts`.
-- Agent Detail invocation UI: `apps/web/src/components/agent-detail/agent-edit-tabs.tsx`.
-- Schedule panel reference: `apps/web/src/components/agent-detail/agent-schedules-panel.tsx`.
-- Agent API client reference: `apps/web/src/lib/api/agents-client.ts`.
 
-## Current state
+## Current state (at ship)
 
-- Scheduled agent invocations are shipped with `agent_schedules`, `agent_invocation_runs`, `ScheduleProducer`, and `InvocationWorker`.
-- `agent_invocation_runs.source_type` and shared `agentInvocationSourceTypeSchema` currently support only `schedule`.
-- `startAgentScheduledRun` creates a thread/run from the agent's current configuration and optional project context.
-- `ScheduleProducer` executes background runs through `RunExecutor.executeToCompletion` and records terminal status.
-- Agent Detail has a disabled Webhook row under Invocations.
-- No webhook configuration, signed inbound route, delivery queue, or webhook source metadata exists.
+All acceptance criteria below are implemented. See **Delivered state** for the final module map after simplify and strict-quality-review refactors.
 
 ## Constraints
 
@@ -361,3 +387,11 @@ Required verification:
 Blocking questions for Build:
 
 - None. If Build discovers an existing secret storage helper, use it. If no helper exists, use a minimal project-local hashing or encryption approach and document the choice in the build report.
+
+Build followed persistence → routes → worker producer → shared run starter → UI → UAT. Post-ship simplify/strict-quality-review consolidated route helpers (`getOwnedWebhook`, `invalidAgentWebhookPayload`, `acceptedDeliveryResponse`), shared SQLite unique-constraint detection (`sqlite-errors.ts`), API-ordered webhook lists (removed client-side sort), and create-hook list updates that omit the one-time secret from persisted UI state.
+
+## Related
+
+- [invocation-worker.md](../../guides/invocation-worker.md) — local and production worker operation including webhook env vars.
+- [2026-06-14-scheduled-agent-invocations-design.md](2026-06-14-scheduled-agent-invocations-design.md) — shared worker foundation.
+- [HA-GAP-15 Slack](../index.md#ha-gap-15-slack-invocation-via-composio) — next invocation producer on the shared worker foundation.

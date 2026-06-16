@@ -45,8 +45,8 @@ This repository maintains an [OKF](https://github.com/GoogleCloudPlatform/knowle
 - **M04/V4 Library artifacts:** API-backed projects, project memories, project context on runs, local artifact storage (`AGENTIS_STORAGE_ROOT`), Artifact-backed Library upload/list/filter/detail/download, and type-specific workspaces. Markdown documents (`document`) use `/documents/:documentId` for viewing, editing, version history, and scope management. Static webpages and slides (`webpage`, `slides`) and interactive Apps (`app`) open at `/artifacts/:artifactId` with frozen HTML preview or sandboxed App runtime, respectively. Slide deck HTML from agents is normalized in `static-artifact-service.ts` (bare `<section>` / `div.slide` parsing, page-marker splits, navigable deck template) before storage. Document, static artifact, and App runtime tools are API-backed.
 - **Native workspace tooling:** V1 read-only file tools, V2 safe file edits, V3 sandboxed command/script execution, and V4 document/static/App artifacts are API-backed. See [agent-native-tooling.md](docs/specs/_done/agent-native-tooling.md).
 - **Composio integrations:** API-backed catalog via `GET /api/integrations` (`q`, `category`, `featured` query params) with Composio toolkit metadata, local connection status, category list, and NATIVE/MCP badges. `/integrations` shows connected/in-use toolkits, browse/search with category chips, and a Custom MCP coming-soon card. `POST /api/integrations/refresh` syncs remote Composio accounts and returns the same list shape as GET (honors active filters). Connect/reset works for any catalog toolkit (not a hardcoded featured slug list). GitHub remains the golden-path toolkit for grants and tool execution. Generic thread creation accepts optional `toolGrants` on `POST /api/threads`; the composer **Tools** picker on `/threads/new` and thread follow-ups grants connected toolkits per thread. Preflight remediation blocks runs with human sentences in the timeline (not machine codes). Grant resolution failures return a human-readable `error` plus machine `code`. Integration refresh syncs remote Composio accounts but does not retarget a granted `connectionId` to a different Composio account — stale granted connections are marked `expired` instead. Mock mode uses `MOCK_COMPOSIO_TOOLKITS` when `AGENTIS_MOCK_COMPOSIO=1`. UAT: [docs/uat/2026-06-08-composio-github-golden-path.md](docs/uat/2026-06-08-composio-github-golden-path.md).
-- **Scheduled invocations:** Worker-backed agent schedules (HA-GAP-13). Agent detail **Invocations** tab CRUD for API-backed agents; `GET/POST/PATCH/DELETE /api/agents/:agentId/schedules`; separate invocation worker (`pnpm dev:worker`). See [docs/guides/invocation-worker.md](docs/guides/invocation-worker.md).
-- **Approved invocation spec:** HA-GAP-14 webhook invocation is approved in [docs/specs/2026-06-15-webhook-agent-invocation-design.md](docs/specs/2026-06-15-webhook-agent-invocation-design.md). Build should reuse the shared invocation worker and keep webhook run execution out of the HTTP request path.
+- **Scheduled invocations:** Worker-backed agent schedules (HA-GAP-13). Agent detail **Invocations** tab schedule CRUD for API-backed agents; `GET/POST/PATCH/DELETE /api/agents/:agentId/schedules`. See [docs/guides/invocation-worker.md](docs/guides/invocation-worker.md) for the shared worker process and env vars.
+- **Webhook invocations:** Signed webhook agent invocation (HA-GAP-14). Agent detail **Invocations** tab **Webhooks** panel (`agent-webhooks-panel.tsx`) CRUD for API-backed agents; `GET/POST/PATCH/DELETE /api/agents/:agentId/webhooks` plus `POST .../rotate-secret`; public signed ingress at `POST /api/webhooks/agents/:webhookId` (headers `x-agentis-webhook-timestamp`, `x-agentis-webhook-signature`, optional `x-agentis-delivery-id`); worker-queued delivery execution via `WebhookProducer`. Set `AGENTIS_API_PUBLIC_ORIGIN` for returned webhook URLs and `AGENTIS_WEBHOOK_SECRET_KEY` outside explicit `development`/`test`. Spec: [docs/specs/_done/2026-06-15-webhook-agent-invocation-design.md](docs/specs/_done/2026-06-15-webhook-agent-invocation-design.md). UAT: [docs/uat/2026-06-15-webhook-agent-invocation.md](docs/uat/2026-06-15-webhook-agent-invocation.md).
 - **MSW:** `apps/web/src/mocks/` — stubs non-thread `/api/*` routes in dev; thread routes proxy to `apps/api`.
 
 ## Routes
@@ -71,7 +71,7 @@ This repository maintains an [OKF](https://github.com/GoogleCloudPlatform/knowle
 ```bash
 pnpm dev
 pnpm dev:live
-pnpm dev:worker
+pnpm dev:worker  # schedules + webhook deliveries
 pnpm typecheck && pnpm build && pnpm lint
 pnpm test:coverage
 pnpm test:e2e
@@ -133,7 +133,7 @@ After install:
 ## Local runtime
 
 1. Set `AI_GATEWAY_PROVIDER` plus selected provider credentials in the repo root `.env` (see `.env.example`) for live model runs. Use `AI_GATEWAY_PROVIDER=vercel` with `VERCEL_AI_GATEWAY_API_KEY`, or `AI_GATEWAY_PROVIDER=cloudflare` with `CLOUDFLARE_API_KEY` and `CLOUDFLARE_ACCOUNT_ID`. The API loads that file on startup; `apps/api/.env` is optional for overrides. For no-key dev search, use `AGENTIS_WEB_SEARCH_PROVIDER=tavily` and `AGENTIS_WEB_SEARCH_BACKEND=keyless`.
-2. `pnpm dev` starts **api** (port 3101) and **web** (port 5177); Vite proxies `/api` to the API. Scheduled invocations also need `pnpm dev:worker` in a separate terminal.
+2. `pnpm dev` starts **api** (port 3101) and **web** (port 5177); Vite proxies `/api` to the API. Scheduled and webhook invocations also need `pnpm dev:worker` in a separate terminal.
 3. For E2E/CI without live Gateway credentials, Playwright starts the API with `AGENTIS_MOCK_RUNTIME=1`.
 
 ## Native workspace execution
@@ -155,8 +155,7 @@ Follow [DESIGN.md](DESIGN.md): restrained workbench UI, IBM Plex Sans, functiona
 
 ## Git
 
-- Commit after each coherent change set or turn.
-- Keep commits atomic: stage only files changed for the current change set and do not mix unrelated work.
+- Commit when the user asks or when landing an explicitly requested deliverable; keep commits atomic: stage only files changed for the current change set and do not mix unrelated work.
 - Use Conventional Commits syntax: `<type>(<scope>): <imperative summary>`.
 - Never use `git push --no-verify` or other hook-skipping flags unless the user explicitly requests it. If a pre-push hook fails, fix the underlying issue and push again.
 

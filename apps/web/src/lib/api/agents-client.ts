@@ -2,29 +2,39 @@ import {
   agentDetailResponseSchema,
   agentListItemSchema,
   agentScheduleSchema,
+  agentWebhookSchema,
   agentUsageResponseSchema,
   createAgentFromPromotionDraftRequestSchema,
   createAgentPromotionDraftResponseSchema,
   createAgentRequestSchema,
   createAgentScheduleRequestSchema,
+  createAgentWebhookRequestSchema,
+  createAgentWebhookResponseSchema,
   createAgentTestThreadRequestSchema,
   createThreadResponseSchema,
+  rotateAgentWebhookSecretResponseSchema,
   updateAgentPromotionDraftRequestSchema,
   updateAgentRequestSchema,
   updateAgentScheduleRequestSchema,
+  updateAgentWebhookRequestSchema,
   type AgentDetailResponse,
   type AgentListItem,
   type AgentSchedule,
+  type AgentWebhook,
   type AgentUsageResponse,
   type CreateAgentFromPromotionDraftRequest,
   type CreateAgentPromotionDraftResponse,
   type CreateAgentRequest,
   type CreateAgentScheduleRequest,
+  type CreateAgentWebhookRequest,
+  type CreateAgentWebhookResponse,
   type CreateAgentTestThreadRequest,
   type CreateThreadResponse,
+  type RotateAgentWebhookSecretResponse,
   type UpdateAgentPromotionDraftRequest,
   type UpdateAgentRequest,
   type UpdateAgentScheduleRequest,
+  type UpdateAgentWebhookRequest,
 } from "@workspace/shared"
 import { ApiError } from "@/lib/api/client"
 
@@ -257,4 +267,84 @@ export async function deleteAgentSchedule(
         : response.statusText
     throw new ApiError(message, response.status)
   }
+}
+
+export async function listAgentWebhooks(
+  agentId: string
+): Promise<AgentWebhook[]> {
+  const response = await fetch(`${agentPath(agentId)}/webhooks`)
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : response.statusText
+    throw new ApiError(message, response.status)
+  }
+  return parseArray(agentWebhookSchema, await response.json())
+}
+
+export async function createAgentWebhook(
+  agentId: string,
+  body: CreateAgentWebhookRequest
+): Promise<CreateAgentWebhookResponse> {
+  const payload = createAgentWebhookRequestSchema.parse(body)
+  const response = await fetch(`${agentPath(agentId)}/webhooks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  return parseJson(response, createAgentWebhookResponseSchema)
+}
+
+export async function updateAgentWebhook(
+  agentId: string,
+  webhookId: string,
+  body: UpdateAgentWebhookRequest
+): Promise<AgentWebhook> {
+  const payload = updateAgentWebhookRequestSchema.parse(body)
+  const response = await fetch(
+    `${agentPath(agentId)}/webhooks/${encodeURIComponent(webhookId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  )
+  return parseJson(response, agentWebhookSchema)
+}
+
+export async function deleteAgentWebhook(
+  agentId: string,
+  webhookId: string
+): Promise<void> {
+  const response = await fetch(
+    `${agentPath(agentId)}/webhooks/${encodeURIComponent(webhookId)}`,
+    { method: "DELETE" }
+  )
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    const message =
+      typeof data === "object" &&
+      data !== null &&
+      "error" in data &&
+      typeof data.error === "string"
+        ? data.error
+        : response.statusText
+    throw new ApiError(message, response.status)
+  }
+}
+
+export async function rotateAgentWebhookSecret(
+  agentId: string,
+  webhookId: string
+): Promise<RotateAgentWebhookSecretResponse> {
+  const response = await fetch(
+    `${agentPath(agentId)}/webhooks/${encodeURIComponent(webhookId)}/rotate-secret`,
+    { method: "POST" }
+  )
+  return parseJson(response, rotateAgentWebhookSecretResponseSchema)
 }

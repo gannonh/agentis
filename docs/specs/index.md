@@ -19,7 +19,7 @@
 | New thread home | Agent switcher, Plan/Execute, suggestion chips, AI thread summaries, capability showcase cards with cost/time | API-backed home with agent picker, suggestion chips, rule-based thread summaries, demo/recent sections (HA-GAP-10), and card/sidebar thread metadata — stars, Waiting badges, agent chips (HA-GAP-11); no capability showcase cards with cost/time | Low–Medium |
 | Thread session | Model picker, Live mode, reasoning blocks, Working Doc side panel, inline artifact iframes, Plan vs Execute | API-backed streaming; human-readable native tool cards, turn-grouped transcript (`thread-transcript.tsx`), Working artifacts rail with inline document/static preview (HA-GAP-08); no draggable panel or in-thread app iframe | Medium |
 | Library | Search, Type/Visibility/Source filters, Save/bookmark, archived toggle, iframe previews | API-backed artifacts + workspaces | Low–Medium |
-| Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, rubric CRUD, run evaluation scores on Overview when rubrics exist, and worker-backed scheduled invocations with Agent Detail CRUD (HA-GAP-13) | Medium |
+| Agents | Ideas roster, observability charts, cost by model, evals, version history, invocations (Slack/Telegram/webhook/email), Live mode | API agents with live usage observability, version history, rubric CRUD, run evaluation scores on Overview when rubrics exist, worker-backed scheduled invocations (HA-GAP-13), and signed webhook invocation with Agent Detail CRUD (HA-GAP-14) | Medium |
 | Command Center | Live roster, cost breakdown, needs-attention queue, pending improvements, recent runs, score trends | API-backed live run metrics, roster, recent runs, avg score, needs-attention queue (HA-GAP-07), and fleet score-trend + cost breakdown charts (HA-GAP-27) | Low–Medium |
 | Learning | Skills (19), categorized memories, rubrics, thread-derived suggestions with accept/dismiss | API-backed skills, memories, rubrics, post-run suggestions with accept/dismiss, and accepted-memory context injection | Low–Medium |
 | Integrations | NATIVE + MCP catalog, custom MCP server, 20+ apps | Composio-backed catalog API with search, category filters, connected/in-use sections, NATIVE/MCP badges; Custom MCP coming-soon card (HA-GAP-12) | Low–Medium |
@@ -48,7 +48,7 @@
 
 ## Recommended execution order
 
-Completed foundation: HA-GAP-00a through HA-GAP-11, HA-GAP-12, HA-GAP-13, and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, the thread Working artifacts rail, global ⌘K search, enriched new thread home summaries/chips, sidebar thread metadata (stars, Waiting badges, agent chips), a Composio-backed Integrations catalog (search, categories, connection status, NATIVE/MCP badges), and worker-backed scheduled agent invocations.
+Completed foundation: HA-GAP-00a through HA-GAP-11, HA-GAP-12, HA-GAP-13, HA-GAP-14, and HA-GAP-27 are shipped. Agentis now has the model-picker/research golden path, thread tool-result UX, one Composio golden path, honest demo-data labeling, self-host research docs, cost attribution, live Command Center metrics, agent observability, Learning APIs, post-run suggestions, rubric scoring, needs-attention, Command Center charts, the thread Working artifacts rail, global ⌘K search, enriched new thread home summaries/chips, sidebar thread metadata (stars, Waiting badges, agent chips), a Composio-backed Integrations catalog (search, categories, connection status, NATIVE/MCP badges), worker-backed scheduled agent invocations, and signed webhook invocation with Agent Detail CRUD.
 
 Start new work from the first open wave below. Within each wave, slices are parallel-safe unless a dependency is listed.
 
@@ -191,21 +191,21 @@ Start new work from the first open wave below. Within each wave, slices are para
 
 #### HA-GAP-14: Webhook agent invocation
 
-**Status:** Approved. Spec: [2026-06-15-webhook-agent-invocation-design.md](2026-06-15-webhook-agent-invocation-design.md).
+**Status:** Shipped (2026-06-15). Spec: [_done/2026-06-15-webhook-agent-invocation-design.md](_done/2026-06-15-webhook-agent-invocation-design.md).
 
 **HyperAgent reference:** Agent → Create webhooks.
 
-**Agentis today:** Scheduled invocation worker foundation exists; webhook config, signed inbound route, delivery queue, and webhook source metadata are not implemented.
+**Agentis today:** Signed webhook CRUD, HMAC-verified public ingress, worker-queued deliveries, and webhook source metadata on Agent Detail activity.
 
 **Goal:** Signed webhook endpoint triggers agent run with payload template.
 
 **Demo:** `curl` webhook → run created → transcript shows injected context.
 
 **Acceptance:**
-- [ ] Webhook secret + URL per agent.
-- [ ] HMAC verification.
-- [ ] Run history lists webhook-triggered runs.
-- [ ] Rate limit + disabled state.
+- [x] Webhook secret + URL per agent.
+- [x] HMAC verification.
+- [x] Run history lists webhook-triggered runs.
+- [x] Disabled state (rate limit deferred).
 
 **Depends on:** None (parallel with HA-GAP-13).
 
@@ -565,7 +565,7 @@ flowchart TD
 ## Next steps
 
 1. Wave 2: HA-GAP-11 (thread metadata) shipped 2026-06-14. HA-GAP-08, HA-GAP-09, and HA-GAP-10 shipped in 2026-06-13.
-2. Wave 3: HA-GAP-12 (integrations catalog API wire-up) shipped in 2026-06-13 (PR #439). HA-GAP-13 (scheduled agent invocations) shipped in 2026-06-14 and establishes the worker foundation for later invocation sources. HA-GAP-15 (Slack invocation), HA-GAP-16 (custom MCP), and HA-GAP-14 (webhook) remain unblocked follow-ups.
+2. Wave 3: HA-GAP-12 (integrations catalog API wire-up) shipped in 2026-06-13 (PR #439). HA-GAP-13 (scheduled agent invocations) shipped in 2026-06-14. HA-GAP-14 (webhook invocation) shipped in 2026-06-15. HA-GAP-15 (Slack invocation) and HA-GAP-16 (custom MCP) remain unblocked follow-ups.
 3. Keep this roadmap aligned as discovery work continues.
 
 ---
@@ -578,7 +578,6 @@ Implementation specs, design docs, and build reports. Completed work lives in `_
 
 | Spec | Status | Notes |
 | --- | --- | --- |
-| [2026-06-15-webhook-agent-invocation-design.md](2026-06-15-webhook-agent-invocation-design.md) | Approved | HA-GAP-14 — signed webhook invocation through the worker foundation |
 | [2026-06-14-thread-metadata-design.md](2026-06-14-thread-metadata-design.md) | Shipped | HA-GAP-11 — thread metadata, stars, waiting badges, agent chip |
 | [2026-06-13-thread-working-artifacts-design.md](2026-06-13-thread-working-artifacts-design.md) | Shipped | HA-GAP-08 — thread Working artifacts rail |
 
@@ -589,6 +588,7 @@ Implementation specs, design docs, and build reports. Completed work lives in `_
 | [agentis-prd-roadmap.md](_done/agentis-prd-roadmap.md) | Original PRD and MVP roadmap |
 | [agent-native-tooling.md](_done/agent-native-tooling.md) | Native tooling PRD and version roadmap (V1–V4) |
 | [2026-06-14-scheduled-agent-invocations-design.md](_done/2026-06-14-scheduled-agent-invocations-design.md) | HA-GAP-13 scheduled agent invocations |
+| [2026-06-15-webhook-agent-invocation-design.md](_done/2026-06-15-webhook-agent-invocation-design.md) | HA-GAP-14 webhook agent invocation |
 | [2026-05-21-m03-composio-integrations-tool-access.md](_done/2026-05-21-m03-composio-integrations-tool-access.md) | M03 Composio integrations |
 | [2026-05-22-m04-projects-context-artifacts.md](_done/2026-05-22-m04-projects-context-artifacts.md) | M04 projects, context, artifacts |
 | [2026-05-29-agent-native-tooling-design.md](_done/2026-05-29-agent-native-tooling-design.md) | V1 read-only workspace tools |

@@ -3,6 +3,7 @@ import type { AppConfig } from "../config.js"
 import { nowIso } from "../lib/ids.js"
 import type { Repositories } from "../repositories/index.js"
 import { ScheduleProducer } from "./schedule-producer.js"
+import { WebhookProducer } from "./webhook-producer.js"
 
 export type InvocationWorkerOptions = {
   pollIntervalMs?: number
@@ -12,7 +13,8 @@ export type InvocationWorkerOptions = {
 export class InvocationWorker {
   private timer: ReturnType<typeof setInterval> | undefined
   private running = false
-  private readonly producer: ScheduleProducer
+  private readonly scheduleProducer: ScheduleProducer
+  private readonly webhookProducer: WebhookProducer
   private readonly pollIntervalMs: number
   private readonly staleClaimMs: number
 
@@ -22,7 +24,8 @@ export class InvocationWorker {
     private readonly services: ComposioServices,
     options: InvocationWorkerOptions = {}
   ) {
-    this.producer = new ScheduleProducer(repos, config, services)
+    this.scheduleProducer = new ScheduleProducer(repos, config, services)
+    this.webhookProducer = new WebhookProducer(repos, config, services)
     this.pollIntervalMs =
       options.pollIntervalMs ?? readPositiveInt("AGENTIS_WORKER_POLL_MS", 30_000)
     this.staleClaimMs =
@@ -54,7 +57,12 @@ export class InvocationWorker {
     this.running = true
     try {
       this.reclaimStaleClaims(now)
-      await this.producer.processDueSchedules(now)
+      await this.scheduleProducer.processDueSchedules(now).catch((error) => {
+        console.error("[agentis-worker] schedule producer failed", error)
+      })
+      await this.webhookProducer.processQueuedDeliveries(now).catch((error) => {
+        console.error("[agentis-worker] webhook producer failed", error)
+      })
     } finally {
       this.running = false
     }
@@ -83,6 +91,23 @@ export class InvocationWorker {
           lastFailureReason: failureReason,
           ranAt: now,
         })
+      }
+
+      if (claim.sourceType === "webhook") {
+        this.repos.agentWebhookDeliveries.markStatus(claim.sourceId, {
+          status: "failed",
+          failureReason,
+          finishedAt: now,
+        })
+        const delivery = this.repos.agentWebhookDeliveries.getById(claim.sourceId)
+        if (delivery) {
+          this.repos.agentWebhooks.recordDeliveryResult({
+            id: delivery.webhookId,
+            lastDeliveryStatus: "failed",
+            deliveredAt: now,
+            lastFailureReason: failureReason,
+          })
+        }
       }
     }
   }
