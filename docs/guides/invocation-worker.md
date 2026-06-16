@@ -3,7 +3,7 @@ type: Guide
 title: Invocation worker
 description: Run the Agentis invocation worker for scheduled agent runs in local and self-host deployments.
 tags: [invocations, worker, schedules, self-host]
-timestamp: "2026-06-15T20:00:00Z"
+timestamp: "2026-06-16T10:00:00Z"
 ---
 # Invocation worker
 
@@ -31,7 +31,7 @@ Webhook callers POST signed JSON to `POST /api/webhooks/agents/:webhookId`. See 
 | `AGENTIS_WORKER_POLL_MS` | `30000` | Poll interval for due schedules, queued webhook deliveries, and stale-claim recovery |
 | `AGENTIS_WORKER_STALE_CLAIM_MS` | `900000` (15m) | Mark `claimed`/`running` invocation rows failed when older than this threshold |
 | `AGENTIS_API_PUBLIC_ORIGIN` | `http://127.0.0.1:3101` | Base URL embedded in webhook endpoint URLs returned by the API |
-| `AGENTIS_WEBHOOK_SECRET_KEY` | dev default in non-production | AES-256-GCM key material for encrypting stored webhook secrets; required in production |
+| `AGENTIS_WEBHOOK_SECRET_KEY` | required outside `development`/`test` | AES-256-GCM key material for encrypting stored webhook secrets; explicit dev/test fallback only |
 | `AGENTIS_WEBHOOK_REPLAY_WINDOW_SECONDS` | `300` | Reject signed webhook requests when the timestamp header is older than this window |
 | `AGENTIS_WEBHOOK_MAX_PAYLOAD_BYTES` | `65536` | Maximum raw JSON body size for public webhook ingress |
 

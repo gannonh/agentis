@@ -2,6 +2,10 @@
 
 Newest entries first.
 
+## 2026-06-16
+
+- Post-PR #444 hardening for HA-GAP-14: updated delivered state, ingress validation notes, and follow-ups in [specs/_done/2026-06-15-webhook-agent-invocation-design.md](specs/_done/2026-06-15-webhook-agent-invocation-design.md); corrected webhook secret env semantics in [guides/invocation-worker.md](guides/invocation-worker.md); extended [uat/2026-06-15-webhook-agent-invocation.md](uat/2026-06-15-webhook-agent-invocation.md) checklist.
+
 ## 2026-06-15
 
 - Post-simplify and strict-quality-review OKF refresh for HA-GAP-14: documented delivered state, final module map (`webhook-secret.ts`, `sqlite-errors.ts`, `agent-webhooks-panel.tsx`), and known follow-ups in [specs/_done/2026-06-15-webhook-agent-invocation-design.md](specs/_done/2026-06-15-webhook-agent-invocation-design.md); refreshed [specs/index.md](specs/index.md) completed-foundation list; extended [guides/invocation-worker.md](guides/invocation-worker.md) with webhook env vars; indexed [uat/2026-06-15-webhook-agent-invocation.md](uat/2026-06-15-webhook-agent-invocation.md).

@@ -2,6 +2,10 @@
 
 Newest entries first.
 
+## 2026-06-16
+
+- Post-PR #444 review hardening for HA-GAP-14: empty-body normalization, `Content-Length` guard, empty `projectId` validation, production-safe webhook secret fallback, producer metrics, and UI refresh/clipboard fixes documented in [_done/2026-06-15-webhook-agent-invocation-design.md](_done/2026-06-15-webhook-agent-invocation-design.md); [invocation-worker.md](../guides/invocation-worker.md) env table updated.
+
 ## 2026-06-15
 
 - Post-simplify and strict-quality-review OKF refresh for HA-GAP-14: delivered state, module map, and follow-ups in [_done/2026-06-15-webhook-agent-invocation-design.md](_done/2026-06-15-webhook-agent-invocation-design.md); updated HA-GAP-13 cross-links; refreshed [index.md](index.md) completed-foundation list and [invocation-worker.md](../guides/invocation-worker.md) webhook env vars.

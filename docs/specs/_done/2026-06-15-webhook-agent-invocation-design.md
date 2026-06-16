@@ -17,23 +17,26 @@ Shipped (2026-06-15). Implements HA-GAP-14 from [specs/index.md](../index.md).
 
 - `agent_webhooks` stores name, enabled/disabled status, AES-256-GCM encrypted secret material, `secret_prefix`, prompt template, optional project, and last-delivery status fields; `agent_webhook_deliveries` queues authenticated payloads with idempotent `delivery_key`, bounded `payload_json`, and thread/run linkage.
 - `agent_invocation_runs` claims webhook deliveries with `source_type: webhook`, using delivery id as `source_id` and delivery `created_at` as `due_at` for duplicate-safe execution.
-- `webhook-secret.ts` generates `whsec_` secrets, encrypts at rest (`AGENTIS_WEBHOOK_SECRET_KEY`), verifies HMAC `sha256` over `<timestamp>.<rawBody>`, and builds public URLs from `AGENTIS_API_PUBLIC_ORIGIN`.
+- `webhook-secret.ts` generates `whsec_` secrets, encrypts at rest (`AGENTIS_WEBHOOK_SECRET_KEY` required outside explicit `development`/`test`; unset `NODE_ENV` defaults to production semantics), verifies HMAC `sha256` over `<timestamp>.<rawBody>`, and builds public URLs from `AGENTIS_API_PUBLIC_ORIGIN`.
 - `webhook-prompt-template.ts` renders `{{payload}}`, `{{deliveryId}}`, and `{{receivedAt}}` only; unsupported variables throw; templates without variables append a bounded payload block.
-- `public-webhook.ts` reads the raw body before JSON parse, enforces replay window (`AGENTIS_WEBHOOK_REPLAY_WINDOW_SECONDS`, default 300s) and payload size (`AGENTIS_WEBHOOK_MAX_PAYLOAD_BYTES`, default 64 KiB), and queues via `tryQueueAuthenticatedDelivery` without storing invalid-signature bodies.
-- `agent-webhooks.ts` owns agent-scoped CRUD with shared `getOwnedWebhook` / `invalidAgentWebhookPayload` helpers and archived-project validation.
-- `webhook-producer.ts` claims queued deliveries, starts runs through `startAgentInvocationRun`, renders prompts, records a `Webhook invocation` run step, and executes with `RunExecutor.executeToCompletion`.
+- `public-webhook.ts` reads the raw body before JSON parse, rejects oversized bodies via `Content-Length` when present and via post-read byte length, enforces replay window (`AGENTIS_WEBHOOK_REPLAY_WINDOW_SECONDS`, default 300s) and payload size (`AGENTIS_WEBHOOK_MAX_PAYLOAD_BYTES`, default 64 KiB), normalizes empty bodies to stored `"{}"`, returns machine-readable error codes (including `stale_webhook_timestamp`), and queues via `tryQueueAuthenticatedDelivery` without storing invalid-signature bodies.
+- `agent-webhooks.ts` owns agent-scoped CRUD with shared `getOwnedWebhook` / `invalidAgentWebhookPayload` helpers, archived-project validation, explicit rejection of empty `projectId`, and a 404 when update races delete.
+- `webhook-producer.ts` claims queued deliveries, starts runs through `startAgentInvocationRun`, renders prompts, records a `Webhook invocation` run step, executes with `RunExecutor.executeToCompletion`, and counts disabled-webhook failures in `failed` (not `skipped`) when a claimed delivery cannot run.
 - `agent-run-starter.ts` exposes `startAgentInvocationRun` for schedules and webhooks; `startAgentScheduledRun` remains as a deprecated alias.
 - `sqlite-errors.ts` centralizes `isUniqueConstraintError` for duplicate delivery keys and invocation claims in `agent-webhook-delivery-repository.ts` and `agent-invocation-run-repository.ts`.
 - `agent-detail-service.ts` attaches webhook `invocationSource` (`webhookId`, `webhookName`, `deliveryId`); `agent-edit-tabs.tsx` shows `Webhook: {name}` in activity.
 - Shared schemas live in `packages/shared/src/webhook-schemas.ts`; mappers in `apps/api/src/lib/webhook-mappers.ts`.
-- UI: `agent-webhooks-panel.tsx` and `use-agent-webhooks.ts` (API-sorted list, one-time secret on create/rotate, secret stripped from list state after create).
-- Tests: `agent-webhooks.test.ts`, `public-webhook` coverage via route tests, `webhook-producer.test.ts`, `agent-webhook-repository.test.ts`, `agent-activity-tab.test.tsx`.
+- UI: `agent-webhooks-panel.tsx` and `use-agent-webhooks.ts` (API-sorted list, one-time secret on create/rotate, secret stripped from list state after create, refresh invalidation before mutations, clipboard failure feedback).
+- Tests: `agent-webhooks.test.ts` (including empty body and empty `projectId` cases), `public-webhook` coverage via route tests, `webhook-producer.test.ts` (shared `TestContext` cleanup), `agent-webhook-repository.test.ts`, `agent-activity-tab.test.tsx`.
 
 ## Known follow-ups (not blocking HA-GAP-14)
 
+- **Stale `claimed` delivery recovery:** if the worker exits after marking a delivery `claimed` but before inserting an invocation claim, stale recovery today only scans `agent_invocation_runs`; orphaned `claimed` deliveries need a dedicated follow-up.
 - **Per-webhook rate limiting:** deferred; disabled webhooks return `410` today.
-- **Production secret key:** `AGENTIS_WEBHOOK_SECRET_KEY` is required in production; dev falls back to a local default.
+- **Production secret key:** `AGENTIS_WEBHOOK_SECRET_KEY` is required outside explicit `development`/`test`; unset `NODE_ENV` is treated as production.
 - **Predictive cost preflight:** `maxCostPerRunUsd` is not enforced before background execution (shared with HA-GAP-13).
+- **Delivery schema integrity:** `agent_webhook_deliveries.agentId` is denormalized for worker queries; a composite FK or column removal is a future migration.
+- **Agent detail webhook source lookup:** three sequential reads per thread; a joined query is optional optimization.
 - **Preset agent webhooks:** fixture-backed preset agents remain read-only on the Invocations tab.
 - **Slack producer:** HA-GAP-15 is the next invocation channel on the shared worker foundation.
 

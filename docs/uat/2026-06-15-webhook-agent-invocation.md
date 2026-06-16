@@ -42,6 +42,8 @@ Expected response: `202 Accepted` with `{ "deliveryId": "...", "status": "queued
 3. Agent Detail → Activity shows `Webhook: <name>` on the recent thread.
 4. Disabling the webhook returns `410` for new signed requests.
 5. Invalid signatures return `401` and do not create delivery rows.
+6. Empty POST bodies are accepted (`202`) and execute successfully after worker processing (stored payload is `{}`).
+7. Oversized bodies return `413` (`webhook_payload_too_large`); stale timestamps return `400` with `stale_webhook_timestamp`.
 
 ## Where to confirm results
 
