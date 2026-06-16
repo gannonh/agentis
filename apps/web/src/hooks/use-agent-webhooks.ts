@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
+  agentWebhookSchema,
   type AgentWebhook,
   type CreateAgentWebhookRequest,
   type CreateAgentWebhookResponse,
@@ -48,7 +49,7 @@ export function useAgentWebhooks(agentId: string) {
 
   async function createWebhook(body: CreateAgentWebhookRequest) {
     const created = await createAgentWebhook(agentId, body)
-    const { secret: _secret, ...webhook } = created
+    const webhook = agentWebhookSchema.parse(created)
     setWebhooks((current) => [webhook, ...current])
     return created
   }
