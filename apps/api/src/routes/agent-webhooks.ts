@@ -22,7 +22,16 @@ function validateWebhookProject(
   repos: Repositories,
   projectId?: string | null
 ): Response | null {
-  if (!projectId) return null
+  if (projectId == null) return null
+  if (projectId.trim() === "") {
+    return new Response(
+      JSON.stringify({
+        error: "Project is not available for webhook runs.",
+        code: "invalid_webhook_project",
+      }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    )
+  }
   const project = repos.projects.getById(projectId)
   if (!project || project.status === "archived") {
     return new Response(
@@ -133,14 +142,20 @@ export function createAgentWebhookRoutes(repos: Repositories) {
     const nextStatus = parsed.data.status ?? existing.status
     const projectAssignmentChanged = parsed.data.projectId !== undefined
     const shouldValidateProject =
-      Boolean(projectId) &&
-      (nextStatus === "enabled" || projectAssignmentChanged)
+      projectAssignmentChanged ||
+      (Boolean(projectId) && nextStatus === "enabled")
     if (shouldValidateProject) {
       const projectError = validateWebhookProject(repos, projectId)
       if (projectError) return projectError
     }
 
     const updated = repos.agentWebhooks.update(webhookId, parsed.data)
+    if (!updated) {
+      return c.json(
+        { error: "Webhook not found", code: "agent_webhook_not_found" },
+        404
+      )
+    }
     return c.json(agentWebhookSchema.parse(updated))
   })
 

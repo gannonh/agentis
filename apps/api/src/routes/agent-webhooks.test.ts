@@ -304,4 +304,87 @@ describe("agent webhook routes", () => {
     })
     expect(disabled.status).toBe(410)
   })
+
+  it("rejects empty projectId values on create and update", async () => {
+    ctx = createTestContext()
+    const app = createWebhookTestApp(ctx)
+    const agent = ctx.repos.agents.create({
+      name: "Project Validation Agent",
+      systemPrompt: "Validate project ids.",
+      model: "gpt-4o-mini",
+    })
+
+    const createResponse = await app.request(
+      `/api/agents/${agent.id}/webhooks`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Invalid project",
+          promptTemplate: "Payload: {{payload}}",
+          projectId: "",
+        }),
+      }
+    )
+    expect(createResponse.status).toBeGreaterThanOrEqual(400)
+    expect(createResponse.status).toBeLessThan(500)
+
+    const created = await (
+      await app.request(`/api/agents/${agent.id}/webhooks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Valid webhook",
+          promptTemplate: "Payload: {{payload}}",
+        }),
+      })
+    ).json() as { id: string }
+
+    const updateResponse = await app.request(
+      `/api/agents/${agent.id}/webhooks/${created.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: "" }),
+      }
+    )
+    expect(updateResponse.status).toBeGreaterThanOrEqual(400)
+    expect(updateResponse.status).toBeLessThan(500)
+  })
+
+  it("accepts empty webhook bodies and stores normalized JSON for the worker", async () => {
+    ctx = createTestContext()
+    const app = createWebhookTestApp(ctx)
+    const agent = ctx.repos.agents.create({
+      name: "Empty Body Agent",
+      systemPrompt: "Handle empty webhook bodies.",
+      model: "gpt-4o-mini",
+    })
+    const created = await (
+      await app.request(`/api/agents/${agent.id}/webhooks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Empty body",
+          promptTemplate: "Payload: {{payload}}",
+        }),
+      })
+    ).json() as { id: string; secret: string }
+
+    const signed = signRequest(created.secret, "")
+    const accepted = await app.request(`/api/webhooks/agents/${created.id}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-agentis-webhook-timestamp": signed.timestamp,
+        "x-agentis-webhook-signature": signed.signature,
+      },
+      body: "",
+    })
+    expect(accepted.status).toBe(202)
+    const acceptedBody = (await accepted.json()) as { deliveryId: string }
+    expect(
+      ctx.repos.agentWebhookDeliveries.getPayloadJson(acceptedBody.deliveryId)
+    ).toBe("{}")
+  })
 })

@@ -1,13 +1,20 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
 import { createApp } from "../app.js"
 import { createComposioServices } from "../composio/index.js"
 import { signWebhookPayload } from "../lib/webhook-secret.js"
-import { createTestContext } from "../test/setup.js"
+import { createTestContext, type TestContext } from "../test/setup.js"
 import { WebhookProducer } from "./webhook-producer.js"
+
+let ctx: TestContext | undefined
+
+afterEach(() => {
+  ctx?.cleanup()
+  ctx = undefined
+})
 
 describe("WebhookProducer", () => {
   it("claims queued deliveries, creates runs, and completes them in the background", async () => {
-    const ctx = createTestContext()
+    ctx = createTestContext()
     const config = { ...ctx.config, mockRuntime: true }
     const services = createComposioServices(ctx.repos, config)
     const agent = ctx.repos.agents.create({
@@ -53,7 +60,7 @@ describe("WebhookProducer", () => {
   }, 20_000)
 
   it("skips duplicate claims for the same delivery slot", async () => {
-    const ctx = createTestContext()
+    ctx = createTestContext()
     const config = { ...ctx.config, mockRuntime: true }
     const services = createComposioServices(ctx.repos, config)
     const agent = ctx.repos.agents.create({
@@ -93,7 +100,7 @@ describe("WebhookProducer", () => {
   }, 25_000)
 
   it("records project validation failures without disabling the webhook", async () => {
-    const ctx = createTestContext()
+    ctx = createTestContext()
     const config = { ...ctx.config, mockRuntime: true }
     const services = createComposioServices(ctx.repos, config)
     const agent = ctx.repos.agents.create({
@@ -134,7 +141,7 @@ describe("WebhookProducer", () => {
   })
 
   it("exposes webhook invocation source on agent detail", async () => {
-    const ctx = createTestContext()
+    ctx = createTestContext()
     const config = { ...ctx.config, mockRuntime: true }
     const services = createComposioServices(ctx.repos, config)
     const app = createApp(ctx.repos, config, services)

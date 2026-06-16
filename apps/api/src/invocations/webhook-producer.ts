@@ -53,7 +53,7 @@ export class WebhookProducer {
           failureReason: "Webhook is disabled.",
           lastDeliveryStatus: "failed",
         })
-        result.skipped += 1
+        result.failed += 1
         continue
       }
 
@@ -86,7 +86,9 @@ export class WebhookProducer {
       }
 
       const payloadJson =
-        this.repos.agentWebhookDeliveries.getPayloadJson(delivery.id) ?? "{}"
+        this.repos.agentWebhookDeliveries
+          .getPayloadJson(delivery.id)
+          ?.trim() || "{}"
       let prompt: string
       try {
         const payload = JSON.parse(payloadJson) as unknown
@@ -217,7 +219,7 @@ export class WebhookProducer {
     claimId?: string
     ranAt: string
     failureReason: string
-    lastDeliveryStatus: "failed" | "rejected"
+    lastDeliveryStatus: "failed"
   }) {
     if (input.claimId) {
       this.repos.agentInvocationRuns.markStatus(input.claimId, {

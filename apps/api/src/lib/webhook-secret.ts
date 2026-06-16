@@ -22,9 +22,11 @@ export function webhookSecretPrefix(secret: string): string {
 }
 
 function resolveEncryptionKey(env: NodeJS.ProcessEnv = process.env): Buffer {
+  const nodeEnv = env.NODE_ENV ?? "production"
+  const allowDevFallback = nodeEnv === "development" || nodeEnv === "test"
   const raw =
     env.AGENTIS_WEBHOOK_SECRET_KEY?.trim() ??
-    (env.NODE_ENV === "production" ? undefined : "agentis-dev-webhook-key")
+    (allowDevFallback ? "agentis-dev-webhook-key" : undefined)
   if (!raw) {
     throw new Error("AGENTIS_WEBHOOK_SECRET_KEY is required in production.")
   }

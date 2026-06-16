@@ -5,7 +5,7 @@ import {
   type CreateAgentWebhookRequest,
   type UpdateAgentWebhookRequest,
 } from "@workspace/shared"
-import { and, asc, desc, eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import type { AppDatabase } from "../db/client.js"
 import { agentWebhooks } from "../db/schema.js"
 import { createId, nowIso } from "../lib/ids.js"

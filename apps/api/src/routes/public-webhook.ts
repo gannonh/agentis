@@ -63,6 +63,17 @@ export function createPublicWebhookRoutes(
       )
     }
 
+    const contentLength = Number(c.req.header("content-length"))
+    if (
+      Number.isFinite(contentLength) &&
+      contentLength > config.webhookMaxPayloadBytes
+    ) {
+      return c.json(
+        { error: "Webhook payload is too large.", code: "webhook_payload_too_large" },
+        413
+      )
+    }
+
     const rawBody = await c.req.text()
     const parsedTimestamp = parseWebhookTimestamp(timestampHeader)
     if (!parsedTimestamp.ok) {
@@ -78,7 +89,10 @@ export function createPublicWebhookRoutes(
       )
     ) {
       return c.json(
-        { error: "Webhook timestamp is outside the replay window." },
+        {
+          error: "Webhook timestamp is outside the replay window.",
+          code: "stale_webhook_timestamp",
+        },
         400
       )
     }
@@ -123,6 +137,7 @@ export function createPublicWebhookRoutes(
       )
     }
 
+    const payloadJson = rawBody.trim() === "" ? "{}" : rawBody
     const deliveryKey =
       c.req.header(DELIVERY_ID_HEADER)?.trim() || createId("delivery_key")
     const now = nowIso()
@@ -132,7 +147,7 @@ export function createPublicWebhookRoutes(
       deliveryKey,
       requestTimestamp: timestampHeader.trim(),
       payload,
-      payloadJson: rawBody,
+      payloadJson,
     })
 
     if (!queued.ok) {

@@ -246,7 +246,13 @@ export function AgentWebhooksPanel({ agentId }: { agentId: string }) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => void copyText(webhook.url)}
+                  onClick={() => {
+                    void copyText(webhook.url).catch(() =>
+                      setActionError(
+                        "Clipboard access was blocked. Copy manually."
+                      )
+                    )
+                  }}
                 >
                   Copy URL
                 </Button>
@@ -373,7 +379,12 @@ export function AgentWebhooksPanel({ agentId }: { agentId: string }) {
               type="button"
               size="sm"
               onClick={() => {
-                if (secretDialog) void copyText(secretDialog.secret)
+                if (!secretDialog) return
+                void copyText(secretDialog.secret).catch(() =>
+                  setActionError(
+                    "Clipboard access was blocked. Copy manually."
+                  )
+                )
               }}
             >
               Copy secret

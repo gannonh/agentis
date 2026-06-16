@@ -25,6 +25,10 @@ export function useAgentWebhooks(agentId: string) {
   const [error, setError] = useState<string | null>(null)
   const latestRefreshRequest = useRef(0)
 
+  function invalidateRefreshResponses() {
+    latestRefreshRequest.current += 1
+  }
+
   const refresh = useCallback(async () => {
     const requestId = ++latestRefreshRequest.current
     setLoading(true)
@@ -48,6 +52,7 @@ export function useAgentWebhooks(agentId: string) {
   }, [refresh])
 
   async function createWebhook(body: CreateAgentWebhookRequest) {
+    invalidateRefreshResponses()
     const created = await createAgentWebhook(agentId, body)
     const webhook = agentWebhookSchema.parse(created)
     setWebhooks((current) => [webhook, ...current])
@@ -58,6 +63,7 @@ export function useAgentWebhooks(agentId: string) {
     webhookId: string,
     body: UpdateAgentWebhookRequest
   ) {
+    invalidateRefreshResponses()
     const updated = await updateAgentWebhook(agentId, webhookId, body)
     setWebhooks((current) =>
       current.map((webhook) =>
@@ -68,6 +74,7 @@ export function useAgentWebhooks(agentId: string) {
   }
 
   async function removeWebhook(webhookId: string) {
+    invalidateRefreshResponses()
     await deleteAgentWebhook(agentId, webhookId)
     setWebhooks((current) =>
       current.filter((webhook) => webhook.id !== webhookId)
@@ -75,6 +82,7 @@ export function useAgentWebhooks(agentId: string) {
   }
 
   async function rotateSecret(webhookId: string) {
+    invalidateRefreshResponses()
     const rotated = await rotateAgentWebhookSecret(agentId, webhookId)
     setWebhooks((current) =>
       current.map((webhook) =>
