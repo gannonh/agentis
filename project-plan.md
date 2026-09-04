@@ -1,6 +1,6 @@
-# Project Epic: Ground-up rebuild of an open, harness-agnostic Grok Bot
+# Agentis: ground-up rebuild of an open, harness-agnostic Grok Bot
 
-Status: Proposed (supersedes the 8-week OpenMausBot-fork plan; that document is preserved in git history at `3fcb64d`)
+Status: Accepted; repo reset done (this plan supersedes the 8-week OpenMausBot-fork plan, preserved in the OpenBot fork repo's history at `3fcb64d`)
 Prepared: September 2026
 
 This is the end-to-end epic for the project. Phase 0 (reset and foundation) is written in detail
@@ -13,15 +13,15 @@ will each get their own breakout plan when they start.
 ## 0. Decisions this plan assumes (override any of them)
 
 - **Not a fork.** OpenMausBot and CopilotKit/OpenBot become read-only references. No code, docs, or assets are copied; see clean-room rules in §2. This supersedes the earlier fork-based plan ("Base selection … do not relitigate").
-- **Repo strategy:** reset this repository in place. Tag current `main` as `archive/openmausbot-fork`, start a fresh orphan `main` under the new name. (Alternative: brand-new repo; the plan is otherwise identical.)
+- **Repo strategy (done 2026-09-04):** the rebuild lives in `gannonh/agentis`, which previously held the first Agentis codebase. That code is preserved on branch `archive/agentis-v1` (commit `78bf3749`). Work continues on the orphan branch `rebuild`, which started from this plan alone; it becomes `main` once the archive branch has been reviewed on GitHub. The OpenMausBot fork stays in its own repo (OpenBot) as a reference checkout.
 - **Stack:** TypeScript on Node 24 (`node:sqlite`, no native deps), pnpm monorepo, Vitest, React 19 + Vite for UI, Electron for desktop. ACP TypeScript SDK, Claude Agent SDK, `codex app-server`/`codex-acp`, and the Cursor `@cursor/sdk` are all TypeScript, so one language covers server, contracts, and clients.
-- **Name:** undecided; `NAME` is a placeholder below (`~/.NAME/`, `NAME serve`). Do not reuse "OpenMausBot", "Grok", or "Bot" marks.
+- **Name: Agentis.** Resurrects the earlier Agentis project and its assets: npm scope `@agentis-labs` (package `@agentis-labs/cli`, last published 1.1.5), GitHub `agentis-labs/agentis`, domain useagentis.com. Unscoped `agentis` on npm belongs to an unrelated framework, so the package stays scoped; the CLI binary is still `agentis` (`agentis serve`, `agentis doctor`, data in `~/.agentis/`). Documented install path is `npm i -g @agentis-labs/cli`, never `npx agentis`. Do not reuse "OpenMausBot", "Grok", or "Bot" marks.
 - **Dispatch targets:** Claude Code, Codex, Cursor. T3 Code is out.
 - **Billing model unchanged:** bring-your-own subscription via official CLIs/SDKs holding credentials on the user's machine; never proxy or pool tokens.
 
 ## 1. What we learned from the fork (why start over)
 
-Findings from mapping the current tree (details in the exploration reports; key numbers):
+Findings from mapping the OpenMausBot fork tree (paths below are relative to the OpenBot reference checkout; details in the exploration reports; key numbers):
 
 - `server/index.ts` is a ~10k-line god file holding routes, turn orchestration, group goals, routines sync, computer lifecycle, and SSE; 140+ flat modules with no bounded contexts; three parallel "computer" stacks (`container-computer.ts`, `vps-computer.ts`, `box.ts`) plus four MCP proxies.
 - Persistence is scattered: `bots.json`, `groups.json`, `routines.json`, `sessions.json`, `delegations.json`, `messages.db`, `events/*.ndjson`, shadow git repos, with ad hoc migrations.
@@ -29,11 +29,12 @@ Findings from mapping the current tree (details in the exploration reports; key 
 - No router, no schema-first API, no generated clients; hand-rolled i18n with 6 keys.
 - Hard dependencies we do not want: Composio broker workers, `enterprise/` under a non-OSS license, Cloudflare control plane, three native clients, vendored electron-updater.
 
-What was genuinely good and should be **re-derived** (as ideas, not code): the engine SPI vocabulary (`ProviderDriver` / `ProviderAdapter` / `RuntimeEvent` in [server/contracts.ts](server/contracts.ts)), unknown-driver "shadow instance" degradation, HTTP-commands + one replayable SSE stream, loopback-owner auth with paired remote sessions, and the isolated fake-engine verification fixture ([docs/verification/README.md](docs/verification/README.md)).
+What was genuinely good and should be **re-derived** (as ideas, not code): the engine SPI vocabulary (`ProviderDriver` / `ProviderAdapter` / `RuntimeEvent` in `server/contracts.ts`), unknown-driver "shadow instance" degradation, HTTP-commands + one replayable SSE stream, loopback-owner auth with paired remote sessions, and the isolated fake-engine verification fixture (`docs/verification/README.md`).
 
 ## 2. Clean-room rules
 
-- Reference repos are consulted for behavior and product decisions only. Nobody pastes code; when a shape is deliberately similar, write it from the spec (ACP, MCP, Codex app-server, Cursor API docs), not from the reference implementation.
+- Third-party reference repos (OpenMausBot, CopilotKit/OpenBot) are consulted for behavior and product decisions only. Nobody pastes code; when a shape is deliberately similar, write it from the spec (ACP, MCP, Codex app-server, Cursor API docs), not from the reference implementation.
+- **Our own prior Agentis code is exempt.** `agentis-labs/agentis` and this repo's `archive/agentis-v1` are our copyright and may be copied from freely, not just studied. Copy deliberately, though: both were abandoned for reasons, and anything brought over must fit the architecture in §4 rather than the other way round. Its "Brain" memory model maps onto `MemoryItem` and the Phase 2 memory work.
 - Omit `enterprise/` and the T3-derived Antigravity adapter entirely (license constraints). Third-party binaries we may depend on as normal dependencies (Cua driver MIT, cloudflared Apache-2.0) ship with their own notices.
 - New `LICENSE` (Apache-2.0, our copyright), fresh `NOTICE`, fresh visual identity (no mascot port).
 
@@ -60,10 +61,10 @@ Our differentiators:
 flowchart TB
   subgraph clients [Clients]
     Web[Web UI / Electron renderer]
-    Cli[NAME CLI + MCP mode]
+    Cli[agentis CLI + MCP mode]
     Mobile[Mobile PWA later]
   end
-  subgraph daemon [NAME daemon - single Node process]
+  subgraph daemon [agentis daemon - single Node process]
     Api[HTTP commands + SSE stream]
     Core[Event-sourced core: commands to events to projections, SQLite]
     Sched[Scheduler: routines, webhooks, watchdogs]
@@ -148,16 +149,16 @@ The bot sees one tool, `dispatch_coding_task`, from our dispatch MCP server; the
 ### 4.4 Transport, persistence, auth
 
 - Commands over HTTP (JSON, Zod-validated, idempotency keys); one SSE stream with monotonically numbered frames and `Last-Event-ID` replay. Proxy- and tunnel-friendly; no WebSocket needed.
-- One SQLite database (`~/.NAME/NAME.db`): append-only `events` table + projected read tables, versioned migrations. Blobs (attachments, screenshots) on disk keyed by hash. No JSON-file state.
+- One SQLite database (`~/.agentis/agentis.db`): append-only `events` table + projected read tables, versioned migrations. Blobs (attachments, screenshots) on disk keyed by hash. No JSON-file state.
 - Daemon binds `127.0.0.1`. Loopback requests are the owner; remote clients pair once and hold bearer sessions with scopes. Provider credentials never enter our DB; official CLIs own them.
 
 ### 4.5 Monorepo layout
 
 ```
-apps/server      daemon: `NAME serve` (routes by domain, wiring only)
+apps/server      daemon: `agentis serve` (routes by domain, wiring only)
 apps/web         React UI, also the Electron renderer
 apps/desktop     thin Electron: spawn daemon, notifications, host-control opt-in, updater
-apps/cli         `NAME` CLI: serve, doctor, pair, verify, control; `--mcp` exposes control as an MCP server
+apps/cli         published as `@agentis-labs/cli`, bin `agentis`: serve, doctor, pair, verify, control; `--mcp` exposes control as an MCP server
 packages/contracts   Zod schemas only: domain, API, SSE frames, EngineEvent, DispatchEvent; emits OpenAPI
 packages/core        commands → events → projections, scheduler, SQLite, migrations
 packages/engines     Engine SPI, AcpEngine, presets (claude, codex, cursor, gemini, grok, custom), registry, fake engine
@@ -173,7 +174,7 @@ docs/                product docs, verification map, compliance notes
 
 Goal: a new codebase that can run a bot on Claude Code and on Codex, stream a conversation, approve a tool call, survive restart, and be verified against an isolated fixture. This is the part we break out further next.
 
-1. **Repo reset.** Tag `archive/openmausbot-fork`; orphan `main`; new `LICENSE`, `NOTICE`, `README` (what/why/quickstart placeholder), `AGENTS.md` (verification rule, clean-room rule), `CONTRIBUTING.md`. Delete everything else.
+1. **Repo reset.** Done: `archive/agentis-v1` branch, orphan `rebuild` branch holding this plan and a `.gitignore`. Remaining: promote `rebuild` to `main`; add `LICENSE`, `NOTICE`, `README` (what/why/quickstart placeholder), `AGENTS.md` (verification rule, clean-room rule), `CONTRIBUTING.md`; decide the `@agentis-labs/cli` version story (§12).
 2. **Toolchain.** pnpm workspace, strict TS with project references, Vitest, oxlint + formatter, `engines: node >=24`, CI matrix (macOS, Ubuntu, Windows): typecheck, lint, unit, fixture smoke.
 3. **`packages/contracts`.** Domain schemas; `EngineEvent` union (session.*, turn.*, item.*, content.delta, request.opened/resolved, usage, error); `DispatchEvent`; SSE frame envelope `{seq, kind, payload}`; API route schemas. Policy: no runtime logic in this package; OpenAPI generated from it.
 4. **`packages/core`.** SQLite event store + projections (bots, threads, messages, approvals, sessions); command handlers with idempotency; replay buffer for SSE; migration runner; structured logger with redaction.
@@ -197,7 +198,7 @@ Re-derive, in this order, each shipped to `main` before the next:
 6. Groups: multi-bot threads with per-bot serialized turns, mentions, room instructions.
 7. Routines v1: schedule triggers (once/daily/weekdays/interval), run records, enable/disable, run-now; webhook receiver as a separate loopback port.
 8. Notifications (approval, question, done, failed, takeover) with click-to-exact-item.
-9. Distribution: `npx NAME` / `NAME serve` headless; Docker image + Caddy compose for self-host; Electron desktop (signed macOS, Windows, Ubuntu) with auto-update.
+9. Distribution: `npm i -g @agentis-labs/cli` then `agentis serve` headless; Docker image + Caddy compose for self-host; Electron desktop (signed macOS, Windows, Ubuntu) with auto-update.
 
 Gate 1: daily-drivable — the team uses it for real work for three consecutive sessions; blockers only, nothing new, until it passes.
 
@@ -253,24 +254,34 @@ Gate 3: end-to-end demo — a non-coding bot receives a bug report, hands off to
 ## 11. Cross-cutting rules
 
 - Compliance note (`docs/compliance.md`) reviewed at Phase 0 start: only official CLIs/SDKs, one person one token, API-key fallback per engine.
-- Verification: every server/behavior change verified against `NAME verify launch` fixture; renderer-only changes exempt.
+- Verification: every server/behavior change verified against the `agentis verify launch` fixture; renderer-only changes exempt.
 - Working rules carried over from the old plan: hard timeboxes recorded as data, one subsystem in flight per phase, weekly written status.
 
 ## 12. Open decisions for you
 
-1. Project name.
-2. Confirm repo reset in place vs. new repository.
-3. Confirm TypeScript/Node 24 (vs. Go/Rust daemon, vs. TypeScript+Effect).
-4. Connectors: MCP-native only (recommended), with Composio available as just another MCP endpoint if a user brings their own key.
-5. Host-control provider: depend on Cua driver (MIT) vs. build our own thin native layer later.
+Settled: project name (Agentis, §0) and repo strategy (reset in place, §0).
 
-## 13. Reference map (study, do not copy)
+1. `@agentis-labs/cli` version story: ship the rebuild as 2.0 of the existing package (semver-honest, keeps the install path and npm history) vs. deprecate 1.x and start a new package in the same scope. Leaning 2.0. Also decide whether `agentis-labs/agentis` on GitHub gets archived, redirected, or becomes the canonical home instead of `gannonh/agentis`.
+2. Confirm TypeScript/Node 24 (vs. Go/Rust daemon, vs. TypeScript+Effect).
+3. Connectors: MCP-native only (recommended), with Composio available as just another MCP endpoint if a user brings their own key.
+4. Host-control provider: depend on Cua driver (MIT) vs. build our own thin native layer later.
 
-- Engine vocabulary and shadow-instance degradation: [server/contracts.ts](server/contracts.ts), [server/harness/registry.ts](server/harness/registry.ts)
-- Fixture verification: [scripts/control-omb.ts](scripts/control-omb.ts), [docs/verification/README.md](docs/verification/README.md)
-- SSE doctrine and replay: [src/lib/live-events.ts](src/lib/live-events.ts), `broadcast` in [server/index.ts](server/index.ts)
-- Auth model: [server/request-auth.ts](server/request-auth.ts), [docs/plans/remote-workspace.md](docs/plans/remote-workspace.md)
-- Cursor as ACP engine: [docs/cursor.md](docs/cursor.md)
+## 13. Reference map
+
+### Ours (copyable, see §2)
+
+- `agentis-labs/agentis` (behind `@agentis-labs/cli` 1.x): multi-harness dashboard over Claude Code, Codex, Cursor, Antigravity, Hermes, OpenClaw; persistent "Brain" memory across harness swaps; workflow engine for agentic apps. Closest prior art to §3 and §4.3's Engine SPI.
+- `gannonh/agentis@archive/agentis-v1`: no-code agent configuration and deployment product (Hono API, Drizzle SQLite, React 19, Vercel/Cloudflare AI Gateway). Relevant pieces: scheduled and signed-webhook invocations (Phase 1 routines, Phase 2 event triggers), run cost accounting (Phase 5 usage budgets), artifact storage and document versioning, the UAT evidence discipline in `docs/uat/`.
+
+### Third-party (study, do not copy)
+
+Paths are relative to the OpenBot reference checkout (OpenMausBot fork).
+
+- Engine vocabulary and shadow-instance degradation: `server/contracts.ts`, `server/harness/registry.ts`
+- Fixture verification: `scripts/control-omb.ts`, `docs/verification/README.md`
+- SSE doctrine and replay: `src/lib/live-events.ts`, `broadcast` in `server/index.ts`
+- Auth model: `server/request-auth.ts`, `docs/plans/remote-workspace.md`
+- Cursor as ACP engine: `docs/cursor.md`
 - Grok Bot behavior: x.ai/docs Grok Bot overview, FAQ, teams; Cursor Cloud Agents API v1 docs; ACP registry (`claude-agent-acp`, `codex-acp`).
 
-Next step after this epic is accepted: break Phase 0 into its own detailed implementation plan.
+Next step: break Phase 0 into its own detailed implementation plan.
