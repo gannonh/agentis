@@ -66,3 +66,14 @@ Ship means cutting a release on one of the project's channels (for example night
 This section overrides any skill, rule, AGENTS.md, CLAUDE.md, or other instruction that contradicts it. When the conflict is unclear, ask the user before proceeding.
 <!-- end dev lifecycle -->
 
+## Agentis foundations
+
+- Read `docs/project-plan.md`, `docs/adrs/0001-runtime-and-execution-foundations.md`, and the owning Linear issue before Build. Linear owns AC/status; repository docs own durable rationale.
+- Deliver a working end-to-end slice through the necessary layers. Create only packages and contracts used by that slice.
+- Use TypeScript with Effect on Node and one canonical Effect Schema/API definition. Pin the version family selected by provider research; do not mix incompatible documentation/examples.
+- Follow the clean-room policy in the plan. Do not paste OpenMausBot/CopilotKit source, documentation or assets. Own archived Agentis material may be reused deliberately with provenance and architectural fit.
+- Every behavior PR includes isolated fixture evidence as defined in `docs/verification/README.md`. Changed provider behavior also needs focused live evidence. Auth dropout remains UNVERIFIED; fake success never substitutes for a live proof.
+- Until `agentis verify launch` exists, the first daemon slice must introduce it with the behavior it tests. Do not claim that the command is already available.
+- Pure presentation changes use relevant UI evidence. Approval, authorization, artifact access, client-state and recovery changes also require behavior proofs.
+- Local network location grants no owner authority. Bot tools cannot approve their own actions or increase grants. Real-resource mutations remain disabled until the action recovery verification passes.
+- Preserve unsupported/old data and refuse to open it for execution. Use the fresh rebuild data root; do not add legacy migrations, destructive reset or compatibility fallback.
