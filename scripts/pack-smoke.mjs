@@ -36,8 +36,7 @@ const stdout = await new Promise((resolve, reject) => {
         clearTimeout(timer);
         resolve(out);
       }
-    } catch {
-    }
+    } catch {}
   });
   launch.stderr.on("data", (chunk) => {
     out += chunk.toString();

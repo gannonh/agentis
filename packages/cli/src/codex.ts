@@ -191,6 +191,18 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> =>
       const started = await session.request(10, "turn/start", {
         threadId,
         input: [{ type: "text", text: input.brief }],
+        ...(input.brief.includes("request_user_input")
+          ? {
+              collaborationMode: {
+                mode: "plan",
+                settings: {
+                  model: "gpt-5.6-sol",
+                  reasoning_effort: "medium",
+                  developer_instructions: null,
+                },
+              },
+            }
+          : {}),
       });
       const turn = asJson(asJson(started.result).turn);
       if (typeof turn.id === "string") {
