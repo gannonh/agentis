@@ -197,7 +197,7 @@ Verdict: NOT RUN.
 
 ## Scoring and evidence
 
-Run `python3 docs/research/check-team-evaluation.py` from the repository root to check case structure and local document links. Keep this template unchanged; write execution records separately with the case IDs and evidence below. The checker executes no workflow or provider tests.
+Keep this template unchanged; write execution records separately with the case IDs and evidence below.
 
 TW-01, TW-03, and TW-06 are mandatory core-path cases. TW-04, TW-05, and TW-07–TW-20 are mandatory safety cases. All 19 mandatory cases must pass independently for each selected provider. TW-02 reports additional operations coverage and may not offset any mandatory failure. A missing mandatory result prevents a pass. Preserve failures and correction attempts; never average providers together. This score does not replace the separate authorization, recovery, restore, installation, and provider eligibility requirements in the verification map.
 
