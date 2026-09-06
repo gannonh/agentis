@@ -1,0 +1,11 @@
+{
+  "issue": "KAT-3252",
+  "profile": "offline Docker candidate only",
+  "host": "Linux-6.12.94+-x86_64-with-glibc2.39",
+  "probe_sha256": "dfedf6c7760f8b7f3916373b5b0c449a49d120dfd47746bc118f1d69b17f5673",
+  "image": null,
+  "source_commit": "6b1abe256cab0df75a5d3af033a2ce5a366384d2",
+  "verdict": "UNVERIFIED",
+  "reason": "Docker Engine unavailable to this user",
+  "engine": null
+}

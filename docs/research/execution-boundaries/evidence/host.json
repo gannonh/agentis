@@ -1,0 +1,263 @@
+{
+  "issue": "KAT-3252",
+  "kind": "disposable counterexamples, not runtime verification",
+  "utc": "2026-09-06T18:50:12Z",
+  "host": "Linux-6.12.94+-x86_64-with-glibc2.39",
+  "python": "3.12.3",
+  "probe_sha256": "87eda06630e7b636aeb5175b69f86f4422e6106ee47238715da7b1a3bb863051",
+  "source_commit": "6b1abe256cab0df75a5d3af033a2ce5a366384d2",
+  "results": [
+    {
+      "case": "credential_read_inherited",
+      "expected": "same UID can read synthetic mode-0600 owner file",
+      "observed": true,
+      "verdict": "PASS"
+    },
+    {
+      "case": "environment_inherited",
+      "expected": "synthetic token inherited only in inherited mode",
+      "observed": "True",
+      "verdict": "PASS"
+    },
+    {
+      "case": "credential_read_sanitized",
+      "expected": "same UID can read synthetic mode-0600 owner file",
+      "observed": true,
+      "verdict": "PASS"
+    },
+    {
+      "case": "environment_sanitized",
+      "expected": "synthetic token inherited only in inherited mode",
+      "observed": "False",
+      "verdict": "PASS"
+    },
+    {
+      "case": "native_config_read",
+      "expected": "same UID can read synthetic MCP command configuration",
+      "observed": "True",
+      "verdict": "PASS"
+    },
+    {
+      "case": "admin_unauthenticated",
+      "expected": 401,
+      "observed": 401,
+      "verdict": "PASS"
+    },
+    {
+      "case": "admin_bot",
+      "expected": 401,
+      "observed": 401,
+      "verdict": "PASS"
+    },
+    {
+      "case": "admin_stolen_owner",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "case": "synthetic_stdio_child",
+      "expected": "200 through child reading synthetic credential",
+      "observed": "200",
+      "verdict": "PASS"
+    },
+    {
+      "case": "browser_shared_session",
+      "expected": "browser installed",
+      "observed": "unavailable",
+      "verdict": "UNVERIFIED"
+    },
+    {
+      "case": "crash_after_launch",
+      "expected": {
+        "effects": 0,
+        "signal": "SIGKILL",
+        "local_state": "absent",
+        "local_receipt": null
+      },
+      "observed": {
+        "effects": 0,
+        "local_state": "absent",
+        "local_receipt": null,
+        "external_receipt": null,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_after_launch",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_waiting_approval",
+      "expected": {
+        "effects": 0,
+        "signal": "SIGKILL",
+        "local_state": "pending",
+        "local_receipt": null
+      },
+      "observed": {
+        "effects": 0,
+        "local_state": "pending",
+        "local_receipt": null,
+        "external_receipt": null,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_waiting_approval",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_approval_persisted",
+      "expected": {
+        "effects": 0,
+        "signal": "SIGKILL",
+        "local_state": "approved",
+        "local_receipt": null
+      },
+      "observed": {
+        "effects": 0,
+        "local_state": "approved",
+        "local_receipt": null,
+        "external_receipt": null,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_approval_persisted",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_before_external",
+      "expected": {
+        "effects": 0,
+        "signal": "SIGKILL",
+        "local_state": "dispatching",
+        "local_receipt": null
+      },
+      "observed": {
+        "effects": 0,
+        "local_state": "dispatching",
+        "local_receipt": null,
+        "external_receipt": null,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_before_external",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_external_accepted",
+      "expected": {
+        "effects": 1,
+        "signal": "SIGKILL",
+        "local_state": "dispatching",
+        "local_receipt": null
+      },
+      "observed": {
+        "effects": 1,
+        "local_state": "dispatching",
+        "local_receipt": null,
+        "external_receipt": 1,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_external_accepted",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_receipt_persisted",
+      "expected": {
+        "effects": 1,
+        "signal": "SIGKILL",
+        "local_state": "recorded",
+        "local_receipt": 2
+      },
+      "observed": {
+        "effects": 1,
+        "local_state": "recorded",
+        "local_receipt": 2,
+        "external_receipt": 2,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_receipt_persisted",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_before_delivery",
+      "expected": {
+        "effects": 1,
+        "signal": "SIGKILL",
+        "local_state": "completed",
+        "local_receipt": 3
+      },
+      "observed": {
+        "effects": 1,
+        "local_state": "completed",
+        "local_receipt": 3,
+        "external_receipt": 3,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_before_delivery",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "macos_container_isolation",
+      "expected": "integrated target-platform proof",
+      "observed": "not exercised by this disposable probe",
+      "verdict": "UNVERIFIED"
+    },
+    {
+      "case": "live_provider_native_tools",
+      "expected": "integrated target-platform proof",
+      "observed": "not exercised by this disposable probe",
+      "verdict": "UNVERIFIED"
+    },
+    {
+      "case": "production_approval_recovery",
+      "expected": "integrated target-platform proof",
+      "observed": "not exercised by this disposable probe",
+      "verdict": "UNVERIFIED"
+    },
+    {
+      "case": "provider_auth_dropout",
+      "expected": "integrated target-platform proof",
+      "observed": "not exercised by this disposable probe",
+      "verdict": "UNVERIFIED"
+    }
+  ]
+}
