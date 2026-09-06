@@ -1,0 +1,79 @@
+{
+  "issue": "KAT-3254",
+  "commit": "6035f90c950af50a5602c0139c67afabe98f57f3",
+  "hashes": {
+    "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
+    "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
+    "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35",
+    "prototypes/app.js": "060709856d8b8ecd95a7968cc769d0690b090a273db18a1a8c0b759020da13af",
+    "verify.mjs": "bd1cc053bd784cbf467b9f4c16fe454b49d70606bb3db050829ce2b533672047",
+    "verify-source-binding.mjs": "93a9f790fe323ec1373837c2a461910f2345e92b8d5d117928ac7aa5e08453f6",
+    "protocol.md": "50978eb2f055cf7d133a78ef0dece8d36f2196ace0e48f047e4ff75ce900e618"
+  },
+  "sourceClean": true,
+  "environment": {
+    "os": "linux 7.1.9-arch1-2",
+    "node": "v26.8.1",
+    "browser": "151.0.7922.173",
+    "playwright": "1.58.2",
+    "executablePath": "/usr/bin/chromium"
+  },
+  "command": "node docs/research/kat-3254/verify-source-binding.mjs",
+  "verdict": "PASS",
+  "cases": [
+    {
+      "fault": "index.html",
+      "recordedAt": "2026-09-06T17:18:56.266Z",
+      "expectedDriverVerdict": "FAIL",
+      "observedDriverVerdict": "FAIL",
+      "sourceErrors": [
+        "Served source hash mismatch: prototypes/index.html\n+ actual - expected\n\n+ '9b0e9d2026a6fc3fb73a16c49dc5310bcc45cf678b22f414c393acd04a668cbc'\n- 'fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543'\n"
+      ]
+    },
+    {
+      "fault": "style.css",
+      "recordedAt": "2026-09-06T17:18:56.772Z",
+      "expectedDriverVerdict": "FAIL",
+      "observedDriverVerdict": "FAIL",
+      "sourceErrors": [
+        "Served source hash mismatch: prototypes/style.css\n+ actual - expected\n\n+ '2d7a009effefe48a89ee4b98e7fb019f32343bc040d780169e76c43477711aa4'\n- '255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d'\n"
+      ]
+    },
+    {
+      "fault": "app.js",
+      "recordedAt": "2026-09-06T17:18:57.336Z",
+      "expectedDriverVerdict": "FAIL",
+      "observedDriverVerdict": "FAIL",
+      "sourceErrors": [
+        "Served source hash mismatch: prototypes/app.js\n+ actual - expected\n\n+ '1d54dd0d69ae256c12a8ff8c821c1c1f26c869adf906168c239048ea1511a153'\n- '060709856d8b8ecd95a7968cc769d0690b090a273db18a1a8c0b759020da13af'\n"
+      ]
+    },
+    {
+      "fault": "scenario.js",
+      "recordedAt": "2026-09-06T17:18:57.847Z",
+      "expectedDriverVerdict": "FAIL",
+      "observedDriverVerdict": "FAIL",
+      "sourceErrors": [
+        "Served source hash mismatch: prototypes/scenario.js\n+ actual - expected\n\n+ '89d83cb596071653b2783002c8dffd58acd91c5bd08a7c9275fe2198f7c3b4f5'\n- 'fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35'\n"
+      ]
+    },
+    {
+      "fault": "redirect",
+      "recordedAt": "2026-09-06T17:18:58.357Z",
+      "expectedDriverVerdict": "FAIL",
+      "observedDriverVerdict": "FAIL",
+      "sourceErrors": [
+        "Source response must be HTTP 200: http://127.0.0.1:42181/?variant=A\n\n302 !== 200\n"
+      ]
+    },
+    {
+      "fault": "probe-page",
+      "recordedAt": "2026-09-06T17:18:58.852Z",
+      "expectedDriverVerdict": "FAIL",
+      "observedDriverVerdict": "FAIL",
+      "sourceErrors": [
+        "Served source hash mismatch: prototypes/index.html\n+ actual - expected\n\n+ '9b0e9d2026a6fc3fb73a16c49dc5310bcc45cf678b22f414c393acd04a668cbc'\n- 'fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543'\n"
+      ]
+    }
+  ]
+}

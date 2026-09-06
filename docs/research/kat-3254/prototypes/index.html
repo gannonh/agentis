@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
+  <link rel="icon" href="data:,">
+  <title>Agentis interaction research · KAT-3254</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#workspace">Skip to workspace</a>
+  <header class="research-bar">
+    <span><strong>INTERACTION LAB</strong> / KAT-3254</span>
+    <nav aria-label="Research alternatives">
+      <a href="?variant=A" data-variant="A">A · Team room</a>
+      <a href="?variant=B" data-variant="B">B · Manager DM</a>
+      <a href="?variant=C" data-variant="C">C · Task first</a>
+    </nav>
+    <span class="simulation-label">All agent behavior is simulated</span>
+  </header>
+  <div class="brand"><strong><span class="brand-mark">a</span> agentis</strong><span>Northstar studio <span class="muted">/ fictional workspace</span></span><span>Alex <span class="muted">· human owner</span></span></div>
+  <main id="workspace" tabindex="-1"></main>
+  <footer id="lab"></footer>
+  <dialog id="detail" aria-labelledby="detail-title"></dialog>
+  <div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
+</body>
+</html>
