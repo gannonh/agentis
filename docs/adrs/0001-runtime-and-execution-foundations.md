@@ -1,6 +1,6 @@
 # Runtime and execution foundations
 
-Accepted direction, September 5, 2026, under [KAT-3249](https://linear.app/kata-sh/issue/KAT-3249). Acceptance of the design does not prove its runtime behavior. The first team workflow is selected by the [September 6 strategy decision](../research/2026-09-06-workflow-research.md) under KAT-3250. KAT-3254 proves the interaction before the first runtime API is frozen. Provider versions and the enforcement mechanism remain research in KAT-3251 and KAT-3252.
+Accepted under [KAT-3249](https://linear.app/kata-sh/issue/KAT-3249). Acceptance of the design does not prove its runtime behavior. Open: provider versions and transport (KAT-3251), the enforcement boundary (KAT-3252) and the interaction design that precedes the first frozen runtime API (KAT-3254).
 
 1. **Runtime and contracts**
 
@@ -26,7 +26,7 @@ Accepted direction, September 5, 2026, under [KAT-3249](https://linear.app/kata-
 
    Test interruption before/after launch, approval persistence, external acceptance, receipt recording and completion delivery. Use a controlled endpoint with observable effect counts before enabling real resources. KAT-3241 owns that enablement gate.
 
-   The database uses short transactions. Measure event-loop latency during replay and retained-history operations. If required, a dedicated worker becomes the sole DB owner. This does not justify adding a second daemon language by default.
+   The database uses short transactions. Measure event-loop latency during replay and retained-history operations. If required, a dedicated worker becomes the sole DB owner.
 
 4. **Authorization and execution environment**
 
@@ -48,7 +48,7 @@ Accepted direction, September 5, 2026, under [KAT-3249](https://linear.app/kata-
 
    Negotiate recovery, permission, question/plan, MCP, attachment and usage capabilities. Handle blocking requests. Preserve provider semantics for session-wide grants, cancel and reconnect. Loading a provider session may replay history; reconcile it without duplicating Agentis items.
 
-   Support requires published eligibility plus live evidence. Official credential custody is insufficient evidence for subscription integration permission. No provider tokens enter Agentis records or logs. Show execution and billing mode and the boundary of information sent to providers.
+   Support requires published eligibility plus live evidence. Official credential custody is insufficient evidence for subscription integration permission. Use provider-owned authentication flows and credential storage; do not extract, pool or proxy subscription tokens. No provider tokens enter Agentis records or logs. Record the supported billing mode; never advertise unlimited or no-additional-cost usage without provider evidence, and treat missing usage as unknown. Show execution and billing mode and the boundary of information sent to providers, including where files, prompts and tool outputs are sent despite local storage of Agentis records.
 
 6. **Streaming, content and retention**
 
@@ -62,10 +62,10 @@ Accepted direction, September 5, 2026, under [KAT-3249](https://linear.app/kata-
 
    Use `~/.agentis/v2/` by default for the rebuild, with explicit override. Check a schema identifier before opening application tables. Preserve existing/unsupported data and refuse to run against it. Backups include coherent database and blob references. Restore only the supported schema and validate referenced content.
 
-   Do not implement old-API compatibility, automatic data migration, destructive schema reset or fallback storage. This resolves the earlier migration-runner proposal in favor of the repository rule. Changing that rule or promising in-place upgrades needs a later explicit decision before implementation. Version 2.0 names the product generation; it does not authorize overwriting 1.x data.
+   Do not implement old-API compatibility, automatic data migration, destructive schema reset or fallback storage. Changing that rule or promising in-place upgrades needs a later explicit decision before implementation. Version 2.0 names the product generation; it does not authorize overwriting 1.x data.
 
 8. **Consequences and evaluation**
 
    The initial system can remain one daemon with one database and thin clients. Work records outlive an engine session, while provider-specific limitations remain visible. The cost is an explicit recovery model, permission boundary and support matrix, all required by the product's promises.
 
-   Feasibility checks the bounded scratch workflow. Useful-work verification adds the conversational team path, external-effect reconciliation, installation, artifacts, fixed evaluation and actual maintainer outcomes. Scheduled execution adds durable triggers/service operation at the same milestone. New capabilities grow from those verified paths. See [verification requirements](../verification/README.md) and [provider evidence](../compliance.md).
+   Gate evidence is defined in the [verification map](../verification/README.md); provider findings live in the [provider register](../compliance.md).
