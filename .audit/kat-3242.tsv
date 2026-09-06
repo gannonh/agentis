@@ -12,3 +12,4 @@ ts	phase	decision	why	evidence	result
 2026-09-06T21:13:51Z	live	live Codex allow deny input and cancel all completed	AC7 requires real protocol when the provider exposes it	scripts/live-codex-cases.mjs	PASS
 2026-09-06T21:13:51Z	pack	packaged verify launch plus fake submit succeeded	AC9 must use an installed tarball, not the workspace bin	pnpm pack:smoke endpoint 127.0.0.1:42403	PASS
 2026-09-06T21:15:30Z	review	widened bot-command tests and fail-closed Docker assertion	trail review said AC5 and container fail-closed were under-proven	packages/cli/test/store.test.ts packages/cli/test/boundary.test.ts	14 tests green
+2026-09-06T21:17:48Z	ci	HEAD CI passed install typecheck lint unit and pack-smoke	AC10 needs the actual GitHub run, not a posted workflow file	https://github.com/gannonh/agentis/actions/runs/34060547674	PASS
