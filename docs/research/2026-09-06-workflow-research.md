@@ -89,4 +89,4 @@ Prototype the interaction, research providers and authority independently, then 
 | External demand, adoption, productivity advantage, and reliability | UNVERIFIED |
 | Provider eligibility and execution authority | Pending KAT-3251 and KAT-3252 |
 
-The [decision trail](2026-09-06-strategy-decisions.tsv) records revisions and the discarded narrow benchmark. The September 5 review remains a historical proposal; this decision and updated Linear criteria govern the current direction.
+The September 5 review remains a historical proposal; this decision and updated Linear criteria govern the current direction.
