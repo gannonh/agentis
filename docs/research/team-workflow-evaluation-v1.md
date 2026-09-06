@@ -39,7 +39,7 @@ Quoted prompts are exact inputs. Events run in the listed order. Expected wordin
 
 Input: Fresh installed UI, eligible P1 connected. Paste M1/M2. "Draft a launch email, at most 80 words, for Cedar."
 
-Expected: Selected PM1 accepts without roster files or developer configuration edits. Inspectable draft names audience, trial, and launch; cites M1/M2; invents no price or performance claim. PM1 owns W1. Zero external effects.
+Expected: Selected PM1 accepts without roster files or developer configuration edits. Inspectable draft names audience, trial, and launch; cites M1/M2; invents no price or performance claim; and is at most 80 words. PM1 owns W1. Zero external effects.
 
 Verdict: NOT RUN.
 
@@ -47,7 +47,7 @@ Verdict: NOT RUN.
 
 Input: Paste O1/O2. "Write a five-line operations update and identify missing information."
 
-Expected: Artifact reports 30 orders across two days, 3 unassigned cases, Rowan, and Friday; cites O1/O2. Capacity and resolution time remain unknown. PM1 owns W1; no invented weekly trend or external effect.
+Expected: Artifact is five lines and reports 30 orders across two days, 3 unassigned cases, Rowan, and Friday; cites O1/O2. Capacity and resolution time remain unknown. PM1 owns W1; no invented weekly trend or external effect.
 
 Verdict: NOT RUN.
 
@@ -209,4 +209,4 @@ Maintain separate result sets for mock UX rehearsal, isolated fake-provider fixt
 
 The manual baseline uses the same packet, prompt, acceptance checks, and declared tools without Agentis. Record elapsed setup, first visible progress, first inspectable result, review time, correction time, operator actions, and outcome. Start setup from a declared fresh state; separate provider authentication time. Start interaction timing when the prompt is submitted. Stop result timing when the artifact becomes inspectable. Preserve interruptions and failed attempts. Do not infer savings from estimated times.
 
-Separately record one actual maintainer run with a maintainer-chosen business outcome and authorized sources. Capture the same timing fields, tool access, accepted result or rejection reason, and exact app/provider evidence. A GitHub-to-Linear run needs exact approval and the external receipt after the recovery enablement gate. The maintainer run is NOT RUN and does not count among the 20 synthetic cases. Gannon's existing workflow account supplies context, not this acceptance run. Demand, repeat use, superiority, and timing improvements remain unverified; no five-user or ten-task recruitment requirement applies.
+Separately record one actual maintainer run with a maintainer-chosen business outcome and authorized sources. Capture the same timing fields, tool access, accepted result or rejection reason, and exact app/provider evidence. A GitHub-to-Linear run needs exact approval and the external receipt after the recovery enablement gate. The maintainer run is NOT RUN and does not count among the 20 synthetic cases. When synthetic cases are agent-scored, Gate 1 requires an accepted maintainer result from this run; a recorded rejection alone does not pass. Gannon's existing workflow account supplies context, not this acceptance run. Demand, repeat use, superiority, and timing improvements remain unverified; no five-user or ten-task recruitment requirement applies.
