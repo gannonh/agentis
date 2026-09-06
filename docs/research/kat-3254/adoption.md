@@ -1,6 +1,6 @@
 # Interaction requirements for the first working slices
 
-The [KAT-3254 comparison](comparison.md) selects A, a shared team conversation with current owner/status/next action above it and attached result/action cards. The six browser runs at `b74231e148709bcd381eef9fbdc21ca2cb85419e` establish simulated interaction evidence only. Linear owns the target issues' acceptance criteria and lifecycle gates. This document does not start product Build or freeze an API.
+The [KAT-3254 comparison](comparison.md) selects A, a shared team conversation with current owner/status/next action above it and attached result/action cards. The six browser runs at `6035f90c950af50a5602c0139c67afabe98f57f3` establish simulated interaction evidence only. Linear owns the target issues' acceptance criteria and lifecycle gates. This document does not start product Build or freeze an API.
 
 ## KAT-3242, first provider through CLI and daemon
 

@@ -1,13 +1,13 @@
 {
   "issue": "KAT-3254",
-  "recordedAt": "2026-09-06T17:18:53.235Z",
-  "commit": "6035f90c950af50a5602c0139c67afabe98f57f3",
+  "recordedAt": "2026-09-06T17:16:59.969Z",
+  "commit": "05ed665f121148a1da242d8c7e2da4c759769758",
   "sourceClean": true,
   "hashes": {
     "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
     "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
     "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35",
-    "prototypes/app.js": "060709856d8b8ecd95a7968cc769d0690b090a273db18a1a8c0b759020da13af",
+    "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
     "verify.mjs": "bd1cc053bd784cbf467b9f4c16fe454b49d70606bb3db050829ce2b533672047",
     "verify-source-binding.mjs": "93a9f790fe323ec1373837c2a461910f2345e92b8d5d117928ac7aa5e08453f6",
     "protocol.md": "50978eb2f055cf7d133a78ef0dece8d36f2196ace0e48f047e4ff75ce900e618"
@@ -65,7 +65,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 14.81
+          "elapsedMs": 10.66
         },
         {
           "phase": "canonical",
@@ -74,7 +74,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 27.15
+          "elapsedMs": 28.74
         },
         {
           "phase": "canonical",
@@ -83,7 +83,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.17
+          "elapsedMs": 31.74
         },
         {
           "phase": "canonical",
@@ -92,7 +92,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 28.58
+          "elapsedMs": 28.32
         },
         {
           "phase": "canonical",
@@ -101,7 +101,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 17.4
+          "elapsedMs": 23.67
         },
         {
           "phase": "canonical",
@@ -110,7 +110,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 15.12
+          "elapsedMs": 13.86
         },
         {
           "phase": "canonical",
@@ -119,7 +119,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.39
+          "elapsedMs": 32.57
         },
         {
           "phase": "canonical",
@@ -128,25 +128,25 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 21.11
+          "elapsedMs": 22.15
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S1] northstar/launchpad · PR #42",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 33.22
+          "elapsedMs": 33.87
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S2] northstar/launchpad · Issue #17",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 31.74
+          "elapsedMs": 31.82
         },
         {
           "phase": "canonical",
@@ -155,7 +155,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.32
+          "elapsedMs": 32.45
         },
         {
           "phase": "canonical",
@@ -164,7 +164,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 32.86
+          "elapsedMs": 33.43
         },
         {
           "phase": "canonical",
@@ -173,7 +173,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 29.63
+          "elapsedMs": 28.76
         },
         {
           "phase": "canonical",
@@ -182,7 +182,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 14.82
+          "elapsedMs": 12.92
         },
         {
           "phase": "canonical",
@@ -191,7 +191,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 29.96
+          "elapsedMs": 28.39
         },
         {
           "phase": "canonical",
@@ -200,7 +200,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 32.75
+          "elapsedMs": 33.78
         },
         {
           "phase": "canonical",
@@ -209,7 +209,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 33.69
+          "elapsedMs": 29.44
         },
         {
           "phase": "failure-retention",
@@ -218,7 +218,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 28.27
+          "elapsedMs": 28.37
         },
         {
           "phase": "failure-retention",
@@ -227,7 +227,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 20.87
+          "elapsedMs": 18.97
         },
         {
           "phase": "failure-retention",
@@ -236,7 +236,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 24.69
+          "elapsedMs": 23.47
         },
         {
           "phase": "failure-retention",
@@ -245,7 +245,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.37
+          "elapsedMs": 31.96
         },
         {
           "phase": "failure-retention",
@@ -254,7 +254,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.57
+          "elapsedMs": 30.38
         },
         {
           "phase": "failure-retention",
@@ -263,7 +263,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.13
+          "elapsedMs": 29.97
         },
         {
           "phase": "failure-retention",
@@ -272,7 +272,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.4
+          "elapsedMs": 31.84
         },
         {
           "phase": "failure-retention",
@@ -281,264 +281,12 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.6
+          "elapsedMs": 31.06
         },
         {
           "phase": "failure-retention",
           "category": "research",
           "name": "Repeat last notification",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 34.08
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate handoff failure",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 31.47
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate a new handoff offer",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 16.67
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate Ivo accepting",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 33.32
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Show routine peer updates",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 32.15
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Collapse routine peer updates",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 31.73
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Repeat last notification",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 33.17
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Send reply",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 31.82
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate Ivo delivering brief",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 32.19
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Repeat last notification",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 34.55
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Review exact action",
-          "navigation": false,
-          "detail": true,
-          "tabs": 0,
-          "elapsedMs": 33.13
-        },
-        {
-          "phase": "failure-retention",
-          "category": "setup",
-          "name": "Connect this demonstration destination",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 27.26
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Close",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 30.81
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Inspect release brief",
-          "navigation": false,
-          "detail": true,
-          "tabs": 0,
-          "elapsedMs": 34.03
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Close",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 30.24
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Review exact action",
-          "navigation": false,
-          "detail": true,
-          "tabs": 0,
-          "elapsedMs": 33.34
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Approve this exact action once",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 33.27
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate interruption before receipt",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 32.86
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Repeat last notification",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 30.29
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Inspect unresolved action",
-          "navigation": false,
-          "detail": true,
-          "tabs": 0,
-          "elapsedMs": 14.99
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Close",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 23.91
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Inspect unresolved action",
-          "navigation": false,
-          "detail": true,
-          "tabs": 0,
-          "elapsedMs": 33.94
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Close",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 27.2
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate read-only receipt lookup",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 32.83
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Restart this simulated scenario",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 28.27
-        },
-        {
-          "phase": "failure-retention",
-          "category": "setup",
-          "name": "Use demonstration environment",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 29.86
-        },
-        {
-          "phase": "failure-retention",
-          "category": "setup",
-          "name": "Allow this source read",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 31.1
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Send request",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 32.69
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate Mara offering handoff",
           "navigation": false,
           "detail": false,
           "tabs": 0,
@@ -547,47 +295,47 @@
         {
           "phase": "failure-retention",
           "category": "research",
-          "name": "Simulate Ivo accepting",
+          "name": "Simulate handoff failure",
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.88
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Send reply",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 33.06
+          "elapsedMs": 31.36
         },
         {
           "phase": "failure-retention",
           "category": "research",
-          "name": "Simulate Ivo delivering brief",
+          "name": "Simulate a new handoff offer",
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.12
+          "elapsedMs": 16.65
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.79
         },
         {
           "phase": "failure-retention",
           "category": "human",
-          "name": "Review exact action",
+          "name": "Show routine peer updates",
           "navigation": false,
-          "detail": true,
+          "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.84
+          "elapsedMs": 32.98
         },
         {
           "phase": "failure-retention",
           "category": "human",
-          "name": "Deny action",
+          "name": "Collapse routine peer updates",
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 33.36
+          "elapsedMs": 29.97
         },
         {
           "phase": "failure-retention",
@@ -596,7 +344,259 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 28.2
+          "elapsedMs": 33.31
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 34.38
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.33
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 36.22
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 29.17
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.28
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.7
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 32.38
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.69
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.39
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.64
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate interruption before receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.01
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 34.15
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 17.23
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 23.47
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.44
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.36
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate read-only receipt lookup",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.5
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.81
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.56
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.83
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.95
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.61
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.51
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.28
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.13
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.01
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Deny action",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.79
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.76
         }
       ],
       "probes": [
@@ -610,7 +610,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 25.87
+          "elapsedMs": 25.96
         },
         {
           "label": "accepted handoff",
@@ -622,55 +622,55 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 24.25
+          "elapsedMs": 22.37
         },
         {
           "label": "artifact ready",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 455.5,
           "bottom": 478,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 23.36
+          "elapsedMs": 25.25
         },
         {
           "label": "approval pending",
           "target": "action",
-          "text": "Create issue · approval required",
+          "text": "Create issue \u00b7 approval required",
           "top": 626,
           "bottom": 648.5,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 24.62
+          "elapsedMs": 25.07
         },
         {
           "label": "completed",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 455.5,
           "bottom": 478,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 22.32
+          "elapsedMs": 25.53
         },
         {
           "label": "completed",
           "target": "action",
-          "text": "Create issue · receipt available",
+          "text": "Create issue \u00b7 receipt available",
           "top": 626,
           "bottom": 648.5,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 24.29
+          "elapsedMs": 24.43
         },
         {
           "label": "failed handoff",
@@ -682,7 +682,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 23.06
+          "elapsedMs": 25.61
         },
         {
           "label": "failed handoff",
@@ -694,7 +694,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 22.67
+          "elapsedMs": 26.5
         },
         {
           "label": "unknown outcome",
@@ -706,7 +706,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 24.33
+          "elapsedMs": 29.96
         },
         {
           "label": "unknown outcome",
@@ -718,19 +718,19 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 25.9
+          "elapsedMs": 27.48
         },
         {
           "label": "unknown outcome",
           "target": "action",
-          "text": "Create issue · outcome unknown",
+          "text": "Create issue \u00b7 outcome unknown",
           "top": 748.5,
           "bottom": 771,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 25.64
+          "elapsedMs": 27.79
         }
       ],
       "checks": [
@@ -895,21 +895,13 @@
           "verdict": "PASS"
         }
       ],
-      "screenshots": [
-        "A-mouse-start.png",
-        "A-mouse-brief-ready.png",
-        "A-mouse-artifact.png",
-        "A-mouse-approval.png",
-        "A-mouse-complete.png",
-        "A-mouse-handoff-failed.png",
-        "A-mouse-unknown.png"
-      ],
+      "screenshots": [],
       "errors": [],
       "externalRequests": [],
       "sourceAssets": {
         "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
         "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
-        "prototypes/app.js": "060709856d8b8ecd95a7968cc769d0690b090a273db18a1a8c0b759020da13af",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
         "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
       },
       "sourceErrors": []
@@ -938,7 +930,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 15.83
+          "elapsedMs": 17.61
         },
         {
           "phase": "canonical",
@@ -947,7 +939,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 27.85
+          "elapsedMs": 28.3
         },
         {
           "phase": "canonical",
@@ -956,7 +948,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 33.91
+          "elapsedMs": 30.82
         },
         {
           "phase": "canonical",
@@ -965,7 +957,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 27.29
+          "elapsedMs": 26.48
         },
         {
           "phase": "canonical",
@@ -974,7 +966,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 15.96
+          "elapsedMs": 23.07
         },
         {
           "phase": "canonical",
@@ -983,7 +975,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 18.68
+          "elapsedMs": 10.38
         },
         {
           "phase": "canonical",
@@ -992,7 +984,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.56
+          "elapsedMs": 33.69
         },
         {
           "phase": "canonical",
@@ -1001,25 +993,25 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 19.84
+          "elapsedMs": 13.53
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S1] northstar/launchpad · PR #42",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 32.49
+          "elapsedMs": 33.79
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S2] northstar/launchpad · Issue #17",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 32.45
+          "elapsedMs": 32.29
         },
         {
           "phase": "canonical",
@@ -1028,7 +1020,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 28.21
+          "elapsedMs": 30.53
         },
         {
           "phase": "canonical",
@@ -1037,7 +1029,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 34.22
+          "elapsedMs": 34.17
         },
         {
           "phase": "canonical",
@@ -1046,7 +1038,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 27.08
+          "elapsedMs": 29.13
         },
         {
           "phase": "canonical",
@@ -1055,7 +1047,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 11.67
+          "elapsedMs": 15.45
         },
         {
           "phase": "canonical",
@@ -1064,7 +1056,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 28.04
+          "elapsedMs": 30.27
         },
         {
           "phase": "canonical",
@@ -1073,7 +1065,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 32.53
+          "elapsedMs": 32.97
         },
         {
           "phase": "canonical",
@@ -1082,7 +1074,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.65
+          "elapsedMs": 29.95
         },
         {
           "phase": "failure-retention",
@@ -1091,7 +1083,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 33.52
+          "elapsedMs": 33.65
         },
         {
           "phase": "failure-retention",
@@ -1100,7 +1092,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 44.6
+          "elapsedMs": 15.6
         },
         {
           "phase": "failure-retention",
@@ -1109,7 +1101,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 38.75
+          "elapsedMs": 24.18
         },
         {
           "phase": "failure-retention",
@@ -1118,7 +1110,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.86
+          "elapsedMs": 32.06
         },
         {
           "phase": "failure-retention",
@@ -1127,7 +1119,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 29.82
+          "elapsedMs": 30.23
         },
         {
           "phase": "failure-retention",
@@ -1136,7 +1128,250 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.51
+          "elapsedMs": 31.17
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.54
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 28.9
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 38.11
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate handoff failure",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.06
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate a new handoff offer",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 14.41
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.88
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 35.32
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.62
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.74
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 37.99
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 32.69
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.68
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.99
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.38
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.74
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.84
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.19
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate interruption before receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.69
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 36.88
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 16.31
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 24.79
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.87
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.8
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate read-only receipt lookup",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.96
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.21
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.71
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.19
         },
         {
           "phase": "failure-retention",
@@ -1154,34 +1389,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.03
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Repeat last notification",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 33.96
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate handoff failure",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 31.79
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate a new handoff offer",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 10.78
+          "elapsedMs": 30.11
         },
         {
           "phase": "failure-retention",
@@ -1190,16 +1398,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.99
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Repeat last notification",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 34.51
+          "elapsedMs": 32.96
         },
         {
           "phase": "failure-retention",
@@ -1208,7 +1407,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.76
+          "elapsedMs": 32.01
         },
         {
           "phase": "failure-retention",
@@ -1217,16 +1416,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.63
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Repeat last notification",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 28.41
+          "elapsedMs": 32.38
         },
         {
           "phase": "failure-retention",
@@ -1235,205 +1425,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 32.87
-        },
-        {
-          "phase": "failure-retention",
-          "category": "setup",
-          "name": "Connect this demonstration destination",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 25.98
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Close",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 31.14
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Inspect release brief",
-          "navigation": false,
-          "detail": true,
-          "tabs": 0,
-          "elapsedMs": 34.01
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Close",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 30.46
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Review exact action",
-          "navigation": false,
-          "detail": true,
-          "tabs": 0,
-          "elapsedMs": 33.03
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Approve this exact action once",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 33.29
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate interruption before receipt",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 31.59
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Repeat last notification",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 35.35
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Inspect unresolved action",
-          "navigation": false,
-          "detail": true,
-          "tabs": 0,
-          "elapsedMs": 15.87
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Close",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 24.35
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Inspect unresolved action",
-          "navigation": false,
-          "detail": true,
-          "tabs": 0,
-          "elapsedMs": 34.29
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Close",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 30.07
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate read-only receipt lookup",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 32.17
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Restart this simulated scenario",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 29.6
-        },
-        {
-          "phase": "failure-retention",
-          "category": "setup",
-          "name": "Use demonstration environment",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 30.5
-        },
-        {
-          "phase": "failure-retention",
-          "category": "setup",
-          "name": "Allow this source read",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 31.86
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Send request",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 33.88
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate Mara offering handoff",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 28.67
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate Ivo accepting",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 33.22
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Send reply",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 32.41
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate Ivo delivering brief",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 32.26
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Review exact action",
-          "navigation": false,
-          "detail": true,
-          "tabs": 0,
-          "elapsedMs": 33.41
+          "elapsedMs": 33.57
         },
         {
           "phase": "failure-retention",
@@ -1442,7 +1434,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 33.04
+          "elapsedMs": 36.11
         },
         {
           "phase": "failure-retention",
@@ -1451,7 +1443,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 33.37
+          "elapsedMs": 31.14
         }
       ],
       "probes": [
@@ -1465,7 +1457,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 25.62
+          "elapsedMs": 25.4
         },
         {
           "label": "accepted handoff",
@@ -1477,55 +1469,55 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 26.3
+          "elapsedMs": 24.38
         },
         {
           "label": "artifact ready",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 705.5,
           "bottom": 728,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 24.52
+          "elapsedMs": 24.2
         },
         {
           "label": "approval pending",
           "target": "action",
-          "text": "Create issue · approval required",
+          "text": "Create issue \u00b7 approval required",
           "top": 876,
           "bottom": 898.5,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 25.29
+          "elapsedMs": 23.99
         },
         {
           "label": "completed",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 705.5,
           "bottom": 728,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 25.06
+          "elapsedMs": 23.47
         },
         {
           "label": "completed",
           "target": "action",
-          "text": "Create issue · receipt available",
+          "text": "Create issue \u00b7 receipt available",
           "top": 876,
           "bottom": 898.5,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 26.52
+          "elapsedMs": 25.23
         },
         {
           "label": "failed handoff",
@@ -1537,7 +1529,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 25.55
+          "elapsedMs": 24.04
         },
         {
           "label": "failed handoff",
@@ -1549,7 +1541,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 24.84
+          "elapsedMs": 24.51
         },
         {
           "label": "unknown outcome",
@@ -1561,7 +1553,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 22.08
+          "elapsedMs": 22.85
         },
         {
           "label": "unknown outcome",
@@ -1573,19 +1565,19 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 23.84
+          "elapsedMs": 24.45
         },
         {
           "label": "unknown outcome",
           "target": "action",
-          "text": "Create issue · outcome unknown",
+          "text": "Create issue \u00b7 outcome unknown",
           "top": 998.5,
           "bottom": 1021,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 24.09
+          "elapsedMs": 23.29
         }
       ],
       "checks": [
@@ -1738,21 +1730,13 @@
           "verdict": "PASS"
         }
       ],
-      "screenshots": [
-        "B-mouse-start.png",
-        "B-mouse-brief-ready.png",
-        "B-mouse-artifact.png",
-        "B-mouse-approval.png",
-        "B-mouse-complete.png",
-        "B-mouse-handoff-failed.png",
-        "B-mouse-unknown.png"
-      ],
+      "screenshots": [],
       "errors": [],
       "externalRequests": [],
       "sourceAssets": {
         "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
         "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
-        "prototypes/app.js": "060709856d8b8ecd95a7968cc769d0690b090a273db18a1a8c0b759020da13af",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
         "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
       },
       "sourceErrors": []
@@ -1781,7 +1765,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 19.15
+          "elapsedMs": 25.11
         },
         {
           "phase": "canonical",
@@ -1790,7 +1774,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 28.98
+          "elapsedMs": 29.63
         },
         {
           "phase": "canonical",
@@ -1799,7 +1783,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 34.41
+          "elapsedMs": 34.17
         },
         {
           "phase": "canonical",
@@ -1808,7 +1792,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.52
+          "elapsedMs": 30.06
         },
         {
           "phase": "canonical",
@@ -1817,7 +1801,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 29.4
+          "elapsedMs": 29.75
         },
         {
           "phase": "canonical",
@@ -1826,7 +1810,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 23.55
+          "elapsedMs": 36.43
         },
         {
           "phase": "canonical",
@@ -1835,7 +1819,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 10.16
+          "elapsedMs": 23.96
         },
         {
           "phase": "canonical",
@@ -1844,7 +1828,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.54
+          "elapsedMs": 31.64
         },
         {
           "phase": "canonical",
@@ -1853,7 +1837,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.91
+          "elapsedMs": 31.98
         },
         {
           "phase": "canonical",
@@ -1862,25 +1846,25 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 20.62
+          "elapsedMs": 22.6
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S1] northstar/launchpad · PR #42",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 32.54
+          "elapsedMs": 33.74
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S2] northstar/launchpad · Issue #17",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 31.75
+          "elapsedMs": 31.91
         },
         {
           "phase": "canonical",
@@ -1889,7 +1873,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 34.29
+          "elapsedMs": 17.08
         },
         {
           "phase": "canonical",
@@ -1898,7 +1882,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 34.1
+          "elapsedMs": 33.18
         },
         {
           "phase": "canonical",
@@ -1907,7 +1891,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 28.79
+          "elapsedMs": 29.54
         },
         {
           "phase": "canonical",
@@ -1916,7 +1900,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 15.88
+          "elapsedMs": 15.9
         },
         {
           "phase": "canonical",
@@ -1925,7 +1909,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.21
+          "elapsedMs": 29.87
         },
         {
           "phase": "canonical",
@@ -1934,7 +1918,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 33.28
+          "elapsedMs": 34.16
         },
         {
           "phase": "canonical",
@@ -1943,7 +1927,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.21
+          "elapsedMs": 29.05
         },
         {
           "phase": "failure-retention",
@@ -1952,7 +1936,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 35.4
+          "elapsedMs": 37.91
         },
         {
           "phase": "failure-retention",
@@ -1961,7 +1945,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 21.15
+          "elapsedMs": 20.17
         },
         {
           "phase": "failure-retention",
@@ -1970,7 +1954,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 23.91
+          "elapsedMs": 24.42
         },
         {
           "phase": "failure-retention",
@@ -1979,7 +1963,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.29
+          "elapsedMs": 31.85
         },
         {
           "phase": "failure-retention",
@@ -1988,7 +1972,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.49
+          "elapsedMs": 30.76
         },
         {
           "phase": "failure-retention",
@@ -1997,7 +1981,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.31
+          "elapsedMs": 30.9
         },
         {
           "phase": "failure-retention",
@@ -2006,7 +1990,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.83
+          "elapsedMs": 32.98
         },
         {
           "phase": "failure-retention",
@@ -2015,7 +1999,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.68
+          "elapsedMs": 31.82
         },
         {
           "phase": "failure-retention",
@@ -2024,7 +2008,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.01
+          "elapsedMs": 30.71
         },
         {
           "phase": "failure-retention",
@@ -2033,7 +2017,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 38.3
+          "elapsedMs": 38.89
         },
         {
           "phase": "failure-retention",
@@ -2042,7 +2026,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.09
+          "elapsedMs": 31.33
         },
         {
           "phase": "failure-retention",
@@ -2051,7 +2035,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 19.43
+          "elapsedMs": 20.27
         },
         {
           "phase": "failure-retention",
@@ -2060,7 +2044,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.61
+          "elapsedMs": 32.34
         },
         {
           "phase": "failure-retention",
@@ -2069,7 +2053,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 34.95
+          "elapsedMs": 38.35
         },
         {
           "phase": "failure-retention",
@@ -2078,7 +2062,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 36.16
+          "elapsedMs": 31.99
         },
         {
           "phase": "failure-retention",
@@ -2087,7 +2071,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 28.97
+          "elapsedMs": 32.63
         },
         {
           "phase": "failure-retention",
@@ -2096,7 +2080,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.9
+          "elapsedMs": 31.29
         },
         {
           "phase": "failure-retention",
@@ -2105,7 +2089,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.35
+          "elapsedMs": 31.69
         },
         {
           "phase": "failure-retention",
@@ -2114,7 +2098,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 37.45
+          "elapsedMs": 37.11
         },
         {
           "phase": "failure-retention",
@@ -2123,7 +2107,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 33.96
+          "elapsedMs": 34.15
         },
         {
           "phase": "failure-retention",
@@ -2132,7 +2116,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 25.6
+          "elapsedMs": 25.86
         },
         {
           "phase": "failure-retention",
@@ -2141,7 +2125,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.48
+          "elapsedMs": 31.68
         },
         {
           "phase": "failure-retention",
@@ -2150,7 +2134,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 33.75
+          "elapsedMs": 33.23
         },
         {
           "phase": "failure-retention",
@@ -2159,7 +2143,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.04
+          "elapsedMs": 30.31
         },
         {
           "phase": "failure-retention",
@@ -2168,7 +2152,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 33.08
+          "elapsedMs": 33.32
         },
         {
           "phase": "failure-retention",
@@ -2177,7 +2161,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.27
+          "elapsedMs": 32.85
         },
         {
           "phase": "failure-retention",
@@ -2186,7 +2170,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.02
+          "elapsedMs": 31.48
         },
         {
           "phase": "failure-retention",
@@ -2195,7 +2179,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 37.43
+          "elapsedMs": 37.88
         },
         {
           "phase": "failure-retention",
@@ -2204,7 +2188,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 22.16
+          "elapsedMs": 21.94
         },
         {
           "phase": "failure-retention",
@@ -2213,7 +2197,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 23.93
+          "elapsedMs": 24.21
         },
         {
           "phase": "failure-retention",
@@ -2222,7 +2206,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 34.52
+          "elapsedMs": 34.7
         },
         {
           "phase": "failure-retention",
@@ -2231,7 +2215,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 28.95
+          "elapsedMs": 29.63
         },
         {
           "phase": "failure-retention",
@@ -2240,7 +2224,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.17
+          "elapsedMs": 31.56
         },
         {
           "phase": "failure-retention",
@@ -2249,7 +2233,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.68
+          "elapsedMs": 29.79
         },
         {
           "phase": "failure-retention",
@@ -2258,7 +2242,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.92
+          "elapsedMs": 31.02
         },
         {
           "phase": "failure-retention",
@@ -2267,7 +2251,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.36
+          "elapsedMs": 31.06
         },
         {
           "phase": "failure-retention",
@@ -2276,7 +2260,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 33.56
+          "elapsedMs": 33.48
         },
         {
           "phase": "failure-retention",
@@ -2285,7 +2269,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.83
+          "elapsedMs": 32.32
         },
         {
           "phase": "failure-retention",
@@ -2294,7 +2278,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.41
+          "elapsedMs": 30.46
         },
         {
           "phase": "failure-retention",
@@ -2303,7 +2287,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.47
+          "elapsedMs": 32.21
         },
         {
           "phase": "failure-retention",
@@ -2312,7 +2296,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 33.67
+          "elapsedMs": 33.65
         },
         {
           "phase": "failure-retention",
@@ -2321,7 +2305,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.87
+          "elapsedMs": 31.98
         },
         {
           "phase": "failure-retention",
@@ -2330,7 +2314,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.89
+          "elapsedMs": 32.27
         },
         {
           "phase": "failure-retention",
@@ -2339,7 +2323,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 0,
-          "elapsedMs": 34.2
+          "elapsedMs": 33.94
         },
         {
           "phase": "failure-retention",
@@ -2348,7 +2332,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.13
+          "elapsedMs": 31.55
         },
         {
           "phase": "failure-retention",
@@ -2357,7 +2341,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 34.88
+          "elapsedMs": 36.97
         }
       ],
       "probes": [
@@ -2371,7 +2355,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 28.37
+          "elapsedMs": 29.67
         },
         {
           "label": "accepted handoff",
@@ -2383,55 +2367,55 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 29.1
+          "elapsedMs": 28.23
         },
         {
           "label": "artifact ready",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 661.5,
           "bottom": 684,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 32
+          "elapsedMs": 34.14
         },
         {
           "label": "approval pending",
           "target": "action",
-          "text": "Create issue · approval required",
+          "text": "Create issue \u00b7 approval required",
           "top": 832,
           "bottom": 854.5,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 32.66
+          "elapsedMs": 33.15
         },
         {
           "label": "completed",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 661.5,
           "bottom": 684,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 26.95
+          "elapsedMs": 27.3
         },
         {
           "label": "completed",
           "target": "action",
-          "text": "Create issue · receipt available",
+          "text": "Create issue \u00b7 receipt available",
           "top": 832,
           "bottom": 854.5,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 27.93
+          "elapsedMs": 30.99
         },
         {
           "label": "failed handoff",
@@ -2443,7 +2427,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 28.87
+          "elapsedMs": 25.08
         },
         {
           "label": "failed handoff",
@@ -2455,7 +2439,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 28.46
+          "elapsedMs": 29.66
         },
         {
           "label": "unknown outcome",
@@ -2467,7 +2451,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 27.74
+          "elapsedMs": 26.51
         },
         {
           "label": "unknown outcome",
@@ -2479,19 +2463,19 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 34.06
+          "elapsedMs": 22.09
         },
         {
           "label": "unknown outcome",
           "target": "action",
-          "text": "Create issue · outcome unknown",
+          "text": "Create issue \u00b7 outcome unknown",
           "top": 954.5,
           "bottom": 977,
           "initiallyInViewport": true,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 28.98
+          "elapsedMs": 28.5
         }
       ],
       "checks": [
@@ -2644,21 +2628,13 @@
           "verdict": "PASS"
         }
       ],
-      "screenshots": [
-        "C-mouse-start.png",
-        "C-mouse-brief-ready.png",
-        "C-mouse-artifact.png",
-        "C-mouse-approval.png",
-        "C-mouse-complete.png",
-        "C-mouse-handoff-failed.png",
-        "C-mouse-unknown.png"
-      ],
+      "screenshots": [],
       "errors": [],
       "externalRequests": [],
       "sourceAssets": {
         "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
         "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
-        "prototypes/app.js": "060709856d8b8ecd95a7968cc769d0690b090a273db18a1a8c0b759020da13af",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
         "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
       },
       "sourceErrors": []
@@ -2687,7 +2663,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 5,
-          "elapsedMs": 31.68
+          "elapsedMs": 32.19
         },
         {
           "phase": "canonical",
@@ -2696,7 +2672,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 8.16
+          "elapsedMs": 9.64
         },
         {
           "phase": "canonical",
@@ -2705,7 +2681,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 16.49
+          "elapsedMs": 19.03
         },
         {
           "phase": "canonical",
@@ -2714,7 +2690,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 34.76
+          "elapsedMs": 28.5
         },
         {
           "phase": "canonical",
@@ -2723,7 +2699,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 15.55
+          "elapsedMs": 11.36
         },
         {
           "phase": "canonical",
@@ -2732,7 +2708,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 15.45
+          "elapsedMs": 19.55
         },
         {
           "phase": "canonical",
@@ -2741,7 +2717,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 35.83
+          "elapsedMs": 31.18
         },
         {
           "phase": "canonical",
@@ -2750,25 +2726,25 @@
           "navigation": false,
           "detail": true,
           "tabs": 3,
-          "elapsedMs": 20.3
+          "elapsedMs": 22.22
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S1] northstar/launchpad · PR #42",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 9.93
+          "elapsedMs": 10.51
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S2] northstar/launchpad · Issue #17",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 7.24
+          "elapsedMs": 8.86
         },
         {
           "phase": "canonical",
@@ -2782,7 +2758,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 17.02
+          "elapsedMs": 15.75
         },
         {
           "phase": "canonical",
@@ -2791,7 +2767,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 7.75
+          "elapsedMs": 9.68
         },
         {
           "phase": "canonical",
@@ -2800,7 +2776,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 9.71
+          "elapsedMs": 9.1
         },
         {
           "phase": "canonical",
@@ -2809,7 +2785,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 27.21
+          "elapsedMs": 27.66
         },
         {
           "phase": "canonical",
@@ -2818,7 +2794,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 5,
-          "elapsedMs": 18.09
+          "elapsedMs": 18.73
         },
         {
           "phase": "canonical",
@@ -2832,7 +2808,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 35.09
+          "elapsedMs": 31.67
         },
         {
           "phase": "failure-retention",
@@ -2841,7 +2817,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 17.14
+          "elapsedMs": 17.43
         },
         {
           "phase": "failure-retention",
@@ -2855,7 +2831,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 38.41
+          "elapsedMs": 38.44
         },
         {
           "phase": "failure-retention",
@@ -2864,7 +2840,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 7.67
+          "elapsedMs": 7.02
         },
         {
           "phase": "failure-retention",
@@ -2873,7 +2849,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 8.94
+          "elapsedMs": 9.97
         },
         {
           "phase": "failure-retention",
@@ -2882,7 +2858,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 16.21
+          "elapsedMs": 18.56
         },
         {
           "phase": "failure-retention",
@@ -2891,7 +2867,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 24.27
+          "elapsedMs": 23.87
         },
         {
           "phase": "failure-retention",
@@ -2900,7 +2876,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 37.98
+          "elapsedMs": 33.91
         },
         {
           "phase": "failure-retention",
@@ -2909,7 +2885,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.69
+          "elapsedMs": 30.24
         },
         {
           "phase": "failure-retention",
@@ -2918,7 +2894,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 28.43
+          "elapsedMs": 27.31
         },
         {
           "phase": "failure-retention",
@@ -2927,7 +2903,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.84
+          "elapsedMs": 33.09
         },
         {
           "phase": "failure-retention",
@@ -2936,7 +2912,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 2,
-          "elapsedMs": 18.09
+          "elapsedMs": 18.17
         },
         {
           "phase": "failure-retention",
@@ -2945,7 +2921,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 5.35
+          "elapsedMs": 5.54
         },
         {
           "phase": "failure-retention",
@@ -2954,7 +2930,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 26.45
+          "elapsedMs": 26.4
         },
         {
           "phase": "failure-retention",
@@ -2963,7 +2939,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 23.46
+          "elapsedMs": 21.91
         },
         {
           "phase": "failure-retention",
@@ -2972,7 +2948,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 23.27
+          "elapsedMs": 25.62
         },
         {
           "phase": "failure-retention",
@@ -2981,7 +2957,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 35.26
+          "elapsedMs": 34.94
         },
         {
           "phase": "failure-retention",
@@ -2990,7 +2966,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 4,
-          "elapsedMs": 23.64
+          "elapsedMs": 24.75
         },
         {
           "phase": "failure-retention",
@@ -2999,7 +2975,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 10.63
+          "elapsedMs": 9.33
         },
         {
           "phase": "failure-retention",
@@ -3012,8 +2988,8 @@
           "name": "Inspect release brief",
           "navigation": false,
           "detail": true,
-          "tabs": 11,
-          "elapsedMs": 37.34
+          "tabs": 12,
+          "elapsedMs": 40.1
         },
         {
           "phase": "failure-retention",
@@ -3027,7 +3003,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 8.86
+          "elapsedMs": 9.04
         },
         {
           "phase": "failure-retention",
@@ -3036,7 +3012,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 6.75
+          "elapsedMs": 6.88
         },
         {
           "phase": "failure-retention",
@@ -3045,7 +3021,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 26.12
+          "elapsedMs": 23.93
         },
         {
           "phase": "failure-retention",
@@ -3054,7 +3030,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 35.32
+          "elapsedMs": 33.87
         },
         {
           "phase": "failure-retention",
@@ -3063,7 +3039,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 14.96
+          "elapsedMs": 15.33
         },
         {
           "phase": "failure-retention",
@@ -3076,8 +3052,8 @@
           "name": "Inspect unresolved action",
           "navigation": false,
           "detail": true,
-          "tabs": 4,
-          "elapsedMs": 16.5
+          "tabs": 5,
+          "elapsedMs": 17.92
         },
         {
           "phase": "failure-retention",
@@ -3091,7 +3067,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 24.67
+          "elapsedMs": 37.84
         },
         {
           "phase": "failure-retention",
@@ -3100,7 +3076,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 29.22
+          "elapsedMs": 29.69
         },
         {
           "phase": "failure-retention",
@@ -3109,7 +3085,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 7.13
+          "elapsedMs": 7.41
         },
         {
           "phase": "failure-retention",
@@ -3118,7 +3094,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 8.92
+          "elapsedMs": 8.19
         },
         {
           "phase": "failure-retention",
@@ -3127,7 +3103,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 18.83
+          "elapsedMs": 15.17
         },
         {
           "phase": "failure-retention",
@@ -3136,7 +3112,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 24.24
+          "elapsedMs": 26.37
         },
         {
           "phase": "failure-retention",
@@ -3145,7 +3121,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.1
+          "elapsedMs": 32.47
         },
         {
           "phase": "failure-retention",
@@ -3154,7 +3130,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 13.8
+          "elapsedMs": 17.79
         },
         {
           "phase": "failure-retention",
@@ -3163,7 +3139,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 34.15
+          "elapsedMs": 30.48
         },
         {
           "phase": "failure-retention",
@@ -3172,7 +3148,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 4,
-          "elapsedMs": 16.99
+          "elapsedMs": 15.88
         },
         {
           "phase": "failure-retention",
@@ -3181,7 +3157,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 2,
-          "elapsedMs": 11.68
+          "elapsedMs": 10.85
         },
         {
           "phase": "failure-retention",
@@ -3190,7 +3166,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 26.52
+          "elapsedMs": 25.66
         }
       ],
       "probes": [
@@ -3204,7 +3180,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 22.12
+          "elapsedMs": 22.77
         },
         {
           "label": "accepted handoff",
@@ -3216,55 +3192,55 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 24.47
+          "elapsedMs": 22.4
         },
         {
           "label": "artifact ready",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 1153.7,
           "bottom": 1176.2,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 22.33
+          "elapsedMs": 23.79
         },
         {
           "label": "approval pending",
           "target": "action",
-          "text": "Create issue · approval required",
+          "text": "Create issue \u00b7 approval required",
           "top": 1324.2,
           "bottom": 1346.7,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 23.44
+          "elapsedMs": 23.55
         },
         {
           "label": "completed",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 1153.7,
           "bottom": 1176.2,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 23.47
+          "elapsedMs": 23.8
         },
         {
           "label": "completed",
           "target": "action",
-          "text": "Create issue · receipt available",
+          "text": "Create issue \u00b7 receipt available",
           "top": 1324.2,
           "bottom": 1346.7,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 27.53
+          "elapsedMs": 22.13
         },
         {
           "label": "failed handoff",
@@ -3276,7 +3252,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 24.81
+          "elapsedMs": 24.34
         },
         {
           "label": "failed handoff",
@@ -3288,7 +3264,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 22.84
+          "elapsedMs": 25.53
         },
         {
           "label": "unknown outcome",
@@ -3300,7 +3276,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 24.6
+          "elapsedMs": 24.29
         },
         {
           "label": "unknown outcome",
@@ -3312,19 +3288,19 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 23.22
+          "elapsedMs": 22.3
         },
         {
           "label": "unknown outcome",
           "target": "action",
-          "text": "Create issue · outcome unknown",
+          "text": "Create issue \u00b7 outcome unknown",
           "top": 1469.2,
           "bottom": 1491.7,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 23.56
+          "elapsedMs": 24.92
         }
       ],
       "checks": [
@@ -3493,23 +3469,13 @@
           "verdict": "PASS"
         }
       ],
-      "screenshots": [
-        "A-keyboard-start.png",
-        "A-keyboard-brief-ready.png",
-        "A-keyboard-artifact.png",
-        "A-keyboard-artifact-bottom.png",
-        "A-keyboard-approval.png",
-        "A-keyboard-approval-bottom.png",
-        "A-keyboard-complete.png",
-        "A-keyboard-handoff-failed.png",
-        "A-keyboard-unknown.png"
-      ],
+      "screenshots": [],
       "errors": [],
       "externalRequests": [],
       "sourceAssets": {
         "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
         "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
-        "prototypes/app.js": "060709856d8b8ecd95a7968cc769d0690b090a273db18a1a8c0b759020da13af",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
         "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
       },
       "sourceErrors": []
@@ -3538,7 +3504,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 5,
-          "elapsedMs": 31.37
+          "elapsedMs": 31.55
         },
         {
           "phase": "canonical",
@@ -3547,7 +3513,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 13.11
+          "elapsedMs": 13.55
         },
         {
           "phase": "canonical",
@@ -3556,7 +3522,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 17.84
+          "elapsedMs": 22.27
         },
         {
           "phase": "canonical",
@@ -3565,7 +3531,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 39.21
+          "elapsedMs": 36.6
         },
         {
           "phase": "canonical",
@@ -3574,7 +3540,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 18.88
+          "elapsedMs": 15.67
         },
         {
           "phase": "canonical",
@@ -3583,7 +3549,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 17.87
+          "elapsedMs": 17.09
         },
         {
           "phase": "canonical",
@@ -3592,7 +3558,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 39.86
+          "elapsedMs": 32.96
         },
         {
           "phase": "canonical",
@@ -3601,25 +3567,25 @@
           "navigation": false,
           "detail": true,
           "tabs": 4,
-          "elapsedMs": 23.7
+          "elapsedMs": 21.79
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S1] northstar/launchpad · PR #42",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 8.64
+          "elapsedMs": 10.14
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S2] northstar/launchpad · Issue #17",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 8.85
+          "elapsedMs": 9.06
         },
         {
           "phase": "canonical",
@@ -3633,7 +3599,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 8.61
+          "elapsedMs": 11.15
         },
         {
           "phase": "canonical",
@@ -3642,7 +3608,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 8
+          "elapsedMs": 9.1
         },
         {
           "phase": "canonical",
@@ -3651,7 +3617,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 9.29
+          "elapsedMs": 8.97
         },
         {
           "phase": "canonical",
@@ -3660,7 +3626,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 27.9
+          "elapsedMs": 28.47
         },
         {
           "phase": "canonical",
@@ -3669,7 +3635,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 6,
-          "elapsedMs": 19.06
+          "elapsedMs": 20.04
         },
         {
           "phase": "canonical",
@@ -3683,7 +3649,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 34.13
+          "elapsedMs": 40.93
         },
         {
           "phase": "failure-retention",
@@ -3692,7 +3658,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 15.29
+          "elapsedMs": 15.48
         },
         {
           "phase": "failure-retention",
@@ -3706,7 +3672,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 23.35
+          "elapsedMs": 40.69
         },
         {
           "phase": "failure-retention",
@@ -3715,7 +3681,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 7.16
+          "elapsedMs": 7.35
         },
         {
           "phase": "failure-retention",
@@ -3724,7 +3690,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 9.85
+          "elapsedMs": 7.4
         },
         {
           "phase": "failure-retention",
@@ -3733,7 +3699,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 17.01
+          "elapsedMs": 16.3
         },
         {
           "phase": "failure-retention",
@@ -3742,7 +3708,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 24.88
+          "elapsedMs": 24.55
         },
         {
           "phase": "failure-retention",
@@ -3751,7 +3717,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 37.98
+          "elapsedMs": 35.41
         },
         {
           "phase": "failure-retention",
@@ -3769,7 +3735,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 23.35
+          "elapsedMs": 25.47
         },
         {
           "phase": "failure-retention",
@@ -3778,7 +3744,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 33.03
+          "elapsedMs": 33.38
         },
         {
           "phase": "failure-retention",
@@ -3787,7 +3753,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 35.76
+          "elapsedMs": 34.73
         },
         {
           "phase": "failure-retention",
@@ -3796,7 +3762,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 20.5
+          "elapsedMs": 21.36
         },
         {
           "phase": "failure-retention",
@@ -3805,7 +3771,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 26.47
+          "elapsedMs": 26.14
         },
         {
           "phase": "failure-retention",
@@ -3814,7 +3780,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 35.91
+          "elapsedMs": 36.03
         },
         {
           "phase": "failure-retention",
@@ -3823,7 +3789,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 5,
-          "elapsedMs": 25.2
+          "elapsedMs": 23.24
         },
         {
           "phase": "failure-retention",
@@ -3832,7 +3798,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 9.16
+          "elapsedMs": 8.69
         },
         {
           "phase": "failure-retention",
@@ -3845,8 +3811,8 @@
           "name": "Inspect release brief",
           "navigation": false,
           "detail": true,
-          "tabs": 12,
-          "elapsedMs": 39.59
+          "tabs": 15,
+          "elapsedMs": 44.61
         },
         {
           "phase": "failure-retention",
@@ -3860,7 +3826,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 7.57
+          "elapsedMs": 7.88
         },
         {
           "phase": "failure-retention",
@@ -3869,7 +3835,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 6.12
+          "elapsedMs": 6.25
         },
         {
           "phase": "failure-retention",
@@ -3878,7 +3844,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 27.72
+          "elapsedMs": 26.17
         },
         {
           "phase": "failure-retention",
@@ -3887,7 +3853,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 35.55
+          "elapsedMs": 35.24
         },
         {
           "phase": "failure-retention",
@@ -3896,7 +3862,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 14.7
+          "elapsedMs": 14.96
         },
         {
           "phase": "failure-retention",
@@ -3909,8 +3875,8 @@
           "name": "Inspect unresolved action",
           "navigation": false,
           "detail": true,
-          "tabs": 5,
-          "elapsedMs": 17.46
+          "tabs": 6,
+          "elapsedMs": 18.64
         },
         {
           "phase": "failure-retention",
@@ -3924,7 +3890,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 37.43
+          "elapsedMs": 35.32
         },
         {
           "phase": "failure-retention",
@@ -3933,7 +3899,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 29.25
+          "elapsedMs": 29.3
         },
         {
           "phase": "failure-retention",
@@ -3942,7 +3908,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 6.81
+          "elapsedMs": 7.05
         },
         {
           "phase": "failure-retention",
@@ -3951,7 +3917,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 9.07
+          "elapsedMs": 9.06
         },
         {
           "phase": "failure-retention",
@@ -3960,7 +3926,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 21.24
+          "elapsedMs": 16.03
         },
         {
           "phase": "failure-retention",
@@ -3969,7 +3935,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 38.9
+          "elapsedMs": 25.63
         },
         {
           "phase": "failure-retention",
@@ -3978,7 +3944,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.46
+          "elapsedMs": 32.83
         },
         {
           "phase": "failure-retention",
@@ -3987,7 +3953,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 16.73
+          "elapsedMs": 14.85
         },
         {
           "phase": "failure-retention",
@@ -3996,7 +3962,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.23
+          "elapsedMs": 33.3
         },
         {
           "phase": "failure-retention",
@@ -4005,7 +3971,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 5,
-          "elapsedMs": 17.95
+          "elapsedMs": 16.31
         },
         {
           "phase": "failure-retention",
@@ -4014,7 +3980,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 2,
-          "elapsedMs": 10.85
+          "elapsedMs": 10.48
         },
         {
           "phase": "failure-retention",
@@ -4023,7 +3989,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 25.39
+          "elapsedMs": 25.56
         }
       ],
       "probes": [
@@ -4037,7 +4003,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 23.96
+          "elapsedMs": 24.09
         },
         {
           "label": "accepted handoff",
@@ -4049,55 +4015,55 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 22.44
+          "elapsedMs": 24.8
         },
         {
           "label": "artifact ready",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 1399.7,
           "bottom": 1422.2,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 24.39
+          "elapsedMs": 24.47
         },
         {
           "label": "approval pending",
           "target": "action",
-          "text": "Create issue · approval required",
+          "text": "Create issue \u00b7 approval required",
           "top": 1570.2,
           "bottom": 1592.7,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 24.37
+          "elapsedMs": 21.74
         },
         {
           "label": "completed",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 1399.7,
           "bottom": 1422.2,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 23.21
+          "elapsedMs": 22.72
         },
         {
           "label": "completed",
           "target": "action",
-          "text": "Create issue · receipt available",
+          "text": "Create issue \u00b7 receipt available",
           "top": 1570.2,
           "bottom": 1592.7,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 23.33
+          "elapsedMs": 23.31
         },
         {
           "label": "failed handoff",
@@ -4109,7 +4075,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 24.07
+          "elapsedMs": 22.61
         },
         {
           "label": "failed handoff",
@@ -4121,7 +4087,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 25.21
+          "elapsedMs": 21.38
         },
         {
           "label": "unknown outcome",
@@ -4133,7 +4099,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 22.02
+          "elapsedMs": 27.56
         },
         {
           "label": "unknown outcome",
@@ -4145,19 +4111,19 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 21.78
+          "elapsedMs": 22.55
         },
         {
           "label": "unknown outcome",
           "target": "action",
-          "text": "Create issue · outcome unknown",
+          "text": "Create issue \u00b7 outcome unknown",
           "top": 1715.2,
           "bottom": 1737.7,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 23.08
+          "elapsedMs": 20.65
         }
       ],
       "checks": [
@@ -4314,23 +4280,13 @@
           "verdict": "PASS"
         }
       ],
-      "screenshots": [
-        "B-keyboard-start.png",
-        "B-keyboard-brief-ready.png",
-        "B-keyboard-artifact.png",
-        "B-keyboard-artifact-bottom.png",
-        "B-keyboard-approval.png",
-        "B-keyboard-approval-bottom.png",
-        "B-keyboard-complete.png",
-        "B-keyboard-handoff-failed.png",
-        "B-keyboard-unknown.png"
-      ],
+      "screenshots": [],
       "errors": [],
       "externalRequests": [],
       "sourceAssets": {
         "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
-        "prototypes/app.js": "060709856d8b8ecd95a7968cc769d0690b090a273db18a1a8c0b759020da13af",
         "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
         "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
       },
       "sourceErrors": []
@@ -4342,7 +4298,7 @@
         "width": 390,
         "height": 844
       },
-      "verdict": "PASS",
+      "verdict": "FAIL",
       "canonical": {
         "humanActivations": 12,
         "setupActivations": 3,
@@ -4359,7 +4315,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 5,
-          "elapsedMs": 30.3
+          "elapsedMs": 31.39
         },
         {
           "phase": "canonical",
@@ -4368,7 +4324,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 9.05
+          "elapsedMs": 12.22
         },
         {
           "phase": "canonical",
@@ -4377,7 +4333,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 15.59
+          "elapsedMs": 16.55
         },
         {
           "phase": "canonical",
@@ -4386,7 +4342,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 8.49
+          "elapsedMs": 9.29
         },
         {
           "phase": "canonical",
@@ -4395,7 +4351,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 33.3
+          "elapsedMs": 32.88
         },
         {
           "phase": "canonical",
@@ -4404,7 +4360,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 9.29
+          "elapsedMs": 9.13
         },
         {
           "phase": "canonical",
@@ -4413,7 +4369,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 5,
-          "elapsedMs": 21.19
+          "elapsedMs": 21.43
         },
         {
           "phase": "canonical",
@@ -4422,7 +4378,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 10.06
+          "elapsedMs": 7.66
         },
         {
           "phase": "canonical",
@@ -4431,7 +4387,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 30.44
+          "elapsedMs": 25.8
         },
         {
           "phase": "canonical",
@@ -4440,25 +4396,25 @@
           "navigation": false,
           "detail": true,
           "tabs": 6,
-          "elapsedMs": 24.53
+          "elapsedMs": 27.88
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S1] northstar/launchpad · PR #42",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 8.42
+          "elapsedMs": 7.29
         },
         {
           "phase": "canonical",
           "category": "human",
-          "name": "[S2] northstar/launchpad · Issue #17",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 7.24
+          "elapsedMs": 7.85
         },
         {
           "phase": "canonical",
@@ -4472,7 +4428,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 11.21
+          "elapsedMs": 10.23
         },
         {
           "phase": "canonical",
@@ -4481,7 +4437,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 10.02
+          "elapsedMs": 6.8
         },
         {
           "phase": "canonical",
@@ -4490,7 +4446,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 9.29
+          "elapsedMs": 9.23
         },
         {
           "phase": "canonical",
@@ -4508,7 +4464,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 8,
-          "elapsedMs": 23.17
+          "elapsedMs": 22.81
         },
         {
           "phase": "canonical",
@@ -4522,7 +4478,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 27.16
+          "elapsedMs": 27.59
         },
         {
           "phase": "failure-retention",
@@ -4531,7 +4487,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 17.08
+          "elapsedMs": 16.23
         },
         {
           "phase": "failure-retention",
@@ -4545,7 +4501,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 26.24
+          "elapsedMs": 28.07
         },
         {
           "phase": "failure-retention",
@@ -4554,7 +4510,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 6.42
+          "elapsedMs": 6.75
         },
         {
           "phase": "failure-retention",
@@ -4563,7 +4519,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 8.7
+          "elapsedMs": 9.2
         },
         {
           "phase": "failure-retention",
@@ -4572,7 +4528,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 4,
-          "elapsedMs": 15.32
+          "elapsedMs": 16.31
         },
         {
           "phase": "failure-retention",
@@ -4581,7 +4537,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 6.75
+          "elapsedMs": 7.58
         },
         {
           "phase": "failure-retention",
@@ -4590,7 +4546,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 38.81
+          "elapsedMs": 34.29
         },
         {
           "phase": "failure-retention",
@@ -4599,7 +4555,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 37.1
+          "elapsedMs": 39.33
         },
         {
           "phase": "failure-retention",
@@ -4608,7 +4564,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.31
+          "elapsedMs": 31.32
         },
         {
           "phase": "failure-retention",
@@ -4617,7 +4573,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 31.91
+          "elapsedMs": 31.24
         },
         {
           "phase": "failure-retention",
@@ -4626,7 +4582,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 32.14
+          "elapsedMs": 32.99
         },
         {
           "phase": "failure-retention",
@@ -4635,7 +4591,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 38.3
+          "elapsedMs": 38.07
         },
         {
           "phase": "failure-retention",
@@ -4644,7 +4600,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 3,
-          "elapsedMs": 17.91
+          "elapsedMs": 19.88
         },
         {
           "phase": "failure-retention",
@@ -4653,7 +4609,7 @@
           "navigation": true,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 7.88
+          "elapsedMs": 10.31
         },
         {
           "phase": "failure-retention",
@@ -4662,7 +4618,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 7.55
+          "elapsedMs": 7.2
         },
         {
           "phase": "failure-retention",
@@ -4671,7 +4627,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 26.42
+          "elapsedMs": 23.91
         },
         {
           "phase": "failure-retention",
@@ -4680,7 +4636,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 0,
-          "elapsedMs": 36.88
+          "elapsedMs": 38.48
         },
         {
           "phase": "failure-retention",
@@ -4689,7 +4645,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 7,
-          "elapsedMs": 27.06
+          "elapsedMs": 25.49
         },
         {
           "phase": "failure-retention",
@@ -4698,7 +4654,7 @@
           "navigation": false,
           "detail": false,
           "tabs": 1,
-          "elapsedMs": 6.59
+          "elapsedMs": 8.43
         },
         {
           "phase": "failure-retention",
@@ -4711,8 +4667,8 @@
           "name": "Inspect release brief",
           "navigation": false,
           "detail": true,
-          "tabs": 14,
-          "elapsedMs": 49.24
+          "tabs": 16,
+          "elapsedMs": 47.25
         },
         {
           "phase": "failure-retention",
@@ -4726,188 +4682,7 @@
           "navigation": false,
           "detail": true,
           "tabs": 1,
-          "elapsedMs": 9.09
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Approve this exact action once",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 5.99
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate interruption before receipt",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 35.38
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Repeat last notification",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 37.8
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Inspect unresolved action",
-          "navigation": false,
-          "detail": true,
-          "tabs": 1,
-          "elapsedMs": 14.02
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Escape closes detail"
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Inspect unresolved action",
-          "navigation": false,
-          "detail": true,
-          "tabs": 7,
-          "elapsedMs": 23.66
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Escape closes detail"
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate read-only receipt lookup",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 33.03
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Restart this simulated scenario",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 30.27
-        },
-        {
-          "phase": "failure-retention",
-          "category": "setup",
-          "name": "Use demonstration environment",
-          "navigation": false,
-          "detail": false,
-          "tabs": 1,
-          "elapsedMs": 6.64
-        },
-        {
-          "phase": "failure-retention",
-          "category": "setup",
-          "name": "Allow this source read",
-          "navigation": false,
-          "detail": false,
-          "tabs": 1,
-          "elapsedMs": 9.26
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Start a request",
-          "navigation": true,
-          "detail": false,
-          "tabs": 4,
-          "elapsedMs": 15.33
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Send request",
-          "navigation": true,
-          "detail": false,
-          "tabs": 1,
-          "elapsedMs": 6.86
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate Mara offering handoff",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 34.32
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate Ivo accepting",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 32.23
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Open linked conversation",
-          "navigation": true,
-          "detail": false,
-          "tabs": 5,
-          "elapsedMs": 16.93
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Send reply",
-          "navigation": true,
-          "detail": false,
-          "tabs": 1,
-          "elapsedMs": 8.11
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Simulate Ivo delivering brief",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 22.33
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Review exact action",
-          "navigation": false,
-          "detail": true,
-          "tabs": 7,
-          "elapsedMs": 21.19
-        },
-        {
-          "phase": "failure-retention",
-          "category": "human",
-          "name": "Deny action",
-          "navigation": false,
-          "detail": false,
-          "tabs": 2,
-          "elapsedMs": 10.93
-        },
-        {
-          "phase": "failure-retention",
-          "category": "research",
-          "name": "Repeat last notification",
-          "navigation": false,
-          "detail": false,
-          "tabs": 0,
-          "elapsedMs": 37.2
+          "elapsedMs": 9.01
         }
       ],
       "probes": [
@@ -4921,7 +4696,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 27.13
+          "elapsedMs": 27.5
         },
         {
           "label": "accepted handoff",
@@ -4933,55 +4708,55 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 25.3
+          "elapsedMs": 26.95
         },
         {
           "label": "artifact ready",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 916,
           "bottom": 938.5,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 26.7
+          "elapsedMs": 25.1
         },
         {
           "label": "approval pending",
           "target": "action",
-          "text": "Create issue · approval required",
+          "text": "Create issue \u00b7 approval required",
           "top": 1086.5,
           "bottom": 1109,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 27.8
+          "elapsedMs": 26.89
         },
         {
           "label": "completed",
           "target": "result",
-          "text": "Release brief · v1",
+          "text": "Release brief \u00b7 v1",
           "top": 956.5,
           "bottom": 979,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 26.73
+          "elapsedMs": 26.91
         },
         {
           "label": "completed",
           "target": "action",
-          "text": "Create issue · receipt available",
+          "text": "Create issue \u00b7 receipt available",
           "top": 1127,
           "bottom": 1149.5,
           "initiallyInViewport": false,
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 1,
-          "elapsedMs": 27.04
+          "elapsedMs": 26.76
         },
         {
           "label": "failed handoff",
@@ -4993,7 +4768,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 26.54
+          "elapsedMs": 27.8
         },
         {
           "label": "failed handoff",
@@ -5005,43 +4780,7 @@
           "visible": true,
           "deliberateOpenings": 0,
           "scrolls": 0,
-          "elapsedMs": 25.33
-        },
-        {
-          "label": "unknown outcome",
-          "target": "owner",
-          "text": "Ivo",
-          "top": 305,
-          "bottom": 327.5,
-          "initiallyInViewport": true,
-          "visible": true,
-          "deliberateOpenings": 0,
-          "scrolls": 0,
-          "elapsedMs": 21.95
-        },
-        {
-          "label": "unknown outcome",
-          "target": "error",
-          "text": "Action outcome unknown. The brief is ready, but completion is unconfirmed. Do not retry. Inspect unresolved action",
-          "top": 477.5,
-          "bottom": 604.5,
-          "initiallyInViewport": true,
-          "visible": true,
-          "deliberateOpenings": 0,
-          "scrolls": 0,
-          "elapsedMs": 31.36
-        },
-        {
-          "label": "unknown outcome",
-          "target": "action",
-          "text": "Create issue · outcome unknown",
-          "top": 1272,
-          "bottom": 1294.5,
-          "initiallyInViewport": false,
-          "visible": true,
-          "deliberateOpenings": 0,
-          "scrolls": 1,
-          "elapsedMs": 25.58
+          "elapsedMs": 25.83
         }
       ],
       "checks": [
@@ -5140,84 +4879,21 @@
         {
           "label": "Modal traps keyboard focus in both directions",
           "verdict": "PASS"
-        },
-        {
-          "label": "unknown outcome: refresh and repeated notification do not repeat work",
-          "verdict": "PASS"
-        },
-        {
-          "label": "Unknown action preserves brief and does not offer retry or a completion receipt",
-          "verdict": "PASS"
-        },
-        {
-          "label": "Unknown action opened from .error restores its exact opener",
-          "verdict": "PASS"
-        },
-        {
-          "label": "Unknown action opened from .work-panel restores its exact opener",
-          "verdict": "PASS"
-        },
-        {
-          "label": "Read-only lookup finds the original receipt without repeating the effect",
-          "verdict": "PASS"
-        },
-        {
-          "label": "Connection setup precedes request availability and task creation",
-          "verdict": "PASS"
-        },
-        {
-          "label": "Source authority precedes request availability and task creation",
-          "verdict": "PASS"
-        },
-        {
-          "label": "Completed setup has started no task or specialist",
-          "verdict": "PASS"
-        },
-        {
-          "label": "denial: refresh and repeated notification do not repeat work",
-          "verdict": "PASS"
-        },
-        {
-          "label": "Denial retains the artifact and creates nothing",
-          "verdict": "PASS"
-        },
-        {
-          "label": "No document horizontal overflow",
-          "verdict": "PASS"
-        },
-        {
-          "label": "Old onboarding data is preserved and refused",
-          "verdict": "PASS"
-        },
-        {
-          "label": "No browser exceptions or external requests",
-          "verdict": "PASS"
-        },
-        {
-          "label": "All reloads and probe pages use recorded source",
-          "verdict": "PASS"
         }
       ],
       "screenshots": [
-        "C-keyboard-start.png",
-        "C-keyboard-brief-ready.png",
-        "C-keyboard-artifact.png",
-        "C-keyboard-artifact-bottom.png",
-        "C-keyboard-approval.png",
-        "C-keyboard-approval-bottom.png",
-        "C-keyboard-complete.png",
-        "C-keyboard-handoff-failed.png",
-        "C-keyboard-unknown.png"
+        "focus-race.png"
       ],
       "errors": [],
       "externalRequests": [],
       "sourceAssets": {
         "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
-        "prototypes/app.js": "060709856d8b8ecd95a7968cc769d0690b090a273db18a1a8c0b759020da13af",
         "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
         "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
       },
-      "sourceErrors": []
+      "sourceErrors": [],
+      "failure": "AssertionError [ERR_ASSERTION]: target exists: Approve this exact action once\n\n0 !== 1\n\n    at activate (file:///home/gannonh/dev/agentis-worktrees/kat-3254-research-prove-the-conversational-team-experience-before/docs/research/kat-3254/verify.mjs:76:12)\n    at async run (file:///home/gannonh/dev/agentis-worktrees/kat-3254-research-prove-the-conversational-team-experience-before/docs/research/kat-3254/verify.mjs:303:5)\n    at async file:///home/gannonh/dev/agentis-worktrees/kat-3254-research-prove-the-conversational-team-experience-before/docs/research/kat-3254/verify.mjs:357:84"
     }
   ],
   "unverified": [
@@ -5232,5 +4908,6 @@
     "macOS product support",
     "Screen reader conformance"
   ],
-  "verdict": "PASS"
+  "verdict": "FAIL",
+  "archiveNote": "Intermediate screenshots are omitted. Only the final focus-race screenshot is retained; the final passing capture has its own results.json."
 }
