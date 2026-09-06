@@ -48,7 +48,7 @@ Accepted under [KAT-3249](https://linear.app/kata-sh/issue/KAT-3249). Acceptance
 
    Negotiate recovery, permission, question/plan, MCP, attachment and usage capabilities. Handle blocking requests. Preserve provider semantics for session-wide grants, cancel and reconnect. Loading a provider session may replay history; reconcile it without duplicating Agentis items.
 
-   Support requires published eligibility plus live evidence. Official credential custody is insufficient evidence for subscription integration permission. No provider tokens enter Agentis records or logs. Show execution and billing mode and the boundary of information sent to providers.
+   Support requires published eligibility plus live evidence. Official credential custody is insufficient evidence for subscription integration permission. Use provider-owned authentication flows and credential storage; do not extract, pool or proxy subscription tokens. No provider tokens enter Agentis records or logs. Record the supported billing mode; never advertise unlimited or no-additional-cost usage without provider evidence, and treat missing usage as unknown. Show execution and billing mode and the boundary of information sent to providers, including where files, prompts and tool outputs are sent despite local storage of Agentis records.
 
 6. **Streaming, content and retention**
 
