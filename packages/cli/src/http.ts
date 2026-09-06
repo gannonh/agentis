@@ -2,15 +2,17 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { Effect, Schema } from "effect";
 import { loadOrCreateOwner, parseAuthorization } from "./auth.js";
 import { applyReceiptEffects } from "./engine.js";
+import { interruptCodex } from "./codex.js";
 import { newIdempotencyKey } from "./ids.js";
 import {
   CommandRequest,
   CommandReceipt,
   Health,
+  type EventRow,
   type ExecutionBoundary,
   type ProviderKind,
 } from "./schema.js";
-import { openStore, type Store } from "./store.js";
+import { openStore, sweepRunTimeouts, type Store } from "./store.js";
 import { API_FAMILY, PACKAGE_VERSION, SCHEMA_ID } from "./versions.js";
 
 export type ServeOptions = {
@@ -41,6 +43,15 @@ const json = (response: ServerResponse, status: number, body: unknown) => {
 
 const loopback = (hostname: string) => hostname === "127.0.0.1" || hostname === "localhost";
 
+const applySweepEffects = (store: Store) => {
+  const swept = sweepRunTimeouts(store.path, Date.now());
+  for (const item of swept) {
+    if (item.effects.includes("interrupt_provider")) {
+      interruptCodex(item.runId);
+    }
+  }
+};
+
 export const startServer = (options: ServeOptions): Effect.Effect<RunningServer, Error> =>
   Effect.gen(function* () {
     if (!loopback(options.endpoint.hostname)) {
@@ -52,6 +63,9 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
     const owner = yield* loadOrCreateOwner(options.dataRoot);
     const store = yield* openStore(options.dataRoot);
     yield* store.interruptActiveRuns(Date.now());
+    const sweepTimer = setInterval(() => {
+      applySweepEffects(store);
+    }, 1000);
     const server = createServer((request, response) => {
       void handle(request, response).catch((error: unknown) => {
         json(response, 500, { error: String(error) });
@@ -107,17 +121,35 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
           json(response, 403, { error: "owner session required" });
           return;
         }
-        const cursor = Number(url.searchParams.get("cursor") ?? "0");
-        const snapshot = await Effect.runPromise(store.snapshot());
+        let cursor = Number(url.searchParams.get("cursor") ?? "0");
         response.writeHead(200, {
           "content-type": "text/event-stream",
           "cache-control": "no-cache",
           connection: "keep-alive",
         });
-        for (const event of snapshot.events.filter((item) => item.seq > cursor)) {
-          response.write(`id: ${event.seq}\ndata: ${JSON.stringify(event)}\n\n`);
-        }
-        response.end();
+        const writeEvents = (events: readonly EventRow[]) => {
+          for (const event of events.filter((item) => item.seq > cursor)) {
+            response.write(`id: ${event.seq}\ndata: ${JSON.stringify(event)}\n\n`);
+            cursor = event.seq;
+          }
+        };
+        const snapshot = await Effect.runPromise(store.snapshot());
+        writeEvents(snapshot.events);
+        const poll = setInterval(async () => {
+          if (response.writableEnded) {
+            clearInterval(poll);
+            return;
+          }
+          applySweepEffects(store);
+          const live = await Effect.runPromise(store.snapshot());
+          writeEvents(live.events);
+        }, 250);
+        request.on("close", () => {
+          clearInterval(poll);
+          if (!response.writableEnded) {
+            response.end();
+          }
+        });
         return;
       }
       if (url.pathname === "/v1/commands" && request.method === "POST") {
@@ -149,6 +181,13 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
           workspace: options.workspace,
           nowMs: Date.now(),
         });
+        if (receipt.effects.includes("interrupt_provider")) {
+          if (receipt.runId) {
+            interruptCodex(receipt.runId);
+          } else {
+            applySweepEffects(store);
+          }
+        }
         json(response, receipt.accepted ? 200 : 409, Schema.encodeSync(CommandReceipt)(receipt));
         return;
       }
@@ -165,6 +204,7 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
     return {
       store,
       close: async () => {
+        clearInterval(sweepTimer);
         await new Promise<void>((resolve, reject) => {
           server.close((error) => (error ? reject(error) : resolve()));
         });

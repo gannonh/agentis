@@ -2,13 +2,13 @@ import { createHash } from "node:crypto";
 import { createInterface } from "node:readline";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { Effect } from "effect";
+import { readCodexVersionInContainer, spawnCodexAppServerInContainer } from "./container.js";
 import { mutateForEngine } from "./store.js";
 import type { DriveInput } from "./engine.js";
 import { CODEX_CLI_PIN } from "./versions.js";
-import type { RunId } from "./schema.js";
+import type { ExecutionBoundary, RunId } from "./schema.js";
 
 class CodexError extends Error {
   readonly _tag = "CodexError";
@@ -34,8 +34,17 @@ const asJson = (value: unknown): Json =>
 
 const rpcTimeoutMs = () => Number(process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS ?? "180000");
 
-const spawnAppServer = (cwd: string): ChildProcessWithoutNullStreams => {
+const spawnAppServer = (
+  cwd: string,
+  executionBoundary: typeof ExecutionBoundary.Type,
+): ChildProcessWithoutNullStreams => {
   const stub = process.env.AGENTIS_CODEX_STUB;
+  if (executionBoundary === "docker-desktop-run-container") {
+    return spawnCodexAppServerInContainer({
+      workspace: cwd,
+      ...(stub ? { stub } : {}),
+    });
+  }
   if (stub) {
     return spawn(process.execPath, [stub], {
       cwd,
@@ -47,15 +56,19 @@ const spawnAppServer = (cwd: string): ChildProcessWithoutNullStreams => {
     cwd,
     env: {
       PATH: process.env.PATH ?? "",
-      HOME: homedir(),
+      HOME: join(cwd, ".codex-home"),
       NO_OPEN_BROWSER: "1",
     },
     stdio: ["pipe", "pipe", "pipe"],
   });
 };
 
-const readVersion = async () => {
+const readVersion = async (executionBoundary: typeof ExecutionBoundary.Type) => {
   if (process.env.AGENTIS_CODEX_STUB) {
+    return;
+  }
+  if (executionBoundary === "docker-desktop-run-container") {
+    await readCodexVersionInContainer(CODEX_CLI_PIN);
     return;
   }
   const child = spawn("codex", ["--version"], { stdio: ["ignore", "pipe", "pipe"] });
@@ -92,9 +105,9 @@ const dropSession = (runId: RunId) => {
 export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> =>
   Effect.tryPromise({
     try: async () => {
-      await readVersion();
+      await readVersion(input.executionBoundary);
       mkdirSync(input.workspace, { recursive: true, mode: 0o700 });
-      const child = spawnAppServer(input.workspace);
+      const child = spawnAppServer(input.workspace, input.executionBoundary);
       const pending = new Map<string | number, (value: Json) => void>();
       const send = (message: Json) => {
         child.stdin.write(`${JSON.stringify(message)}\n`);
@@ -226,7 +239,13 @@ const handleNotice = async (session: Session, input: DriveInput, value: Json) =>
     session.pendingServerRequest = value;
     const command = typeof params.command === "string" ? params.command : "command";
     const engine = mutateForEngine(input.store.path);
-    engine.bumpAction(input.runId, input.taskId);
+    const budget = engine.bumpAction(input.runId, input.taskId);
+    if (budget.exhausted) {
+      engine.fail(input.runId, input.taskId, "action budget exhausted", Date.now());
+      engine.close();
+      dropSession(input.runId);
+      return;
+    }
     engine.waitApproval({
       runId: input.runId,
       taskId: input.taskId,
@@ -259,6 +278,19 @@ const handleNotice = async (session: Session, input: DriveInput, value: Json) =>
   if (method === "turn/completed" && turn.status === "interrupted") {
     const engine = mutateForEngine(input.store.path);
     engine.fail(input.runId, input.taskId, "interrupted", Date.now());
+    engine.close();
+    dropSession(input.runId);
+    return;
+  }
+  if (method === "turn/completed" && turn.status === "failed") {
+    const error =
+      typeof turn.error === "string"
+        ? turn.error
+        : typeof params.error === "string"
+          ? params.error
+          : "turn failed";
+    const engine = mutateForEngine(input.store.path);
+    engine.fail(input.runId, input.taskId, error, Date.now());
     engine.close();
     dropSession(input.runId);
     return;

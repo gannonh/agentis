@@ -21,6 +21,10 @@ const OwnerFile = Schema.Struct({
   token: Schema.String,
 });
 
+export class InvalidOwnerCredentialError extends Error {
+  readonly _tag = "InvalidOwnerCredentialError";
+}
+
 const tokenPath = (dataRoot: string) => join(dataRoot, "owner.token");
 
 export const loadOrCreateOwner = (dataRoot: string): Effect.Effect<OwnerSession> =>
@@ -30,14 +34,18 @@ export const loadOrCreateOwner = (dataRoot: string): Effect.Effect<OwnerSession>
     try {
       const parsed = Schema.decodeUnknownSync(OwnerFile)(JSON.parse(readFileSync(path, "utf8")));
       return parsed;
-    } catch {
-      const session: OwnerSession = {
-        sessionId: newSessionId(),
-        token: randomBytes(32).toString("hex"),
-      };
-      writeFileSync(path, `${JSON.stringify(session)}\n`, { mode: 0o600 });
-      chmodSync(path, 0o600);
-      return session;
+    } catch (error) {
+      const code = error && typeof error === "object" && "code" in error ? error.code : null;
+      if (code === "ENOENT") {
+        const session: OwnerSession = {
+          sessionId: newSessionId(),
+          token: randomBytes(32).toString("hex"),
+        };
+        writeFileSync(path, `${JSON.stringify(session)}\n`, { mode: 0o600 });
+        chmodSync(path, 0o600);
+        return session;
+      }
+      throw new InvalidOwnerCredentialError("invalid owner credential");
     }
   });
 

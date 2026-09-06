@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 import { Effect, Schema } from "effect";
@@ -263,6 +263,40 @@ const run = (db: DatabaseSync, sql: string, params: SQLInputValue[] = []) => {
   db.prepare(sql).run(...params);
 };
 
+const withTxn = <T>(db: DatabaseSync, fn: () => T): T => {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const result = fn();
+    db.exec("COMMIT");
+    return result;
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+};
+
+const assertSchemaBeforeOpen = (db: DatabaseSync, path: string) => {
+  if (!existsSync(path) || statSync(path).size === 0) {
+    return;
+  }
+  const meta = row<{ value: string }>(
+    db,
+    "SELECT value FROM meta WHERE key = 'schema_id'",
+    [],
+  );
+  if (meta && meta.value !== SCHEMA_ID) {
+    throw new UnsupportedSchemaError(meta.value);
+  }
+  const foreign = row<{ name: string }>(
+    db,
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' LIMIT 1",
+    [],
+  );
+  if (foreign && !meta) {
+    throw new UnsupportedSchemaError("unknown");
+  }
+};
+
 const ownerOnly = (principal: Principal, commandKind: string) => {
   if (principal.kind !== "owner") {
     throw new StoreError(`bot cannot ${commandKind}`);
@@ -280,6 +314,7 @@ export const openStore = (
       const path = join(dataRoot, "state.sqlite");
       mkdirSync(dirname(path), { recursive: true });
       const db = new DatabaseSync(path);
+      assertSchemaBeforeOpen(db, path);
       db.exec("PRAGMA journal_mode = WAL;");
       db.exec("PRAGMA foreign_keys = ON;");
       db.exec(DDL);
@@ -370,6 +405,30 @@ const emit = (db: DatabaseSync, type: string, body: Record<string, unknown>, now
     JSON.stringify(body),
     nowMs,
   ]);
+};
+
+const expireApprovalAndRun = (
+  db: DatabaseSync,
+  approval: { id: string; run_id: string; task_id: string },
+  nowMs: number,
+  commandId?: CommandId,
+) => {
+  run(db, "UPDATE approvals SET state = 'expired' WHERE id = ?", [approval.id]);
+  run(
+    db,
+    "UPDATE pending_actions SET state = 'expired' WHERE approval_id = ? AND state = 'pending'",
+    [approval.id],
+  );
+  run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [
+    approval.run_id,
+  ]);
+  run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [approval.task_id]);
+  emit(
+    db,
+    "run_failed",
+    { runId: approval.run_id, error: "approval expired", commandId },
+    nowMs,
+  );
 };
 
 const message = (
@@ -577,18 +636,30 @@ const resolveApproval = (
     });
   }
   if (approval.expires_at <= input.nowMs) {
-    run(db, "UPDATE approvals SET state = 'expired' WHERE id = ?", [approval.id]);
-    run(
-      db,
-      "UPDATE pending_actions SET state = 'expired' WHERE approval_id = ? AND state = 'pending'",
-      [approval.id],
-    );
+    expireApprovalAndRun(db, approval, input.nowMs, commandId);
     return receiptOf({
       commandId,
       replayed: false,
       accepted: false,
       error: "approval expired",
       approvalId: command.approvalId,
+      runId: approval.run_id as RunId,
+      taskId: approval.task_id as TaskId,
+      effects: ["interrupt_provider"],
+    });
+  }
+  const runStatus = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [
+    approval.run_id,
+  ]);
+  if (runStatus?.status === "interrupted") {
+    return receiptOf({
+      commandId,
+      replayed: false,
+      accepted: false,
+      error: "run interrupted; provider session lost on restart",
+      approvalId: command.approvalId,
+      runId: approval.run_id as RunId,
+      taskId: approval.task_id as TaskId,
       effects: [],
     });
   }
@@ -924,67 +995,72 @@ const interruptActive = (db: DatabaseSync, nowMs: number): RunId[] => {
 export const mutateForEngine = (storePath: string) => {
   const db = new DatabaseSync(storePath);
   return {
-    markRunning: (runId: RunId, providerSessionId: string, nowMs: number) => {
-      run(
-        db,
-        "UPDATE runs SET status = 'running', waiting_reason = 'none', provider_session_id = ? WHERE id = ?",
-        [providerSessionId, runId],
-      );
-      run(
-        db,
-        "UPDATE pending_actions SET state = 'claimed' WHERE run_id = ? AND kind = 'launch' AND state = 'pending'",
-        [runId],
-      );
-      emit(db, "run_running", { runId, providerSessionId }, nowMs);
-    },
+    markRunning: (runId: RunId, providerSessionId: string, nowMs: number) =>
+      withTxn(db, () => {
+        run(
+          db,
+          "UPDATE runs SET status = 'running', waiting_reason = 'none', provider_session_id = ? WHERE id = ?",
+          [providerSessionId, runId],
+        );
+        run(
+          db,
+          "UPDATE pending_actions SET state = 'claimed' WHERE run_id = ? AND kind = 'launch' AND state = 'pending'",
+          [runId],
+        );
+        emit(db, "run_running", { runId, providerSessionId }, nowMs);
+      }),
     waitApproval: (input: {
       runId: RunId;
       taskId: TaskId;
       tool: string;
       argumentDigest: string;
       nowMs: number;
-    }) => {
-      const approvalId = newApprovalId();
-      const intentId = newActionIntentId();
-      run(
-        db,
-        `INSERT INTO approvals (id, run_id, task_id, state, tool, argument_digest, expires_at, resolver, created_at)
+    }) =>
+      withTxn(db, () => {
+        const approvalId = newApprovalId();
+        const intentId = newActionIntentId();
+        run(
+          db,
+          `INSERT INTO approvals (id, run_id, task_id, state, tool, argument_digest, expires_at, resolver, created_at)
          VALUES (?, ?, ?, 'pending', ?, ?, ?, NULL, ?)`,
-        [
-          approvalId,
-          input.runId,
-          input.taskId,
-          input.tool,
-          input.argumentDigest,
-          input.nowMs + APPROVAL_TTL_MS,
-          input.nowMs,
-        ],
-      );
-      run(
-        db,
-        `INSERT INTO pending_actions (id, run_id, kind, state, payload, approval_id, created_at)
+          [
+            approvalId,
+            input.runId,
+            input.taskId,
+            input.tool,
+            input.argumentDigest,
+            input.nowMs + APPROVAL_TTL_MS,
+            input.nowMs,
+          ],
+        );
+        run(
+          db,
+          `INSERT INTO pending_actions (id, run_id, kind, state, payload, approval_id, created_at)
          VALUES (?, ?, 'tool', 'pending', ?, ?, ?)`,
-        [intentId, input.runId, JSON.stringify({ tool: input.tool }), approvalId, input.nowMs],
-      );
-      run(
-        db,
-        "UPDATE runs SET status = 'waiting_approval', waiting_reason = 'approval' WHERE id = ?",
-        [input.runId],
-      );
-      emit(
-        db,
-        "waiting_approval",
-        { runId: input.runId, approvalId, tool: input.tool },
-        input.nowMs,
-      );
-      return approvalId;
-    },
-    waitInput: (runId: RunId, prompt: string, nowMs: number) => {
-      run(db, "UPDATE runs SET status = 'waiting_input', waiting_reason = 'input' WHERE id = ?", [
-        runId,
-      ]);
-      emit(db, "waiting_input", { runId, prompt }, nowMs);
-    },
+          [intentId, input.runId, JSON.stringify({ tool: input.tool }), approvalId, input.nowMs],
+        );
+        run(
+          db,
+          "UPDATE runs SET status = 'waiting_approval', waiting_reason = 'approval' WHERE id = ?",
+          [input.runId],
+        );
+        emit(
+          db,
+          "waiting_approval",
+          { runId: input.runId, approvalId, tool: input.tool },
+          input.nowMs,
+        );
+        return approvalId;
+      }),
+    waitInput: (runId: RunId, prompt: string, nowMs: number) =>
+      withTxn(db, () => {
+        run(
+          db,
+          "UPDATE runs SET status = 'waiting_input', waiting_reason = 'input' WHERE id = ?",
+          [runId],
+        );
+        emit(db, "waiting_input", { runId, prompt }, nowMs);
+      }),
     complete: (input: {
       runId: RunId;
       taskId: TaskId;
@@ -995,53 +1071,110 @@ export const mutateForEngine = (storePath: string) => {
       byteSize: number;
       path: string;
       nowMs: number;
-    }) => {
-      const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [
-        input.runId,
-      ]);
-      if (!current || isTerminal(current.status)) {
-        return null;
-      }
-      const artifactId = newArtifactId();
-      run(
-        db,
-        `INSERT INTO artifacts (id, task_id, run_id, author, source, media_type, sha256, byte_size, path, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          artifactId,
-          input.taskId,
+    }) =>
+      withTxn(db, () => {
+        const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [
           input.runId,
-          input.author,
-          input.source,
-          input.mediaType,
-          input.sha256,
-          input.byteSize,
-          input.path,
-          input.nowMs,
-        ],
-      );
-      run(db, "UPDATE runs SET status = 'succeeded', waiting_reason = 'none' WHERE id = ?", [
-        input.runId,
-      ]);
-      run(db, "UPDATE tasks SET status = 'completed' WHERE id = ?", [input.taskId]);
-      emit(db, "run_succeeded", { runId: input.runId, artifactId }, input.nowMs);
-      return artifactId;
-    },
-    fail: (runId: RunId, taskId: TaskId, error: string, nowMs: number) => {
-      const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [runId]);
-      if (!current || isTerminal(current.status)) {
-        return;
-      }
-      run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [runId]);
-      run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [taskId]);
-      emit(db, "run_failed", { runId, error }, nowMs);
-    },
-    bumpAction: (runId: RunId, taskId: TaskId) => {
-      run(db, "UPDATE runs SET action_count = action_count + 1 WHERE id = ?", [runId]);
-      run(db, "UPDATE tasks SET action_count = action_count + 1 WHERE id = ?", [taskId]);
-    },
+        ]);
+        if (!current || isTerminal(current.status)) {
+          return null;
+        }
+        const artifactId = newArtifactId();
+        run(
+          db,
+          `INSERT INTO artifacts (id, task_id, run_id, author, source, media_type, sha256, byte_size, path, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            artifactId,
+            input.taskId,
+            input.runId,
+            input.author,
+            input.source,
+            input.mediaType,
+            input.sha256,
+            input.byteSize,
+            input.path,
+            input.nowMs,
+          ],
+        );
+        run(db, "UPDATE runs SET status = 'succeeded', waiting_reason = 'none' WHERE id = ?", [
+          input.runId,
+        ]);
+        run(db, "UPDATE tasks SET status = 'completed' WHERE id = ?", [input.taskId]);
+        emit(db, "run_succeeded", { runId: input.runId, artifactId }, input.nowMs);
+        return artifactId;
+      }),
+    fail: (runId: RunId, taskId: TaskId, error: string, nowMs: number) =>
+      withTxn(db, () => {
+        const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [runId]);
+        if (!current || isTerminal(current.status)) {
+          return;
+        }
+        run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [runId]);
+        run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [taskId]);
+        emit(db, "run_failed", { runId, error }, nowMs);
+      }),
+    bumpAction: (runId: RunId, taskId: TaskId) =>
+      withTxn(db, () => {
+        const current = row<{ action_count: number; frozen_json: string }>(
+          db,
+          "SELECT action_count, frozen_json FROM runs WHERE id = ?",
+          [runId],
+        );
+        const budget = current
+          ? (JSON.parse(current.frozen_json) as FrozenConfig).actionBudget
+          : MAX_ACTIONS_PER_RUN;
+        if ((current?.action_count ?? 0) >= budget) {
+          return { exhausted: true as const };
+        }
+        run(db, "UPDATE runs SET action_count = action_count + 1 WHERE id = ?", [runId]);
+        run(db, "UPDATE tasks SET action_count = action_count + 1 WHERE id = ?", [taskId]);
+        return { exhausted: false as const };
+      }),
     close: () => {
       db.close();
     },
   };
+};
+
+export type RunSweepEffect = {
+  readonly runId: RunId;
+  readonly effects: readonly string[];
+};
+
+export const sweepRunTimeouts = (storePath: string, nowMs: number): readonly RunSweepEffect[] => {
+  const db = new DatabaseSync(storePath);
+  try {
+    return withTxn(db, () => {
+      const effects: RunSweepEffect[] = [];
+      const overdue = rows<{ id: string; task_id: string }>(
+        db,
+        `SELECT id, task_id FROM runs
+         WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')
+           AND deadline_at <= ?`,
+        [nowMs],
+      );
+      for (const item of overdue) {
+        run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [
+          item.id,
+        ]);
+        run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [item.task_id]);
+        emit(db, "run_failed", { runId: item.id, error: "run deadline exceeded" }, nowMs);
+        effects.push({ runId: item.id as RunId, effects: ["interrupt_provider"] });
+      }
+      const expired = rows<{ id: string; run_id: string; task_id: string }>(
+        db,
+        `SELECT id, run_id, task_id FROM approvals
+         WHERE state = 'pending' AND expires_at <= ?`,
+        [nowMs],
+      );
+      for (const item of expired) {
+        expireApprovalAndRun(db, item, nowMs);
+        effects.push({ runId: item.run_id as RunId, effects: ["interrupt_provider"] });
+      }
+      return effects;
+    });
+  } finally {
+    db.close();
+  }
 };

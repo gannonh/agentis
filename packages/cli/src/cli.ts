@@ -108,20 +108,29 @@ export const runCli = async (argv: string[]): Promise<number> => {
   const dataRoot =
     typeof values["data-root"] === "string" ? values["data-root"] : defaultDataRoot();
   if (verb === "serve") {
-    const provider = Schema.decodeUnknownSync(ProviderKind)(values.provider ?? "fake");
-    const executionBoundary = Schema.decodeUnknownSync(ExecutionBoundary)(
-      values["execution-boundary"] ??
-        (provider === "fake" ? "unverified-host-scratch" : "docker-desktop-run-container"),
-    );
-    assertBoundary({ provider, executionBoundary });
+    let provider: typeof ProviderKind.Type = "fake";
+    let executionBoundary: typeof ExecutionBoundary.Type = "unverified-host-scratch";
     let endpoint: URL;
-    if (typeof values.endpoint === "string") {
+    if (typeof values.profile === "string") {
+      const saved = loadProfile(dataRoot, values.profile);
+      endpoint = new URL(saved.endpoint);
+      provider = saved.provider;
+      executionBoundary = saved.executionBoundary;
+    } else if (typeof values.endpoint === "string") {
       endpoint = new URL(values.endpoint);
-    } else if (typeof values.profile === "string") {
-      endpoint = new URL(loadProfile(dataRoot, values.profile).endpoint);
     } else {
       throw new Error("serve requires --endpoint or --profile; no port is guessed");
     }
+    if (typeof values.provider === "string") {
+      provider = Schema.decodeUnknownSync(ProviderKind)(values.provider);
+    }
+    if (typeof values["execution-boundary"] === "string") {
+      executionBoundary = Schema.decodeUnknownSync(ExecutionBoundary)(values["execution-boundary"]);
+    } else if (typeof values.profile !== "string") {
+      executionBoundary =
+        provider === "fake" ? "unverified-host-scratch" : "docker-desktop-run-container";
+    }
+    assertBoundary({ provider, executionBoundary });
     if (!endpoint.port) {
       throw new Error("endpoint must include an explicit port");
     }

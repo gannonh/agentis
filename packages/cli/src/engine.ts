@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Effect } from "effect";
 import { mutateForEngine, type Store } from "./store.js";
-import type { Command, CommandReceipt, FixtureKind, RunId, TaskId } from "./schema.js";
+import type { Command, CommandReceipt, ExecutionBoundary, FixtureKind, RunId, TaskId } from "./schema.js";
 import {
   answerCodexInput,
   interruptAllCodex,
@@ -18,6 +18,7 @@ export type DriveInput = {
   readonly taskId: TaskId;
   readonly fixture: FixtureKind | null;
   readonly provider: "fake" | "codex";
+  readonly executionBoundary: typeof ExecutionBoundary.Type;
   readonly workspace: string;
   readonly nowMs: number;
   readonly brief: string;
@@ -39,7 +40,11 @@ export const applyReceiptEffects = async (input: {
   readonly nowMs: number;
 }): Promise<void> => {
   const { receipt, store, provider, workspace, nowMs, command } = input;
-  const drive = (fixture: FixtureKind | null, brief: string) => {
+  const drive = (
+    fixture: FixtureKind | null,
+    brief: string,
+    executionBoundary: typeof ExecutionBoundary.Type,
+  ) => {
     if (!receipt.runId || !receipt.taskId) {
       return Promise.resolve();
     }
@@ -50,6 +55,7 @@ export const applyReceiptEffects = async (input: {
         taskId: receipt.taskId,
         fixture,
         provider,
+        executionBoundary,
         workspace,
         nowMs,
         brief,
@@ -69,6 +75,7 @@ export const applyReceiptEffects = async (input: {
       await drive(
         run?.fixture ?? null,
         snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
+        run?.frozen.executionBoundary ?? "unverified-host-scratch",
       );
     } catch {
       return;
@@ -91,6 +98,7 @@ export const applyReceiptEffects = async (input: {
           taskId: receipt.taskId,
           fixture: "allow",
           provider,
+          executionBoundary: "unverified-host-scratch",
           workspace,
           nowMs,
           brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
@@ -118,6 +126,7 @@ export const applyReceiptEffects = async (input: {
           taskId: receipt.taskId,
           fixture: "input",
           provider,
+          executionBoundary: "unverified-host-scratch",
           workspace,
           nowMs,
           brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
@@ -143,7 +152,11 @@ const driveFake = (input: DriveInput): Effect.Effect<void, Error> =>
         engine.markRunning(input.runId, `fake:${input.runId}`, input.nowMs);
         const fixture = input.fixture ?? "smoke";
         if (fixture === "allow" || fixture === "deny") {
-          engine.bumpAction(input.runId, input.taskId);
+          const budget = engine.bumpAction(input.runId, input.taskId);
+          if (budget.exhausted) {
+            engine.fail(input.runId, input.taskId, "action budget exhausted", input.nowMs);
+            return;
+          }
           engine.waitApproval({
             runId: input.runId,
             taskId: input.taskId,

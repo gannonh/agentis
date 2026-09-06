@@ -44,6 +44,25 @@ describe("store", () => {
     );
   });
 
+  it("refuses unsupported schema before creating current tables", async () => {
+    const root = tempRoot();
+    const { DatabaseSync } = await import("node:sqlite");
+    const { mkdirSync } = await import("node:fs");
+    mkdirSync(root, { recursive: true });
+    const path = join(root, "state.sqlite");
+    const db = new DatabaseSync(path);
+    db.exec("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+    db.prepare("INSERT INTO meta (key, value) VALUES ('schema_id', 'agentis.v1')").run();
+    db.close();
+    await expect(Effect.runPromise(openStore(root))).rejects.toThrow(/unsupported schema agentis.v1/);
+    const after = new DatabaseSync(path);
+    const tables = after
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+      .all() as { name: string }[];
+    expect(tables.map((item) => item.name)).toEqual(["meta"]);
+    after.close();
+  });
+
   it("replays the same idempotency key and rejects a changed payload", async () => {
     const root = tempRoot();
     const store = await Effect.runPromise(openStore(root));

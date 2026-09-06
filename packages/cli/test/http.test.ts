@@ -185,10 +185,24 @@ describe("http", () => {
       });
       expect(canceled.json.accepted).toBe(true);
 
-      const events = await fetch(new URL("/v1/events?cursor=0", endpoint), {
+      const eventsResponse = await fetch(new URL("/v1/events?cursor=0", endpoint), {
         headers: { authorization: `Bearer ${owner.token}` },
       });
-      const text = await events.text();
+      const reader = eventsResponse.body?.getReader();
+      if (!reader) {
+        throw new Error("missing SSE body");
+      }
+      const decoder = new TextDecoder();
+      let text = "";
+      const deadline = Date.now() + 2000;
+      while (Date.now() < deadline && !text.includes("task_submitted")) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        text += decoder.decode(value);
+      }
+      await reader.cancel();
       expect(text).toMatch(/task_submitted/);
     } finally {
       await server.close();

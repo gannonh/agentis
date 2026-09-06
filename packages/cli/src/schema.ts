@@ -143,3 +143,81 @@ export const Health = Schema.Struct({
   packageVersion: Schema.String,
 });
 export type Health = typeof Health.Type;
+
+export const EventRow = Schema.Struct({
+  seq: Schema.Number,
+  id: Schema.String,
+  type: Schema.String,
+  body: Schema.String,
+});
+export type EventRow = typeof EventRow.Type;
+
+export const TaskRow = Schema.Struct({
+  id: TaskId,
+  brief: Schema.String,
+  ownerSession: Schema.String,
+  botName: Schema.String,
+  botRole: Schema.String,
+  status: Schema.String,
+  actionCount: Schema.Number,
+});
+export type TaskRow = typeof TaskRow.Type;
+
+export const RunRow = Schema.Struct({
+  id: RunId,
+  taskId: TaskId,
+  status: RunStatus,
+  waitingReason: WaitingReason,
+  frozen: FrozenConfig,
+  providerSessionId: Schema.NullOr(Schema.String),
+  fixture: Schema.NullOr(FixtureKind),
+  actionCount: Schema.Number,
+  deadlineAt: Schema.Number,
+});
+export type RunRow = typeof RunRow.Type;
+
+export const PendingActionRow = Schema.Struct({
+  id: ActionIntentId,
+  runId: RunId,
+  kind: Schema.String,
+  state: ActionState,
+  payload: Schema.String,
+  approvalId: Schema.NullOr(ApprovalId),
+});
+export type PendingActionRow = typeof PendingActionRow.Type;
+
+export const ArtifactRow = Schema.Struct({
+  id: Schema.String,
+  taskId: TaskId,
+  runId: RunId,
+  author: Schema.String,
+  source: Schema.String,
+  mediaType: Schema.String,
+  sha256: Schema.String,
+  byteSize: Schema.Number,
+  path: Schema.String,
+});
+export type ArtifactRow = typeof ArtifactRow.Type;
+
+export const MessageRow = Schema.Struct({
+  id: Schema.String,
+  threadId: Schema.String,
+  taskId: TaskId,
+  runId: Schema.NullOr(Schema.String),
+  authorKind: Schema.String,
+  authorName: Schema.String,
+  body: Schema.String,
+});
+export type MessageRow = typeof MessageRow.Type;
+
+export const Snapshot = Schema.Struct({
+  schemaId: Schema.String,
+  stopAll: Schema.Boolean,
+  tasks: Schema.Array(TaskRow),
+  runs: Schema.Array(RunRow),
+  pending: Schema.Array(PendingActionRow),
+  artifacts: Schema.Array(ArtifactRow),
+  messages: Schema.Array(MessageRow),
+  events: Schema.Array(EventRow),
+});
+export type Snapshot = typeof Snapshot.Type;

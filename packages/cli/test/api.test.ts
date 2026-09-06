@@ -7,5 +7,7 @@ describe("api", () => {
     expect(spec.openapi.startsWith("3.")).toBe(true);
     expect(spec.paths["/v1/commands"]?.post).toBeDefined();
     expect(spec.paths["/v1/health"]?.get).toBeDefined();
+    expect(spec.paths["/v1/status"]?.get).toBeDefined();
+    expect(spec.paths["/v1/events"]?.get).toBeDefined();
   });
 });
