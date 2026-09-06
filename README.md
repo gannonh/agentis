@@ -14,7 +14,7 @@ The former implementation remains on [`archive/agentis-v1`](https://github.com/g
 
 ## Planned data policy
 
-Version 2.0 will use a fresh data root at `~/.agentis/v2/`, with an explicit override. It will preserve old data and refuse to execute against unsupported schemas. The design excludes legacy compatibility, automatic migrations, destructive resets, and fallback storage. The [runtime ADR](docs/adrs/0001-runtime-and-execution-foundations.md) records this policy.
+See the [runtime ADR](docs/adrs/0001-runtime-and-execution-foundations.md).
 
 ## Documentation
 
@@ -29,4 +29,4 @@ The repository records the rebuild's direction and required evidence in these do
 
 ## License and reuse
 
-Agentis uses the [Apache License 2.0](LICENSE), with attribution in [NOTICE](NOTICE). The [clean-room policy](docs/project-plan.md) permits studying OpenMausBot and CopilotKit behavior without copying their source, documentation, or assets. Reuse of archived Agentis material requires a provenance and architectural-fit check.
+Agentis uses the [Apache License 2.0](LICENSE), with attribution in [NOTICE](NOTICE). Reuse policy is in the [project plan](docs/project-plan.md) and [CONTRIBUTING.md](CONTRIBUTING.md).

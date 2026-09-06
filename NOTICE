@@ -6,10 +6,6 @@ Canonical repository: https://github.com/gannonh/agentis
 This rebuild is distributed under the Apache License, Version 2.0.
 See LICENSE for the license text.
 
-The current rebuild contains documentation and contributor tooling
-configuration. It has no packaged runtime dependencies. Planned integrations
-and projects cited as research references are not bundled dependencies.
-
 The archive/agentis-v1 branch preserves the former implementation and its
 own license and attribution notices. Those notices continue to apply to
 the archived material. This rebuild notice does not relicense that material.
