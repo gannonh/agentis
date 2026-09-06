@@ -138,10 +138,16 @@ dialog.addEventListener('keydown', event => {
   else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 });
 
-dialog.addEventListener('close', () => {
+function closeDetail() {
+  dialog.close();
   const target = returnFocus?.isConnected ? returnFocus : document.querySelector(`[data-action="${returnFocus?.dataset.action}"]`);
   target?.focus();
   sourceOpen = '';
+}
+
+dialog.addEventListener('cancel', event => {
+  event.preventDefault();
+  closeDetail();
 });
 
 document.addEventListener('click', event => {
@@ -149,7 +155,7 @@ document.addEventListener('click', event => {
   if (!target || !valid) return;
   const command = target.dataset.action;
   if (command.startsWith('open-')) return openDetail(command.slice(5), target);
-  if (command === 'close') return dialog.close();
+  if (command === 'close') return closeDetail();
   if (['tasks', 'overview', 'conversation'].includes(command)) {
     view = command;
     render();
@@ -172,7 +178,7 @@ document.addEventListener('click', event => {
   announce(info().status);
   render(true);
   if (dialog.open) {
-    if (command === 'approve' || command === 'deny') dialog.close();
+    if (command === 'approve' || command === 'deny') closeDetail();
     else openDetail(sourceOpen, target);
   }
 });
