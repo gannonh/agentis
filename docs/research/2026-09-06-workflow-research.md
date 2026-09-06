@@ -20,7 +20,7 @@ This is one operator's context and one UI observation. There are no external int
 
 ## Comparators
 
-Sources were read on September 6, 2026 (UTC). Dates in this record and its decision trail use UTC. Documentation establishes advertised behavior, not our own runtime verification. “Hermse” is interpreted as Nous Research's Hermes Agent.
+Sources were read on September 6, 2026. Documentation establishes advertised behavior, not our own runtime verification.
 
 | Comparator | Relevant documented behavior | Design implication |
 | --- | --- | --- |
@@ -62,13 +62,7 @@ Measure connection/setup separately from the normal work loop. After connection,
 
 The [fixed evaluation](team-workflow-evaluation-v1.md) contains 20 constructed scenarios with explicit inputs and observable acceptance criteria. All start NOT RUN. Prototype simulation, agent-scored correctness, human acceptance, and live provider execution are separate evidence.
 
-Gate 0 retains two-provider live scratch work, isolated fixtures, packaged smoke, and execution-boundary proofs. It adds one bounded accepted coordinator/specialist handoff with accurate ownership and no duplicate dispatch. The interaction decision precedes the first runtime contract. This strategy document does not pass Gate 0.
-
-Gate 1 requires at least 19/20 scenarios per supported provider, every mandatory core and safety case, a clean installation per provider on the primary platform, and one actual maintainer workflow with an inspectable result. Use a fresh supported data root and documented setup without application-source edits or undocumented configuration. Record credentials/prerequisites used. All authorization, recovery, and backup proofs remain mandatory.
-
-Measure setup, active interaction, waiting, review, correction, and provider-reported usage separately. Missing usage remains unknown. Establish a manual baseline on the same task before claiming time saved. Label agent rubric checks separately from human acceptance. Never infer acceptance from silence.
-
-Gate 2 adds persistent schedules and one event source. Require five daily workflow runs in each of two consecutive weeks for the initial operator, recording accepted and corrected outcomes. This proves internal repeat use only. External recruitment follows a usable product and does not block initial engineering. Freeze benchmark changes before execution and preserve prior results; do not adjust thresholds to fit outcomes.
+Gate 0 adds one bounded accepted coordinator/specialist handoff with accurate ownership and no duplicate dispatch to the existing feasibility criteria; the interaction decision precedes the first runtime contract. This strategy document does not pass Gate 0. Gate 1 and Gate 2 thresholds live in the [verification map](../verification/README.md); the fixed evaluation owns scoring and baseline measurement. Freeze benchmark changes before execution and preserve prior results; do not adjust thresholds to fit outcomes. External recruitment follows a usable product and does not block initial engineering.
 
 ## Operating model and delivery
 
