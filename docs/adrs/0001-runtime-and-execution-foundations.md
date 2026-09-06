@@ -1,6 +1,6 @@
 # Runtime and execution foundations
 
-Accepted direction, September 5, 2026, under [KAT-3249](https://linear.app/kata-sh/issue/KAT-3249). Acceptance of the design does not prove its runtime behavior. Provider versions, the first workflow and the enforcement mechanism remain evidence-producing research in KAT-3250, KAT-3251 and KAT-3252.
+Accepted direction, September 5, 2026, under [KAT-3249](https://linear.app/kata-sh/issue/KAT-3249). Acceptance of the design does not prove its runtime behavior. The first team workflow is selected by the [September 6 strategy decision](../research/2026-09-06-workflow-research.md) under KAT-3250. KAT-3254 proves the interaction before the first runtime API is frozen. Provider versions and the enforcement mechanism remain research in KAT-3251 and KAT-3252.
 
 1. **Runtime and contracts**
 
@@ -10,7 +10,7 @@ Accepted direction, September 5, 2026, under [KAT-3249](https://linear.app/kata-
 
 2. **Work records and invariants**
 
-   Task owns the requested outcome, accountable bot, workspace, constraints, status and evidence. Run owns one attempt, provider session reference and frozen configuration. Thread owns conversation; group participants and task ownership are explicit when groups arrive. Artifact records inspectable output and task/run/source provenance.
+   Task owns the requested outcome, accountable bot, workspace, constraints, status and evidence. Run owns one attempt, provider session reference and frozen configuration. Thread owns conversation with explicit human/bot participants and linked task ownership. The first bounded coordinator/specialist handoff records proposed and accepted ownership; failure leaves ownership with the sender. Peer messages are attributable and deduplicated without re-executing effects. Broader group autonomy remains later. Artifact records inspectable output and task/run/source provenance.
 
    Capture bot revision, skill versions, grants, provider, model/effort and environment at run creation. Later configuration edits do not silently change an active attempt. A follow-up is a new attempt linked to the same task. Distinguish Agentis ids from external provider ids.
 
@@ -68,4 +68,4 @@ Accepted direction, September 5, 2026, under [KAT-3249](https://linear.app/kata-
 
    The initial system can remain one daemon with one database and thin clients. Work records outlive an engine session, while provider-specific limitations remain visible. The cost is an explicit recovery model, permission boundary and support matrix, all required by the product's promises.
 
-   Feasibility checks the bounded scratch workflow. Useful-work verification adds external-effect reconciliation, installation, artifacts and pilot outcomes. Scheduled execution adds durable triggers/service operation at the same milestone. New capabilities grow from those verified paths. See [verification requirements](../verification/README.md) and [provider evidence](../compliance.md).
+   Feasibility checks the bounded scratch workflow. Useful-work verification adds the conversational team path, external-effect reconciliation, installation, artifacts, fixed evaluation and actual maintainer outcomes. Scheduled execution adds durable triggers/service operation at the same milestone. New capabilities grow from those verified paths. See [verification requirements](../verification/README.md) and [provider evidence](../compliance.md).
