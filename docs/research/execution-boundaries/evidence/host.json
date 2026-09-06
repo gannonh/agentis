@@ -1,0 +1,269 @@
+{
+  "issue": "KAT-3252",
+  "kind": "disposable counterexamples, not runtime verification",
+  "utc": "2026-09-06T16:39:39Z",
+  "host": "Linux-7.1.9-arch1-2-x86_64-with-glibc2.44",
+  "python": "3.14.7",
+  "probe_sha256": "5d4f547bd16dd9eec963199233757e9791ac7ebee6e17b4ab10a0f0998a5e97d",
+  "source_commit": "2aa739451c9461823e69fbcc61545efbaab1e061",
+  "results": [
+    {
+      "case": "credential_read_inherited",
+      "expected": "same UID can read synthetic mode-0600 owner file",
+      "observed": true,
+      "verdict": "PASS"
+    },
+    {
+      "case": "environment_inherited",
+      "expected": "synthetic token inherited only in inherited mode",
+      "observed": "True",
+      "verdict": "PASS"
+    },
+    {
+      "case": "credential_read_sanitized",
+      "expected": "same UID can read synthetic mode-0600 owner file",
+      "observed": true,
+      "verdict": "PASS"
+    },
+    {
+      "case": "environment_sanitized",
+      "expected": "synthetic token inherited only in inherited mode",
+      "observed": "False",
+      "verdict": "PASS"
+    },
+    {
+      "case": "native_config_read",
+      "expected": "same UID can read synthetic MCP command configuration",
+      "observed": "True",
+      "verdict": "PASS"
+    },
+    {
+      "case": "admin_unauthenticated",
+      "expected": 401,
+      "observed": 401,
+      "verdict": "PASS"
+    },
+    {
+      "case": "admin_bot",
+      "expected": 401,
+      "observed": 401,
+      "verdict": "PASS"
+    },
+    {
+      "case": "admin_stolen_owner",
+      "expected": 200,
+      "observed": 200,
+      "verdict": "PASS"
+    },
+    {
+      "case": "synthetic_stdio_child",
+      "expected": "200 through child reading synthetic credential",
+      "observed": "200",
+      "verdict": "PASS"
+    },
+    {
+      "case": "browser_shared_session",
+      "expected": "synthetic owner cookie authorizes browser request",
+      "observed": true,
+      "verdict": "PASS"
+    },
+    {
+      "case": "browser_group_cleanup",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_after_launch",
+      "expected": {
+        "effects": 0,
+        "signal": "SIGKILL",
+        "local_state": "absent",
+        "local_receipt": null
+      },
+      "observed": {
+        "effects": 0,
+        "local_state": "absent",
+        "local_receipt": null,
+        "external_receipt": null,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_after_launch",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_waiting_approval",
+      "expected": {
+        "effects": 0,
+        "signal": "SIGKILL",
+        "local_state": "pending",
+        "local_receipt": null
+      },
+      "observed": {
+        "effects": 0,
+        "local_state": "pending",
+        "local_receipt": null,
+        "external_receipt": null,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_waiting_approval",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_approval_persisted",
+      "expected": {
+        "effects": 0,
+        "signal": "SIGKILL",
+        "local_state": "approved",
+        "local_receipt": null
+      },
+      "observed": {
+        "effects": 0,
+        "local_state": "approved",
+        "local_receipt": null,
+        "external_receipt": null,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_approval_persisted",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_before_external",
+      "expected": {
+        "effects": 0,
+        "signal": "SIGKILL",
+        "local_state": "dispatching",
+        "local_receipt": null
+      },
+      "observed": {
+        "effects": 0,
+        "local_state": "dispatching",
+        "local_receipt": null,
+        "external_receipt": null,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_before_external",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_external_accepted",
+      "expected": {
+        "effects": 1,
+        "signal": "SIGKILL",
+        "local_state": "dispatching",
+        "local_receipt": null
+      },
+      "observed": {
+        "effects": 1,
+        "local_state": "dispatching",
+        "local_receipt": null,
+        "external_receipt": 1,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_external_accepted",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_receipt_persisted",
+      "expected": {
+        "effects": 1,
+        "signal": "SIGKILL",
+        "local_state": "recorded",
+        "local_receipt": 2
+      },
+      "observed": {
+        "effects": 1,
+        "local_state": "recorded",
+        "local_receipt": 2,
+        "external_receipt": 2,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_receipt_persisted",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "crash_before_delivery",
+      "expected": {
+        "effects": 1,
+        "signal": "SIGKILL",
+        "local_state": "completed",
+        "local_receipt": 3
+      },
+      "observed": {
+        "effects": 1,
+        "local_state": "completed",
+        "local_receipt": 3,
+        "external_receipt": 3,
+        "orphan_alive": true,
+        "exit": -9
+      },
+      "verdict": "PASS"
+    },
+    {
+      "case": "cleanup_before_delivery",
+      "expected": "no live group members",
+      "observed": [],
+      "verdict": "PASS"
+    },
+    {
+      "case": "macos_container_isolation",
+      "expected": "integrated target-platform proof",
+      "observed": "not exercised by this disposable probe",
+      "verdict": "UNVERIFIED"
+    },
+    {
+      "case": "live_provider_native_tools",
+      "expected": "integrated target-platform proof",
+      "observed": "not exercised by this disposable probe",
+      "verdict": "UNVERIFIED"
+    },
+    {
+      "case": "production_approval_recovery",
+      "expected": "integrated target-platform proof",
+      "observed": "not exercised by this disposable probe",
+      "verdict": "UNVERIFIED"
+    },
+    {
+      "case": "provider_auth_dropout",
+      "expected": "integrated target-platform proof",
+      "observed": "not exercised by this disposable probe",
+      "verdict": "UNVERIFIED"
+    }
+  ]
+}
