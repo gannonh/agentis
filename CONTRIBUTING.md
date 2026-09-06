@@ -1,6 +1,6 @@
 # Contribute to Agentis
 
-This checkout contains foundation documentation for the unshipped Agentis 2.0 rebuild. Use Git and a shell to work on it. There is no application to start and no dependency installation, build, or test command yet.
+This checkout contains the Agentis 2.0 rebuild, including the Gate 0 CLI/daemon package. Use Git and a shell. Node 24.20.0 and pnpm 9.15.9 are required.
 
 ## Check out the repository
 
@@ -13,7 +13,15 @@ cd agentis
 
 Before Build, read [AGENTS.md](AGENTS.md), the [project plan](docs/project-plan.md), the [runtime ADR](docs/adrs/0001-runtime-and-execution-foundations.md), and the owning Linear issue. Use the [verification map](docs/verification/README.md) for required evidence and [provider eligibility research](docs/compliance.md) before making provider claims.
 
-Run `git diff --check` before submission. Issue approval, lifecycle gates, review, and merge rules live in [AGENTS.md](AGENTS.md#issues-and-specs).
+```sh
+pnpm install
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+```
+
+`agentis serve` and `agentis doctor` require `--endpoint` or `--profile`. Run `git diff --check` before submission. Issue approval, lifecycle gates, review, and merge rules live in [AGENTS.md](AGENTS.md#issues-and-specs).
 
 ## Preserve ownership and data
 

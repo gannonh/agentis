@@ -4,4 +4,6 @@
 !.env.example
 .DS_Store
 node_modules/
+dist/
+coverage/
 .obsidian/

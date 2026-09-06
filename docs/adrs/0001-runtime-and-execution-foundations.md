@@ -1,6 +1,6 @@
 # Runtime and execution foundations
 
-Accepted under [KAT-3249](https://linear.app/kata-sh/issue/KAT-3249). Acceptance of the design does not prove its runtime behavior. Provider versions and transport (KAT-3251) and the interaction design preceding the first frozen runtime API (KAT-3254) remain open. The [KAT-3252 authority research](../research/execution-boundaries/README.md) selects a candidate enforcement mechanism below; Gannon's boundary acceptance and target-platform enforcement remain UNVERIFIED.
+Accepted under [KAT-3249](https://linear.app/kata-sh/issue/KAT-3249). Acceptance of the design does not prove its runtime behavior. KAT-3251 and KAT-3254 are Done research. Gannon accepted the Docker Desktop Run-container boundary, trusted-host assumptions, and in-container provider-credential exposure on 2026-09-06 (Linear comment `65ad3da3-25e1-4ab9-96d1-fe7d37051d46`). Target-platform isolation, provider egress, watchdog, and recovery remain UNVERIFIED.
 
 1. **Runtime and contracts**
 

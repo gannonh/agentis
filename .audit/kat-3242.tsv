@@ -1,0 +1,7 @@
+ts	phase	decision	why	evidence	result
+2026-09-06T20:57:20Z	frame	docs-only origin/main 422d8cb is the base; old web app at /home/gannonh/dev/agentis is archive/v1	KAT-3242 is the first Build slice of the rebuild	origin/main 422d8cb	worktree created
+2026-09-06T20:57:20Z	frame	done predicate is the 10 Linear ACs plus draft PR and no Agent Review hop	falsifiable against commands SHA receipts	.audit/how.md	open
+2026-09-06T20:57:20Z	harness	claude fable and opus external lanes dropped out unauthenticated	do not silently substitute those receipts	/tmp/kat-3242-architect/claude-fable/receipt.json	dropout
+2026-09-06T20:57:20Z	design	chose command kernel plus node:sqlite and one @agentis-labs/cli package	ADR forbids event sourcing; sqlite-node 0.52.0 peers miss sql 0.52.1; Node 24 has node:sqlite	.audit/design.md	parent synthesis pending grafts
+2026-09-06T20:57:20Z	env	Node 24.20.0 via mise; Codex 0.153.4; Docker socket permission denied; pnpm 9.15.9	record exact versions; mark macOS isolation UNVERIFIED	node -v / docker info	open
+2026-09-06T21:04:06Z	unit	workspace plus command kernel plus fake HTTP path pass typecheck lint unit	prove the slice before packaged smoke and live Codex	pnpm typecheck lint test build	tests green
