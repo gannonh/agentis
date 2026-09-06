@@ -1,6 +1,6 @@
 # Agentis project plan
 
-Revision 2, September 5, 2026. Gannon authorized applying the project review in [KAT-3249](https://linear.app/kata-sh/issue/KAT-3249). This records the adopted direction. Product implementation remains Backlog until Todo and an explicit start.
+Revision 3, September 6, 2026 (UTC). Gannon delegated product strategy and supplied his current Grok Bot usage under [KAT-3250](https://linear.app/kata-sh/issue/KAT-3250). The [conversational team decision](research/2026-09-06-workflow-research.md) supersedes the earlier recruitment prerequisite. Product Build still requires Todo approval and an explicit start; live evidence and merge gates remain in effect.
 
 [Linear project](https://linear.app/kata-sh/project/agentis-63da0b4e8294) and [epic](https://linear.app/kata-sh/issue/KAT-3237) own acceptance criteria and status. This document owns product rationale and sequencing. The [runtime ADR](adrs/0001-runtime-and-execution-foundations.md) records architecture decisions; the [review](research/2026-09-05-project-review.md) preserves the research that motivated them. Change affected Linear AC before implementing a change to this direction.
 
@@ -8,21 +8,25 @@ Revision 2, September 5, 2026. Gannon authorized applying the project review in 
 
    Agentis runs recurring work through the agents the user chooses, retains results and decisions under the user's control, and provides recovery or takeover for unfinished work.
 
-   The initial user hypothesis is a technical founder/operator managing recurring work across documents, issues, and repositories. The first workflow hypothesis is to review selected sources, produce a cited briefing and proposed actions, and complete one explicitly approved action with an inspectable result. Start with one bot. Add a specialist only when the work benefits.
+   Agentis serves people running business work through persistent named AI teammates. Conversational team usability is the primary product requirement. Gannon's software factory is the first operating context; chief-of-staff, marketing, engineering, and other business roles belong to the product audience. The first integration workload does not define a coding-only market.
 
-   These are hypotheses awaiting [workflow research](https://linear.app/kata-sh/issue/KAT-3250). Observe five prospective users, collect ten actual tasks, record their current tools and review/correction time, and select one read integration, one bounded action target, and one primary pilot environment. Outreach requires authorization. Missing interviews or participant access remain explicit gaps.
+   The first complete path is a request to a named coordinator, one bounded accepted specialist handoff when useful, visible progress/ownership, an inspectable artifact or proposed action, exact owner approval where needed, and a receipt or explicit unresolved outcome in the same conversation. The first integration reads GitHub project evidence and later creates one approved Linear follow-up. Pasted business inputs also exercise role-neutral artifact work. Real writes wait for the recovery gate.
 
-   Use a fixed 20-task evaluation set with acceptance rubrics. Track accepted recurring outcomes per active user per week, setup effort, correction time, and repeat use. Initial Gate 1 targets are 18 accepted tasks out of 20 and four of five pilot users reaching a first accepted result without developer configuration edits. Gate 2 requires at least three pilot users to repeat the workflow in a second week. These are early product targets, not reliability guarantees. Revise targets only through an explicit spec decision.
+   Start as a maintained Apache-2.0 open-source product, with Gannon accountable for maintenance and agents driving scoped delivery. Users supply eligible provider access and compute; no free-inference, paid-support, or hosted-service promise. The initial platform is macOS Apple silicon with a local daemon and browser client. KAT-3251 selects providers/versions, and KAT-3252 proves the execution boundary.
 
-   If evidence selects coding work as the first workflow, revise the affected AC and bring bounded local-worktree dispatch forward. Otherwise coding dispatch remains later. Record whether the product starts as a personal tool, maintained community product, or paid-service foundation, including support ownership, distribution and operating-cost assumptions.
+   The [strategy and evidence record](research/2026-09-06-workflow-research.md) separates one operator's report and screenshot from verified execution. The earlier five-user/ten-task recruitment requirement is superseded by this owner-directed decision. Demand and broader adoption remain unverified. Outreach still needs authorization.
+
+   [KAT-3254](https://linear.app/kata-sh/issue/KAT-3254) compares three interactive team-workflow designs before the first runtime API is frozen. [The fixed 20-case evaluation](research/team-workflow-evaluation-v1.md) uses constructed inputs and explicit rubrics. Gate 1 requires at least 19/20 cases per supported provider, every mandatory core and safety case, one clean installation per provider on the primary platform without source edits or undocumented configuration, and one actual maintainer workflow. Measure setup, interaction, waiting, review/correction time and usage separately; establish a same-task manual baseline before claiming time saved. Agent assessment and human acceptance remain distinct.
+
+   Gate 2 requires five daily workflow runs in each of two consecutive weeks for the initial operator, with recorded acceptance/corrections and persistent schedule/event/recovery evidence. These are internal engineering/use gates, not multi-user validation or production reliability guarantees. Change thresholds only through an explicit spec decision before execution. Bounded coordinator/specialist ownership is early; broad autonomous groups and unrestricted delegation remain later.
 
 2. **Identity, ownership, and reuse**
 
    The canonical repository is `gannonh/agentis`. The package is `@agentis-labs/cli` version 2.0, with binary `agentis`. The rebuild has not been published; installing the currently published package must not be described as installing this rebuild. Never direct users to the unrelated unscoped `agentis` package.
 
-   Remote `main` was verified at `61b01dd97998e3340867fbf413a14aafb4e2b917`. The former code remains on `archive/agentis-v1` at `78bf37491942552b6cb14cfe43b1a7463b723f48`. Branch promotion is complete and must not be repeated. OpenBot remains a reference project; the fork plan is superseded.
+   Foundation documentation landed on `main` at `4a2d18c9a864af087314609d163e892da1777b43` through PR #448. The former code remains on `archive/agentis-v1` at `78bf37491942552b6cb14cfe43b1a7463b723f48`. Branch promotion is complete and must not be repeated. OpenBot remains a reference project; the fork plan is superseded.
 
-   Study OpenMausBot/CopilotKit behavior without copying their code, docs, or assets. Re-derive protocol behavior from specifications and provider documentation. Own prior Agentis material may be reused deliberately after checking fit and provenance. Preserve its lessons about versioned permissions, artifact provenance, durable invocation claims, signed webhook delivery, and verification evidence. Omit third-party enterprise and excluded adapter code. Foundation documentation will add Apache-2.0 licensing and accurate notices through KAT-3239.
+   Study OpenMausBot/CopilotKit behavior without copying their code, docs, or assets. Re-derive protocol behavior from specifications and provider documentation. Own prior Agentis material may be reused deliberately after checking fit and provenance. Preserve its lessons about versioned permissions, artifact provenance, durable invocation claims, signed webhook delivery, and verification evidence. Omit third-party enterprise and excluded adapter code. KAT-3239 added Apache-2.0 licensing and rebuild attribution while preserving archived material's own notices.
 
    CLI 2.0 uses a fresh, explicit data root, initially `~/.agentis/v2/`, overridable by an explicit option. Existing data stays untouched. Check schema identity on open and refuse unsupported versions with instructions to back up and choose a new data directory. No automatic reset, legacy compatibility, or migration runner. This follows the repository's no-migrations rule. A future change to that policy needs a new explicit decision before implementation.
 
@@ -40,7 +44,7 @@ Revision 2, September 5, 2026. Gannon authorized applying the project review in 
 
    Keep a single daemon and one SQLite database with transactional current-state tables, a durable log of meaningful transitions, and pending-action records. State, command receipt, event and execution intent commit atomically. Large/deletable content belongs in referenced blobs with explicit retention. Use short synchronous database operations and measure event-loop latency; add a single-owner database worker only if the measured workload requires it. Full event sourcing and a Rust backend require evidence of a problem the chosen design cannot meet.
 
-   Model the minimum working concepts. A Task holds outcome, owner, workspace, constraints and completion evidence. A Run holds one attempt with a frozen bot/skill/grant/provider/model configuration and a distinct provider session id. A Thread holds conversation. An Artifact holds inspectable output and provenance. Groups, if added later, have explicit participants and task ownership.
+   Model the minimum working concepts. A Task holds outcome, owner, workspace, constraints and completion evidence. A Run holds one attempt with a frozen bot/skill/grant/provider/model configuration and a distinct provider session id. A Thread holds conversation. An Artifact holds inspectable output and provenance. The first bounded coordinator/specialist exchange records participants, accepted ownership, and linked work. Broader groups added later preserve those invariants.
 
    Owner browser and CLI sessions authenticate even on localhost. Validate Host/Origin and mutating-request authority. Bot tools use scoped credentials and cannot resolve approvals or change grants. Scope approvals to the exact run, target, payload, duration and resolver. Persist the decision before executing. A token does not isolate a harness that can read the owner's credential files; KAT-3252 establishes the actual filesystem/network boundary before tools run.
 
@@ -56,10 +60,10 @@ Revision 2, September 5, 2026. Gannon authorized applying the project review in 
 
    | Gate | Outcome and required evidence | Scope boundary |
    | --- | --- | --- |
-   | Gate 0: Feasibility | Research selects the user/workflow, two supported provider paths and execution boundary. Minimal CLI/daemon completes a harmless task, saves an artifact, handles allow/deny/input/cancel and concurrent providers, and retains accurate interruption state. Exact-SHA fixture, packaged smoke and live proofs pass. | Scratch resources only; no broad UI, third-provider requirement or computer framework. |
-   | Gate 1: Useful supervised work | One web workflow retains tasks/artifacts, enforces exact-action approvals, reconciles interrupted effects and supports clean installation, diagnostics and backup/restore. Both providers and the defined pilot targets pass. | Real-resource mutations stay disabled until recovery verification. No autonomous groups or broad distribution matrix. |
-   | Gate 2: Reliable recurring work | Persistent schedules and one event source work with timezone/DST, missed-run, overlap, deduplication, bounded retry and credential-expiry policies. Service installation and awake-host/persistent-runner behavior are proven. Pilot users repeat the workflow. | One event source and runner initially. Explicit memory notes precede embeddings. |
-   | Gate 3: Controlled delegation | One explicit handoff transfers task/context/grants with recipient acceptance, preserved ownership on failure, work limits and a measured comparison to one bot. Coding dispatch enters only when validated. | Local-worktree first if needed; no four-target parity gate. |
+   | Gate 0: Feasibility | The owner-directed workflow and interaction-prototype decision are recorded; provider/authority research selects two supported paths and execution boundary. Minimal CLI/daemon completes harmless work and one accepted coordinator/specialist handoff, saves an artifact, handles allow/deny/input/cancel and concurrent providers, and retains accurate interruption state. Exact-SHA fixture, packaged smoke and live proofs pass. | Scratch resources only; no broad UI, third-provider requirement or computer framework. |
+   | Gate 1: Useful supervised work | One web workflow retains tasks/artifacts, enforces exact-action approvals, reconciles interrupted effects and supports clean installation, diagnostics and backup/restore. Both providers pass the fixed evaluation and mandatory core and safety cases; clean-install and actual maintainer-workflow evidence pass. | Real-resource mutations stay disabled until recovery verification. No autonomous groups or broad distribution matrix. |
+   | Gate 2: Reliable recurring work | Persistent schedules and one event source work with timezone/DST, missed-run, overlap, deduplication, bounded retry and credential-expiry policies. Service installation and awake-host/persistent-runner behavior are proven. The initial operator records five daily workflow runs in each of two consecutive weeks. | One event source and runner initially. Explicit memory notes precede embeddings. |
+   | Gate 3: Controlled delegation | Extend the proven bounded handoff with selected autonomous delegation, recipient acceptance, preserved ownership on failure, work limits and a measured comparison to one bot. Coding dispatch enters only when the selected work requires it. | Local-worktree first if needed; no four-target parity gate. |
    | Gate 4: Broader access | One additional runner/client/provider combination has auth, reconnect, cancellation, artifacts, install/update, diagnostics and restore proofs. Each supported combination has a maintainer. | Additional combinations enter independently. |
    | Phase 5: Demand-led ecosystem | No formal pass yet. Activate only bounded capabilities supported by user evidence, owner, success measure and cost/support assessment. | Parked: marketplaces, demonstrations, autonomous groups, multiple displays/computer providers, native mobile and multi-user/SSO. |
 
@@ -69,21 +73,22 @@ Revision 2, September 5, 2026. Gannon authorized applying the project review in 
 
    | Issue | Work | Prerequisite |
    | --- | --- | --- |
-   | [KAT-3249](https://linear.app/kata-sh/issue/KAT-3249) | Apply this planning/documentation revision | User approval to apply review |
-   | [KAT-3250](https://linear.app/kata-sh/issue/KAT-3250) | Validate workflow, task corpus, pilot and operating model | Research access |
+   | [KAT-3249](https://linear.app/kata-sh/issue/KAT-3249) | Apply the foundation review (complete) | User approval to apply review |
+   | [KAT-3250](https://linear.app/kata-sh/issue/KAT-3250) | Record conversational-team strategy, evaluation and operating model | Owner-delegated direction |
+   | [KAT-3254](https://linear.app/kata-sh/issue/KAT-3254) | Compare interactive team-workflow prototypes | KAT-3250 |
    | [KAT-3251](https://linear.app/kata-sh/issue/KAT-3251) | Establish provider eligibility, billing, versions and protocols | Provider evidence/access |
    | [KAT-3252](https://linear.app/kata-sh/issue/KAT-3252) | Specify/probe authority and recovery boundaries | Disposable research environment |
-   | [KAT-3239](https://linear.app/kata-sh/issue/KAT-3239) | Finish foundation documentation and release identity | KAT-3249 |
-   | [KAT-3242](https://linear.app/kata-sh/issue/KAT-3242) | First live provider task through CLI/daemon | KAT-3239 and the three research issues |
+   | [KAT-3239](https://linear.app/kata-sh/issue/KAT-3239) | Foundation documentation and release identity (complete) | KAT-3249 |
+   | [KAT-3242](https://linear.app/kata-sh/issue/KAT-3242) | First live provider task through CLI/daemon | KAT-3239, KAT-3250, KAT-3251, KAT-3252 and KAT-3254 |
    | [KAT-3243](https://linear.app/kata-sh/issue/KAT-3243) | Second provider and capability conformance | KAT-3242 |
    | [KAT-3247](https://linear.app/kata-sh/issue/KAT-3247) | Verify feasibility | KAT-3243 and research evidence |
-   | [KAT-3240](https://linear.app/kata-sh/issue/KAT-3240) | Persistent task/artifact through the web client | Gate 0 |
+   | [KAT-3240](https://linear.app/kata-sh/issue/KAT-3240) | Conversational team workflow with retained tasks/artifacts | Gate 0 |
    | [KAT-3244](https://linear.app/kata-sh/issue/KAT-3244) | Exact-action approvals on a controlled target | KAT-3240 |
    | [KAT-3241](https://linear.app/kata-sh/issue/KAT-3241) | Recover actions and enable the selected real target | KAT-3244 |
    | [KAT-3246](https://linear.app/kata-sh/issue/KAT-3246) | Package and diagnose the supervised workflow | KAT-3241 |
-   | [KAT-3245](https://linear.app/kata-sh/issue/KAT-3245) | Verify useful work with pilot evidence | KAT-3246 |
+   | [KAT-3245](https://linear.app/kata-sh/issue/KAT-3245) | Verify the team workflow with benchmark and maintainer evidence | KAT-3246 |
 
-   KAT-3238 remains the completed historical first-breakout record. Gannon is accountable for product and research decisions. Select implementation/support owners before each start and record a maintainer per supported integration. Priorities express the current cut line; estimates follow the feasibility evidence. Record timeboxes as data, keep one delivery slice in flight, and report evidence, blockers and next decision in the weekly project update.
+   KAT-3238 remains the completed historical first-breakout record. Gannon is accountable maintainer and has delegated strategic product/research decisions to Codex. Select implementation/support owners before each start and record a maintainer per supported integration. Priorities express the current cut line; estimates follow the feasibility evidence. Record timeboxes as data, keep one delivery slice in flight, and report evidence, blockers and next decision in the weekly project update.
 
 7. **Later capabilities and their prerequisites**
 
@@ -97,7 +102,7 @@ Revision 2, September 5, 2026. Gannon authorized applying the project review in 
 
    Four coding dispatch candidates exist: local-worktree, cursor-cloud, claude-cloud and codex-cloud. They have different capabilities and billing. Local dispatch records an exact base SHA, clean-worktree policy, checkout/branch, checks, artifacts and PR evidence. Completion and merge readiness remain separate; follow Linear ownership/merge gates. Add one cloud target at a time with explicit lifecycle/observation/cancel/follow-up proof. Keep external agent/run identifiers and reconcile through supported read interfaces. Never use teleport as a read-only observer or hide a replacement session as continuation.
 
-   Distribution starts with one primary pilot environment and a packaged CLI/web workflow. Keep economical cross-platform core CI without claiming every desktop combination works. Add Electron, remote access and other clients only when they improve the chosen workflow. Define update behavior, redacted diagnostics, backup/restore and support ownership before declaring a combination supported.
+   Distribution starts on macOS Apple silicon with a packaged CLI and browser team workspace. Keep economical cross-platform core CI without claiming every desktop combination works. Add Electron, remote access and other clients only when they improve the chosen workflow. Define update behavior, redacted diagnostics, backup/restore and support ownership before declaring a combination supported.
 
    Audit records, permission enforcement, execution limits, diagnostics and recovery are early requirements. Only richer presentation, ecosystem compatibility and unvalidated breadth are deferred.
 
@@ -107,4 +112,4 @@ Revision 2, September 5, 2026. Gannon authorized applying the project review in 
 
    Every behavior change includes fixture evidence and focused live evidence when it touches a provider boundary. The fixture isolates configuration, credentials, executable selection and network; PATH stripping alone is insufficient. Pure rendering changes use relevant UI evidence; approval, artifact, client-state and recovery changes also need behavior proofs.
 
-   Record PASS, FAIL or UNVERIFIED per requirement with exact SHA, environment, versions, commands, expected/observed result and artifact links. Never replace a failed or missing live test with fake success. Preserve counts and counterexamples in pilot reporting. No feature expansion during a failed gate; revise the spec when evidence changes scope.
+   Record PASS, FAIL or UNVERIFIED per requirement with exact SHA, environment, versions, commands, expected/observed result and artifact links. Never replace a failed or missing live test with fake success. Preserve counts, scorer identity, corrections and counterexamples in evaluation reporting. No feature expansion during a failed gate; revise the spec when evidence changes scope.
