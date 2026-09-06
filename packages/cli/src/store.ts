@@ -106,12 +106,36 @@ export type PendingActionRow = {
   readonly approvalId: ApprovalId | null;
 };
 
+export type ArtifactRow = {
+  readonly id: string;
+  readonly taskId: TaskId;
+  readonly runId: RunId;
+  readonly author: string;
+  readonly source: string;
+  readonly mediaType: string;
+  readonly sha256: string;
+  readonly byteSize: number;
+  readonly path: string;
+};
+
+export type MessageRow = {
+  readonly id: string;
+  readonly threadId: string;
+  readonly taskId: TaskId;
+  readonly runId: string | null;
+  readonly authorKind: string;
+  readonly authorName: string;
+  readonly body: string;
+};
+
 export type Snapshot = {
   readonly schemaId: string;
   readonly stopAll: boolean;
   readonly tasks: readonly TaskRow[];
   readonly runs: readonly RunRow[];
   readonly pending: readonly PendingActionRow[];
+  readonly artifacts: readonly ArtifactRow[];
+  readonly messages: readonly MessageRow[];
   readonly events: readonly EventRow[];
 };
 
@@ -612,7 +636,7 @@ const resolveApproval = (
       approvalId: command.approvalId,
       runId: approval.run_id as RunId,
       taskId: approval.task_id as TaskId,
-      effects: [],
+      effects: ["reject_tool"],
     });
   }
   run(db, "UPDATE runs SET status = 'running', waiting_reason = 'none' WHERE id = ?", [
@@ -789,6 +813,26 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
     payload: string;
     approval_id: string | null;
   }>(db, "SELECT * FROM pending_actions ORDER BY created_at");
+  const artifacts = rows<{
+    id: string;
+    task_id: string;
+    run_id: string;
+    author: string;
+    source: string;
+    media_type: string;
+    sha256: string;
+    byte_size: number;
+    path: string;
+  }>(db, "SELECT * FROM artifacts ORDER BY created_at");
+  const messages = rows<{
+    id: string;
+    thread_id: string;
+    task_id: string;
+    run_id: string | null;
+    author_kind: string;
+    author_name: string;
+    body: string;
+  }>(db, "SELECT * FROM messages ORDER BY created_at");
   const events = rows<{ seq: number; id: string; type: string; body: string }>(
     db,
     "SELECT seq, id, type, body FROM events ORDER BY seq",
@@ -824,9 +868,35 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
       payload: item.payload,
       approvalId: (item.approval_id as ApprovalId | null) ?? null,
     })),
+    artifacts: artifacts.map((item) => ({
+      id: item.id,
+      taskId: item.task_id as TaskId,
+      runId: item.run_id as RunId,
+      author: item.author,
+      source: item.source,
+      mediaType: item.media_type,
+      sha256: item.sha256,
+      byteSize: item.byte_size,
+      path: item.path,
+    })),
+    messages: messages.map((item) => ({
+      id: item.id,
+      threadId: item.thread_id,
+      taskId: item.task_id as TaskId,
+      runId: item.run_id,
+      authorKind: item.author_kind,
+      authorName: item.author_name,
+      body: item.body,
+    })),
     events,
   };
 };
+
+const isTerminal = (status: string) =>
+  status === "succeeded" ||
+  status === "failed" ||
+  status === "canceled" ||
+  status === "interrupted";
 
 const interruptActive = (db: DatabaseSync, nowMs: number): RunId[] => {
   const active = rows<{ id: string }>(
@@ -926,6 +996,12 @@ export const mutateForEngine = (storePath: string) => {
       path: string;
       nowMs: number;
     }) => {
+      const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [
+        input.runId,
+      ]);
+      if (!current || isTerminal(current.status)) {
+        return null;
+      }
       const artifactId = newArtifactId();
       run(
         db,
@@ -952,6 +1028,10 @@ export const mutateForEngine = (storePath: string) => {
       return artifactId;
     },
     fail: (runId: RunId, taskId: TaskId, error: string, nowMs: number) => {
+      const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [runId]);
+      if (!current || isTerminal(current.status)) {
+        return;
+      }
       run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [runId]);
       run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [taskId]);
       emit(db, "run_failed", { runId, error }, nowMs);

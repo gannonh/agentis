@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { Effect, Schema } from "effect";
 import { loadOrCreateOwner, parseAuthorization } from "./auth.js";
-import { driveAfterCommit, finishAllowedFake, finishInputFake } from "./engine.js";
+import { applyReceiptEffects } from "./engine.js";
 import { newIdempotencyKey } from "./ids.js";
 import {
   CommandRequest,
@@ -141,68 +141,14 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
           json(response, message.includes("bot cannot") ? 403 : 409, { error: message });
           return;
         }
-        if (
-          receipt.accepted &&
-          !receipt.replayed &&
-          receipt.effects.includes("launch") &&
-          receipt.runId &&
-          receipt.taskId
-        ) {
-          const snapshot = await Effect.runPromise(store.snapshot());
-          const run = snapshot.runs.find((item) => item.id === receipt.runId);
-          await Effect.runPromise(
-            driveAfterCommit({
-              store,
-              runId: receipt.runId,
-              taskId: receipt.taskId,
-              fixture: run?.fixture ?? null,
-              provider: options.provider,
-              workspace: options.workspace,
-              nowMs: Date.now(),
-              brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
-            }),
-          );
-        }
-        if (
-          receipt.accepted &&
-          receipt.effects.includes("dispatch_tool") &&
-          receipt.runId &&
-          receipt.taskId
-        ) {
-          const snapshot = await Effect.runPromise(store.snapshot());
-          await Effect.runPromise(
-            finishAllowedFake({
-              store,
-              runId: receipt.runId,
-              taskId: receipt.taskId,
-              fixture: "allow",
-              provider: options.provider,
-              workspace: options.workspace,
-              nowMs: Date.now(),
-              brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
-            }),
-          );
-        }
-        if (
-          receipt.accepted &&
-          receipt.effects.includes("resume_input") &&
-          receipt.runId &&
-          receipt.taskId
-        ) {
-          const snapshot = await Effect.runPromise(store.snapshot());
-          await Effect.runPromise(
-            finishInputFake({
-              store,
-              runId: receipt.runId,
-              taskId: receipt.taskId,
-              fixture: "input",
-              provider: options.provider,
-              workspace: options.workspace,
-              nowMs: Date.now(),
-              brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
-            }),
-          );
-        }
+        await applyReceiptEffects({
+          store,
+          receipt,
+          command: parsed.command,
+          provider: options.provider,
+          workspace: options.workspace,
+          nowMs: Date.now(),
+        });
         json(response, receipt.accepted ? 200 : 409, Schema.encodeSync(CommandReceipt)(receipt));
         return;
       }

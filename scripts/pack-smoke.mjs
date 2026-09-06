@@ -30,9 +30,13 @@ const stdout = await new Promise((resolve, reject) => {
   const timer = setTimeout(() => reject(new Error("verify launch timed out")), 15_000);
   launch.stdout.on("data", (chunk) => {
     out += chunk.toString();
-    if (out.includes("endpoint")) {
-      clearTimeout(timer);
-      resolve(out);
+    try {
+      const parsed = JSON.parse(out);
+      if (parsed.endpoint && parsed.pid && parsed.log && parsed.dataRoot) {
+        clearTimeout(timer);
+        resolve(out);
+      }
+    } catch {
     }
   });
   launch.stderr.on("data", (chunk) => {
@@ -58,6 +62,38 @@ await new Promise((resolve, reject) => {
     code === 0 ? resolve() : reject(new Error(`doctor exited ${code}`)),
   );
 });
+const submit = spawn(
+  bin,
+  [
+    "task",
+    "submit",
+    "--endpoint",
+    report.endpoint,
+    "--data-root",
+    report.dataRoot,
+    "--brief",
+    "pack-smoke",
+    "--fixture",
+    "smoke",
+  ],
+  { stdio: ["ignore", "pipe", "pipe"] },
+);
+const submitOut = await new Promise((resolve, reject) => {
+  let out = "";
+  submit.stdout.on("data", (chunk) => {
+    out += chunk.toString();
+  });
+  submit.stderr.on("data", (chunk) => {
+    out += chunk.toString();
+  });
+  submit.on("exit", (code) =>
+    code === 0 ? resolve(out) : reject(new Error(`task submit exited ${code}: ${out}`)),
+  );
+});
+const receipt = JSON.parse(submitOut);
+if (!receipt.accepted || !receipt.taskId || !receipt.runId) {
+  throw new Error(`fake exchange failed: ${submitOut}`);
+}
 launch.kill("SIGTERM");
 rmSync(packDir, { recursive: true, force: true });
 console.log(
@@ -67,5 +103,7 @@ console.log(
     pid: report.pid,
     log: report.log,
     tarball,
+    taskId: receipt.taskId,
+    runId: receipt.runId,
   }),
 );

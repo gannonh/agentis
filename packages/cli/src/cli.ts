@@ -67,7 +67,26 @@ export const runCli = async (argv: string[]): Promise<number> => {
   const verb = argv[0];
   if (verb === "verify" && argv[1] === "launch") {
     const result = await launchVerify();
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          endpoint: result.endpoint,
+          pid: result.pid,
+          dataRoot: result.dataRoot,
+          log: result.log,
+          workspace: result.workspace,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    await new Promise<void>((resolve) => {
+      const stop = () => {
+        void result.stop().finally(() => resolve());
+      };
+      process.on("SIGINT", stop);
+      process.on("SIGTERM", stop);
+    });
     return 0;
   }
   const { values, positionals } = parseArgs({

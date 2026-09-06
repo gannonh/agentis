@@ -80,6 +80,14 @@ describe("http", () => {
       });
       expect(smoke.status).toBe(200);
       expect(smoke.json.accepted).toBe(true);
+      const afterSmoke = await fetch(new URL("/v1/status", endpoint), {
+        headers: { authorization: `Bearer ${owner.token}` },
+      });
+      const smokeSnap = (await afterSmoke.json()) as {
+        artifacts: { source: string; runId: string; taskId: string }[];
+      };
+      expect(smokeSnap.artifacts[0]?.source).toBe("fake");
+      expect(smokeSnap.artifacts[0]?.runId).toBe(smoke.json.runId);
 
       const _allow = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
