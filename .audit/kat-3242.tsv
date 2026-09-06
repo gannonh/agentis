@@ -11,3 +11,4 @@ ts	phase	decision	why	evidence	result
 2026-09-06T21:13:51Z	live	live Codex smoke returned KAT3242_OK with artifact ids	AC6 needs a real ChatGPT turn, not the stub	scripts/live-codex-smoke.mjs artifact sha256 572f9bc5189058cad4eb553bdf406f7e53679bb07bb8c6071771009d7ed7e891	PASS
 2026-09-06T21:13:51Z	live	live Codex allow deny input and cancel all completed	AC7 requires real protocol when the provider exposes it	scripts/live-codex-cases.mjs	PASS
 2026-09-06T21:13:51Z	pack	packaged verify launch plus fake submit succeeded	AC9 must use an installed tarball, not the workspace bin	pnpm pack:smoke endpoint 127.0.0.1:42403	PASS
+2026-09-06T21:15:30Z	review	widened bot-command tests and fail-closed Docker assertion	trail review said AC5 and container fail-closed were under-proven	packages/cli/test/store.test.ts packages/cli/test/boundary.test.ts	14 tests green

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
-import { newIdempotencyKey, newSessionId } from "../src/ids.js";
+import { newApprovalId, newIdempotencyKey, newRunId, newSessionId } from "../src/ids.js";
 import { openStore, type ApplyInput, type Principal } from "../src/store.js";
 import { SCHEMA_ID } from "../src/versions.js";
 import type { Command } from "../src/schema.js";
@@ -86,6 +86,20 @@ describe("store", () => {
     await expect(
       apply(root, { kind: "submit_task", brief: "nope", fixture: "smoke" }, bot()),
     ).rejects.toThrow(/bot cannot submit_task/);
+    await expect(
+      apply(
+        root,
+        { kind: "resolve_approval", approvalId: newApprovalId(), decision: "allowed" },
+        bot(),
+      ),
+    ).rejects.toThrow(/bot cannot resolve_approval/);
+    await expect(
+      apply(root, { kind: "answer_input", runId: newRunId(), answers: { color: "Blue" } }, bot()),
+    ).rejects.toThrow(/bot cannot answer_input/);
+    await expect(apply(root, { kind: "cancel_run", runId: newRunId() }, bot())).rejects.toThrow(
+      /bot cannot cancel_run/,
+    );
+    await expect(apply(root, { kind: "stop_all" }, bot())).rejects.toThrow(/bot cannot stop_all/);
   });
 
   it("does not claim a pending launch across reopen", async () => {

@@ -64,6 +64,32 @@ describe("http", () => {
       );
       expect(botSubmit.status).toBe(403);
       expect(String(botSubmit.json.error)).toMatch(/bot cannot/);
+      const ownerSubmit = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "allow for bot deny", fixture: "allow" },
+      });
+      const pending = await fetch(new URL("/v1/status", endpoint), {
+        headers: { authorization: `Bearer ${owner.token}` },
+      });
+      const snap = (await pending.json()) as {
+        pending: { approvalId: string | null; state: string }[];
+      };
+      const approval = snap.pending.find((item) => item.approvalId);
+      const botAllow = await command(
+        endpoint,
+        owner.token,
+        {
+          idempotencyKey: newIdempotencyKey(),
+          command: {
+            kind: "resolve_approval",
+            approvalId: approval?.approvalId,
+            decision: "allowed",
+          },
+        },
+        "Bot not-an-owner",
+      );
+      expect(botAllow.status).toBe(403);
+      expect(ownerSubmit.json.accepted).toBe(true);
       const doctor = await fetch(new URL("/v1/health", endpoint));
       expect(doctor.ok).toBe(true);
     } finally {
