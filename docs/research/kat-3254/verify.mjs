@@ -9,13 +9,19 @@ import { join, resolve } from 'node:path';
 const root = fileURLToPath(new URL('./', import.meta.url));
 const output = resolve(process.env.EVIDENCE_DIR || join(root, 'evidence'));
 const origin = process.env.PROTOTYPE_URL || 'http://127.0.0.1:4173';
+const server = new URL(origin);
+assert.equal(server.origin, origin, 'PROTOTYPE_URL must be an origin without a path');
+assert.equal(server.protocol, 'http:');
+assert.ok(['127.0.0.1', 'localhost', '[::1]'].includes(server.hostname), 'Prototype server must be loopback');
 const driverPath = process.env.PLAYWRIGHT_MODULE || '/tmp/kat-3254-browser/node_modules/playwright/index.mjs';
 const { chromium } = await import(pathToFileURL(driverPath));
 const executablePath = process.env.CHROMIUM_PATH || '/usr/bin/chromium';
 const { request, reply, action } = await import('./prototypes/scenario.js');
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
-const sourceFiles = ['prototypes/index.html', 'prototypes/style.css', 'prototypes/scenario.js', 'prototypes/app.js', 'verify.mjs', 'protocol.md'];
-const hashes = Object.fromEntries(await Promise.all(sourceFiles.map(async file => [file, createHash('sha256').update(await readFile(join(root, file))).digest('hex')])));
+const sourceFiles = ['prototypes/index.html', 'prototypes/style.css', 'prototypes/scenario.js', 'prototypes/app.js', 'verify.mjs', 'verify-source-binding.mjs', 'protocol.md'];
+const sha256 = body => createHash('sha256').update(body).digest('hex');
+const hashes = Object.fromEntries(await Promise.all(sourceFiles.map(async file => [file, sha256(await readFile(join(root, file)))])));
+const servedFiles = { '/': 'prototypes/index.html', ...Object.fromEntries(sourceFiles.filter(file => file.startsWith('prototypes/')).map(file => [`/${file.slice('prototypes/'.length)}`, file])) };
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ executablePath, headless: true, args: ['--no-sandbox'] });
 const report = {
@@ -31,26 +37,42 @@ const report = {
 
 async function run(variant, mode) {
   const viewport = mode === 'mouse' ? { width: 1440, height: 1080 } : { width: 390, height: 844 };
-  const context = await browser.newContext({ viewport, reducedMotion: 'reduce' });
+  const context = await browser.newContext({ viewport, reducedMotion: 'reduce', serviceWorkers: 'block' });
   const page = await context.newPage();
-  const result = { variant, mode, viewport, verdict: 'RUNNING', canonical: { humanActivations: 0, setupActivations: 0, navigationChanges: 0, detailOpenings: 0, researcherControls: 0, keys: 0 }, interactions: [], probes: [], checks: [], screenshots: [], errors: [], externalRequests: [] };
+  const result = { variant, mode, viewport, verdict: 'RUNNING', canonical: { humanActivations: 0, setupActivations: 0, navigationChanges: 0, detailOpenings: 0, researcherControls: 0, keys: 0 }, interactions: [], probes: [], checks: [], screenshots: [], errors: [], externalRequests: [], sourceAssets: {}, sourceErrors: [] };
   report.runs.push(result);
   page.on('pageerror', error => result.errors.push(error.message));
   await context.route('**/*', async route => {
-    if (!route.request().url().startsWith(`${origin}/`)) {
+    const url = new URL(route.request().url());
+    if (url.origin !== origin) {
       result.externalRequests.push(route.request().url());
       return route.abort();
     }
-    await route.continue();
+    try {
+      const file = servedFiles[url.pathname];
+      assert.ok(file, `Unexpected prototype asset: ${url.pathname}`);
+      const response = await route.fetch({ maxRedirects: 0 });
+      assert.equal(response.status(), 200, `Source response must be HTTP 200: ${url}`);
+      const body = await response.body();
+      const observed = sha256(body);
+      assert.equal(observed, hashes[file], `Served source hash mismatch: ${file}`);
+      result.sourceAssets[file] = observed;
+      await route.fulfill({ response, body });
+    } catch (error) {
+      result.sourceErrors.push(error.message);
+      await route.abort();
+    }
   });
   let canonical = true;
-  const locator = name => page.getByRole('button', { name, exact: true }).first();
+  const locator = name => name === 'Open linked conversation'
+    ? page.locator('.task-overview > button[data-action="conversation"]')
+    : page.getByRole('button', { name, exact: true });
+  let detailOpener;
   async function press(key) {
     await page.keyboard.press(key);
     if (canonical) result.canonical.keys++;
   }
-  async function activate(name, category = 'human', navigation = false, detail = false) {
-    const target = name.startsWith('[S') ? page.getByText(name, { exact: true }) : locator(name);
+  async function activate(name, category = 'human', navigation = false, detail = false, target = name.startsWith('[S') ? page.getByText(name, { exact: true }) : locator(name)) {
     assert.equal(await target.count(), 1, `target exists: ${name}`);
     const started = performance.now();
     let tabs = 0;
@@ -64,6 +86,7 @@ async function run(variant, mode) {
       assert.notEqual(focus.width, '0px', `focus indicator width on ${name}`);
       await press('Enter');
     } else await target.click();
+    if (detail && !name.startsWith('[S')) detailOpener = await target.elementHandle();
     if (navigation && ['Start a request', 'Open linked conversation', 'Release readiness'].includes(name)) {
       assert.ok(await page.evaluate(() => document.activeElement.matches('#message-input, .main-content h1')), 'navigation focuses the destination');
     }
@@ -101,6 +124,7 @@ async function run(variant, mode) {
   async function probe(label, name) {
     const probePage = await context.newPage();
     await probePage.goto(`${origin}/?variant=${variant}`);
+    assert.deepEqual(result.sourceErrors, [], 'Probe page uses recorded source');
     const started = performance.now();
     const observed = await probePage.locator(`[data-probe="${name}"]`).evaluate(element => {
       const box = element.getBoundingClientRect();
@@ -128,14 +152,31 @@ async function run(variant, mode) {
       result.interactions.push({ phase: canonical ? 'canonical' : 'failure-retention', category: 'human', name: 'Escape closes detail' });
     } else await activate('Close');
     assert.equal(await page.locator('dialog').isVisible(), false);
-    await page.waitForFunction(() => document.activeElement?.matches('button[data-action^="open-"]'), null, { timeout: 2000 });
+    await page.waitForFunction(opener => document.activeElement === opener, detailOpener, { timeout: 2000 });
   }
   async function assignment() {
+    await check('Connection setup precedes request availability and task creation', async () => {
+      assert.equal(await locator('Send request').count(), 0);
+      assert.equal(await page.locator('.work-panel').count(), 0);
+      assert.equal(await page.locator('[data-probe="owner"]').textContent(), 'Unassigned');
+    });
+    await activate('Use demonstration environment', 'setup');
+    await check('Source authority precedes request availability and task creation', async () => {
+      assert.equal(await locator('Send request').count(), 0);
+      assert.equal((await snapshot()).taskCount, 0);
+    });
+    await activate('Allow this source read', 'setup');
+    await check('Completed setup has started no task or specialist', async () => {
+      const value = await snapshot();
+      assert.equal(value.stage, 'welcome');
+      assert.equal(value.taskCount, 0);
+      assert.equal(value.dispatchCount, 0);
+      assert.deepEqual(value.messages.map(message => message.id), ['environment', 'source-authority']);
+    });
     if (variant === 'C') await activate('Start a request', 'human', true);
     await activate('Send request', 'human', variant === 'C');
-    await activate('Use demonstration environment', 'setup');
-    await activate('Allow this source read', 'setup');
     await stateIs('assigned', 'Mara');
+    assert.equal((await snapshot()).taskCount, 1);
     await activate('Simulate Mara offering handoff', 'research');
   }
   async function draft() {
@@ -146,12 +187,18 @@ async function run(variant, mode) {
   }
   try {
     await page.goto(`${origin}/?variant=${variant}`);
+    await check('Browser loads only the recorded prototype bytes', async () => {
+      assert.deepEqual(result.sourceErrors, []);
+      assert.deepEqual(result.sourceAssets, Object.fromEntries(sourceFiles.filter(file => file.startsWith('prototypes/')).map(file => [file, hashes[file]])));
+    });
     await screenshot('start');
     await assignment();
     await check('Pending handoff keeps sender ownership', () => stateIs('proposed', 'Mara'));
+    if (variant === 'A') await check('Pending handoff exposes no specialist work updates', async () => assert.equal(await locator('Show routine peer updates').count(), 0));
     await probe('pending handoff', 'owner');
     await activate('Simulate Ivo accepting', 'research');
     await check('Receiving-agent acceptance transfers ownership exactly once', () => stateIs('clarification', 'Ivo'));
+    if (variant === 'A') await check('Accepted specialist work makes routine updates available', async () => assert.equal(await locator('Show routine peer updates').count(), 1));
     await probe('accepted handoff', 'owner');
     if (variant === 'C') await activate('Open linked conversation', 'human', true);
     await activate('Send reply', 'human', variant === 'C');
@@ -214,6 +261,10 @@ async function run(variant, mode) {
     await activate('Simulate handoff failure', 'research');
     await check('Failed handoff retains Mara and starts no specialist', async () => {
       await stateIs('failed', 'Mara'); assert.equal((await snapshot()).dispatchCount, 0);
+      if (variant === 'A') {
+        assert.equal(await locator('Show routine peer updates').count(), 0);
+        assert.equal(await page.locator('.routine').count(), 0);
+      }
     });
     await probe('failed handoff', 'owner');
     await probe('failed handoff', 'error');
@@ -221,8 +272,13 @@ async function run(variant, mode) {
     await screenshot('handoff-failed');
     await activate('Simulate a new handoff offer', 'research');
     await activate('Simulate Ivo accepting', 'research');
+    if (variant === 'A') await check('Accepted work updates open and collapse after a failed offer', async () => {
+      await activate('Show routine peer updates');
+      assert.ok((await page.locator('.routine').textContent()).includes('Sources S1 and S2 indexed'));
+      await activate('Collapse routine peer updates');
+    });
     await retained('accepted handoff');
-    if (variant === 'C') await activate('Release readiness', 'human', true);
+    if (variant === 'C') await activate('Release readiness', 'human', true, false, page.locator('.task-nav').getByRole('button', { name: 'Release readiness', exact: true }));
     if (variant === 'C') await activate('Open linked conversation', 'human', true);
     await activate('Send reply');
     await activate('Simulate Ivo delivering brief', 'research');
@@ -259,9 +315,13 @@ async function run(variant, mode) {
     await probe('unknown outcome', 'action');
     await page.evaluate(() => window.scrollTo(0, 0));
     await screenshot('unknown');
-    await activate('Inspect unresolved action', 'human', false, true);
-    await check('Unknown action exposes read-only reconciliation with consumed approval', async () => assert.ok((await page.locator('dialog').textContent()).includes('Approval consumed; receipt missing')));
-    await closeDetail();
+    for (const scope of ['.error', '.work-panel']) {
+      await activate('Inspect unresolved action', 'human', false, true, page.locator(scope).getByRole('button', { name: 'Inspect unresolved action', exact: true }));
+      await check(`Unknown action opened from ${scope} restores its exact opener`, async () => {
+        assert.ok((await page.locator('dialog').textContent()).includes('Approval consumed; receipt missing'));
+        await closeDetail();
+      });
+    }
     await activate('Simulate read-only receipt lookup', 'research');
     await check('Read-only lookup finds the original receipt without repeating the effect', async () => { await stateIs('complete', 'Ivo'); assert.equal((await snapshot()).effectCount, 1); });
     await activate('Restart this simulated scenario', 'research');
@@ -275,7 +335,15 @@ async function run(variant, mode) {
       assert.equal(await locator('Inspect release brief').count(), 1);
     });
     await check('No document horizontal overflow', async () => assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)));
+    await check('Old onboarding data is preserved and refused', async () => {
+      const old = { ...await snapshot(), version: 1 };
+      await page.evaluate(({ variant, old }) => localStorage.setItem(`kat3254-research-${variant}`, JSON.stringify(old)), { variant, old });
+      await page.reload();
+      assert.equal(await page.getByRole('heading', { name: 'Saved research data cannot be opened' }).count(), 1);
+      assert.deepEqual(await snapshot(), old);
+    });
     await check('No browser exceptions or external requests', async () => { assert.deepEqual(result.errors, []); assert.deepEqual(result.externalRequests, []); });
+    await check('All reloads and probe pages use recorded source', async () => assert.deepEqual(result.sourceErrors, []));
     result.verdict = 'PASS';
   } catch (error) {
     result.verdict = 'FAIL'; result.failure = error.stack;
@@ -287,6 +355,8 @@ async function run(variant, mode) {
 }
 try {
   for (const mode of ['mouse', 'keyboard']) for (const variant of ['A', 'B', 'C']) await run(variant, mode);
+  for (const file of sourceFiles) assert.equal(sha256(await readFile(join(root, file))), hashes[file], `Local source changed during verification: ${file}`);
+  assert.equal(git('rev-parse', 'HEAD'), report.commit, 'Source commit changed during verification');
   report.verdict = 'PASS';
 } catch (error) {
   report.verdict = 'FAIL';

@@ -5,7 +5,7 @@ const key = `kat3254-research-${variant}`;
 const saved = localStorage.getItem(key);
 let state;
 try { state = saved ? JSON.parse(saved) : initial(); } catch { state = null; }
-const valid = state?.version === 1 && Object.hasOwn(stages, state.stage) && Array.isArray(state.messages);
+const valid = state?.version === 2 && Object.hasOwn(stages, state.stage) && Array.isArray(state.messages);
 let view = variant === 'C' ? 'tasks' : 'conversation';
 let peerOpen = false;
 let sourceOpen = '';
@@ -46,7 +46,7 @@ function conversation() {
       <article class="message"><span class="avatar mara">M</span><div><strong>Mara <small>Coordinator · simulated</small></strong><p>Tell me the outcome you need. I’ll keep the work, decisions, and result here.</p></div></article>
       ${messages.map(item => `<article class="message ${item.peer ? 'peer-message' : ''}"><span class="avatar ${item.from.startsWith('Ivo') ? 'ivo' : 'mara'}">${item.from[0]}</span><div><strong>${escape(item.from)} <small>${item.from === 'Alex' ? 'Human' : 'Simulated'}</small></strong><p>${escape(item.text)}</p></div></article>`).join('')}
       ${summary}
-      ${variant === 'A' && state.messages.some(item => item.peer) ? button('toggle-peers', peerOpen ? 'Collapse routine peer updates' : 'Show routine peer updates', 'quiet') + (peerOpen ? '<p class="routine">Ivo · simulated · Sources S1 and S2 indexed. Mara · simulated · Constraints retained. These updates do not change ownership.</p>' : '') : ''}
+      ${variant === 'A' && state.dispatchCount > 0 ? button('toggle-peers', peerOpen ? 'Collapse routine peer updates' : 'Show routine peer updates', 'quiet') + (peerOpen ? '<p class="routine">Ivo · simulated · Sources S1 and S2 indexed. Mara · simulated · Constraints retained. These updates do not change ownership.</p>' : '') : ''}
     </div>
     ${state.stage === 'welcome' || state.stage === 'clarification' ? `<form id="composer"><label for="message-input">${state.stage === 'welcome' ? 'Give Mara an outcome' : 'Reply to Ivo’s clarification'}</label><textarea id="message-input" rows="3">${state.stage === 'welcome' ? request : reply}</textarea><div class="composer-footer"><small>Fixed research scenario. Use the supplied message.</small><button type="submit">${state.stage === 'welcome' ? 'Send request' : 'Send reply'}</button></div><p id="input-error" role="alert"></p></form>` : `<div class="composer-paused"><span>${info().next}</span><small>Only the fixed scenario is interactive.</small></div>`}
   </section>`;
@@ -59,6 +59,7 @@ function setup() {
 }
 
 function work() {
+  if (!state.taskCount) return '';
   return `<section class="work-panel" aria-label="Task results and decisions"><span class="eyebrow">TASK-1 / RELEASE READINESS</span><h2>Work & decisions</h2>
     <p>${info().next}</p>
     ${state.stage === 'clarification' && variant === 'C' ? button('conversation', 'Open linked conversation') : ''}
@@ -80,7 +81,7 @@ function render(focus = false) {
   }
   document.querySelector(`[data-variant="${variant}"]`).setAttribute('aria-current', 'page');
   const title = { A: 'A · Shared team room', B: 'B · Manager direct message', C: 'C · Task first' }[variant];
-  const main = variant === 'C' ? `<nav class="task-nav" aria-label="Task navigation">${button('tasks', 'Work list', view === 'tasks' ? 'selected' : '')}${state.stage === 'welcome' ? button('conversation', 'New conversation') : button('overview', 'Release readiness', view === 'overview' ? 'selected' : '')}${state.stage !== 'welcome' ? button('conversation', 'Linked conversation', view === 'conversation' ? 'selected' : '') : ''}</nav>${view === 'tasks' ? `<section class="task-list"><h1>Your work</h1>${state.taskCount ? `<button data-action="overview" class="task-row"><strong>Release readiness</strong><span>${info().status}</span><span>Owner · ${info().owner}</span></button>${work()}` : `<p>Start with a conversation. No task form or workflow setup.</p>${button('conversation', 'Start a request')}</section>`}` : view === 'conversation' ? `<div class="content-grid">${conversation()}${work()}</div>` : `<div class="task-overview"><h1>Release readiness</h1><p>${request}</p>${button('conversation', 'Open linked conversation')}${work()}</div>`}` : `<div class="content-grid">${conversation()}<aside class="right-rail">${variant === 'B' ? specialist() : ''}${work()}</aside></div>`;
+  const main = variant === 'C' ? `<nav class="task-nav" aria-label="Task navigation">${button('tasks', 'Work list', view === 'tasks' ? 'selected' : '')}${!state.taskCount ? button('conversation', 'New conversation') : button('overview', 'Release readiness', view === 'overview' ? 'selected' : '')}${state.taskCount ? button('conversation', 'Linked conversation', view === 'conversation' ? 'selected' : '') : ''}</nav>${view === 'tasks' ? `<section class="task-list"><h1>Your work</h1>${state.taskCount ? `<button data-action="overview" class="task-row"><strong>Release readiness</strong><span>${info().status}</span><span>Owner · ${info().owner}</span></button>${work()}` : `<p>Start with a conversation. No task form or workflow setup.</p>${button('conversation', 'Start a request')}</section>`}` : view === 'conversation' ? `<div class="content-grid">${conversation()}${work()}</div>` : `<div class="task-overview"><h1>Release readiness</h1><p>${request}</p>${button('conversation', 'Open linked conversation')}${work()}</div>`}` : `<div class="content-grid">${conversation()}<aside class="right-rail">${variant === 'B' ? specialist() : ''}${work()}</aside></div>`;
   workspace.innerHTML = `<div class="variant-heading"><span>${title}</span><span class="muted">One fixed scenario · saved separately per alternative</span></div>${status()}${setup()}<div class="workspace-grid">${people()}<div class="main-content">${main}</div></div>`;
   renderLab();
   const history = document.querySelector('.messages');
@@ -105,7 +106,7 @@ function renderLab() {
 }
 
 function openDetail(kind, opener) {
-  if (!dialog.open) returnFocus = opener?.dataset.action || returnFocus;
+  if (!dialog.open) returnFocus = opener;
   sourceOpen = kind;
   let title, content;
   if (kind === 'artifact') {
@@ -138,7 +139,8 @@ dialog.addEventListener('keydown', event => {
 });
 
 dialog.addEventListener('close', () => {
-  document.querySelector(`[data-action="${returnFocus}"]`)?.focus();
+  const target = returnFocus?.isConnected ? returnFocus : document.querySelector(`[data-action="${returnFocus?.dataset.action}"]`);
+  target?.focus();
   sourceOpen = '';
 });
 
@@ -159,7 +161,12 @@ document.addEventListener('click', event => {
   if (command === 'toggle-peers') { peerOpen = !peerOpen; render(); document.querySelector('[data-action="toggle-peers"]')?.focus(); return; }
   if (command === 'reset') { state = initial(); view = variant === 'C' ? 'tasks' : 'conversation'; peerOpen = false; }
   else if (command === 'replay') { state = { ...transition(state, state.lastEvent), suppressed: state.suppressed + 1 }; }
-  else if (command === 'connect-linear') { state = { ...state, linear: true }; }
+  else if (command === 'connect-linear') {
+    state = { ...state, linear: true };
+    save();
+    openDetail(sourceOpen, target);
+    return;
+  }
   else { const next = transition(state, command); state = next === state ? state : { ...next, lastEvent: command }; }
   save();
   announce(info().status);

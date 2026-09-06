@@ -10,8 +10,8 @@ export const action = {
 };
 export const stages = {
   welcome: { owner: 'Unassigned', status: 'Ready for your first request', next: 'Send your request' },
-  connect: { owner: 'Mara', status: 'Waiting for connection', next: 'Choose the demonstration environment' },
-  authority: { owner: 'Mara', status: 'Waiting for source permission', next: 'Allow the selected source read' },
+  connect: { owner: 'Unassigned', status: 'Waiting for connection', next: 'Choose the demonstration environment' },
+  authority: { owner: 'Unassigned', status: 'Waiting for source permission', next: 'Allow the selected source read' },
   assigned: { owner: 'Mara', status: 'Assignment accepted', next: 'Mara is preparing a handoff' },
   proposed: { owner: 'Mara', status: 'Handoff pending acceptance', next: 'Ivo must accept before ownership changes' },
   failed: { owner: 'Mara', status: 'Handoff failed', next: 'Mara retains ownership; Ivo is unavailable' },
@@ -23,14 +23,14 @@ export const stages = {
   complete: { owner: 'Ivo', status: 'Completed · simulated receipt saved', next: 'Inspect the finished brief and receipt' },
   denied: { owner: 'Ivo', status: 'Action denied · brief retained', next: 'The brief is available. No issue was created.' },
 };
-export const initial = () => ({ version: 1, stage: 'welcome', linear: false, inspected: false, taskCount: 0, dispatchCount: 0, effectCount: 0, messages: [], suppressed: 0 });
+export const initial = () => ({ version: 2, stage: 'connect', linear: false, inspected: false, taskCount: 0, dispatchCount: 0, effectCount: 0, messages: [], suppressed: 0 });
 
 const message = (state, id, from, text, peer = false) => ({ ...state, messages: [...state.messages, { id, from, text, peer }] });
 export function transition(state, event) {
   const moves = {
-    'welcome:assign': ['connect', 'assignment', 'Alex', request],
+    'welcome:assign': ['assigned', 'assignment', 'Alex', request],
     'connect:connect': ['authority', 'environment', 'Mara', 'Demonstration environment selected. Provider is Sample engine, a fictional provider. Execution location is this browser simulation. No provider session exists.'],
-    'authority:grant': ['assigned', 'assigned', 'Mara', 'I own this request. I can read the fictional northstar/launchpad snapshot for this task only. I will ask before any Linear write.'],
+    'authority:grant': ['welcome', 'source-authority', 'Mara', 'Source permission recorded for your first task. Once you send your request, I can read the fictional northstar/launchpad snapshot for that task only. I will ask before any Linear write.'],
     'assigned:propose': ['proposed', 'proposal', 'Mara → Ivo', 'Please prepare a cited release brief from sources S1 and S2. Read only; one proposed follow-up, no writes. I retain ownership until you accept.', true],
     'proposed:accept': ['clarification', 'acceptance', 'Ivo → Mara', 'I accept task-1 and own the release brief. Should I include all work or only release blockers?', true],
     'proposed:fail': ['failed', 'handoff-failed', 'Mara', 'Ivo did not accept. I still own this task. No specialist work started.'],

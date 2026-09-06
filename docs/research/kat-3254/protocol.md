@@ -14,8 +14,8 @@ Use a fresh isolated Chromium context for each alternative and input mode. Run d
 
 Run this canonical loop through the visible UI.
 
-1. Open the conversation, if needed, and send the supplied ordinary request.
-2. Choose the demonstration provider and execution location. Allow the task-scoped source read.
+1. Choose the demonstration provider and execution location. Allow the source read for the first task. No task or specialist starts during setup.
+2. Open the conversation, if needed, and send the supplied ordinary request. Submission starts the first task after connection and source authority.
 3. Simulate the handoff proposal and Ivo's explicit acceptance.
 4. Open the linked conversation if needed and send the supplied clarification reply.
 5. Simulate the artifact delivery. Open the brief, expand both source excerpts, and close it.
@@ -39,14 +39,15 @@ Run these separately from the canonical interaction count in each condition.
 - Refresh a pending handoff, accepted handoff, pending approval, unknown action, and completion. Ownership, messages, task count, specialist starts, and simulated effects must remain unchanged.
 - Repeat the last notification in each state. Replaying that event must not add a task, specialist start, message, receipt, or external effect.
 - Fail the handoff. Mara remains owner and specialist starts remain zero. A deliberate new offer may be accepted once.
+- In A, keep routine specialist work updates unavailable before acceptance and after a failed handoff. Open them only after accepted work starts.
 - Interrupt after approval and simulated external acceptance but before the receipt. Show the brief alongside unknown action status. Do not offer automatic retry. A simulated read-only lookup finds the existing receipt without another effect.
 - Deny an action. Keep the brief and record zero effects. Approval is disabled until artifact inspection and destination connection.
 - Inspect distinct human, role, provider, execution location, scope, and unavailable capabilities.
-- Use Tab, Shift+Tab, Enter, and Escape across the primary loop and dialogs. Check focus indication, modal confinement, focus restoration, readable payload, and document/modal horizontal overflow. This does not establish screen-reader or full accessibility conformance.
+- Use Tab, Shift+Tab, Enter, and Escape across the primary loop and dialogs. Check focus indication, modal confinement, exact opener focus restoration, readable payload, and document/modal horizontal overflow. Open the unknown-action dialog separately from the error banner and work card, and verify focus returns to each actual opener. This does not establish screen-reader or full accessibility conformance.
 - Fail verification on page exceptions or requests outside the loopback origin.
 
 ## Evidence format
 
-`verify.mjs` writes the exact source commit, source cleanliness, SHA-256 file hashes, platform/tool versions, start command, scenario, event log, observed measurements, screenshots, and PASS/FAIL/UNVERIFIED verdicts. A later evidence-only commit can contain the record of an earlier exact code commit. Preserve failed runs if they change the interpretation; do not label an unexecuted assertion PASS.
+`verify.mjs` writes the exact source commit, source cleanliness, SHA-256 file hashes, platform/tool versions, start command, scenario, event log, observed measurements, screenshots, and PASS/FAIL/UNVERIFIED verdicts. Every browser HTML, CSS, and JavaScript response is hashed against the local source before those same bytes reach the browser. This includes reloads and probe pages. Redirects, unexpected resources, missing assets, and hash mismatches fail verification. Browser caching and service workers cannot bypass the check. A later evidence-only commit can contain the record of an earlier exact code commit. Preserve failed runs if they change the interpretation; do not label an unexecuted assertion PASS.
 
 PASS applies to simulated UI behavior only. Live provider eligibility, authentication, authorization enforcement, external recovery, scheduling, computer control, business value, and human usability remain UNVERIFIED. This fixture does not implement or stand in for `agentis verify launch`.
