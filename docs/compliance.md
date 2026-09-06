@@ -1,13 +1,13 @@
 # Provider access and evidence register
 
-Research snapshot from September 5, 2026. This register separates documentation findings from Agentis support; the [runtime ADR](adrs/0001-runtime-and-execution-foundations.md) §5 owns provider policy. No authenticated Agentis provider workflow has been executed or certified. [KAT-3251](https://linear.app/kata-sh/issue/KAT-3251) owns eligibility, versions and transport selection; KAT-3242/KAT-3243 own live implementation proof.
+Research snapshot from September 6, 2026. This register separates documentation findings from Agentis support; the [runtime ADR](adrs/0001-runtime-and-execution-foundations.md) §5 owns provider policy. [KAT-3251 research](research/provider-contracts/README.md) selects Codex stdio app-server and Cursor stdio ACP, with disposable live evidence and explicit support blockers. No authenticated Agentis application workflow has been executed or certified. KAT-3242/KAT-3243 own live implementation proof.
 
 | Candidate | Documented basis | Agentis status and required evidence |
 | --- | --- | --- |
-| Codex local | Official app-server exposes authentication, conversation history, approvals and streaming, including Codex-managed ChatGPT auth | Unverified. Compare app-server and ACP, choose one, prove required behavior and actual account eligibility. |
-| Cursor local | Official ACP documents sessions, permissions and blocking question/plan extensions | Unverified. Prove native configuration isolation, auth, all blocking requests and the selected workflow. |
-| Claude local | Claude ACP uses Agent SDK. Anthropic requires prior approval for third-party products offering claude.ai login/rate limits | Eligibility unresolved. Obtain documented approval or use an explicitly supported authentication path; do not infer eligibility from local credential custody. |
-| Cursor, Claude and Codex cloud | Cursor: public beta v1 API, model-API billing. Claude: web sessions with CLI follow-up. Codex: experimental exec/status/list/diff/apply commands observed in local CLI 0.150.1 only | Deferred. Record actual billing, external ids, lifecycle observation/reconciliation/cancel/follow-up and a support owner before implementation. |
+| Codex local | App-server 0.153.4 over stdio, Codex-managed ChatGPT login; compared with current codex-acp 1.10.0 | Selected for implementation. Disposable Linux allow/deny/input/cancel/load evidence exists. Product, macOS, isolation, and recovery support remain unverified. Maintainer Gannon Hall. |
+| Cursor local | CLI 2026.09.02-c22c1a3, ACP v1 over stdio, explicit Cursor user API-key mode | Selected with blocking-input support blocked. Linux model/allow/deny/cancel/load evidence exists; question probe emitted no structured request. Native isolation, billing attribution, and product/macOS evidence remain unverified. Maintainer Gannon Hall. |
+| Claude local | SDK 0.3.263 documents an eligible API-key path. Current ACP 0.75.1 pins SDK 0.3.257. Third-party claude.ai access requires prior approval | API-auth alternative documented but not selected or live verified. No API key was available to this run. Subscription integration unavailable without approval; local credential custody does not resolve eligibility. |
+| Cursor, Claude and Codex cloud | Separate remote execution, entitlement, billing, and lifecycle contracts | Deferred. See the four-target table and exact unknowns in the research. No cloud calls or parity claim. |
 
 Each supported integration records exact binary/SDK/protocol versions, source retrieval date, eligibility basis, model/capability discovery, real workflow evidence, limits, maintainer and incompatibility handling.
 

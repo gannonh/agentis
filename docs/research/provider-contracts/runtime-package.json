@@ -1,0 +1,16 @@
+{
+  "name": "kat-3251-disposable-runtime-probe",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@effect/cluster": "0.60.2",
+    "@effect/platform": "0.97.1",
+    "@effect/platform-node": "0.108.1",
+    "@effect/rpc": "0.76.2",
+    "@effect/sql": "0.52.1",
+    "@types/node": "24.13.3",
+    "@types/ws": "8.18.1",
+    "effect": "3.22.1",
+    "typescript": "7.0.2"
+  }
+}
