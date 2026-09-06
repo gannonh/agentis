@@ -239,7 +239,8 @@ for line in sys.stdin:
                                {"effects": count, "local_state": local_state, "local_receipt": local_receipt,
                                 "external_receipt": external_receipt, "orphan_alive": orphan_alive, "exit": process.returncode},
                                "PASS" if count == expected_count and process.returncode == -signal.SIGKILL
-                               and local_state == expected_state and local_receipt == expected_receipt else "FAIL")
+                               and local_state == expected_state and local_receipt == expected_receipt
+                               and orphan_alive is True else "FAIL")
                     finally:
                         remaining = stop_group(process)
                         record("cleanup_" + boundary, "no live group members", remaining,

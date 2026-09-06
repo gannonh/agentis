@@ -52,6 +52,8 @@ for name,path in [('absolute_owner',sys.argv[1]),('symlink_owner','/workspace/es
         result[name]=False
     except (FileNotFoundError,PermissionError,IsADirectoryError):
         result[name]=True
+    except OSError:
+        result[name]=name!='docker_socket'
 result['input_read']=pathlib.Path('/workspace/input').read_text()=='synthetic input'
 pathlib.Path('/workspace/output').write_text('scratch only')
 result['scratch_write']=True
