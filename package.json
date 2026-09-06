@@ -1,0 +1,23 @@
+{
+  "name": "agentis",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": "24.20.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter @agentis-labs/cli build",
+    "typecheck": "pnpm --filter @agentis-labs/cli typecheck",
+    "lint": "pnpm --filter @agentis-labs/cli lint",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "test": "pnpm --filter @agentis-labs/cli test",
+    "pack:smoke": "pnpm --filter @agentis-labs/cli pack:smoke",
+    "agentis": "node packages/cli/dist/bin.js"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}

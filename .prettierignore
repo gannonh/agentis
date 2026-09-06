@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+pnpm-lock.yaml
+.audit
+docs
+AGENTS.md
+CLAUDE.md
+CONTRIBUTING.md
+LICENSE
+NOTICE

@@ -2,13 +2,21 @@
 
 Agentis is a planned system for recurring agent work, retained results, explicit action approvals, and recovery after interruptions.
 
-This checkout contains foundation documentation for an unshipped rebuild. It has no runnable application, package manifest, build, or test commands. Provider support and runtime behavior remain unverified.
+This checkout now includes the Gate 0 CLI/daemon slice (`@agentis-labs/cli`). Provider support is not a public claim. Fake fixture evidence lives in CI. Live Codex and macOS isolation remain separately recorded.
 
 ## Release identity
 
 The canonical repository is [gannonh/agentis](https://github.com/gannonh/agentis). The planned release is `@agentis-labs/cli` version 2.0, with the `agentis` binary. The currently published package does not contain this rebuild. The unscoped `agentis` npm package is unrelated.
 
-There is no supported installation of this rebuild yet. After publication, the npm installation target will be `@agentis-labs/cli@2`.
+From this checkout:
+
+```sh
+pnpm install
+pnpm build
+pnpm agentis verify launch
+```
+
+Control commands need `--endpoint` or `--profile`. The CLI does not guess a port. After publication, the npm install target is `@agentis-labs/cli@2`.
 
 The former implementation remains on [`archive/agentis-v1`](https://github.com/gannonh/agentis/tree/archive/agentis-v1) at commit [`78bf37491942552b6cb14cfe43b1a7463b723f48`](https://github.com/gannonh/agentis/commit/78bf37491942552b6cb14cfe43b1a7463b723f48).
 
