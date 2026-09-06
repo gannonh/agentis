@@ -1,0 +1,212 @@
+{
+  "retrievedAt": "2026-09-06",
+  "packages": [
+    {
+      "name": "@agentclientprotocol/claude-agent-acp",
+      "version": "0.75.1",
+      "license": "Apache-2.0",
+      "engines": {
+        "node": ">=22"
+      },
+      "dependencies": {
+        "zod": "^4.0.0",
+        "@agentclientprotocol/sdk": "1.4.0",
+        "@anthropic-ai/claude-agent-sdk": "0.3.257"
+      },
+      "peerDependencies": null,
+      "registryUrl": "https://registry.npmjs.org/@agentclientprotocol/claude-agent-acp/0.75.1",
+      "integrity": "sha512-Un6I4BRkhpCFS3I7kr5C/lkAm8Nc3VuGZU2YQ3xIpJAIxV94iWO0Q2CH2QABxMERpONRu4Le6XC9V+5PImQZ2A==",
+      "gitHead": "3e23c5b960b66a6d2c892e7524c952e731c076a7"
+    },
+    {
+      "name": "@agentclientprotocol/codex-acp",
+      "version": "1.10.0",
+      "license": "Apache-2.0",
+      "engines": null,
+      "dependencies": {
+        "zod": "^4.0.0",
+        "diff": "^9.0.0",
+        "open": "^11.0.1",
+        "@openai/codex": "^0.153.3",
+        "vscode-jsonrpc": "^9.0.1",
+        "@agentclientprotocol/sdk": "^1.4.0"
+      },
+      "peerDependencies": null,
+      "registryUrl": "https://registry.npmjs.org/@agentclientprotocol/codex-acp/1.10.0",
+      "integrity": "sha512-b4dDCPkH/GgHRb3JelXz4QdNirdoTjO3yYM1ImUJMxVXxgZLZMguEXNhZOH2G755UKzf6ZypiiC7UHe3fKgp2Q==",
+      "gitHead": "061f9a4a2e463a220d7a3ab2ae5e9732837085ef"
+    },
+    {
+      "name": "@types/node",
+      "version": "26.4.1",
+      "license": "MIT",
+      "engines": null,
+      "dependencies": {
+        "undici-types": "~8.3.0"
+      },
+      "peerDependencies": {},
+      "registryUrl": "https://registry.npmjs.org/@types/node/26.4.1",
+      "integrity": "sha512-k97ENvZWtvA6yqz5/FS6a7duDgOPEeOQOc2iKS/nY6mX6qJUKtLnWzQS+Xj6tXweyj6ZcTAK2Qecetnvi9nCLA==",
+      "gitHead": null
+    },
+    {
+      "name": "typescript",
+      "version": "7.0.2",
+      "license": "Apache-2.0",
+      "engines": {
+        "node": ">=16.20.0"
+      },
+      "dependencies": {
+        "@typescript/typescript-aix-ppc64": "7.0.2",
+        "@typescript/typescript-linux-arm": "7.0.2",
+        "@typescript/typescript-linux-x64": "7.0.2",
+        "@typescript/typescript-sunos-x64": "7.0.2",
+        "@typescript/typescript-win32-x64": "7.0.2",
+        "@typescript/typescript-darwin-x64": "7.0.2",
+        "@typescript/typescript-netbsd-x64": "7.0.2",
+        "@typescript/typescript-freebsd-x64": "7.0.2",
+        "@typescript/typescript-linux-arm64": "7.0.2",
+        "@typescript/typescript-linux-ppc64": "7.0.2",
+        "@typescript/typescript-linux-s390x": "7.0.2",
+        "@typescript/typescript-openbsd-x64": "7.0.2",
+        "@typescript/typescript-win32-arm64": "7.0.2",
+        "@typescript/typescript-darwin-arm64": "7.0.2",
+        "@typescript/typescript-netbsd-arm64": "7.0.2",
+        "@typescript/typescript-freebsd-arm64": "7.0.2",
+        "@typescript/typescript-linux-loong64": "7.0.2",
+        "@typescript/typescript-linux-riscv64": "7.0.2",
+        "@typescript/typescript-openbsd-arm64": "7.0.2",
+        "@typescript/typescript-linux-mips64el": "7.0.2"
+      },
+      "peerDependencies": null,
+      "registryUrl": "https://registry.npmjs.org/typescript/7.0.2",
+      "integrity": "sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==",
+      "gitHead": null
+    },
+    {
+      "name": "@agentclientprotocol/sdk",
+      "version": "1.4.0",
+      "license": "Apache-2.0",
+      "engines": null,
+      "dependencies": null,
+      "peerDependencies": {
+        "zod": "^3.25.0 || ^4.0.0"
+      },
+      "registryUrl": "https://registry.npmjs.org/@agentclientprotocol/sdk/1.4.0",
+      "integrity": "sha512-/eufudw+aFY1LKLolT6yFE6UMmYRl7fMJ/DEONSIyR6wI3slHWITBsANRGqXEY8FRzqUxwh7QEaGiZHcJPVThg==",
+      "gitHead": null
+    },
+    {
+      "name": "@zed-industries/claude-agent-acp",
+      "version": "0.23.1",
+      "license": "Apache-2.0",
+      "engines": null,
+      "dependencies": {
+        "zod": "^3.25.0 || ^4.0.0",
+        "@agentclientprotocol/sdk": "0.17.0",
+        "@anthropic-ai/claude-agent-sdk": "0.2.83"
+      },
+      "peerDependencies": null,
+      "registryUrl": "https://registry.npmjs.org/@zed-industries/claude-agent-acp/0.23.1",
+      "integrity": "sha512-aQ1gAm1MBalwEgE/VB/m4z6sXw/fRccNOW268pNLXnWV704ZuLbbm0N+oEv8KTmd53dJ6YzMhMpD8p5ig6C+sA==",
+      "gitHead": null
+    },
+    {
+      "name": "@zed-industries/codex-acp",
+      "version": "0.16.0",
+      "license": "Apache-2.0",
+      "engines": null,
+      "dependencies": null,
+      "peerDependencies": null,
+      "registryUrl": "https://registry.npmjs.org/@zed-industries/codex-acp/0.16.0",
+      "integrity": "sha512-XKzqztT5R8Wg1BVFnk6/U4JVx5GNUaZgxpf9gP2Cw6BsknvJWh3aefcAGZQljgdMivRqczjNKYL4F6H65dc5vA==",
+      "gitHead": null
+    },
+    {
+      "name": "@anthropic-ai/claude-agent-sdk",
+      "version": "0.3.263",
+      "license": "SEE LICENSE IN README.md",
+      "engines": {
+        "node": ">=18.0.0"
+      },
+      "dependencies": null,
+      "peerDependencies": {
+        "zod": "^4.0.0",
+        "@anthropic-ai/sdk": ">=0.93.0",
+        "@modelcontextprotocol/sdk": "^1.29.0"
+      },
+      "registryUrl": "https://registry.npmjs.org/@anthropic-ai/claude-agent-sdk/0.3.263",
+      "integrity": "sha512-0QWoHgWWlSmgXfEqZRbVYRoXT9p4tx/yKaZ4eLJ8l1MR65SIvMGR+cd5ZXUpGYZpj9RzbYiYU9LoFg90mdIjmw==",
+      "gitHead": null
+    },
+    {
+      "name": "@effect/rpc",
+      "version": "0.76.2",
+      "license": "MIT",
+      "engines": null,
+      "dependencies": {
+        "msgpackr": "^1.11.10"
+      },
+      "peerDependencies": {
+        "effect": "^3.22.1",
+        "@effect/platform": "^0.97.1"
+      },
+      "registryUrl": "https://registry.npmjs.org/@effect/rpc/0.76.2",
+      "integrity": "sha512-x/4jvjufr1m3QWAace7G5Xh09DDcaeU7ijvS0Qumkan/hM89n19JClYnlV3IW93RACZInbgdyOVA+4kOQJ+JQQ==",
+      "gitHead": null
+    },
+    {
+      "name": "@effect/platform-node",
+      "version": "0.108.1",
+      "license": "MIT",
+      "engines": null,
+      "dependencies": {
+        "ws": "^8.18.2",
+        "mime": "^3.0.0",
+        "undici": "^7.10.0",
+        "@effect/platform-node-shared": "^0.61.1"
+      },
+      "peerDependencies": {
+        "effect": "^3.22.1",
+        "@effect/rpc": "^0.76.2",
+        "@effect/sql": "^0.52.1",
+        "@effect/cluster": "^0.60.2",
+        "@effect/platform": "^0.97.1"
+      },
+      "registryUrl": "https://registry.npmjs.org/@effect/platform-node/0.108.1",
+      "integrity": "sha512-BlPW+k/AaVS2ofPGZY1IV3HfLQ3gKGTfkY/jPVOJNOB9NiWb6ufAKOsuNTSAIYP8EzYxTH8tKOENXUXUcANoZA==",
+      "gitHead": null
+    },
+    {
+      "name": "@effect/platform",
+      "version": "0.97.1",
+      "license": "MIT",
+      "engines": null,
+      "dependencies": {
+        "msgpackr": "^1.11.10",
+        "multipasta": "^0.2.8",
+        "find-my-way-ts": "^0.1.6"
+      },
+      "peerDependencies": {
+        "effect": "^3.22.1"
+      },
+      "registryUrl": "https://registry.npmjs.org/@effect/platform/0.97.1",
+      "integrity": "sha512-IevWxwmrxCdeXxbXDx/hiOstHtERRigd1nhZSuHgiFEl7NkBmS/5GVWsRacq4NfJN2uCXqggETKNwij15VEpew==",
+      "gitHead": null
+    },
+    {
+      "name": "effect",
+      "version": "3.22.1",
+      "license": "MIT",
+      "engines": null,
+      "dependencies": {
+        "fast-check": "^3.23.1",
+        "@standard-schema/spec": "^1.0.0"
+      },
+      "peerDependencies": null,
+      "registryUrl": "https://registry.npmjs.org/effect/3.22.1",
+      "integrity": "sha512-TNoXushmPOBAjJlthF5d2QwnX2xBPEtcNJr5XKNKbRLbDvBcOYkXlYDfvGfSA0zriwLFuCll5MDtNMAdZL17PQ==",
+      "gitHead": null
+    }
+  ]
+}

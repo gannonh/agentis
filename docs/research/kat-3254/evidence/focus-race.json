@@ -1,0 +1,4913 @@
+{
+  "issue": "KAT-3254",
+  "recordedAt": "2026-09-06T17:16:59.969Z",
+  "commit": "05ed665f121148a1da242d8c7e2da4c759769758",
+  "sourceClean": true,
+  "hashes": {
+    "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
+    "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
+    "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35",
+    "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
+    "verify.mjs": "bd1cc053bd784cbf467b9f4c16fe454b49d70606bb3db050829ce2b533672047",
+    "verify-source-binding.mjs": "93a9f790fe323ec1373837c2a461910f2345e92b8d5d117928ac7aa5e08453f6",
+    "protocol.md": "50978eb2f055cf7d133a78ef0dece8d36f2196ace0e48f047e4ff75ce900e618"
+  },
+  "environment": {
+    "os": "linux 7.1.9-arch1-2",
+    "node": "v26.8.1",
+    "browser": "151.0.7922.173",
+    "playwright": "1.58.2",
+    "executablePath": "/usr/bin/chromium"
+  },
+  "startCommand": "python3 -m http.server 4173 --bind 127.0.0.1 --directory docs/research/kat-3254/prototypes",
+  "verificationCommand": "node docs/research/kat-3254/verify.mjs",
+  "origin": "http://127.0.0.1:4173",
+  "scenario": {
+    "request": "Mara, review northstar/launchpad and write a cited release brief. Propose one follow-up in Linear, but ask before creating it.",
+    "reply": "Only release blockers. Keep the follow-up in the Launch readiness project.",
+    "action": {
+      "id": "action-1",
+      "revision": "v1",
+      "task": "task-1",
+      "run": "attempt-1",
+      "account": "Alex / Northstar demo",
+      "destination": "Linear / Northstar / Launch readiness",
+      "operation": "Create one issue",
+      "title": "Restore the release smoke check",
+      "body": "PR #42 is approved but has no passing release smoke check [S1]. Restore the check and attach a passing run before launch. Issue #17 has no retry evidence [S2]. Verify it in the same check.",
+      "scope": "One issue in Launch readiness. No repository writes.",
+      "duration": "This exact action once for attempt-1. No standing permission. The recorded approval is consumed by its one action."
+    }
+  },
+  "method": "One run per variant/input condition. Known-target browser retrieval timing includes driver overhead; not human locate time. Prefilled fixed text. Research controls excluded from human activations. See protocol.md.",
+  "runs": [
+    {
+      "variant": "A",
+      "mode": "mouse",
+      "viewport": {
+        "width": 1440,
+        "height": 1080
+      },
+      "verdict": "PASS",
+      "canonical": {
+        "humanActivations": 10,
+        "setupActivations": 3,
+        "navigationChanges": 0,
+        "detailOpenings": 5,
+        "researcherControls": 4,
+        "keys": 0
+      },
+      "interactions": [
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 10.66
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 28.74
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.74
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 28.32
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 23.67
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 13.86
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.57
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 22.15
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.87
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 31.82
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.45
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.43
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 28.76
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 12.92
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate completion receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 28.39
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect receipt",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.78
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.44
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 28.37
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Provider & execution details",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 18.97
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 23.47
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.96
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.38
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.97
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.84
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.06
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.21
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate handoff failure",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.36
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate a new handoff offer",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 16.65
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.79
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Show routine peer updates",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.98
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Collapse routine peer updates",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.97
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.31
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 34.38
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.33
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 36.22
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 29.17
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.28
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.7
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 32.38
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.69
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.39
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.64
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate interruption before receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.01
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 34.15
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 17.23
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 23.47
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.44
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.36
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate read-only receipt lookup",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.5
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.81
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.56
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.83
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.95
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.61
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.51
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.28
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.13
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.01
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Deny action",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.79
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.76
+        }
+      ],
+      "probes": [
+        {
+          "label": "pending handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 25.96
+        },
+        {
+          "label": "accepted handoff",
+          "target": "owner",
+          "text": "Ivo",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 22.37
+        },
+        {
+          "label": "artifact ready",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 455.5,
+          "bottom": 478,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 25.25
+        },
+        {
+          "label": "approval pending",
+          "target": "action",
+          "text": "Create issue \u00b7 approval required",
+          "top": 626,
+          "bottom": 648.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 25.07
+        },
+        {
+          "label": "completed",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 455.5,
+          "bottom": 478,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 25.53
+        },
+        {
+          "label": "completed",
+          "target": "action",
+          "text": "Create issue \u00b7 receipt available",
+          "top": 626,
+          "bottom": 648.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 24.43
+        },
+        {
+          "label": "failed handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 25.61
+        },
+        {
+          "label": "failed handoff",
+          "target": "error",
+          "text": "Handoff failed. Mara retains ownership. Ivo has not started.",
+          "top": 302,
+          "bottom": 352.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 26.5
+        },
+        {
+          "label": "unknown outcome",
+          "target": "owner",
+          "text": "Ivo",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 29.96
+        },
+        {
+          "label": "unknown outcome",
+          "target": "error",
+          "text": "Action outcome unknown. The brief is ready, but completion is unconfirmed. Do not retry. Inspect unresolved action",
+          "top": 302,
+          "bottom": 406.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 27.48
+        },
+        {
+          "label": "unknown outcome",
+          "target": "action",
+          "text": "Create issue \u00b7 outcome unknown",
+          "top": 748.5,
+          "bottom": 771,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 27.79
+        }
+      ],
+      "checks": [
+        {
+          "label": "Browser loads only the recorded prototype bytes",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Pending handoff keeps sender ownership",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Pending handoff exposes no specialist work updates",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Receiving-agent acceptance transfers ownership exactly once",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Accepted specialist work makes routine updates available",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Clarification yields the fixed artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Artifact has both inspectable citations and provenance",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before destination connection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Exact action binds destination, content, authority, scope, duration and attempt",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval records a decision before any simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completion receipt is linked to one approved action and retained artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "completion: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "One task, one specialist start, one simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Identity, role, provider, execution location and unavailable capabilities are distinct",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Failed handoff retains Mara and starts no specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Accepted work updates open and collapse after a failed offer",
+          "verdict": "PASS"
+        },
+        {
+          "label": "accepted handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending approval: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before artifact inspection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "unknown outcome: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action preserves brief and does not offer retry or a completion receipt",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action opened from .error restores its exact opener",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action opened from .work-panel restores its exact opener",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Read-only lookup finds the original receipt without repeating the effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "denial: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Denial retains the artifact and creates nothing",
+          "verdict": "PASS"
+        },
+        {
+          "label": "No document horizontal overflow",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Old onboarding data is preserved and refused",
+          "verdict": "PASS"
+        },
+        {
+          "label": "No browser exceptions or external requests",
+          "verdict": "PASS"
+        },
+        {
+          "label": "All reloads and probe pages use recorded source",
+          "verdict": "PASS"
+        }
+      ],
+      "screenshots": [],
+      "errors": [],
+      "externalRequests": [],
+      "sourceAssets": {
+        "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
+        "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
+        "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
+      },
+      "sourceErrors": []
+    },
+    {
+      "variant": "B",
+      "mode": "mouse",
+      "viewport": {
+        "width": 1440,
+        "height": 1080
+      },
+      "verdict": "PASS",
+      "canonical": {
+        "humanActivations": 10,
+        "setupActivations": 3,
+        "navigationChanges": 0,
+        "detailOpenings": 5,
+        "researcherControls": 4,
+        "keys": 0
+      },
+      "interactions": [
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 17.61
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 28.3
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.82
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 26.48
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 23.07
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 10.38
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.69
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 13.53
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.79
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 32.29
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.53
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 34.17
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.13
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 15.45
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate completion receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.27
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect receipt",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 32.97
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.95
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.65
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Provider & execution details",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 15.6
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 24.18
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.06
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.23
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.17
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.54
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 28.9
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 38.11
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate handoff failure",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.06
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate a new handoff offer",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 14.41
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.88
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 35.32
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.62
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.74
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 37.99
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 32.69
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.68
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.99
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.38
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.74
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.84
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.19
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate interruption before receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.69
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 36.88
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 16.31
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 24.79
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.87
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.8
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate read-only receipt lookup",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.96
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.21
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.71
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.19
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.59
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.11
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.96
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.01
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.38
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.57
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Deny action",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 36.11
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.14
+        }
+      ],
+      "probes": [
+        {
+          "label": "pending handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 25.4
+        },
+        {
+          "label": "accepted handoff",
+          "target": "owner",
+          "text": "Ivo",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 24.38
+        },
+        {
+          "label": "artifact ready",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 705.5,
+          "bottom": 728,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 24.2
+        },
+        {
+          "label": "approval pending",
+          "target": "action",
+          "text": "Create issue \u00b7 approval required",
+          "top": 876,
+          "bottom": 898.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 23.99
+        },
+        {
+          "label": "completed",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 705.5,
+          "bottom": 728,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 23.47
+        },
+        {
+          "label": "completed",
+          "target": "action",
+          "text": "Create issue \u00b7 receipt available",
+          "top": 876,
+          "bottom": 898.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 25.23
+        },
+        {
+          "label": "failed handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 24.04
+        },
+        {
+          "label": "failed handoff",
+          "target": "error",
+          "text": "Handoff failed. Mara retains ownership. Ivo has not started.",
+          "top": 302,
+          "bottom": 352.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 24.51
+        },
+        {
+          "label": "unknown outcome",
+          "target": "owner",
+          "text": "Ivo",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 22.85
+        },
+        {
+          "label": "unknown outcome",
+          "target": "error",
+          "text": "Action outcome unknown. The brief is ready, but completion is unconfirmed. Do not retry. Inspect unresolved action",
+          "top": 302,
+          "bottom": 406.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 24.45
+        },
+        {
+          "label": "unknown outcome",
+          "target": "action",
+          "text": "Create issue \u00b7 outcome unknown",
+          "top": 998.5,
+          "bottom": 1021,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 23.29
+        }
+      ],
+      "checks": [
+        {
+          "label": "Browser loads only the recorded prototype bytes",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Pending handoff keeps sender ownership",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Receiving-agent acceptance transfers ownership exactly once",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Clarification yields the fixed artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Artifact has both inspectable citations and provenance",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before destination connection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Exact action binds destination, content, authority, scope, duration and attempt",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval records a decision before any simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completion receipt is linked to one approved action and retained artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "completion: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "One task, one specialist start, one simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Identity, role, provider, execution location and unavailable capabilities are distinct",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Failed handoff retains Mara and starts no specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "accepted handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending approval: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before artifact inspection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "unknown outcome: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action preserves brief and does not offer retry or a completion receipt",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action opened from .error restores its exact opener",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action opened from .work-panel restores its exact opener",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Read-only lookup finds the original receipt without repeating the effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "denial: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Denial retains the artifact and creates nothing",
+          "verdict": "PASS"
+        },
+        {
+          "label": "No document horizontal overflow",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Old onboarding data is preserved and refused",
+          "verdict": "PASS"
+        },
+        {
+          "label": "No browser exceptions or external requests",
+          "verdict": "PASS"
+        },
+        {
+          "label": "All reloads and probe pages use recorded source",
+          "verdict": "PASS"
+        }
+      ],
+      "screenshots": [],
+      "errors": [],
+      "externalRequests": [],
+      "sourceAssets": {
+        "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
+        "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
+        "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
+      },
+      "sourceErrors": []
+    },
+    {
+      "variant": "C",
+      "mode": "mouse",
+      "viewport": {
+        "width": 1440,
+        "height": 1080
+      },
+      "verdict": "PASS",
+      "canonical": {
+        "humanActivations": 12,
+        "setupActivations": 3,
+        "navigationChanges": 4,
+        "detailOpenings": 5,
+        "researcherControls": 4,
+        "keys": 0
+      },
+      "interactions": [
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.11
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.63
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Start a request",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 34.17
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send request",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.06
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.75
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 36.43
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Open linked conversation",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 23.96
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.64
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.98
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 22.6
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.74
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 31.91
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 17.08
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.18
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.54
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 15.9
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate completion receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.87
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect receipt",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 34.16
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.05
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 37.91
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Provider & execution details",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 20.17
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 24.42
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.85
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.76
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.9
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Start a request",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.98
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.82
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.71
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 38.89
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate handoff failure",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.33
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate a new handoff offer",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 20.27
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.34
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 38.35
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Release readiness",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.99
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Open linked conversation",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.63
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.29
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.69
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 37.11
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 34.15
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.86
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.68
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.23
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.31
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.32
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.85
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate interruption before receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.48
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 37.88
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 21.94
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 24.21
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 34.7
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Close",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.63
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate read-only receipt lookup",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.56
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.79
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.02
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.06
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Start a request",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.48
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.32
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.46
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.21
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Open linked conversation",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.65
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": true,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.98
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.27
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 0,
+          "elapsedMs": 33.94
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Deny action",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.55
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 36.97
+        }
+      ],
+      "probes": [
+        {
+          "label": "pending handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 29.67
+        },
+        {
+          "label": "accepted handoff",
+          "target": "owner",
+          "text": "Ivo",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 28.23
+        },
+        {
+          "label": "artifact ready",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 661.5,
+          "bottom": 684,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 34.14
+        },
+        {
+          "label": "approval pending",
+          "target": "action",
+          "text": "Create issue \u00b7 approval required",
+          "top": 832,
+          "bottom": 854.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 33.15
+        },
+        {
+          "label": "completed",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 661.5,
+          "bottom": 684,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 27.3
+        },
+        {
+          "label": "completed",
+          "target": "action",
+          "text": "Create issue \u00b7 receipt available",
+          "top": 832,
+          "bottom": 854.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 30.99
+        },
+        {
+          "label": "failed handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 25.08
+        },
+        {
+          "label": "failed handoff",
+          "target": "error",
+          "text": "Handoff failed. Mara retains ownership. Ivo has not started.",
+          "top": 302,
+          "bottom": 352.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 29.66
+        },
+        {
+          "label": "unknown outcome",
+          "target": "owner",
+          "text": "Ivo",
+          "top": 243.5,
+          "bottom": 266,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 26.51
+        },
+        {
+          "label": "unknown outcome",
+          "target": "error",
+          "text": "Action outcome unknown. The brief is ready, but completion is unconfirmed. Do not retry. Inspect unresolved action",
+          "top": 302,
+          "bottom": 406.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 22.09
+        },
+        {
+          "label": "unknown outcome",
+          "target": "action",
+          "text": "Create issue \u00b7 outcome unknown",
+          "top": 954.5,
+          "bottom": 977,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 28.5
+        }
+      ],
+      "checks": [
+        {
+          "label": "Browser loads only the recorded prototype bytes",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Pending handoff keeps sender ownership",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Receiving-agent acceptance transfers ownership exactly once",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Clarification yields the fixed artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Artifact has both inspectable citations and provenance",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before destination connection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Exact action binds destination, content, authority, scope, duration and attempt",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval records a decision before any simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completion receipt is linked to one approved action and retained artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "completion: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "One task, one specialist start, one simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Identity, role, provider, execution location and unavailable capabilities are distinct",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Failed handoff retains Mara and starts no specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "accepted handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending approval: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before artifact inspection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "unknown outcome: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action preserves brief and does not offer retry or a completion receipt",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action opened from .error restores its exact opener",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action opened from .work-panel restores its exact opener",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Read-only lookup finds the original receipt without repeating the effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "denial: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Denial retains the artifact and creates nothing",
+          "verdict": "PASS"
+        },
+        {
+          "label": "No document horizontal overflow",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Old onboarding data is preserved and refused",
+          "verdict": "PASS"
+        },
+        {
+          "label": "No browser exceptions or external requests",
+          "verdict": "PASS"
+        },
+        {
+          "label": "All reloads and probe pages use recorded source",
+          "verdict": "PASS"
+        }
+      ],
+      "screenshots": [],
+      "errors": [],
+      "externalRequests": [],
+      "sourceAssets": {
+        "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
+        "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
+        "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
+      },
+      "sourceErrors": []
+    },
+    {
+      "variant": "A",
+      "mode": "keyboard",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "verdict": "PASS",
+      "canonical": {
+        "humanActivations": 10,
+        "setupActivations": 3,
+        "navigationChanges": 0,
+        "detailOpenings": 5,
+        "researcherControls": 4,
+        "keys": 40
+      },
+      "interactions": [
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 5,
+          "elapsedMs": 32.19
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 9.64
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 19.03
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 28.5
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 11.36
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 19.55
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.18
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 3,
+          "elapsedMs": 22.22
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 10.51
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 8.86
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 15.75
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 9.68
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 9.1
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate completion receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 27.66
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect receipt",
+          "navigation": false,
+          "detail": true,
+          "tabs": 5,
+          "elapsedMs": 18.73
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.67
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Provider & execution details",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 17.43
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 38.44
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 7.02
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 9.97
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 18.56
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 23.87
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.91
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate handoff failure",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.24
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate a new handoff offer",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 27.31
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.09
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Show routine peer updates",
+          "navigation": false,
+          "detail": false,
+          "tabs": 2,
+          "elapsedMs": 18.17
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Collapse routine peer updates",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 5.54
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 26.4
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 21.91
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.62
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 34.94
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 4,
+          "elapsedMs": 24.75
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 9.33
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 12,
+          "elapsedMs": 40.1
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 9.04
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 6.88
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate interruption before receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 23.93
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.87
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 15.33
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 5,
+          "elapsedMs": 17.92
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate read-only receipt lookup",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 37.84
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.69
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 7.41
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 8.19
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 15.17
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 26.37
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.47
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 17.79
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 30.48
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 4,
+          "elapsedMs": 15.88
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Deny action",
+          "navigation": false,
+          "detail": false,
+          "tabs": 2,
+          "elapsedMs": 10.85
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.66
+        }
+      ],
+      "probes": [
+        {
+          "label": "pending handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 305,
+          "bottom": 327.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 22.77
+        },
+        {
+          "label": "accepted handoff",
+          "target": "owner",
+          "text": "Ivo",
+          "top": 305,
+          "bottom": 327.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 22.4
+        },
+        {
+          "label": "artifact ready",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 1153.7,
+          "bottom": 1176.2,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 23.79
+        },
+        {
+          "label": "approval pending",
+          "target": "action",
+          "text": "Create issue \u00b7 approval required",
+          "top": 1324.2,
+          "bottom": 1346.7,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 23.55
+        },
+        {
+          "label": "completed",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 1153.7,
+          "bottom": 1176.2,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 23.8
+        },
+        {
+          "label": "completed",
+          "target": "action",
+          "text": "Create issue \u00b7 receipt available",
+          "top": 1324.2,
+          "bottom": 1346.7,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 22.13
+        },
+        {
+          "label": "failed handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 305,
+          "bottom": 327.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 24.34
+        },
+        {
+          "label": "failed handoff",
+          "target": "error",
+          "text": "Handoff failed. Mara retains ownership. Ivo has not started.",
+          "top": 477.5,
+          "bottom": 550.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 25.53
+        },
+        {
+          "label": "unknown outcome",
+          "target": "owner",
+          "text": "Ivo",
+          "top": 305,
+          "bottom": 327.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 24.29
+        },
+        {
+          "label": "unknown outcome",
+          "target": "error",
+          "text": "Action outcome unknown. The brief is ready, but completion is unconfirmed. Do not retry. Inspect unresolved action",
+          "top": 477.5,
+          "bottom": 604.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 22.3
+        },
+        {
+          "label": "unknown outcome",
+          "target": "action",
+          "text": "Create issue \u00b7 outcome unknown",
+          "top": 1469.2,
+          "bottom": 1491.7,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 24.92
+        }
+      ],
+      "checks": [
+        {
+          "label": "Browser loads only the recorded prototype bytes",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Pending handoff keeps sender ownership",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Pending handoff exposes no specialist work updates",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Receiving-agent acceptance transfers ownership exactly once",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Accepted specialist work makes routine updates available",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Clarification yields the fixed artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Artifact has both inspectable citations and provenance",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before destination connection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Exact action binds destination, content, authority, scope, duration and attempt",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval records a decision before any simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completion receipt is linked to one approved action and retained artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "completion: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "One task, one specialist start, one simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Identity, role, provider, execution location and unavailable capabilities are distinct",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Failed handoff retains Mara and starts no specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Accepted work updates open and collapse after a failed offer",
+          "verdict": "PASS"
+        },
+        {
+          "label": "accepted handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending approval: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before artifact inspection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Modal traps keyboard focus in both directions",
+          "verdict": "PASS"
+        },
+        {
+          "label": "unknown outcome: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action preserves brief and does not offer retry or a completion receipt",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action opened from .error restores its exact opener",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action opened from .work-panel restores its exact opener",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Read-only lookup finds the original receipt without repeating the effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "denial: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Denial retains the artifact and creates nothing",
+          "verdict": "PASS"
+        },
+        {
+          "label": "No document horizontal overflow",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Old onboarding data is preserved and refused",
+          "verdict": "PASS"
+        },
+        {
+          "label": "No browser exceptions or external requests",
+          "verdict": "PASS"
+        },
+        {
+          "label": "All reloads and probe pages use recorded source",
+          "verdict": "PASS"
+        }
+      ],
+      "screenshots": [],
+      "errors": [],
+      "externalRequests": [],
+      "sourceAssets": {
+        "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
+        "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
+        "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
+      },
+      "sourceErrors": []
+    },
+    {
+      "variant": "B",
+      "mode": "keyboard",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "verdict": "PASS",
+      "canonical": {
+        "humanActivations": 10,
+        "setupActivations": 3,
+        "navigationChanges": 0,
+        "detailOpenings": 5,
+        "researcherControls": 4,
+        "keys": 42
+      },
+      "interactions": [
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 5,
+          "elapsedMs": 31.55
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 13.55
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 22.27
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 36.6
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 15.67
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 17.09
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.96
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 4,
+          "elapsedMs": 21.79
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 10.14
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 9.06
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 11.15
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 9.1
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 8.97
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate completion receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 28.47
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect receipt",
+          "navigation": false,
+          "detail": true,
+          "tabs": 6,
+          "elapsedMs": 20.04
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 40.93
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Provider & execution details",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 15.48
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 40.69
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 7.35
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 7.4
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 16.3
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 24.55
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 35.41
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate handoff failure",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.5
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate a new handoff offer",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.47
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.38
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 34.73
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 21.36
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 26.14
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 36.03
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 5,
+          "elapsedMs": 23.24
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 8.69
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 15,
+          "elapsedMs": 44.61
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 7.88
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 6.25
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate interruption before receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 26.17
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 35.24
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 14.96
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect unresolved action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 6,
+          "elapsedMs": 18.64
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate read-only receipt lookup",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 35.32
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 29.3
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 7.05
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 9.06
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 16.03
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.63
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.83
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 14.85
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 33.3
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 5,
+          "elapsedMs": 16.31
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Deny action",
+          "navigation": false,
+          "detail": false,
+          "tabs": 2,
+          "elapsedMs": 10.48
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.56
+        }
+      ],
+      "probes": [
+        {
+          "label": "pending handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 305,
+          "bottom": 327.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 24.09
+        },
+        {
+          "label": "accepted handoff",
+          "target": "owner",
+          "text": "Ivo",
+          "top": 305,
+          "bottom": 327.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 24.8
+        },
+        {
+          "label": "artifact ready",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 1399.7,
+          "bottom": 1422.2,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 24.47
+        },
+        {
+          "label": "approval pending",
+          "target": "action",
+          "text": "Create issue \u00b7 approval required",
+          "top": 1570.2,
+          "bottom": 1592.7,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 21.74
+        },
+        {
+          "label": "completed",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 1399.7,
+          "bottom": 1422.2,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 22.72
+        },
+        {
+          "label": "completed",
+          "target": "action",
+          "text": "Create issue \u00b7 receipt available",
+          "top": 1570.2,
+          "bottom": 1592.7,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 23.31
+        },
+        {
+          "label": "failed handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 305,
+          "bottom": 327.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 22.61
+        },
+        {
+          "label": "failed handoff",
+          "target": "error",
+          "text": "Handoff failed. Mara retains ownership. Ivo has not started.",
+          "top": 477.5,
+          "bottom": 550.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 21.38
+        },
+        {
+          "label": "unknown outcome",
+          "target": "owner",
+          "text": "Ivo",
+          "top": 305,
+          "bottom": 327.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 27.56
+        },
+        {
+          "label": "unknown outcome",
+          "target": "error",
+          "text": "Action outcome unknown. The brief is ready, but completion is unconfirmed. Do not retry. Inspect unresolved action",
+          "top": 477.5,
+          "bottom": 604.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 22.55
+        },
+        {
+          "label": "unknown outcome",
+          "target": "action",
+          "text": "Create issue \u00b7 outcome unknown",
+          "top": 1715.2,
+          "bottom": 1737.7,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 20.65
+        }
+      ],
+      "checks": [
+        {
+          "label": "Browser loads only the recorded prototype bytes",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Pending handoff keeps sender ownership",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Receiving-agent acceptance transfers ownership exactly once",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Clarification yields the fixed artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Artifact has both inspectable citations and provenance",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before destination connection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Exact action binds destination, content, authority, scope, duration and attempt",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval records a decision before any simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completion receipt is linked to one approved action and retained artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "completion: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "One task, one specialist start, one simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Identity, role, provider, execution location and unavailable capabilities are distinct",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Failed handoff retains Mara and starts no specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "accepted handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending approval: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before artifact inspection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Modal traps keyboard focus in both directions",
+          "verdict": "PASS"
+        },
+        {
+          "label": "unknown outcome: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action preserves brief and does not offer retry or a completion receipt",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action opened from .error restores its exact opener",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Unknown action opened from .work-panel restores its exact opener",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Read-only lookup finds the original receipt without repeating the effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "denial: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Denial retains the artifact and creates nothing",
+          "verdict": "PASS"
+        },
+        {
+          "label": "No document horizontal overflow",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Old onboarding data is preserved and refused",
+          "verdict": "PASS"
+        },
+        {
+          "label": "No browser exceptions or external requests",
+          "verdict": "PASS"
+        },
+        {
+          "label": "All reloads and probe pages use recorded source",
+          "verdict": "PASS"
+        }
+      ],
+      "screenshots": [],
+      "errors": [],
+      "externalRequests": [],
+      "sourceAssets": {
+        "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
+        "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
+        "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
+      },
+      "sourceErrors": []
+    },
+    {
+      "variant": "C",
+      "mode": "keyboard",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "verdict": "FAIL",
+      "canonical": {
+        "humanActivations": 12,
+        "setupActivations": 3,
+        "navigationChanges": 4,
+        "detailOpenings": 5,
+        "researcherControls": 4,
+        "keys": 51
+      },
+      "interactions": [
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 5,
+          "elapsedMs": 31.39
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 12.22
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Start a request",
+          "navigation": true,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 16.55
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send request",
+          "navigation": true,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 9.29
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.88
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 9.13
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Open linked conversation",
+          "navigation": true,
+          "detail": false,
+          "tabs": 5,
+          "elapsedMs": 21.43
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": true,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 7.66
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 25.8
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 6,
+          "elapsedMs": 27.88
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S1] northstar/launchpad \u00b7 PR #42",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 7.29
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "[S2] northstar/launchpad \u00b7 Issue #17",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 7.85
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 10.23
+        },
+        {
+          "phase": "canonical",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 6.8
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Approve this exact action once",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 9.23
+        },
+        {
+          "phase": "canonical",
+          "category": "research",
+          "name": "Simulate completion receipt",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 27.17
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Inspect receipt",
+          "navigation": false,
+          "detail": true,
+          "tabs": 8,
+          "elapsedMs": 22.81
+        },
+        {
+          "phase": "canonical",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 27.59
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Provider & execution details",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 16.23
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Restart this simulated scenario",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 28.07
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Use demonstration environment",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 6.75
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Allow this source read",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 9.2
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Start a request",
+          "navigation": true,
+          "detail": false,
+          "tabs": 4,
+          "elapsedMs": 16.31
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send request",
+          "navigation": true,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 7.58
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Mara offering handoff",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 34.29
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 39.33
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate handoff failure",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.32
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate a new handoff offer",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 31.24
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo accepting",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 32.99
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 38.07
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Release readiness",
+          "navigation": true,
+          "detail": false,
+          "tabs": 3,
+          "elapsedMs": 19.88
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Open linked conversation",
+          "navigation": true,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 10.31
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Send reply",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 7.2
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Simulate Ivo delivering brief",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 23.91
+        },
+        {
+          "phase": "failure-retention",
+          "category": "research",
+          "name": "Repeat last notification",
+          "navigation": false,
+          "detail": false,
+          "tabs": 0,
+          "elapsedMs": 38.48
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 7,
+          "elapsedMs": 25.49
+        },
+        {
+          "phase": "failure-retention",
+          "category": "setup",
+          "name": "Connect this demonstration destination",
+          "navigation": false,
+          "detail": false,
+          "tabs": 1,
+          "elapsedMs": 8.43
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Inspect release brief",
+          "navigation": false,
+          "detail": true,
+          "tabs": 16,
+          "elapsedMs": 47.25
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Escape closes detail"
+        },
+        {
+          "phase": "failure-retention",
+          "category": "human",
+          "name": "Review exact action",
+          "navigation": false,
+          "detail": true,
+          "tabs": 1,
+          "elapsedMs": 9.01
+        }
+      ],
+      "probes": [
+        {
+          "label": "pending handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 305,
+          "bottom": 327.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 27.5
+        },
+        {
+          "label": "accepted handoff",
+          "target": "owner",
+          "text": "Ivo",
+          "top": 305,
+          "bottom": 327.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 26.95
+        },
+        {
+          "label": "artifact ready",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 916,
+          "bottom": 938.5,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 25.1
+        },
+        {
+          "label": "approval pending",
+          "target": "action",
+          "text": "Create issue \u00b7 approval required",
+          "top": 1086.5,
+          "bottom": 1109,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 26.89
+        },
+        {
+          "label": "completed",
+          "target": "result",
+          "text": "Release brief \u00b7 v1",
+          "top": 956.5,
+          "bottom": 979,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 26.91
+        },
+        {
+          "label": "completed",
+          "target": "action",
+          "text": "Create issue \u00b7 receipt available",
+          "top": 1127,
+          "bottom": 1149.5,
+          "initiallyInViewport": false,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 1,
+          "elapsedMs": 26.76
+        },
+        {
+          "label": "failed handoff",
+          "target": "owner",
+          "text": "Mara",
+          "top": 305,
+          "bottom": 327.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 27.8
+        },
+        {
+          "label": "failed handoff",
+          "target": "error",
+          "text": "Handoff failed. Mara retains ownership. Ivo has not started.",
+          "top": 477.5,
+          "bottom": 550.5,
+          "initiallyInViewport": true,
+          "visible": true,
+          "deliberateOpenings": 0,
+          "scrolls": 0,
+          "elapsedMs": 25.83
+        }
+      ],
+      "checks": [
+        {
+          "label": "Browser loads only the recorded prototype bytes",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Pending handoff keeps sender ownership",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Receiving-agent acceptance transfers ownership exactly once",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Clarification yields the fixed artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Artifact has both inspectable citations and provenance",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before destination connection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Exact action binds destination, content, authority, scope, duration and attempt",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval records a decision before any simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completion receipt is linked to one approved action and retained artifact",
+          "verdict": "PASS"
+        },
+        {
+          "label": "completion: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "One task, one specialist start, one simulated effect",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Identity, role, provider, execution location and unavailable capabilities are distinct",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Connection setup precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Source authority precedes request availability and task creation",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Completed setup has started no task or specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Failed handoff retains Mara and starts no specialist",
+          "verdict": "PASS"
+        },
+        {
+          "label": "accepted handoff: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "pending approval: refresh and repeated notification do not repeat work",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Approval disabled before artifact inspection",
+          "verdict": "PASS"
+        },
+        {
+          "label": "Modal traps keyboard focus in both directions",
+          "verdict": "PASS"
+        }
+      ],
+      "screenshots": [
+        "focus-race.png"
+      ],
+      "errors": [],
+      "externalRequests": [],
+      "sourceAssets": {
+        "prototypes/index.html": "fe715e02da2472c4a7b9e5565359ffa1672f842395b781458e7e1b0b902cc543",
+        "prototypes/style.css": "255b3167cc8aa111baafed3541b9ebd75cdf99551bc49305e7a4d34e6bb74c7d",
+        "prototypes/app.js": "9e11c528a8619c934c3485263dd16bda55a84ca7c237de3fca5f699b0df1c73a",
+        "prototypes/scenario.js": "fda87877c0b1a7a610dfac564a74deb2fcfdb17532b7a95fa0d2c87a29033f35"
+      },
+      "sourceErrors": [],
+      "failure": "AssertionError [ERR_ASSERTION]: target exists: Approve this exact action once\n\n0 !== 1\n\n    at activate (file:///home/gannonh/dev/agentis-worktrees/kat-3254-research-prove-the-conversational-team-experience-before/docs/research/kat-3254/verify.mjs:76:12)\n    at async run (file:///home/gannonh/dev/agentis-worktrees/kat-3254-research-prove-the-conversational-team-experience-before/docs/research/kat-3254/verify.mjs:303:5)\n    at async file:///home/gannonh/dev/agentis-worktrees/kat-3254-research-prove-the-conversational-team-experience-before/docs/research/kat-3254/verify.mjs:357:84"
+    }
+  ],
+  "unverified": [
+    "Live provider eligibility",
+    "Authentication",
+    "Authorization enforcement",
+    "External recovery",
+    "Scheduling",
+    "Computer control",
+    "Business value",
+    "Human usability",
+    "macOS product support",
+    "Screen reader conformance"
+  ],
+  "verdict": "FAIL",
+  "archiveNote": "Intermediate screenshots are omitted. Only the final focus-race screenshot is retained; the final passing capture has its own results.json."
+}
