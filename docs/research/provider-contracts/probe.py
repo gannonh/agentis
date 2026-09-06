@@ -56,6 +56,8 @@ print(json.dumps({"event": "start", "pid": proc.pid, "cwd": str(scratch),
 print('Send JSON objects on stdin. Replace "$CWD" with the reported scratch path.', flush=True)
 deadline = time.monotonic() + args.seconds
 stderr_lines = 0
+provider_closed = False
+stderr_closed = False
 try:
     while time.monotonic() < deadline:
         try:
@@ -80,10 +82,26 @@ try:
         elif kind == "stderr":
             stderr_lines += 1
         elif kind == "provider-closed":
+            provider_closed = True
+        elif kind == "stderr-closed":
+            stderr_closed = True
+        if provider_closed and stderr_closed:
             break
 except (KeyboardInterrupt, BrokenPipeError):
     pass
 finally:
+    drain_deadline = time.monotonic() + 1.0
+    while not (provider_closed and stderr_closed) and time.monotonic() < drain_deadline:
+        try:
+            kind, line = events.get(timeout=min(0.1, max(0.001, drain_deadline - time.monotonic())))
+        except queue.Empty:
+            break
+        if kind == "stderr":
+            stderr_lines += 1
+        elif kind == "stderr-closed":
+            stderr_closed = True
+        elif kind == "provider-closed":
+            provider_closed = True
     try:
         os.killpg(proc.pid, signal.SIGTERM)
     except ProcessLookupError:
@@ -91,7 +109,11 @@ finally:
     try:
         proc.wait(timeout=3)
     except subprocess.TimeoutExpired:
+        pass
+    try:
         os.killpg(proc.pid, signal.SIGKILL)
-        proc.wait()
+    except ProcessLookupError:
+        pass
+    proc.wait()
     print(json.dumps({"event": "console-stopped", "exit": proc.returncode,
                       "stderrLinesOmitted": stderr_lines, "scratchPreserved": str(scratch)}), flush=True)
