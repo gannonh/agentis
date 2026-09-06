@@ -1,11 +1,11 @@
 {
   "issue": "KAT-3252",
   "kind": "disposable counterexamples, not runtime verification",
-  "utc": "2026-09-06T16:39:39Z",
-  "host": "Linux-7.1.9-arch1-2-x86_64-with-glibc2.44",
-  "python": "3.14.7",
-  "probe_sha256": "5d4f547bd16dd9eec963199233757e9791ac7ebee6e17b4ab10a0f0998a5e97d",
-  "source_commit": "2aa739451c9461823e69fbcc61545efbaab1e061",
+  "utc": "2026-09-06T18:50:12Z",
+  "host": "Linux-6.12.94+-x86_64-with-glibc2.39",
+  "python": "3.12.3",
+  "probe_sha256": "87eda06630e7b636aeb5175b69f86f4422e6106ee47238715da7b1a3bb863051",
+  "source_commit": "6b1abe256cab0df75a5d3af033a2ce5a366384d2",
   "results": [
     {
       "case": "credential_read_inherited",
@@ -63,15 +63,9 @@
     },
     {
       "case": "browser_shared_session",
-      "expected": "synthetic owner cookie authorizes browser request",
-      "observed": true,
-      "verdict": "PASS"
-    },
-    {
-      "case": "browser_group_cleanup",
-      "expected": "no live group members",
-      "observed": [],
-      "verdict": "PASS"
+      "expected": "browser installed",
+      "observed": "unavailable",
+      "verdict": "UNVERIFIED"
     },
     {
       "case": "crash_after_launch",
