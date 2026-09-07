@@ -78,6 +78,7 @@ const fakeDocker = () => {
 afterEach(() => {
   process.env.PATH = originalPath;
   delete process.env.AGENTIS_TEST_DOCKER_LOG;
+  delete process.env.AGENTIS_TEST_PREFLIGHT_HOLD;
   delete process.env.AGENTIS_CODEX_STUB;
   delete process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS;
 });
@@ -197,7 +198,7 @@ describe.sequential("Run containers", () => {
     expect(network).toContain("com.docker.network.bridge.gateway_mode_ipv4=isolated");
     expect(network).toContain("--ipv6=false");
     const launch = commands.find((args) => args.includes("app-server")) ?? [];
-    expect(launch).toContain("CODEX_HOME=/tmp/codex-home");
+    expect(launch).toContain("CODEX_HOME=/provider-home");
     expect(launch).toContain("agentis-net-live-test");
     expect(
       launch.some(
@@ -452,5 +453,88 @@ describe.sequential("Run containers", () => {
     expect(
       commands[0]?.some((arg) => typeof arg === "string" && arg.startsWith("type=bind,")),
     ).toBe(false);
+  });
+  it("does not launch after stop-all during native version preflight", async () => {
+    const { root, log } = fakeDocker();
+    process.env.AGENTIS_TEST_PREFLIGHT_HOLD = "1";
+    const endpoint = new URL(`http://127.0.0.1:${await port()}`);
+    const server = await Effect.runPromise(
+      startServer({
+        endpoint,
+        dataRoot: root,
+        workspace: join(root, "scratch"),
+        provider: "codex",
+        executionBoundary: "docker-desktop-run-container",
+      }),
+    );
+    const owner = await Effect.runPromise(loadOrCreateOwner(root));
+    try {
+      const submitted = command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "cancel before spawn" },
+      });
+      await waitForLog(log, (commands) => commands.some((args) => args.includes("--version")));
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "stop_all" },
+      });
+      writeFileSync(`${log}.release`, "");
+      const receipt = await submitted;
+      expect(await runStatus(endpoint, owner.token, receipt.runId ?? "")).toBe("canceled");
+      const commands = readFileSync(log, "utf8")
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line) as string[]);
+      expect(commands.some((args) => args.includes("app-server"))).toBe(false);
+    } finally {
+      writeFileSync(`${log}.release`, "");
+      await server.close();
+    }
+  });
+  it("does not load a session after stop-all during native version preflight", async () => {
+    const { root, log } = fakeDocker();
+    process.env.AGENTIS_CODEX_STUB = stub;
+    const endpoint = new URL(`http://127.0.0.1:${await port()}`);
+    const server = await Effect.runPromise(
+      startServer({
+        endpoint,
+        dataRoot: root,
+        workspace: join(root, "scratch"),
+        provider: "codex",
+        executionBoundary: "docker-desktop-run-container",
+      }),
+    );
+    const owner = await Effect.runPromise(loadOrCreateOwner(root));
+    try {
+      const submitted = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "smoke" },
+      });
+      if (!submitted.runId) throw new Error("missing run");
+      await waitForStatus(endpoint, owner.token, submitted.runId, "succeeded");
+      delete process.env.AGENTIS_CODEX_STUB;
+      process.env.AGENTIS_TEST_PREFLIGHT_HOLD = "1";
+      writeFileSync(log, "");
+      const loading = command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "load_session", runId: submitted.runId },
+      });
+      await waitForLog(log, (commands) => commands.some((args) => args.includes("--version")));
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "stop_all" },
+      });
+      writeFileSync(`${log}.release`, "");
+      await loading;
+      expect(await runStatus(endpoint, owner.token, submitted.runId)).toBe("succeeded");
+      const commands = readFileSync(log, "utf8")
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line) as string[]);
+      expect(commands.some((args) => args.includes("app-server"))).toBe(false);
+    } finally {
+      writeFileSync(`${log}.release`, "");
+      await server.close();
+    }
   });
 });

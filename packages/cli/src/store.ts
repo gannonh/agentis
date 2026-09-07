@@ -1,3 +1,4 @@
+import { ProviderState } from "./provider-contract.js";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -33,12 +34,11 @@ import {
   type IdempotencyKey,
   type PrincipalKind,
   type RunId,
-  type TaskId,
+  TaskId,
 } from "./schema.js";
 import {
   APPROVAL_TTL_MS,
-  BOT_NAME,
-  BOT_ROLE,
+  CURSOR_CLI_PIN,
   CODEX_AUTH_MODE,
   CODEX_CLI_PIN,
   CODEX_TRANSPORT,
@@ -91,6 +91,7 @@ export type RunRow = {
   readonly status: typeof RunStatus.Type;
   readonly waitingReason: string;
   readonly frozen: FrozenConfig;
+  readonly providerState: ProviderState;
   readonly providerSessionId: string | null;
   readonly fixture: typeof FixtureKind.Type | null;
   readonly actionCount: number;
@@ -183,6 +184,7 @@ CREATE TABLE IF NOT EXISTS runs (
   status TEXT NOT NULL,
   waiting_reason TEXT NOT NULL,
   frozen_json TEXT NOT NULL,
+  provider_state TEXT NOT NULL DEFAULT '{"loadStatus":"idle","capabilities":[],"history":[],"pendingPrompt":null,"failure":null}',
   provider_session_id TEXT,
   fixture TEXT,
   action_count INTEGER NOT NULL,
@@ -465,6 +467,77 @@ const dispatch = (db: DatabaseSync, input: ApplyInput): CommandReceipt => {
       return answerInput(db, commandId, input, command);
     case "cancel_run":
       return cancelRun(db, commandId, input, command);
+    case "load_session": {
+      ownerOnly(input.principal, "load_session");
+      const target = row<{
+        task_id: string;
+        status: string;
+        provider_session_id: string | null;
+        frozen_json: string;
+        provider_state: string;
+      }>(
+        db,
+        "SELECT task_id,status,provider_session_id,frozen_json,provider_state FROM runs WHERE id = ?",
+        [command.runId],
+      );
+      if (
+        !target ||
+        !target.provider_session_id ||
+        (!isTerminal(target.status) && target.status !== "interrupted")
+      )
+        return receiptOf({
+          commandId,
+          replayed: false,
+          accepted: false,
+          error: "session loading requires an inactive run with a provider session",
+          effects: [],
+        });
+      const frozen = Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(target.frozen_json));
+      if (frozen.provider === "fake")
+        return receiptOf({
+          commandId,
+          replayed: false,
+          accepted: false,
+          error: "unsupported-provider: fake has no sessions",
+          errorCode: "unsupported-provider",
+          effects: [],
+        });
+      const stopped = row<{ latched: number }>(db, "SELECT latched FROM stop_all WHERE id=1", []);
+      const loading =
+        Schema.decodeUnknownSync(ProviderState)(JSON.parse(target.provider_state)).loadStatus ===
+        "loading";
+      const counts = row<{ total: number; bot: number }>(
+        db,
+        `SELECT COUNT(*) AS total, COALESCE(SUM(json_extract(frozen_json,'$.bot') = ?),0) AS bot FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling') OR json_extract(provider_state,'$.loadStatus')='loading'`,
+        [frozen.bot],
+      );
+      if (
+        stopped?.latched === 1 ||
+        loading ||
+        (counts?.total ?? 0) >= MAX_ACTIVE_RUNS ||
+        (counts?.bot ?? 0) >= MAX_ACTIVE_RUNS_PER_BOT
+      )
+        return receiptOf({
+          commandId,
+          replayed: false,
+          accepted: false,
+          error: "session load blocked by stop-all or active provider operation",
+          effects: [],
+        });
+      run(
+        db,
+        "UPDATE runs SET provider_state=json_set(provider_state,'$.loadStatus','loading') WHERE id=?",
+        [command.runId],
+      );
+      return receiptOf({
+        commandId,
+        replayed: false,
+        accepted: true,
+        runId: command.runId,
+        taskId: Schema.decodeUnknownSync(TaskId)(target.task_id),
+        effects: ["load_session"],
+      });
+    }
     case "stop_all":
       return stopAll(db, commandId, input);
     default: {
@@ -481,6 +554,27 @@ const submitTask = (
   command: typeof SubmitTask.Type,
 ): CommandReceipt => {
   ownerOnly(input.principal, "submit_task");
+  if (command.attachments || command.mcpServers)
+    return receiptOf({
+      commandId,
+      replayed: false,
+      accepted: false,
+      errorCode: "unsupported-capability",
+      error: "attachments and MCP configuration are not available through Agentis",
+      effects: [],
+    });
+  const bot = command.bot ?? "mara";
+  if (bot !== "mara" && bot !== "ivo") {
+    return receiptOf({
+      commandId,
+      replayed: false,
+      accepted: false,
+      error: "unsupported-provider: unknown bot",
+      errorCode: "unsupported-provider",
+      effects: [],
+    });
+  }
+  const provider = input.provider === "fake" ? "fake" : bot === "ivo" ? "cursor" : "codex";
   const stop = row<{ latched: number }>(db, "SELECT latched FROM stop_all WHERE id = 1", []);
   if (stop?.latched === 1) {
     return receiptOf({
@@ -493,7 +587,7 @@ const submitTask = (
   }
   const active = row<{ n: number }>(
     db,
-    "SELECT COUNT(*) AS n FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')",
+    "SELECT COUNT(*) AS n FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling') OR json_extract(provider_state, '$.loadStatus') = 'loading'",
     [],
   );
   if ((active?.n ?? 0) >= MAX_ACTIVE_RUNS) {
@@ -507,8 +601,8 @@ const submitTask = (
   }
   const perBot = row<{ n: number }>(
     db,
-    "SELECT COUNT(*) AS n FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')",
-    [],
+    "SELECT COUNT(*) AS n FROM runs WHERE json_extract(frozen_json, '$.bot') = ? AND (status IN ('queued','running','waiting_approval','waiting_input','reconciling') OR json_extract(provider_state, '$.loadStatus') = 'loading')",
+    [bot],
   );
   if ((perBot?.n ?? 0) >= MAX_ACTIVE_RUNS_PER_BOT) {
     return receiptOf({
@@ -524,13 +618,26 @@ const submitTask = (
   const runId = newRunId();
   const workspaceId = join(input.workspaceId, "runs", runId);
   const frozen: FrozenConfig = {
-    provider: input.provider,
-    transport: input.provider === "codex" ? CODEX_TRANSPORT : "fake-in-process",
-    executableVersion: input.provider === "codex" ? CODEX_CLI_PIN : "fake-1",
-    model: input.provider === "codex" ? "gpt-5.6-sol" : "fake",
-    ...(input.provider === "codex" ? { effort: "medium" } : {}),
+    bot,
+    mode: command.mode ?? "agent",
+    provider,
+    transport:
+      provider === "codex"
+        ? CODEX_TRANSPORT
+        : provider === "cursor"
+          ? "acp-v1-jsonl-stdio"
+          : "fake-in-process",
+    executableVersion:
+      provider === "codex" ? CODEX_CLI_PIN : provider === "cursor" ? CURSOR_CLI_PIN : "fake-1",
+    model:
+      provider === "codex"
+        ? "gpt-5.6-sol"
+        : provider === "cursor"
+          ? "gpt-5.6-sol[context=272k,reasoning=medium,fast=false]"
+          : "fake",
+    ...(provider === "codex" ? { effort: "medium" } : {}),
     executionBoundary: input.executionBoundary,
-    authMode: input.provider === "codex" ? CODEX_AUTH_MODE : "none",
+    authMode: provider === "codex" ? CODEX_AUTH_MODE : provider === "cursor" ? "api-key" : "none",
     workspaceId,
     deadlineMs: RUN_DEADLINE_MS,
     actionBudget: MAX_ACTIONS_PER_RUN,
@@ -539,7 +646,14 @@ const submitTask = (
     db,
     `INSERT INTO tasks (id, brief, owner_session, bot_name, bot_role, status, action_count, created_at)
      VALUES (?, ?, ?, ?, ?, 'open', 0, ?)`,
-    [taskId, command.brief, input.principal.sessionId, BOT_NAME, BOT_ROLE, input.nowMs],
+    [
+      taskId,
+      command.brief,
+      input.principal.sessionId,
+      bot,
+      bot === "mara" ? "coordinator" : "specialist",
+      input.nowMs,
+    ],
   );
   run(db, "INSERT INTO threads (id, task_id, created_at) VALUES (?, ?, ?)", [
     threadId,
@@ -579,7 +693,7 @@ const submitTask = (
   emit(
     db,
     "task_submitted",
-    { taskId, runId, threadId, owner: input.principal.sessionId, bot: BOT_NAME, commandId },
+    { taskId, runId, threadId, owner: input.principal.sessionId, bot, commandId },
     input.nowMs,
   );
   return receiptOf({
@@ -836,6 +950,11 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
       [item.id],
     );
   }
+  run(
+    db,
+    "UPDATE runs SET provider_state=json_set(provider_state,'$.loadStatus','failed') WHERE json_extract(provider_state,'$.loadStatus')='loading'",
+    [],
+  );
   emit(db, "stop_all", { canceled: active.map((item) => item.id), commandId }, input.nowMs);
   return receiptOf({
     commandId,
@@ -863,6 +982,7 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
     status: string;
     waiting_reason: string;
     frozen_json: string;
+    provider_state: string;
     provider_session_id: string | null;
     fixture: string | null;
     action_count: number;
@@ -918,6 +1038,7 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
       status: Schema.decodeUnknownSync(RunStatus)(item.status),
       waitingReason: item.waiting_reason,
       frozen: Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(item.frozen_json)),
+      providerState: Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state)),
       providerSessionId: item.provider_session_id,
       fixture: Schema.decodeUnknownSync(Schema.NullOr(FixtureKind))(item.fixture),
       actionCount: item.action_count,
@@ -975,6 +1096,11 @@ const interruptActive = (db: DatabaseSync, nowMs: number): RunId[] => {
         [item.id],
       );
     }
+    run(
+      db,
+      "UPDATE runs SET provider_state=json_set(provider_state,'$.loadStatus','failed') WHERE json_extract(provider_state,'$.loadStatus')='loading'",
+      [],
+    );
     emit(db, "daemon_restart", { interrupted: active.map((item) => item.id) }, nowMs);
     db.exec("COMMIT");
   } catch (error) {
@@ -986,9 +1112,43 @@ const interruptActive = (db: DatabaseSync, nowMs: number): RunId[] => {
 
 export const mutateForEngine = (storePath: string) => {
   const db = new DatabaseSync(storePath);
+  const active = (runId: RunId) => {
+    const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [runId]);
+    const stopped = row<{ latched: number }>(db, "SELECT latched FROM stop_all WHERE id = 1", []);
+    return (
+      current !== undefined &&
+      !isTerminal(current.status) &&
+      current.status !== "interrupted" &&
+      stopped?.latched !== 1
+    );
+  };
   return {
+    isActive: active,
+    isLoading: (runId: RunId) => {
+      const current = row<{ loading: number; stopped: number }>(
+        db,
+        "SELECT json_extract(provider_state,'$.loadStatus')='loading' AS loading, (SELECT latched FROM stop_all WHERE id=1) AS stopped FROM runs WHERE id=?",
+        [runId],
+      );
+      return current?.loading === 1 && current.stopped === 0;
+    },
+    providerState: (runId: RunId, change: (state: ProviderState) => ProviderState) =>
+      withTxn(db, () => {
+        const current = row<{ provider_state: string }>(
+          db,
+          "SELECT provider_state FROM runs WHERE id = ?",
+          [runId],
+        );
+        if (!current) return;
+        const state = Schema.decodeUnknownSync(ProviderState)(JSON.parse(current.provider_state));
+        run(db, "UPDATE runs SET provider_state = ? WHERE id = ?", [
+          JSON.stringify(change(state)),
+          runId,
+        ]);
+      }),
     markRunning: (runId: RunId, providerSessionId: string, nowMs: number) =>
       withTxn(db, () => {
+        if (!active(runId)) return false;
         run(
           db,
           "UPDATE runs SET status = 'running', waiting_reason = 'none', provider_session_id = ? WHERE id = ?",
@@ -1000,6 +1160,7 @@ export const mutateForEngine = (storePath: string) => {
           [runId],
         );
         emit(db, "run_running", { runId, providerSessionId }, nowMs);
+        return true;
       }),
     waitApproval: (input: {
       runId: RunId;
@@ -1009,6 +1170,7 @@ export const mutateForEngine = (storePath: string) => {
       nowMs: number;
     }) =>
       withTxn(db, () => {
+        if (!active(input.runId)) return null;
         const approvalId = newApprovalId();
         const intentId = newActionIntentId();
         run(
@@ -1046,6 +1208,7 @@ export const mutateForEngine = (storePath: string) => {
       }),
     waitInput: (runId: RunId, prompt: string, nowMs: number) =>
       withTxn(db, () => {
+        if (!active(runId)) return;
         run(db, "UPDATE runs SET status = 'waiting_input', waiting_reason = 'input' WHERE id = ?", [
           runId,
         ]);
@@ -1066,7 +1229,7 @@ export const mutateForEngine = (storePath: string) => {
         const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [
           input.runId,
         ]);
-        if (!current || isTerminal(current.status)) {
+        if (!current || !active(input.runId)) {
           return null;
         }
         const artifactId = newArtifactId();
@@ -1099,7 +1262,7 @@ export const mutateForEngine = (storePath: string) => {
         const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [
           runId,
         ]);
-        if (!current || isTerminal(current.status)) {
+        if (!current || !active(runId)) {
           return;
         }
         run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [runId]);
@@ -1108,6 +1271,7 @@ export const mutateForEngine = (storePath: string) => {
       }),
     bumpAction: (runId: RunId, taskId: TaskId) =>
       withTxn(db, () => {
+        if (!active(runId)) return { exhausted: true as const };
         const current = row<{ action_count: number; frozen_json: string }>(
           db,
           "SELECT action_count, frozen_json FROM runs WHERE id = ?",

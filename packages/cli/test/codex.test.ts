@@ -1,4 +1,4 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -57,7 +57,13 @@ const statusOf = async (endpoint: URL, token: string) => {
     headers: { authorization: `Bearer ${token}` },
   });
   return (await response.json()) as {
-    runs: { id: string; status: string; providerSessionId: string | null; frozen: unknown }[];
+    runs: {
+      id: string;
+      status: string;
+      providerSessionId: string | null;
+      frozen: unknown;
+      providerState: { loadStatus: string; failure: string | null };
+    }[];
     pending: { approvalId: string | null; state: string; runId: string }[];
     artifacts: { taskId: string; runId: string; source: string; sha256: string; path: string }[];
   };
@@ -193,6 +199,103 @@ describe("codex stub protocol", () => {
       await waitFor(endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === cancel.json.runId && item.status === "canceled"),
       );
+    } finally {
+      await server.close();
+    }
+  });
+  it("loads paginated native history without starting another turn", async () => {
+    const { endpoint, server, owner } = await boot();
+    try {
+      const submitted = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "smoke" },
+      });
+      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      const loaded = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "load_session", runId: submitted.json.runId },
+      });
+      expect(loaded.json.accepted).toBe(true);
+      const state = await statusOf(endpoint, owner.token);
+      expect(state.artifacts).toHaveLength(1);
+      expect(state.runs[0]?.providerSessionId).toBe("thread-stub");
+    } finally {
+      await server.close();
+    }
+  });
+  it("keeps a successful load retry intact after the crashed attempt timeout", async () => {
+    const { endpoint, server, owner, dataRoot } = await boot();
+    process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS = "700";
+    try {
+      const submitted = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "smoke" },
+      });
+      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      const crashing = join(dataRoot, "crashing.mjs");
+      writeFileSync(
+        crashing,
+        readFileSync(stub, "utf8").replace(
+          'if (message.method === "thread/resume") {',
+          'if (message.method === "thread/resume") { process.exit(17);',
+        ),
+      );
+      process.env.AGENTIS_CODEX_STUB = crashing;
+      const first = command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "load_session", runId: submitted.json.runId },
+      });
+      await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.providerState.loadStatus === "failed",
+      );
+      process.env.AGENTIS_CODEX_STUB = stub;
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "load_session", runId: submitted.json.runId },
+      });
+      await first;
+      await new Promise((resolve) => setTimeout(resolve, 750));
+      const state = await statusOf(endpoint, owner.token);
+      expect(state.runs[0]?.providerState).toMatchObject({
+        loadStatus: "succeeded",
+        failure: null,
+      });
+      expect(state.artifacts).toHaveLength(1);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("does not let an overlapping input replace a pending permission", async () => {
+    const { endpoint, server, owner } = await boot();
+    try {
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "OVERLAP" },
+      });
+      const waiting = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.status === "waiting_approval",
+      );
+      const approvals = waiting.pending.filter((action) => action.approvalId);
+      expect(approvals).toHaveLength(1);
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "resolve_approval",
+          approvalId: approvals[0]?.approvalId,
+          decision: "allowed",
+        },
+      });
+      const done = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.status === "succeeded",
+      );
+      expect(readFileSync(done.artifacts[0]?.path ?? "", "utf8")).toBe("FIRST_APPROVED");
     } finally {
       await server.close();
     }

@@ -20,12 +20,12 @@ export const docker = (args: string[]): string => {
 const dockerfile = `FROM node:24.20.0-bookworm-slim@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e
 RUN apt-get update && apt-get install -y --no-install-recommends squid=5.7-2+deb12u6 ca-certificates git && rm -rf /var/lib/apt/lists/*
 RUN npm install -g @openai/codex@${CODEX_CLI_PIN} && codex --version
-RUN mkdir -p /provider-auth && chown 10001:10001 /provider-auth
+RUN mkdir -p /provider-auth /provider-home && chown 10001:10001 /provider-auth /provider-home
 COPY squid.conf /etc/squid/squid.conf
 USER 10001:10001
 `;
 
-const squidConfig = `http_port 3128
+export const squidConfig = `http_port 3128
 acl CONNECT method CONNECT
 acl TLS port 443
 acl provider dstdomain -n auth.openai.com chatgpt.com
@@ -99,7 +99,7 @@ export const removeProviderNetwork = (scope: string): void => {
     );
     if (inspection.error) throw inspection.error;
     if (inspection.status !== 0) {
-      if (/No such (object|container|network)/i.test(inspection.stderr)) continue;
+      if (/No such (object|container|network)|network .* not found/i.test(inspection.stderr)) continue;
       throw new Error(`cannot inspect provider ${kind}: ${inspection.stderr.trim()}`);
     }
     const owner = inspection.stdout.trim();
@@ -108,7 +108,7 @@ export const removeProviderNetwork = (scope: string): void => {
   }
 };
 
-export const prepareProviderNetwork = (scope: string): string => {
+export const prepareProviderNetwork = (scope: string, image = CODEX_IMAGE): string => {
   const network = networkName(scope);
   docker([
     "network",
@@ -142,7 +142,7 @@ export const prepareProviderNetwork = (scope: string): string => {
       "--cpus=1",
       "--tmpfs",
       "/tmp:rw,nosuid,nodev,size=33554432",
-      CODEX_IMAGE,
+      image,
       "squid",
       "-N",
       "-f",

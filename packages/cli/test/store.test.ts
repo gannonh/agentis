@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { Effect } from "effect";
 import { describe, expect, it } from "vitest";
 import { newApprovalId, newIdempotencyKey, newRunId, newSessionId } from "../src/ids.js";
-import { openStore, type ApplyInput, type Principal } from "../src/store.js";
+import { mutateForEngine, openStore, type ApplyInput, type Principal } from "../src/store.js";
 import { SCHEMA_ID } from "../src/versions.js";
 import type { Command } from "../src/schema.js";
 
@@ -31,6 +31,63 @@ const apply = async (root: string, command: Command, principal: Principal = owne
 };
 
 describe("store", () => {
+  it("admits two distinct bots and freezes the selected provider", async () => {
+    const root = tempRoot();
+    const store = await Effect.runPromise(openStore(root));
+    const base = {
+      principal: owner(),
+      nowMs: Date.now(),
+      provider: "codex" as const,
+      executionBoundary: "unverified-host-scratch" as const,
+      workspaceId: join(root, "scratch"),
+    };
+    const first = await Effect.runPromise(
+      store.applyCommand({
+        ...base,
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "one", bot: "mara" },
+      }),
+    );
+    const second = await Effect.runPromise(
+      store.applyCommand({
+        ...base,
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "two", bot: "ivo" },
+      }),
+    );
+    expect(first.accepted).toBe(true);
+    expect(second.accepted).toBe(true);
+    const snapshot = await Effect.runPromise(store.snapshot());
+    expect(snapshot.runs.map((run) => run.frozen.provider)).toEqual(["codex", "cursor"]);
+    expect(snapshot.tasks.map((task) => task.botName)).toEqual(["mara", "ivo"]);
+    await Effect.runPromise(store.close());
+  });
+
+  it("does not resurrect a stopped run from delayed provider callbacks", async () => {
+    const root = tempRoot();
+    const submitted = await apply(root, { kind: "submit_task", brief: "stop" });
+    if (!submitted.runId || !submitted.taskId) throw new Error("missing run");
+    await apply(root, { kind: "stop_all" });
+    const engine = mutateForEngine(join(root, "state.sqlite"));
+    engine.markRunning(submitted.runId, "late-session", Date.now());
+    engine.waitInput(submitted.runId, "late question", Date.now());
+    engine.waitApproval({
+      runId: submitted.runId,
+      taskId: submitted.taskId,
+      tool: "late",
+      argumentDigest: "late",
+      nowMs: Date.now(),
+    });
+    expect(engine.bumpAction(submitted.runId, submitted.taskId).exhausted).toBe(true);
+    engine.close();
+    const store = await Effect.runPromise(openStore(root));
+    const state = await Effect.runPromise(store.snapshot());
+    expect(state.runs[0]?.status).toBe("canceled");
+    expect(state.runs[0]?.providerSessionId).toBeNull();
+    expect(state.pending.some((action) => action.state === "pending")).toBe(false);
+    await Effect.runPromise(store.close());
+  });
+
   it("refuses an unsupported schema", async () => {
     const root = tempRoot();
     const first = await Effect.runPromise(openStore(root));

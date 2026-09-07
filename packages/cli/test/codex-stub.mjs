@@ -21,6 +21,26 @@ createInterface({ input: process.stdin }).on("line", (line) => {
     send({ id: message.id, result: { account: { type: "chatgpt" } } });
     return;
   }
+  if (message.method === "thread/resume") {
+    if (message.params.excludeTurns !== true) throw new Error("full hydration forbidden");
+    send({ id: message.id, result: { thread: { id: threadId } } });
+    return;
+  }
+  if (message.method === "thread/turns/list") {
+    send({
+      id: message.id,
+      result: {
+        data: [
+          {
+            id: message.params.cursor ? "second" : "first",
+            items: [{ type: "agentMessage", text: "KAT3242_OK" }],
+          },
+        ],
+        nextCursor: message.params.cursor ? null : "page-2",
+      },
+    });
+    return;
+  }
   if (message.method === "thread/start") {
     send({ id: message.id, result: { thread: { id: threadId, model: "gpt-5.6-sol" } } });
     return;
@@ -29,6 +49,19 @@ createInterface({ input: process.stdin }).on("line", (line) => {
     const text = message.params?.input?.[0]?.text ?? "";
     turnId = `turn-${Date.now()}`;
     send({ id: message.id, result: { turn: { id: turnId } } });
+    if (text === "OVERLAP") {
+      send({
+        id: "first-approval",
+        method: "item/commandExecution/requestApproval",
+        params: { threadId, turnId, command: "first" },
+      });
+      send({
+        id: "second-input",
+        method: "item/tool/requestUserInput",
+        params: { threadId, turnId, questions: [{ id: "unexpected" }] },
+      });
+      return;
+    }
     if (/ALLOW|DENY/.test(text)) {
       send({
         id: 0,
@@ -63,7 +96,13 @@ createInterface({ input: process.stdin }).on("line", (line) => {
     return;
   }
   if (message.result?.decision === "accept") {
-    send({ method: "item/completed", item: { type: "agentMessage", text: "3242" } });
+    send({
+      method: "item/completed",
+      item: {
+        type: "agentMessage",
+        text: message.id === "first-approval" ? "FIRST_APPROVED" : "3242",
+      },
+    });
     send({ method: "turn/completed", turn: { id: turnId, status: "completed" } });
     return;
   }

@@ -39,6 +39,9 @@ if (args[0] === "build") {
 if (args[0] === "build" || args[0] === "volume" || args.includes("--device-auth")) process.exit(0);
 
 if (args.includes("--version")) {
+  if (process.env.AGENTIS_TEST_PREFLIGHT_HOLD)
+    while (!existsSync(`${process.env.AGENTIS_TEST_DOCKER_LOG}.release`))
+      await new Promise((resolve) => setTimeout(resolve, 10));
   process.stdout.write("codex-cli 0.153.4\n");
   process.exit(0);
 }

@@ -15,6 +15,7 @@ const RUN_ID_LABEL = "io.agentis.run-id";
 
 const dockerRunBase = (input: {
   readonly workspace?: string;
+  readonly workspaceReadonly?: boolean;
   readonly name?: string;
   readonly runId?: string;
   readonly extraEnv?: Record<string, string>;
@@ -53,7 +54,12 @@ const dockerRunBase = (input: {
     );
   }
   if (input.workspace) {
-    args.push("--mount", `type=bind,src=${input.workspace},dst=/workspace`, "-w", "/workspace");
+    args.push(
+      "--mount",
+      `type=bind,src=${input.workspace},dst=/workspace${input.workspaceReadonly ? ",readonly" : ""}`,
+      "-w",
+      "/workspace",
+    );
   }
   for (const [key, value] of Object.entries(input.extraEnv ?? {})) {
     args.push("-e", `${key}=${value}`);
@@ -121,10 +127,13 @@ export const spawnInRunContainer = (input: {
   readonly image?: string;
   readonly network?: string;
   readonly providerAuthVolume?: string;
+  readonly providerHomeVolume?: string;
+  readonly workspaceReadonly?: boolean;
 }): RunContainerProcess => {
   const name = runContainerName(input.runId);
   const args = dockerRunBase({
     workspace: input.workspace,
+    ...(input.workspaceReadonly ? { workspaceReadonly: true } : {}),
     name,
     runId: input.runId,
     ...(input.network ? { network: input.network } : {}),
@@ -140,6 +149,8 @@ export const spawnInRunContainer = (input: {
       ...providerNetworkEnv,
     );
   }
+  if (input.providerHomeVolume)
+    args.push("--mount", `type=volume,src=${input.providerHomeVolume},dst=/provider-home`);
   args.push(input.image ?? "node:24-bookworm-slim", ...input.command);
   const child = spawn("docker", args, {
     cwd: input.workspace,
@@ -161,6 +172,7 @@ export const spawnCodexAppServerInContainer = (input: {
   readonly workspace: string;
   readonly stub?: string;
   readonly dataRoot?: string;
+  readonly loadSession?: boolean;
 }): RunContainerProcess => {
   if (input.stub) {
     return spawnInRunContainer({
@@ -182,6 +194,8 @@ export const spawnCodexAppServerInContainer = (input: {
   if (!input.dataRoot) throw new Error("live Codex requires a provider data root");
   const volume = providerVolume(input.dataRoot);
   docker(["volume", "inspect", volume]);
+  const homeVolume = `agentis-provider-state-${input.runId}`;
+  docker(["volume", "create", "--label", "io.agentis.managed=provider-state", homeVolume]);
   const network = prepareProviderNetwork(input.runId);
   try {
     return spawnInRunContainer({
@@ -190,7 +204,9 @@ export const spawnCodexAppServerInContainer = (input: {
       image: CODEX_IMAGE,
       network,
       providerAuthVolume: volume,
-      env: { CODEX_HOME: "/tmp/codex-home" },
+      providerHomeVolume: homeVolume,
+      ...(input.loadSession ? { workspaceReadonly: true } : {}),
+      env: { CODEX_HOME: "/provider-home", HOME: "/provider-home" },
       command: [
         "sh",
         "-ec",

@@ -1,4 +1,5 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { importCursorKey, provisionCursor } from "./cursor-container.js";
+import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
@@ -99,6 +100,10 @@ export const runCli = async (argv: string[]): Promise<number> => {
       profile: { type: "string" },
       "data-root": { type: "string" },
       provider: { type: "string" },
+      bot: { type: "string" },
+      package: { type: "string" },
+      "key-file": { type: "string" },
+      mode: { type: "string" },
       "execution-boundary": { type: "string" },
       brief: { type: "string" },
       fixture: { type: "string" },
@@ -110,7 +115,18 @@ export const runCli = async (argv: string[]): Promise<number> => {
   const dataRoot =
     typeof values["data-root"] === "string" ? values["data-root"] : defaultDataRoot();
   if (verb === "provider" && positionals[0] === "provision") {
-    provisionProvider(dataRoot);
+    if (values.provider === "cursor") {
+      if (!values.package)
+        throw new Error("--package path to the pinned local Linux arm64 archive is required");
+      provisionCursor(dataRoot, values.package);
+    } else provisionProvider(dataRoot);
+    return 0;
+  }
+  if (verb === "provider" && positionals[0] === "import-key") {
+    if (values.provider !== "cursor") throw new Error("import-key requires --provider cursor");
+    if (values["key-file"] && (statSync(values["key-file"]).mode & 0o077) !== 0)
+      throw new Error("key file must be private (0600)");
+    importCursorKey(dataRoot, readFileSync(values["key-file"] ?? 0, "utf8"));
     return 0;
   }
   if (verb === "provider" && positionals[0] === "login") {
@@ -193,11 +209,22 @@ export const runCli = async (argv: string[]): Promise<number> => {
     );
     return health.ok && status.ok ? 0 : 1;
   }
+  if (verb === "session" && positionals[0] === "load") {
+    if (!values.run) throw new Error("--run is required");
+    const result = await commandFetch(control.endpoint, control.dataRoot, {
+      kind: "load_session",
+      runId: Schema.decodeUnknownSync(RunId)(values.run),
+    });
+    process.stdout.write(`${result.body}\n`);
+    return result.status === 200 ? 0 : 1;
+  }
   if (verb === "task" && positionals[0] === "submit") {
     if (typeof values.brief !== "string") throw new Error("--brief is required");
     const result = await commandFetch(control.endpoint, control.dataRoot, {
       kind: "submit_task",
       brief: values.brief,
+      ...(typeof values.bot === "string" ? { bot: values.bot } : {}),
+      ...(values.mode === "plan" ? { mode: "plan" as const } : {}),
       ...(typeof values.fixture === "string"
         ? { fixture: Schema.decodeUnknownSync(FixtureKind)(values.fixture) }
         : {}),
