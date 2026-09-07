@@ -4,8 +4,8 @@
   "mode": "user-facing",
   "visual": false,
   "technical_enablement": null,
-  "timestamp": "2026-09-07T21:23:01.399900+00:00",
-  "git_commit": "c7cf2c70",
+  "timestamp": "2026-09-07T22:08:42.896908+00:00",
+  "git_commit": "3c76c681ecd1be59789311d3fb3dd7ab3d555bfe",
   "gitignored": false,
   "artifacts": [
     {
@@ -152,6 +152,51 @@
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/test-data-preservation.json",
       "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/replacement-provider/offline-setup.json",
+      "description": "Recorded receipt; historical and current evidence distinguished in README."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/replacement-provider/implementation-review.json",
+      "description": "Recorded receipt; historical and current evidence distinguished in README."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/replacement-provider/product-environment.json",
+      "description": "Recorded receipt; historical and current evidence distinguished in README."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/replacement-provider/preflight.json",
+      "description": "Recorded receipt; historical and current evidence distinguished in README."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/replacement-provider/runs/claude-feasibility-26af3cd8-d801-4765-ba34-de51b99437ba/receipt.json",
+      "description": "Recorded receipt; historical and current evidence distinguished in README."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/provider-conformance-cursor-no-auth-historical.json",
+      "description": "Recorded receipt; historical and current evidence distinguished in README."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/schema0.5-preservation.json",
+      "description": "Recorded receipt; historical and current evidence distinguished in README."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/live-handoff-conformance-cursor-historical.json",
+      "description": "Recorded receipt; historical and current evidence distinguished in README."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
+      "description": "Recorded receipt; historical and current evidence distinguished in README."
     }
   ],
   "commands": [
@@ -540,6 +585,117 @@
       "output_path": "docs/verification/kat-3243/evidence/logs/corrected-live-concurrency-retry.log",
       "exit_code_path": "docs/verification/kat-3243/evidence/logs/corrected-live-concurrency-retry.exit",
       "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"sh\" \"-c\" \"pnpm install --frozen-lockfile && pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm pack:smoke\"",
+      "argv": [
+        "sh",
+        "-c",
+        "pnpm install --frozen-lockfile && pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm pack:smoke"
+      ],
+      "name": "claude-final-checks",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/claude-final-checks.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/claude-final-checks.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"node\" \"packages/cli/dist/bin.js\" \"provider\" \"provision\" \"--provider\" \"claude\" \"--data-root\" \"/Users/gannonhall/.agentis/kat-3243-validation-v3\"",
+      "argv": [
+        "node",
+        "packages/cli/dist/bin.js",
+        "provider",
+        "provision",
+        "--provider",
+        "claude",
+        "--data-root",
+        "/Users/gannonhall/.agentis/kat-3243-validation-v3"
+      ],
+      "name": "claude-product-provision",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/claude-product-provision.exit",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/claude-product-provision.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \"scripts/live-provider-conformance.mjs\" \"/Users/gannonhall/.agentis/kat-3243-validation-v3\" \"ivo\" \"smoke\" \"allow\" \"deny\" \"plan\" \"input\" \"cancel\"",
+      "argv": [
+        "node",
+        "scripts/live-provider-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+        "ivo",
+        "smoke",
+        "allow",
+        "deny",
+        "plan",
+        "input",
+        "cancel"
+      ],
+      "name": "claude-product-live",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/claude-product-live.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/claude-product-live.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \"scripts/live-provider-conformance.mjs\" \"/Users/gannonhall/.agentis/kat-3243-validation-v3\" \"mara\" \"smoke\" \"allow\" \"deny\" \"plan\" \"input\" \"cancel\"",
+      "argv": [
+        "node",
+        "scripts/live-provider-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+        "mara",
+        "smoke",
+        "allow",
+        "deny",
+        "plan",
+        "input",
+        "cancel"
+      ],
+      "name": "codex-replacement-live",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/codex-replacement-live.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/codex-replacement-live.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \"scripts/live-provider-conformance.mjs\" \"/Users/gannonhall/.agentis/kat-3243-claude-no-auth-v5\" \"ivo\" \"no-auth\"",
+      "argv": [
+        "node",
+        "scripts/live-provider-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3243-claude-no-auth-v5",
+        "ivo",
+        "no-auth"
+      ],
+      "name": "claude-missing-auth",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/claude-missing-auth.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/claude-missing-auth.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \"scripts/live-handoff-conformance.mjs\" \"/Users/gannonhall/.agentis/kat-3243-validation-v3\"",
+      "argv": [
+        "node",
+        "scripts/live-handoff-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3243-validation-v3"
+      ],
+      "name": "claude-codex-handoff-concurrency",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/claude-codex-handoff-concurrency.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/claude-codex-handoff-concurrency.exit",
+      "timed_out": false
     }
   ],
   "slices": [
@@ -547,100 +703,125 @@
       "id": "AC1",
       "name": "Same bounded workflow through both live providers",
       "result": "Pass",
-      "summary": "Both returned the exact draft marker using their selected authentication and pinned executables. Auth/billing/support details are documented; invoice attribution is not claimed.",
+      "summary": "Both selected providers returned `KAT3243_CONTAINER_OK` and approved command output `3243`. Exact auth, model, transport and image pins are recorded.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
+        "docs/verification/kat-3243/evidence/logs/claude-final-checks.log",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/live-handoff-conformance.json"
       ]
     },
     {
       "id": "AC2",
       "name": "Provider-specific transport semantics",
       "result": "Pass",
-      "summary": "Codex app-server and Cursor ACP preserve distinct native plan/input semantics. Codex native plans are retained without inventing a blocking plan-approval RPC.",
+      "summary": "Codex app-server JSONL and Claude SDK bridge retain native permission, question, plan and history semantics.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
+        "docs/verification/kat-3243/evidence/logs/claude-final-checks.log",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/live-handoff-conformance.json"
       ]
     },
     {
       "id": "AC3",
       "name": "Capabilities and blocking decisions",
-      "result": "Fail",
-      "summary": "Codex blocking input and native plans passed; Cursor plan rejection passed. Cursor completed without emitting the required blocking question. Unsupported MCP/attachment operations are explicit.",
+      "result": "Pass",
+      "summary": "Both emitted blocking questions and resumed to Blue. Claude rejected a full plan through AskUserQuestion and returned REJECTED without execution. Codex retained native plan output; dedicated blocking plan approval remains explicitly unavailable. MCP and attachment gaps are typed.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
+        "docs/verification/kat-3243/evidence/logs/claude-final-checks.log",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/live-handoff-conformance.json"
       ]
     },
     {
       "id": "AC4",
       "name": "Typed unavailable states and isolation",
       "result": "Pass",
-      "summary": "Public-boundary fixtures cover unsupported/unknown providers; real-container missing-auth paths passed without artifacts.",
+      "summary": "Public fixtures cover unknown providers and unsupported operations. Live missing scoped authentication fails without an artifact; it is a launcher failure, not a native authentication response.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
+        "docs/verification/kat-3243/evidence/logs/claude-final-checks.log",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/live-handoff-conformance.json"
       ]
     },
     {
       "id": "AC5",
       "name": "Separate identifiers and deduplicated history",
       "result": "Pass",
-      "summary": "Both providers completed text/tool session loading with stable identities, messages and artifact counts. Native Codex plan duplicate delivery is covered by regression.",
+      "summary": "Both text and tool-bearing sessions loaded with stable provider IDs, messages and one artifact. Repeated Codex load was stable. Canceled Claude history reconciliation has public regression coverage without replaying ownership/output.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
+        "docs/verification/kat-3243/evidence/logs/claude-final-checks.log",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/live-handoff-conformance.json"
       ]
     },
     {
       "id": "AC6",
       "name": "Decisions, cancellation and provider failures",
-      "result": "Blocked",
-      "summary": "Both live allow/deny/cancel/load paths passed; Codex structured input passed. Missing auth passed; quota/crash/malformed cases have fixture coverage. Cursor blocking input remains unproven.",
+      "result": "Pass",
+      "summary": "Both live allow, deny, input, cancel and load cases passed. Missing-auth evidence is live; quota and crash handling use deterministic protocol fixtures. No real account quota was exhausted.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
+        "docs/verification/kat-3243/evidence/logs/claude-final-checks.log",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/live-handoff-conformance.json"
       ]
     },
     {
       "id": "AC7",
       "name": "Bounded accepted specialist handoff",
-      "result": "Fail",
-      "summary": "Live acceptance, single ownership transfer, source context, attributed draft return, duplicate refusal and load passed. The native Cursor Task test launched a subagent despite the configured denial hook. Rejection/timeout remain fixture evidence.",
+      "result": "Pass",
+      "summary": "Live acceptance transferred ownership once, returned the exact attributed draft to the originating thread, refused duplicate dispatch and loaded without duplication. Native handoff tools are structurally absent. Rejection, timeout and stale-event handling have public fixture coverage.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
+        "docs/verification/kat-3243/evidence/logs/claude-final-checks.log",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/live-handoff-conformance.json"
       ]
     },
     {
       "id": "AC8",
       "name": "Concurrency, limits and stop-all",
       "result": "Pass",
-      "summary": "Corrected live retry held both providers on native approvals with separate identities, rejected per-bot/global limit bypass, canceled both via stop-all, rejected both late approvals with HTTP 409 and no dispatch effects, and cleaned up without late artifacts.",
+      "summary": "Both providers waited on separate native approvals. Limit bypass was rejected; stop-all canceled both, refused late approvals with no effects, and cleaned up without artifacts.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
+        "docs/verification/kat-3243/evidence/logs/claude-final-checks.log",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/live-handoff-conformance.json"
       ]
     },
     {
       "id": "AC9",
       "name": "Malformed fixtures and mandatory real proof",
-      "result": "Blocked",
-      "summary": "80 tests pass and both providers have live receipts. Full conformance remains incomplete because of the Cursor question and native delegation failures.",
+      "result": "Pass",
+      "summary": "96 tests pass, covering malformed/error and lifecycle cases, alongside the selected providers\u2019 live workflows and combined handoff/concurrency proof.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
+        "docs/verification/kat-3243/evidence/logs/claude-final-checks.log",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json",
+        "docs/verification/kat-3243/evidence/responses/live-handoff-conformance.json"
       ]
     }
   ],
   "notes": [
-    "Provider selection revised with owner approval: Cursor deferred; Claude SDK API candidate feasibility pending. This matrix records the prior Codex/Cursor candidate and does not certify the replacement. See ../replacement-provider/.",
-    "Overall readiness BLOCKED. Both providers are authenticated; no further login is required.",
-    "Cursor native Task launched despite configured denial: FAIL. Cursor blocking question emission remains unproven. These prevent ready-for-review.",
-    "80 tests and required checks pass. Final live accepted handoff and concurrency/stop-all pass. Fixtures and reviews do not override native enforcement failure.",
-    "Latest product code is c7cf2c70; earlier receipts identify their own source, and native hook helper ran against the same container source before commit. Later evidence edits only update docs and harness selection/prompt.",
-    "Original Codex create_plan failure was an invalid cross-provider probe. Corrected native plan probe passed; no dedicated blocking plan-approval RPC is claimed.",
-    "Readiness validator is expected to exit 1 for Fail/Blocked criteria."
+    "Current selection is Codex plus Claude SDK; all nine Build slices pass. Cursor failure receipts are historical and remain rejected.",
+    "Live receipts identify exact source and fixtureMode=false. Quota/crash/malformed protocol, rejection/timeout and stale events use deterministic fixtures; no real account quota was exhausted.",
+    "Claude plan rejection uses AskUserQuestion; dedicated native plan approval and unsupported MCP/attachments remain unavailable.",
+    "Provision command produced no stdout; its output_path records the captured exit status. Product image identity is recorded separately.",
+    "Stop-all is latched on the final synthetic dataset. Earlier schema bytes were archived without product migration or credential replacement."
   ]
 }

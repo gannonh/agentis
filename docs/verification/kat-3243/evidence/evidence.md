@@ -3,8 +3,8 @@
 UAT Scope: KAT-3243 two-provider container workflow and bounded handoff
 Target: cli
 Evidence mode: user-facing
-Timestamp: 2026-09-07T21:23:01.399900+00:00
-Git commit: c7cf2c70
+Timestamp: 2026-09-07T22:08:42.896908+00:00
+Git commit: 3c76c681ecd1be59789311d3fb3dd7ab3d555bfe
 
 ## Required Evidence Status
 - E2E: Pass - `docs/verification/kat-3243/evidence/logs/cursor-live-workflow.log`
@@ -12,15 +12,15 @@ Git commit: c7cf2c70
 - Video: Not applicable
 
 ## Slice-by-slice result
-- Pass: Same bounded workflow through both live providers - Both returned the exact draft marker using their selected authentication and pinned executables. Auth/billing/support details are documented; invoice attribution is not claimed.
-- Pass: Provider-specific transport semantics - Codex app-server and Cursor ACP preserve distinct native plan/input semantics. Codex native plans are retained without inventing a blocking plan-approval RPC.
-- Fail: Capabilities and blocking decisions - Codex blocking input and native plans passed; Cursor plan rejection passed. Cursor completed without emitting the required blocking question. Unsupported MCP/attachment operations are explicit.
-- Pass: Typed unavailable states and isolation - Public-boundary fixtures cover unsupported/unknown providers; real-container missing-auth paths passed without artifacts.
-- Pass: Separate identifiers and deduplicated history - Both providers completed text/tool session loading with stable identities, messages and artifact counts. Native Codex plan duplicate delivery is covered by regression.
-- Blocked: Decisions, cancellation and provider failures - Both live allow/deny/cancel/load paths passed; Codex structured input passed. Missing auth passed; quota/crash/malformed cases have fixture coverage. Cursor blocking input remains unproven.
-- Fail: Bounded accepted specialist handoff - Live acceptance, single ownership transfer, source context, attributed draft return, duplicate refusal and load passed. The native Cursor Task test launched a subagent despite the configured denial hook. Rejection/timeout remain fixture evidence.
-- Pass: Concurrency, limits and stop-all - Corrected live retry held both providers on native approvals with separate identities, rejected per-bot/global limit bypass, canceled both via stop-all, rejected both late approvals with HTTP 409 and no dispatch effects, and cleaned up without late artifacts.
-- Blocked: Malformed fixtures and mandatory real proof - 80 tests pass and both providers have live receipts. Full conformance remains incomplete because of the Cursor question and native delegation failures.
+- Pass: Same bounded workflow through both live providers - Both selected providers returned `KAT3243_CONTAINER_OK` and approved command output `3243`. Exact auth, model, transport and image pins are recorded.
+- Pass: Provider-specific transport semantics - Codex app-server JSONL and Claude SDK bridge retain native permission, question, plan and history semantics.
+- Pass: Capabilities and blocking decisions - Both emitted blocking questions and resumed to Blue. Claude rejected a full plan through AskUserQuestion and returned REJECTED without execution. Codex retained native plan output; dedicated blocking plan approval remains explicitly unavailable. MCP and attachment gaps are typed.
+- Pass: Typed unavailable states and isolation - Public fixtures cover unknown providers and unsupported operations. Live missing scoped authentication fails without an artifact; it is a launcher failure, not a native authentication response.
+- Pass: Separate identifiers and deduplicated history - Both text and tool-bearing sessions loaded with stable provider IDs, messages and one artifact. Repeated Codex load was stable. Canceled Claude history reconciliation has public regression coverage without replaying ownership/output.
+- Pass: Decisions, cancellation and provider failures - Both live allow, deny, input, cancel and load cases passed. Missing-auth evidence is live; quota and crash handling use deterministic protocol fixtures. No real account quota was exhausted.
+- Pass: Bounded accepted specialist handoff - Live acceptance transferred ownership once, returned the exact attributed draft to the originating thread, refused duplicate dispatch and loaded without duplication. Native handoff tools are structurally absent. Rejection, timeout and stale-event handling have public fixture coverage.
+- Pass: Concurrency, limits and stop-all - Both providers waited on separate native approvals. Limit bypass was rejected; stop-all canceled both, refused late approvals with no effects, and cleaned up without artifacts.
+- Pass: Malformed fixtures and mandatory real proof - 96 tests pass, covering malformed/error and lifecycle cases, alongside the selected providers’ live workflows and combined handoff/concurrency proof.
 
 ## Evidence
 - `docs/verification/kat-3243/evidence/responses/codex-authentication.json` - Receipt; current and historical outcomes are distinguished in ../README.md.
@@ -52,6 +52,15 @@ Git commit: c7cf2c70
 - `docs/verification/kat-3243/evidence/responses/schema-refusal.json` - Receipt; current and historical outcomes are distinguished in ../README.md.
 - `docs/verification/kat-3243/evidence/responses/stop-all-test-data-preservation.json` - Receipt; current and historical outcomes are distinguished in ../README.md.
 - `docs/verification/kat-3243/evidence/responses/test-data-preservation.json` - Receipt; current and historical outcomes are distinguished in ../README.md.
+- `docs/verification/kat-3243/replacement-provider/offline-setup.json` - Recorded receipt; historical and current evidence distinguished in README.
+- `docs/verification/kat-3243/replacement-provider/implementation-review.json` - Recorded receipt; historical and current evidence distinguished in README.
+- `docs/verification/kat-3243/replacement-provider/product-environment.json` - Recorded receipt; historical and current evidence distinguished in README.
+- `docs/verification/kat-3243/replacement-provider/preflight.json` - Recorded receipt; historical and current evidence distinguished in README.
+- `docs/verification/kat-3243/replacement-provider/runs/claude-feasibility-26af3cd8-d801-4765-ba34-de51b99437ba/receipt.json` - Recorded receipt; historical and current evidence distinguished in README.
+- `docs/verification/kat-3243/evidence/responses/provider-conformance-cursor-no-auth-historical.json` - Recorded receipt; historical and current evidence distinguished in README.
+- `docs/verification/kat-3243/evidence/responses/schema0.5-preservation.json` - Recorded receipt; historical and current evidence distinguished in README.
+- `docs/verification/kat-3243/evidence/responses/live-handoff-conformance-cursor-historical.json` - Recorded receipt; historical and current evidence distinguished in README.
+- `docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json` - Recorded receipt; historical and current evidence distinguished in README.
 
 ## Commands
 - Exit 0: `"node" "docs/verification/kat-3243/evidence/network-probe.mjs" "/Users/gannonhall/.agentis/kat-3243-validation"` -> `docs/verification/kat-3243/evidence/logs/provider-network.log`
@@ -79,15 +88,19 @@ Git commit: c7cf2c70
 - Exit 0: `"pnpm" "pack:smoke"` -> `docs/verification/kat-3243/evidence/logs/corrected-pack-smoke.log`
 - Exit 1: `"node" "scripts/live-handoff-conformance.mjs" "/Users/gannonhall/.agentis/kat-3243-validation-v3"` -> `docs/verification/kat-3243/evidence/logs/corrected-live-handoff-concurrency.log`
 - Exit 0: `"node" "scripts/live-handoff-conformance.mjs" "/Users/gannonhall/.agentis/kat-3243-validation-v3" "--concurrency-only"` -> `docs/verification/kat-3243/evidence/logs/corrected-live-concurrency-retry.log`
+- Exit 0: `"sh" "-c" "pnpm install --frozen-lockfile && pnpm typecheck && pnpm lint && pnpm test && pnpm build && pnpm pack:smoke"` -> `docs/verification/kat-3243/evidence/logs/claude-final-checks.log`
+- Exit 0: `"node" "packages/cli/dist/bin.js" "provider" "provision" "--provider" "claude" "--data-root" "/Users/gannonhall/.agentis/kat-3243-validation-v3"` -> `docs/verification/kat-3243/evidence/logs/claude-product-provision.exit`
+- Exit 0: `"node" "scripts/live-provider-conformance.mjs" "/Users/gannonhall/.agentis/kat-3243-validation-v3" "ivo" "smoke" "allow" "deny" "plan" "input" "cancel"` -> `docs/verification/kat-3243/evidence/logs/claude-product-live.log`
+- Exit 0: `"node" "scripts/live-provider-conformance.mjs" "/Users/gannonhall/.agentis/kat-3243-validation-v3" "mara" "smoke" "allow" "deny" "plan" "input" "cancel"` -> `docs/verification/kat-3243/evidence/logs/codex-replacement-live.log`
+- Exit 0: `"node" "scripts/live-provider-conformance.mjs" "/Users/gannonhall/.agentis/kat-3243-claude-no-auth-v5" "ivo" "no-auth"` -> `docs/verification/kat-3243/evidence/logs/claude-missing-auth.log`
+- Exit 0: `"node" "scripts/live-handoff-conformance.mjs" "/Users/gannonhall/.agentis/kat-3243-validation-v3"` -> `docs/verification/kat-3243/evidence/logs/claude-codex-handoff-concurrency.log`
 
 ## Notes
-- Provider selection revised with owner approval: Cursor deferred; Claude SDK API candidate feasibility pending. This matrix records the prior Codex/Cursor candidate and does not certify the replacement. See ../replacement-provider/.
-- Overall readiness BLOCKED. Both providers are authenticated; no further login is required.
-- Cursor native Task launched despite configured denial: FAIL. Cursor blocking question emission remains unproven. These prevent ready-for-review.
-- 80 tests and required checks pass. Final live accepted handoff and concurrency/stop-all pass. Fixtures and reviews do not override native enforcement failure.
-- Latest product code is c7cf2c70; earlier receipts identify their own source, and native hook helper ran against the same container source before commit. Later evidence edits only update docs and harness selection/prompt.
-- Original Codex create_plan failure was an invalid cross-provider probe. Corrected native plan probe passed; no dedicated blocking plan-approval RPC is claimed.
-- Readiness validator is expected to exit 1 for Fail/Blocked criteria.
+- Current selection is Codex plus Claude SDK; all nine Build slices pass. Cursor failure receipts are historical and remain rejected.
+- Live receipts identify exact source and fixtureMode=false. Quota/crash/malformed protocol, rejection/timeout and stale events use deterministic fixtures; no real account quota was exhausted.
+- Claude plan rejection uses AskUserQuestion; dedicated native plan approval and unsupported MCP/attachments remain unavailable.
+- Provision command produced no stdout; its output_path records the captured exit status. Product image identity is recorded separately.
+- Stop-all is latched on the final synthetic dataset. Earlier schema bytes were archived without product migration or credential replacement.
 
 ## Manual Run Instructions
 1. Run the product using the documented local command for this target.

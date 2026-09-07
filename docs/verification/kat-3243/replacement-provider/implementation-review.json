@@ -1,0 +1,42 @@
+{
+  "sourceCommit": "3c76c681",
+  "result": "PASS",
+  "scope": "Independent code review; live product acceptance remains separate",
+  "specReview": {
+    "reviewer": "conformance_design",
+    "targetedTestsPassed": 54,
+    "resolved": [
+      "startup failure state",
+      "fresh load deadline",
+      "native API error classification",
+      "native free-text and multi-select answers",
+      "canceled history reconciliation without replay",
+      "typed unsupported plan mode",
+      "live assertion accuracy"
+    ]
+  },
+  "qualityReview": {
+    "reviewer": "container_quality",
+    "focusedRegressionsPassed": 3,
+    "resolved": [
+      "startup failure recording",
+      "historical load deadline",
+      "cleanup exception containment",
+      "stale bridge error correlation"
+    ],
+    "observed": [
+      "retained native home",
+      "read-only SDK session loading without inference",
+      "per-turn model authentication and tool inventory validation"
+    ]
+  },
+  "requiredChecks": {
+    "installFrozenLockfile": "PASS",
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "tests": "96 passed across 12 files",
+    "build": "PASS",
+    "packSmoke": "PASS"
+  },
+  "log": "../evidence/logs/claude-final-checks.log"
+}

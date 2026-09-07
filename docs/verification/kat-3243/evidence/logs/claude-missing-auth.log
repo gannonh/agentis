@@ -1,0 +1,8 @@
+$ "node" "scripts/live-provider-conformance.mjs" "/Users/gannonhall/.agentis/kat-3243-claude-no-auth-v5" "ivo" "no-auth"
+cwd: /Users/gannonhall/.codex/worktrees/9c04/agentis
+started_at: 2026-09-07T22:07:04.707Z
+
+{"case":"no-auth","startedAt":"2026-09-07T22:07:06.010Z","status":"PASS","runId":"8d365703-2184-49a7-8b06-bd35c3134af6","taskId":"4c9f7739-69b3-4f52-9b8b-8ff4fde6e7b8","threadId":"7bc1782a-558f-4e61-9d49-baaee5422829","runStatus":"failed","providerSessionId":null,"failure":"auth-unavailable","frozen":{"bot":"ivo","mode":"agent","provider":"claude","transport":"claude-sdk-jsonl-stdio","executableVersion":"2.1.263","model":"claude-sonnet-5","effort":"medium","executionBoundary":"docker-desktop-run-container","authMode":"api-key","workspaceId":"/Users/gannonhall/.agentis/kat-3243-claude-no-auth-v5/scratch/runs/8d365703-2184-49a7-8b06-bd35c3134af6","deadlineMs":900000,"actionBudget":20},"artifact":null,"cleaned":true}
+
+exit_code: 0
+finished_at: 2026-09-07T22:07:07.094Z
