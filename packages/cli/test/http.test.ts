@@ -1,9 +1,10 @@
+import { Snapshot } from "../src/schema.js";
 import { mkdtempSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Effect } from "effect";
-import { describe, expect, it } from "vitest";
+import { Effect, Schema } from "effect";
+import { describe, expect, it, vi } from "vitest";
 import { loadOrCreateOwner } from "../src/auth.js";
 import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
@@ -204,6 +205,86 @@ describe("http", () => {
       }
       await reader.cancel();
       expect(text).toMatch(/task_submitted/);
+    } finally {
+      await server.close();
+    }
+  });
+  it.each([
+    ["cancel_run", false],
+    ["stop_all", false],
+    ["cancel_run", true],
+    ["stop_all", true],
+  ])(
+    "rejects late approval after %s with expiry %s without reviving work",
+    async (kind, expired) => {
+      const { endpoint, server, owner } = await boot();
+      const snapshot = async () =>
+        Schema.decodeUnknownSync(Snapshot)(
+          await (
+            await fetch(new URL("/v1/status", endpoint), {
+              headers: { authorization: `Bearer ${owner.token}` },
+            })
+          ).json(),
+        );
+      try {
+        const submitted = await command(endpoint, owner.token, {
+          idempotencyKey: newIdempotencyKey(),
+          command: { kind: "submit_task", brief: "pending", fixture: "allow" },
+        });
+        const pending = await snapshot();
+        const approval = pending.pending.find((action) => action.approvalId);
+        await command(endpoint, owner.token, {
+          idempotencyKey: newIdempotencyKey(),
+          command: { kind, ...(kind === "cancel_run" ? { runId: submitted.json.runId } : {}) },
+        });
+        const canceled = await snapshot();
+        if (expired) vi.spyOn(Date, "now").mockReturnValue(Date.now() + 6 * 60 * 1000);
+        for (const decision of ["allowed", "denied"]) {
+          const late = await command(endpoint, owner.token, {
+            idempotencyKey: newIdempotencyKey(),
+            command: { kind: "resolve_approval", approvalId: approval?.approvalId, decision },
+          });
+          expect(late.json.accepted).toBe(false);
+          expect(late.json.effects).toEqual([]);
+        }
+        const after = await snapshot();
+        expect(after.runs).toEqual(canceled.runs);
+        expect(after.tasks).toEqual(canceled.tasks);
+        expect(after.artifacts).toEqual(canceled.artifacts);
+        expect(after.pending).toEqual(canceled.pending);
+      } finally {
+        vi.restoreAllMocks();
+        await server.close();
+      }
+    },
+  );
+
+  it("replays approval receipts without another dispatch effect", async () => {
+    const { endpoint, server, owner } = await boot();
+    try {
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "approve once", fixture: "allow" },
+      });
+      const snapshot = Schema.decodeUnknownSync(Snapshot)(
+        await (
+          await fetch(new URL("/v1/status", endpoint), {
+            headers: { authorization: `Bearer ${owner.token}` },
+          })
+        ).json(),
+      );
+      const body = {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "resolve_approval",
+          approvalId: snapshot.pending.find((action) => action.approvalId)?.approvalId,
+          decision: "allowed",
+        },
+      };
+      expect((await command(endpoint, owner.token, body)).json.effects).toContain("dispatch_tool");
+      const replay = await command(endpoint, owner.token, body);
+      expect(replay.json.replayed).toBe(true);
+      expect(replay.json.effects).toEqual([]);
     } finally {
       await server.close();
     }

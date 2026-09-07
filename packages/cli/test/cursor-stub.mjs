@@ -1,5 +1,6 @@
 import { writeFileSync, appendFileSync, readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
+writeFileSync("provider.pid", String(process.pid));
 let replaying = false;
 const send = (value) => {
   if (!replaying && value.method === "session/update")

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { Effect } from "effect";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadOrCreateOwner } from "../src/auth.js";
 import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
@@ -267,6 +267,49 @@ describe("Cursor ACP", () => {
     }
   });
 
+  it("terminates the active provider when an expired approval decision is rejected", async () => {
+    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    const { endpoint, server, owner, dataRoot } = await boot();
+    try {
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", bot: "ivo", brief: "ALLOW" },
+      });
+      const waiting = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.status === "waiting_approval",
+      );
+      const pid = Number(
+        readFileSync(
+          join(dataRoot, "scratch", "runs", waiting.runs[0]!.id, "provider.pid"),
+          "utf8",
+        ),
+      );
+      vi.spyOn(Date, "now").mockReturnValue(Date.now() + 6 * 60 * 1000);
+      const receipt = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "resolve_approval",
+          approvalId: waiting.pending.find((action) => action.approvalId)?.approvalId,
+          decision: "allowed",
+        },
+      });
+      vi.restoreAllMocks();
+      expect(receipt.json.accepted).toBe(false);
+      expect(receipt.json.effects).toContain("interrupt_provider");
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(() => process.kill(pid, 0)).toThrow();
+      const expired = await statusOf(endpoint, owner.token);
+      expect(expired.runs[0]?.status).toBe("failed");
+      expect(expired.pending.find((action) => action.approvalId)?.state).toBe("expired");
+      expect(expired.artifacts).toHaveLength(0);
+    } finally {
+      vi.restoreAllMocks();
+      await server.close();
+      delete process.env.AGENTIS_CURSOR_STUB;
+    }
+  });
   it("stop-all cancels both providers and late replies cannot revive them", async () => {
     process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();

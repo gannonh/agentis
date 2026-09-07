@@ -32,6 +32,7 @@ type Session = {
   pendingServerRequest: Json | null;
   threadId: string | null;
   lastText: string;
+  readonly completedPlanIds: Set<string>;
 };
 
 const sessions = new Map<string, Session>();
@@ -171,6 +172,7 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> => {
         pendingServerRequest: null,
         threadId: null,
         lastText: "",
+        completedPlanIds: new Set(),
         request: (id, method, params) =>
           new Promise<Json>((resolve, reject) => {
             if (sessions.get(input.runId) !== session) {
@@ -336,7 +338,15 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> => {
           "mcp-sse",
           "images",
           "usage",
-        ]),
+        ]).map((capability) =>
+          capability.name === "plans"
+            ? {
+                ...capability,
+                operation: "unavailable" as const,
+                reason: "native-plan-output-without-blocking-approval" as const,
+              }
+            : capability,
+        ),
       }));
       engine.close();
       await session.request(10, "turn/start", {
@@ -436,6 +446,23 @@ const handleNotice = async (session: Session, input: DriveInput, value: Json) =>
     typeof item.text === "string"
   ) {
     session.lastText = item.text;
+  }
+  if (method === "item/completed" && item.type === "plan") {
+    const plan = Schema.decodeUnknownSync(
+      Schema.Struct({ type: Schema.Literal("plan"), id: Schema.String, text: Schema.String }),
+    )(item);
+    if (session.completedPlanIds.has(plan.id)) return;
+    session.completedPlanIds.add(plan.id);
+    session.lastText = plan.text;
+    const engine = mutateForEngine(input.store.path);
+    try {
+      engine.providerState(input.runId, (state) => ({
+        ...state,
+        history: [...state.history, JSON.stringify(plan)],
+      }));
+    } finally {
+      engine.close();
+    }
   }
   const turn = "turn" in value ? asJson(value.turn) : asJson(params.turn);
   if (method === "turn/completed" && turn.status === "interrupted") {

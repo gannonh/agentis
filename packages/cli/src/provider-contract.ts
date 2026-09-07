@@ -15,7 +15,13 @@ export const Capability = Schema.Struct({
   ),
   operation: Schema.optional(Schema.Literal("available", "unavailable")),
   state: Schema.Literal("negotiated", "documented", "unavailable"),
-  reason: Schema.Literal("advertised", "documented-unproven", "not-advertised", "not-negotiated"),
+  reason: Schema.Literal(
+    "advertised",
+    "documented-unproven",
+    "not-advertised",
+    "not-negotiated",
+    "native-plan-output-without-blocking-approval",
+  ),
 });
 export const ProviderState = Schema.Struct({
   loadStatus: Schema.Literal("idle", "loading", "succeeded", "failed"),

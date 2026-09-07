@@ -176,7 +176,7 @@ export const applyReceiptEffects = async (input: {
       );
     }
   }
-  if (receipt.accepted && receipt.effects.includes("interrupt_provider")) {
+  if (receipt.effects.includes("interrupt_provider")) {
     if (receipt.runId) {
       interruptCursor(receipt.runId);
       interruptCodex(receipt.runId, executionBoundary);

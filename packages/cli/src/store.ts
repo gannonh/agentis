@@ -333,6 +333,7 @@ export const openStore = (
           return receiptOf({
             ...(JSON.parse(prior.result_json) as CommandReceipt),
             replayed: true,
+            effects: [],
           });
         }
         db.exec("BEGIN IMMEDIATE");
@@ -694,6 +695,20 @@ const resolveApproval = (
       effects: [],
     });
   }
+  const runStatus = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [
+    approval.run_id,
+  ]);
+  const stopped = row<{ latched: number }>(db, "SELECT latched FROM stop_all WHERE id=1");
+  if (runStatus?.status !== "waiting_approval" || stopped?.latched === 1) {
+    return receiptOf({
+      commandId,
+      replayed: false,
+      accepted: false,
+      error: `run ${runStatus?.status ?? "missing"}; approval no longer actionable`,
+      approvalId: command.approvalId,
+      effects: [],
+    });
+  }
   if (approval.expires_at <= input.nowMs) {
     expireApprovalAndRun(db, approval, input.nowMs, commandId);
     return receiptOf({
@@ -705,21 +720,6 @@ const resolveApproval = (
       runId: approval.run_id as RunId,
       taskId: approval.task_id as TaskId,
       effects: ["interrupt_provider"],
-    });
-  }
-  const runStatus = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [
-    approval.run_id,
-  ]);
-  if (runStatus?.status === "interrupted") {
-    return receiptOf({
-      commandId,
-      replayed: false,
-      accepted: false,
-      error: "run interrupted; provider session lost on restart",
-      approvalId: command.approvalId,
-      runId: approval.run_id as RunId,
-      taskId: approval.task_id as TaskId,
-      effects: [],
     });
   }
   const next = command.decision;
@@ -879,6 +879,7 @@ const cancelRun = (
     "UPDATE pending_actions SET state = 'canceled' WHERE run_id = ? AND state IN ('pending','allowed')",
     [current.id],
   );
+  run(db, "UPDATE approvals SET state='canceled' WHERE run_id=? AND state='pending'", [current.id]);
   emit(db, "run_canceled", { runId: current.id, commandId }, input.nowMs);
   return receiptOf({
     commandId,
@@ -907,6 +908,7 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
       [item.id],
     );
   }
+  run(db, "UPDATE approvals SET state='canceled' WHERE state='pending'", []);
   run(
     db,
     "UPDATE runs SET provider_state=json_set(provider_state,'$.loadStatus','failed') WHERE json_extract(provider_state,'$.loadStatus')='loading'",

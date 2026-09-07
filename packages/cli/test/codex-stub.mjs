@@ -49,6 +49,27 @@ createInterface({ input: process.stdin }).on("line", (line) => {
     const text = message.params?.input?.[0]?.text ?? "";
     turnId = `turn-${Date.now()}`;
     send({ id: message.id, result: { turn: { id: turnId } } });
+    if (text === "PLAN_ONLY" || text === "PLAN_DUPLICATE") {
+      send({
+        method: "item/completed",
+        params: {
+          threadId,
+          turnId,
+          item: { type: "plan", id: "plan-stub", text: "# Greeting plan\n1. Draft hello." },
+        },
+      });
+      if (text === "PLAN_DUPLICATE")
+        send({
+          method: "item/completed",
+          params: {
+            threadId,
+            turnId,
+            item: { type: "plan", id: "plan-stub", text: "Conflicting late plan" },
+          },
+        });
+      send({ method: "turn/completed", turn: { id: turnId, status: "completed" } });
+      return;
+    }
     if (text === "OVERLAP") {
       send({
         id: "first-approval",

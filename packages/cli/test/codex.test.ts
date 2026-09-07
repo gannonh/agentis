@@ -62,7 +62,12 @@ const statusOf = async (endpoint: URL, token: string) => {
       status: string;
       providerSessionId: string | null;
       frozen: unknown;
-      providerState: { loadStatus: string; failure: string | null };
+      providerState: {
+        loadStatus: string;
+        failure: string | null;
+        history: string[];
+        capabilities: { name: string; operation?: string; reason: string }[];
+      };
     }[];
     pending: { approvalId: string | null; state: string; runId: string }[];
     artifacts: { taskId: string; runId: string; source: string; sha256: string; path: string }[];
@@ -318,6 +323,58 @@ describe("codex stub protocol", () => {
       );
       expect(done.runs[0]?.providerState.failure).toBe("auth-unavailable");
       expect(done.artifacts).toHaveLength(0);
+    } finally {
+      await server.close();
+    }
+  });
+  it("retains native plan-only output without inventing a blocking approval", async () => {
+    const { endpoint, server, owner } = await boot();
+    try {
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "PLAN_ONLY", mode: "plan" },
+      });
+      const done = await waitFor(endpoint, owner.token, (state) =>
+        ["succeeded", "failed"].includes(state.runs[0]?.status ?? ""),
+      );
+      expect(done.runs[0]?.status).toBe("succeeded");
+      expect(readFileSync(done.artifacts[0]?.path ?? "", "utf8")).toBe(
+        "# Greeting plan\n1. Draft hello.",
+      );
+      expect(done.runs[0]?.providerState.history.map((entry) => JSON.parse(entry))).toContainEqual({
+        type: "plan",
+        id: "plan-stub",
+        text: "# Greeting plan\n1. Draft hello.",
+      });
+      expect(done.pending.filter((action) => action.approvalId)).toHaveLength(0);
+      expect(
+        done.runs[0]?.providerState.capabilities.find((capability) => capability.name === "plans"),
+      ).toMatchObject({
+        operation: "unavailable",
+        reason: "native-plan-output-without-blocking-approval",
+      });
+    } finally {
+      await server.close();
+    }
+  });
+  it("keeps the first completed plan when the same item is delivered again", async () => {
+    const { endpoint, server, owner } = await boot();
+    try {
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "PLAN_DUPLICATE", mode: "plan" },
+      });
+      const done = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.status === "succeeded",
+      );
+      expect(done.runs[0]?.providerState.history.map((entry) => JSON.parse(entry))).toEqual([
+        { type: "plan", id: "plan-stub", text: "# Greeting plan\n1. Draft hello." },
+      ]);
+      expect(readFileSync(done.artifacts[0]?.path ?? "", "utf8")).toBe(
+        "# Greeting plan\n1. Draft hello.",
+      );
     } finally {
       await server.close();
     }

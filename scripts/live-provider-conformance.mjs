@@ -62,7 +62,10 @@ const prompts = {
   allow:
     'Run exactly node -e "console.log(3243)" once. Request approval. Do not access files or use other tools. Then return the output as text.',
   deny: 'Run exactly node -e "console.log(3243)" once. Request approval. If denied, stop without retrying. Do not access files or use other tools.',
-  plan: "Use create_plan to propose a one-step plan to draft a greeting. Wait for explicit approval. Do not execute the plan or access files.",
+  plan:
+    bot === "mara"
+      ? "Return a native plan item proposing one step to draft a greeting. Do not execute the plan, request approval, use tools, or access files."
+      : "Use create_plan to propose a one-step plan to draft a greeting. Wait for explicit approval. Do not execute the plan or access files.",
   input: `Use ${bot === "mara" ? "request_user_input" : "ask_question"} to ask me to choose Red or Blue. Wait for my structured answer. Do not access files or use other tools. Return the selected color only.`,
   cancel:
     "Draft a detailed comparison of thirty imaginary greeting styles. Do not access files or use tools.",
@@ -93,7 +96,8 @@ try {
       row.runId = receipt.runId;
       row.taskId = receipt.taskId;
       row.threadId = receipt.threadId;
-      if (name === "smoke" || name === "no-auth") {
+      const nativeCodexPlan = bot === "mara" && name === "plan";
+      if (name === "smoke" || name === "no-auth" || nativeCodexPlan) {
         // The terminal assertion below checks the provider-authored marker.
       } else if (name === "cancel") {
         await wait(receipt.runId, (run) => run?.status === "running" || terminal(run));
@@ -136,12 +140,35 @@ try {
       const artifact = done.snapshot.artifacts.find((item) => item.runId === receipt.runId);
       row.artifact = artifact ?? null;
       if (artifact) row.body = readFileSync(artifact.path, "utf8");
-      const expected = ["allow", "smoke", "input"].includes(name)
-        ? "succeeded"
-        : name === "cancel"
-          ? "canceled"
-          : "failed";
+      const expected =
+        nativeCodexPlan || ["allow", "smoke", "input"].includes(name)
+          ? "succeeded"
+          : name === "cancel"
+            ? "canceled"
+            : "failed";
       if (done.run.status !== expected) throw new Error("Unexpected terminal state");
+      if (nativeCodexPlan) {
+        row.nativePlans = done.run.providerState.history
+          .map((entry) => JSON.parse(entry))
+          .filter(
+            (item) =>
+              item.type === "plan" && typeof item.id === "string" && typeof item.text === "string",
+          );
+        row.blockingApprovalObserved = done.snapshot.pending.some(
+          (item) => item.runId === receipt.runId && item.approvalId,
+        );
+        row.planCapability = done.run.providerState.capabilities.find(
+          (capability) => capability.name === "plans",
+        );
+        if (
+          !row.nativePlans.length ||
+          row.blockingApprovalObserved ||
+          !row.body?.trim() ||
+          row.planCapability?.operation !== "unavailable" ||
+          row.planCapability?.reason !== "native-plan-output-without-blocking-approval"
+        )
+          throw new Error("Native plan output or honest nonblocking capability missing");
+      }
       if (name === "no-auth" && row.failure !== "auth-unavailable")
         throw new Error("Expected typed authentication failure");
       if (name === "smoke" && row.body?.trim() !== "KAT3243_CONTAINER_OK")

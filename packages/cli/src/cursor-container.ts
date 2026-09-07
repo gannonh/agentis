@@ -10,7 +10,7 @@ import {
   existsSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { docker, prepareProviderNetwork, removeProviderNetwork, squidConfig } from "./provider.js";
 import { spawnInRunContainer } from "./container.js";
 import { CURSOR_CLI_PIN, CURSOR_IMAGE } from "./versions.js";
@@ -89,7 +89,6 @@ export const spawnCursorInContainer = (input: {
   const policyDirectory = join(input.workspace, ".cursor");
   if (input.draftOnly) {
     mkdirSync(policyDirectory, { recursive: true, mode: 0o755 });
-    const path = join(policyDirectory, "cli.json");
     const policy = JSON.stringify({
       permissions: {
         allow: [],
@@ -104,11 +103,35 @@ export const spawnCursorInContainer = (input: {
         ],
       },
     });
-    if (input.loadSession && !existsSync(path))
-      throw new Error("Cursor handoff policy missing; refusing session load");
-    if (!existsSync(path)) writeFileSync(path, policy, { flag: "wx", mode: 0o444 });
-    if (readFileSync(path, "utf8") !== policy)
-      throw new Error("Cursor handoff policy changed; refusing launch");
+    const hooks = JSON.stringify({
+      version: 1,
+      hooks: {
+        subagentStart: [
+          {
+            command: "/bin/sh .cursor/hooks/deny-native-subagent.sh",
+            failClosed: true,
+            timeout: 5,
+          },
+        ],
+      },
+    });
+    const denySubagent = `#!/bin/sh
+cat >/dev/null
+printf '%s\\n' '{"permission":"deny","user_message":"Native subagents are disabled; use the Agentis handoff."}'
+`;
+    for (const [relative, expected] of [
+      ["cli.json", policy],
+      ["hooks.json", hooks],
+      ["hooks/deny-native-subagent.sh", denySubagent],
+    ] as const) {
+      const path = join(policyDirectory, relative);
+      if (input.loadSession && !existsSync(path))
+        throw new Error("Cursor handoff policy missing; refusing session load");
+      mkdirSync(dirname(path), { recursive: true, mode: 0o755 });
+      if (!existsSync(path)) writeFileSync(path, expected, { flag: "wx", mode: 0o444 });
+      if (readFileSync(path, "utf8") !== expected)
+        throw new Error("Cursor handoff policy changed; refusing launch");
+    }
   }
   const network = prepareProviderNetwork(input.runId, CURSOR_IMAGE);
   try {
