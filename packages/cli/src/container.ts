@@ -1,7 +1,15 @@
 import { realpathSync } from "node:fs";
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
 
-const dockerRunBase = (workspace: string, extraEnv: Record<string, string> = {}) => {
+const CODEX_CONTAINER_PATH = "/usr/local/bin/codex";
+const CODEX_STUB_CONTAINER_PATH = "/opt/agentis/codex-stub.mjs";
+
+const dockerRunBase = (input: {
+  readonly workspace?: string;
+  readonly name?: string;
+  readonly runId?: string;
+  readonly extraEnv?: Record<string, string>;
+}) => {
   const args = [
     "run",
     "--rm",
@@ -18,19 +26,37 @@ const dockerRunBase = (workspace: string, extraEnv: Record<string, string> = {})
     "--cpus=2",
     "--tmpfs",
     "/tmp:rw,nosuid,nodev,size=134217728",
-    "--mount",
-    `type=bind,src=${workspace},dst=/workspace`,
-    "-w",
-    "/workspace",
     "-e",
     "HOME=/tmp/codex-home",
     "-e",
     "NO_OPEN_BROWSER=1",
   ];
-  for (const [key, value] of Object.entries(extraEnv)) {
+  if (input.name) {
+    args.push("--name", input.name);
+  }
+  if (input.runId) {
+    args.push("--label", `io.agentis.run-id=${input.runId}`);
+  }
+  if (input.workspace) {
+    args.push("--mount", `type=bind,src=${input.workspace},dst=/workspace`, "-w", "/workspace");
+  }
+  for (const [key, value] of Object.entries(input.extraEnv ?? {})) {
     args.push("-e", `${key}=${value}`);
   }
   return args;
+};
+
+export const runContainerName = (runId: string) => `agentis-run-${runId}`;
+
+export const assertCodexContainerPlatform = (
+  platform: NodeJS.Platform = process.platform,
+): void => {
+  if (platform === "darwin") {
+    throw new Error(
+      "macOS Codex executable cannot run in the Linux Run container; " +
+        "a Linux Codex payload, container-scoped authentication, and provider network access are not provisioned",
+    );
+  }
 };
 
 const resolveCodexBinary = () => {
@@ -41,45 +67,93 @@ const resolveCodexBinary = () => {
   return realpathSync(which.stdout.trim());
 };
 
-export const spawnInRunContainer = (input: {
-  readonly workspace: string;
-  readonly command: readonly string[];
-  readonly env?: Record<string, string>;
-}): ChildProcessWithoutNullStreams => {
-  const args = dockerRunBase(input.workspace, input.env ?? {});
-  args.push("node:24-bookworm-slim", ...input.command);
-  return spawn("docker", args, {
-    cwd: input.workspace,
-    stdio: ["pipe", "pipe", "pipe"],
+export type RunContainerProcess = {
+  readonly child: ChildProcessWithoutNullStreams;
+  readonly stop: () => void;
+};
+
+type ReadonlyBindMount = {
+  readonly source: string;
+  readonly destination: string;
+};
+
+export const removeRunContainer = (runId: string): void => {
+  spawnSync("docker", ["rm", "-f", runContainerName(runId)], {
+    stdio: "ignore",
   });
 };
 
-export const spawnCodexAppServerInContainer = (input: {
+export const spawnInRunContainer = (input: {
+  readonly runId: string;
   readonly workspace: string;
-  readonly stub?: string;
-}): ChildProcessWithoutNullStreams => {
-  if (input.stub) {
-    return spawnInRunContainer({
-      workspace: input.workspace,
-      env: { AGENTIS_CODEX_STUB: input.stub, PATH: "/usr/local/bin:/usr/bin:/bin" },
-      command: ["node", input.stub],
-    });
+  readonly command: readonly string[];
+  readonly env?: Record<string, string>;
+  readonly readonlyMounts?: readonly ReadonlyBindMount[];
+}): RunContainerProcess => {
+  const name = runContainerName(input.runId);
+  const args = dockerRunBase({
+    workspace: input.workspace,
+    name,
+    runId: input.runId,
+    ...(input.env ? { extraEnv: input.env } : {}),
+  });
+  for (const mount of input.readonlyMounts ?? []) {
+    args.push("--mount", `type=bind,src=${mount.source},dst=${mount.destination},readonly`);
   }
-  const codex = resolveCodexBinary();
-  const args = dockerRunBase(input.workspace);
-  args.push("-v", `${codex}:${codex}:ro`);
-  args.push("node:24-bookworm-slim", "node", codex, "--disable", "hooks", "app-server", "--listen", "stdio://");
-  return spawn("docker", args, {
+  args.push("node:24-bookworm-slim", ...input.command);
+  const child = spawn("docker", args, {
     cwd: input.workspace,
     stdio: ["pipe", "pipe", "pipe"],
+  });
+  return {
+    child,
+    stop: () => {
+      if (child.exitCode === null && !child.killed) {
+        child.kill("SIGTERM");
+      }
+      removeRunContainer(input.runId);
+    },
+  };
+};
+
+export const spawnCodexAppServerInContainer = (input: {
+  readonly runId: string;
+  readonly workspace: string;
+  readonly stub?: string;
+}): RunContainerProcess => {
+  if (input.stub) {
+    return spawnInRunContainer({
+      runId: input.runId,
+      workspace: input.workspace,
+      env: {
+        AGENTIS_CODEX_STUB: CODEX_STUB_CONTAINER_PATH,
+        PATH: "/usr/local/bin:/usr/bin:/bin",
+      },
+      readonlyMounts: [
+        {
+          source: input.stub,
+          destination: CODEX_STUB_CONTAINER_PATH,
+        },
+      ],
+      command: ["node", CODEX_STUB_CONTAINER_PATH],
+    });
+  }
+  assertCodexContainerPlatform();
+  const codex = resolveCodexBinary();
+  return spawnInRunContainer({
+    runId: input.runId,
+    workspace: input.workspace,
+    readonlyMounts: [{ source: codex, destination: CODEX_CONTAINER_PATH }],
+    command: [CODEX_CONTAINER_PATH, "--disable", "hooks", "app-server", "--listen", "stdio://"],
   });
 };
 
 export const readCodexVersionInContainer = async (pin: string) => {
+  assertCodexContainerPlatform();
   const codex = resolveCodexBinary();
-  const args = dockerRunBase("/tmp");
-  args.push("-v", `${codex}:${codex}:ro`);
-  args.push("node:24-bookworm-slim", "node", codex, "--version");
+  const args = dockerRunBase({});
+  args.push("--mount", `type=bind,src=${codex},dst=${CODEX_CONTAINER_PATH},readonly`);
+  args.push("node:24-bookworm-slim", CODEX_CONTAINER_PATH, "--version");
   const child = spawn("docker", args, { stdio: ["ignore", "pipe", "pipe"] });
   const text = await new Promise<string>((resolve, reject) => {
     let out = "";

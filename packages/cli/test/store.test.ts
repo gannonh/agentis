@@ -54,7 +54,9 @@ describe("store", () => {
     db.exec("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
     db.prepare("INSERT INTO meta (key, value) VALUES ('schema_id', 'agentis.v1')").run();
     db.close();
-    await expect(Effect.runPromise(openStore(root))).rejects.toThrow(/unsupported schema agentis.v1/);
+    await expect(Effect.runPromise(openStore(root))).rejects.toThrow(
+      /unsupported schema agentis.v1/,
+    );
     const after = new DatabaseSync(path);
     const tables = after
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
@@ -116,6 +118,17 @@ describe("store", () => {
         ...base,
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "one", fixture: "smoke" },
+      }),
+    );
+    expect(first.runId).toBeDefined();
+    if (!first.runId) {
+      throw new Error("first Run was not created");
+    }
+    await Effect.runPromise(
+      store.applyCommand({
+        ...base,
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "cancel_run", runId: first.runId },
       }),
     );
     const second = await Effect.runPromise(

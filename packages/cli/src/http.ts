@@ -43,11 +43,11 @@ const json = (response: ServerResponse, status: number, body: unknown) => {
 
 const loopback = (hostname: string) => hostname === "127.0.0.1" || hostname === "localhost";
 
-const applySweepEffects = (store: Store) => {
+const applySweepEffects = (store: Store, executionBoundary: typeof ExecutionBoundary.Type) => {
   const swept = sweepRunTimeouts(store.path, Date.now());
   for (const item of swept) {
     if (item.effects.includes("interrupt_provider")) {
-      interruptCodex(item.runId);
+      interruptCodex(item.runId, executionBoundary);
     }
   }
 };
@@ -62,9 +62,12 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
     }
     const owner = yield* loadOrCreateOwner(options.dataRoot);
     const store = yield* openStore(options.dataRoot);
-    yield* store.interruptActiveRuns(Date.now());
+    const interrupted = yield* store.interruptActiveRuns(Date.now());
+    for (const runId of interrupted) {
+      interruptCodex(runId, options.executionBoundary);
+    }
     const sweepTimer = setInterval(() => {
-      applySweepEffects(store);
+      applySweepEffects(store, options.executionBoundary);
     }, 1000);
     const server = createServer((request, response) => {
       void handle(request, response).catch((error: unknown) => {
@@ -140,7 +143,7 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
             clearInterval(poll);
             return;
           }
-          applySweepEffects(store);
+          applySweepEffects(store, options.executionBoundary);
           const live = await Effect.runPromise(store.snapshot());
           writeEvents(live.events);
         }, 250);
@@ -178,16 +181,9 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
           receipt,
           command: parsed.command,
           provider: options.provider,
-          workspace: options.workspace,
+          executionBoundary: options.executionBoundary,
           nowMs: Date.now(),
         });
-        if (receipt.effects.includes("interrupt_provider")) {
-          if (receipt.runId) {
-            interruptCodex(receipt.runId);
-          } else {
-            applySweepEffects(store);
-          }
-        }
         json(response, receipt.accepted ? 200 : 409, Schema.encodeSync(CommandReceipt)(receipt));
         return;
       }
@@ -208,6 +204,10 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
         await new Promise<void>((resolve, reject) => {
           server.close((error) => (error ? reject(error) : resolve()));
         });
+        const interrupted = await Effect.runPromise(store.interruptActiveRuns(Date.now()));
+        for (const runId of interrupted) {
+          interruptCodex(runId, options.executionBoundary);
+        }
         await Effect.runPromise(store.close());
       },
     };
