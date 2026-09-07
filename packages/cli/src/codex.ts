@@ -117,10 +117,18 @@ const failRun = (input: DriveInput, error: string) => {
   engine.close();
 };
 
+// stop() removes the Run container and throws when Docker is unreachable or the container
+// survives; callers run inside child/timer callbacks where an escaped throw kills the daemon.
 const dropSession = (runId: RunId) => {
   const session = sessions.get(runId);
   sessions.delete(runId);
-  session?.stop();
+  try {
+    session?.stop();
+  } catch (error) {
+    process.stderr.write(
+      `run ${runId} cleanup failed: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+  }
   return session !== undefined;
 };
 

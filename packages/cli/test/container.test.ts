@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadOrCreateOwner } from "../src/auth.js";
 import {
   assertCodexContainerPlatform,
@@ -319,6 +319,52 @@ describe.sequential("Run containers", () => {
         ),
       ).toBe(false);
     } finally {
+      await server.close();
+    }
+  });
+
+  it("fails only the Run when Docker disappears while the container is active", async () => {
+    const { root, state } = fakeDocker();
+    process.env.AGENTIS_CODEX_STUB = stub;
+    process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS = "2000";
+    const endpoint = new URL(`http://127.0.0.1:${await port()}`);
+    const server = await Effect.runPromise(
+      startServer({
+        endpoint,
+        dataRoot: root,
+        workspace: join(root, "scratch"),
+        provider: "codex",
+        executionBoundary: "docker-desktop-run-container",
+      }),
+    );
+    const owner = await Effect.runPromise(loadOrCreateOwner(root));
+    const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    try {
+      const active = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "INPUT wait for docker loss" },
+      });
+      if (!active.runId) {
+        throw new Error("Run was not created");
+      }
+      await waitForStatus(endpoint, owner.token, active.runId, "waiting_input");
+      const { pid } = JSON.parse(readFileSync(state, "utf8")) as { pid: number };
+      writeFileSync(
+        join(root, "bin", "docker"),
+        "#!/bin/sh\necho 'Cannot connect to the Docker daemon' >&2\nexit 1\n",
+        { mode: 0o700 },
+      );
+      process.kill(pid, "SIGTERM");
+      await waitForStatus(endpoint, owner.token, active.runId, "failed");
+      expect(stderr.mock.calls.map(([chunk]) => String(chunk)).join("")).toMatch(
+        new RegExp(`run ${active.runId} cleanup failed: could not inspect Run container`),
+      );
+      const health = await fetch(new URL("/v1/health", endpoint));
+      expect(health.status).toBe(200);
+    } finally {
+      stderr.mockRestore();
+      copyFileSync(fakeDockerScript, join(root, "bin", "docker"));
+      chmodSync(join(root, "bin", "docker"), 0o700);
       await server.close();
     }
   });

@@ -44,6 +44,7 @@ writeFileSync(
     name: args[args.indexOf("--name") + 1],
     managed: labels["io.agentis.managed"],
     runId: labels["io.agentis.run-id"],
+    pid: process.pid,
   }),
 );
 
