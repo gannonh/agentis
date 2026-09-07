@@ -1,5 +1,7 @@
 # Two-provider workflow evidence
 
+Provider-selection revision: Gannon approved deferring Cursor and testing a replacement before adapter work. The matrix below records the rejected Codex/Cursor candidate; its passing rows do not certify a replacement. The new feasibility record is under `replacement-provider/`. Codex and the lifecycle fixes remain in the draft.
+
 Overall readiness: **BLOCKED**. The implementation is available for review in a draft PR. KAT-3243 remains In Progress; the original acceptance criteria are not complete.
 
 Latest product source: `c7cf2c70` (earlier receipts identify their original source). This revision fixes native Codex plan retention, stale approval dispatch and expired-approval cleanup, and adds the documented Cursor subagent hook for conformance testing. Verification ran on macOS arm64 with Docker Desktop and Node 24.20.0 on September 7, 2026.

@@ -81,6 +81,7 @@ Git commit: c7cf2c70
 - Exit 0: `"node" "scripts/live-handoff-conformance.mjs" "/Users/gannonhall/.agentis/kat-3243-validation-v3" "--concurrency-only"` -> `docs/verification/kat-3243/evidence/logs/corrected-live-concurrency-retry.log`
 
 ## Notes
+- Provider selection revised with owner approval: Cursor deferred; Claude SDK API candidate feasibility pending. This matrix records the prior Codex/Cursor candidate and does not certify the replacement. See ../replacement-provider/.
 - Overall readiness BLOCKED. Both providers are authenticated; no further login is required.
 - Cursor native Task launched despite configured denial: FAIL. Cursor blocking question emission remains unproven. These prevent ready-for-review.
 - 80 tests and required checks pass. Final live accepted handoff and concurrency/stop-all pass. Fixtures and reviews do not override native enforcement failure.
