@@ -100,6 +100,41 @@ describe("store", () => {
     await Effect.runPromise(store.close());
   });
 
+  it("freezes a distinct workspace root for every Run", async () => {
+    const root = tempRoot();
+    const workspaceRoot = join(root, "scratch");
+    const store = await Effect.runPromise(openStore(root));
+    const base: Omit<ApplyInput, "command" | "idempotencyKey"> = {
+      principal: owner(),
+      nowMs: Date.now(),
+      provider: "fake",
+      executionBoundary: "unverified-host-scratch",
+      workspaceId: workspaceRoot,
+    };
+    const first = await Effect.runPromise(
+      store.applyCommand({
+        ...base,
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "one", fixture: "smoke" },
+      }),
+    );
+    const second = await Effect.runPromise(
+      store.applyCommand({
+        ...base,
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "two", fixture: "smoke" },
+      }),
+    );
+    const snapshot = await Effect.runPromise(store.snapshot());
+    await Effect.runPromise(store.close());
+
+    const firstRun = snapshot.runs.find((run) => run.id === first.runId);
+    const secondRun = snapshot.runs.find((run) => run.id === second.runId);
+    expect(firstRun?.frozen.workspaceId).toBe(join(workspaceRoot, "runs", first.runId ?? ""));
+    expect(secondRun?.frozen.workspaceId).toBe(join(workspaceRoot, "runs", second.runId ?? ""));
+    expect(firstRun?.frozen.workspaceId).not.toBe(secondRun?.frozen.workspaceId);
+  });
+
   it("rejects bot approval and launch", async () => {
     const root = tempRoot();
     await expect(
