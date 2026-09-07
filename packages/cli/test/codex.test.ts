@@ -97,7 +97,7 @@ describe("codex stub protocol", () => {
     try {
       const submitted = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
-        command: { kind: "submit_task", brief: "Reply exactly KAT3242_OK." },
+        command: { kind: "submit_task", brief: "Reply exactly PROMPT_ONLY_MARKER." },
       });
       expect(submitted.json.accepted).toBe(true);
       const snap = await waitFor(
@@ -105,6 +105,7 @@ describe("codex stub protocol", () => {
         owner.token,
         (value) => value.runs[0]?.status === "succeeded" && value.artifacts.length === 1,
       );
+      expect(readFileSync(snap.artifacts[0]?.path ?? "", "utf8")).toBe("KAT3242_OK");
       expect(snap.runs[0]?.providerSessionId).toBe("thread-stub");
       expect(snap.artifacts[0]?.source).toBe("codex");
       expect(snap.artifacts[0]?.runId).toBe(submitted.json.runId);
@@ -296,6 +297,27 @@ describe("codex stub protocol", () => {
         (state) => state.runs[0]?.status === "succeeded",
       );
       expect(readFileSync(done.artifacts[0]?.path ?? "", "utf8")).toBe("FIRST_APPROVED");
+    } finally {
+      await server.close();
+    }
+  });
+  it("classifies the native missing-credential exit as auth-unavailable", async () => {
+    const { endpoint, server, owner, dataRoot } = await boot();
+    const missingAuth = join(dataRoot, "missing-auth.mjs");
+    writeFileSync(missingAuth, "process.exit(77);\n");
+    process.env.AGENTIS_CODEX_STUB = missingAuth;
+    try {
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "smoke" },
+      });
+      const done = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.status === "failed",
+      );
+      expect(done.runs[0]?.providerState.failure).toBe("auth-unavailable");
+      expect(done.artifacts).toHaveLength(0);
     } finally {
       await server.close();
     }

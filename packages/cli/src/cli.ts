@@ -28,6 +28,7 @@ const usage = `Usage:
   agentis serve --endpoint URL [--data-root DIR] [--profile NAME] [--provider fake|codex] [--execution-boundary docker-desktop-run-container|unverified-host-scratch]
   agentis doctor --endpoint URL | --profile NAME [--data-root DIR]
   agentis task submit --endpoint URL --brief TEXT [--fixture smoke|allow|deny|input|cancel]
+  agentis task handoff --endpoint URL --run SOURCE_RUN --brief CONTEXT
   agentis approval allow|deny --endpoint URL --approval ID
   agentis input answer --endpoint URL --run ID --answer KEY=VALUE
   agentis run cancel --endpoint URL --run ID
@@ -214,6 +215,17 @@ export const runCli = async (argv: string[]): Promise<number> => {
     const result = await commandFetch(control.endpoint, control.dataRoot, {
       kind: "load_session",
       runId: Schema.decodeUnknownSync(RunId)(values.run),
+    });
+    process.stdout.write(`${result.body}\n`);
+    return result.status === 200 ? 0 : 1;
+  }
+  if (verb === "task" && positionals[0] === "handoff") {
+    if (!values.run || !values.brief) throw new Error("--run and --brief are required");
+    const result = await commandFetch(control.endpoint, control.dataRoot, {
+      kind: "propose_handoff",
+      sourceRunId: Schema.decodeUnknownSync(RunId)(values.run),
+      recipient: "ivo",
+      context: values.brief,
     });
     process.stdout.write(`${result.body}\n`);
     return result.status === 200 ? 0 : 1;

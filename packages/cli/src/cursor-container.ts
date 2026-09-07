@@ -1,6 +1,14 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { docker, prepareProviderNetwork, removeProviderNetwork, squidConfig } from "./provider.js";
@@ -72,11 +80,36 @@ export const spawnCursorInContainer = (input: {
   workspace: string;
   dataRoot: string;
   loadSession?: boolean;
+  draftOnly?: boolean;
 }) => {
   const volume = cursorVolume(input.dataRoot);
   docker(["volume", "inspect", volume]);
   const homeVolume = `agentis-provider-state-${input.runId}`;
   docker(["volume", "create", "--label", "io.agentis.managed=provider-state", homeVolume]);
+  const policyDirectory = join(input.workspace, ".cursor");
+  if (input.draftOnly) {
+    mkdirSync(policyDirectory, { recursive: true, mode: 0o755 });
+    const path = join(policyDirectory, "cli.json");
+    const policy = JSON.stringify({
+      permissions: {
+        allow: [],
+        deny: [
+          "Shell(*)",
+          "Read(**)",
+          "Read(/**)",
+          "Write(**)",
+          "Write(/**)",
+          "WebFetch(*)",
+          "Mcp(*:*)",
+        ],
+      },
+    });
+    if (input.loadSession && !existsSync(path))
+      throw new Error("Cursor handoff policy missing; refusing session load");
+    if (!existsSync(path)) writeFileSync(path, policy, { flag: "wx", mode: 0o444 });
+    if (readFileSync(path, "utf8") !== policy)
+      throw new Error("Cursor handoff policy changed; refusing launch");
+  }
   const network = prepareProviderNetwork(input.runId, CURSOR_IMAGE);
   try {
     return spawnInRunContainer({
@@ -86,7 +119,7 @@ export const spawnCursorInContainer = (input: {
       network,
       providerAuthVolume: volume,
       providerHomeVolume: homeVolume,
-      ...(input.loadSession ? { workspaceReadonly: true } : {}),
+      ...(input.loadSession || input.draftOnly ? { workspaceReadonly: true } : {}),
       env: { HOME: "/provider-home" },
       command: [
         "sh",

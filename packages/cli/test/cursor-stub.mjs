@@ -1,9 +1,28 @@
-import { writeFileSync } from "node:fs";
+import { writeFileSync, appendFileSync, readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
-const send = (value) => process.stdout.write(JSON.stringify({ jsonrpc: "2.0", ...value }) + "\n");
+let replaying = false;
+const send = (value) => {
+  if (!replaying && value.method === "session/update")
+    appendFileSync("history.jsonl", JSON.stringify(value.params.update) + "\n");
+  process.stdout.write(JSON.stringify({ jsonrpc: "2.0", ...value }) + "\n");
+};
 let promptId;
 createInterface({ input: process.stdin }).on("line", async (line) => {
   const { id, method, params, result } = JSON.parse(line);
+  if (id === "handoff-permission" && result) {
+    send({
+      method: "session/update",
+      params: {
+        sessionId: "cursor-session-1",
+        update: {
+          sessionUpdate: "agent_message_chunk",
+          content: { type: "text", text: JSON.stringify(result) },
+        },
+      },
+    });
+    send({ id: promptId, result: { stopReason: "end_turn" } });
+    return;
+  }
   if (id === "permission" && result) {
     if (result.outcome?.optionId === "reject-once") {
       setTimeout(() => {
@@ -41,6 +60,81 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
   }
   if (method === "session/prompt") {
     const text = params.prompt[0].text;
+    appendFileSync("prompts.jsonl", JSON.stringify(params) + "\n");
+    appendFileSync(
+      "history.jsonl",
+      JSON.stringify({ sessionUpdate: "user_message_chunk", content: { type: "text", text } }) +
+        "\n",
+    );
+    if (text.startsWith("You are Ivo. Mara proposes bounded handoff")) {
+      let handoffId = text.match(/handoff (handoff_[^ .]+)/)[1];
+      if (text.includes("DELAY_HANDOFF")) await new Promise((resolve) => setTimeout(resolve, 250));
+      if (text.includes("WRONG_HANDOFF")) handoffId = "wrong";
+      if (text.includes("TOOL_HANDOFF"))
+        send({
+          method: "session/update",
+          params: {
+            sessionId: params.sessionId,
+            update: {
+              sessionUpdate: "tool_call",
+              toolCallId: "forbidden",
+              title: "Native tool",
+              kind: "execute",
+              status: "completed",
+            },
+          },
+        });
+      const decision = JSON.stringify({
+        handoffId,
+        decision: text.includes("REJECT_HANDOFF") ? "reject" : "accept",
+      });
+      const answer = text.includes("MALFORMED_HANDOFF")
+        ? "yes"
+        : text.includes("QUOTED_HANDOFF")
+          ? `Quoted: ${decision}`
+          : decision;
+      send({
+        method: "session/update",
+        params: {
+          sessionId: text.includes("WRONG_SESSION_HANDOFF") ? "foreign-session" : params.sessionId,
+          update: { sessionUpdate: "agent_message_chunk", content: { type: "text", text: answer } },
+        },
+      });
+      send({ id, result: { stopReason: "end_turn" } });
+      return;
+    }
+    if (text.startsWith("You accepted handoff") && text.includes("PERMISSION_HANDOFF")) {
+      promptId = id;
+      send({
+        id: "handoff-permission",
+        method: "session/request_permission",
+        params: {
+          sessionId: params.sessionId,
+          toolCall: {
+            toolCallId: "attempt-write",
+            title: "write resource",
+            kind: "edit",
+            status: "pending",
+          },
+          options: [{ optionId: "allow", name: "allow", kind: "allow_once" }],
+        },
+      });
+      return;
+    }
+    if (text.startsWith("You accepted handoff")) {
+      send({
+        method: "session/update",
+        params: {
+          sessionId: params.sessionId,
+          update: {
+            sessionUpdate: "agent_message_chunk",
+            content: { type: "text", text: "SPECIALIST_DRAFT" },
+          },
+        },
+      });
+      send({ id, result: { stopReason: "end_turn" } });
+      return;
+    }
     if (text === "QUESTION" || text === "PLAN") {
       promptId = id;
       send(
@@ -145,23 +239,12 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
     });
   else if (method === "session/load") {
     await new Promise((resolve) => setTimeout(resolve, 80));
-    send({
-      method: "session/update",
-      params: {
-        sessionId: params.sessionId,
-        update: { sessionUpdate: "user_message_chunk", content: { type: "text", text: "smoke" } },
-      },
-    });
-    send({
-      method: "session/update",
-      params: {
-        sessionId: params.sessionId,
-        update: {
-          sessionUpdate: "agent_message_chunk",
-          content: { type: "text", text: "CURSOR_OK" },
-        },
-      },
-    });
+    replaying = true;
+    for (const line of readFileSync("history.jsonl", "utf8").trim().split("\n"))
+      send({
+        method: "session/update",
+        params: { sessionId: params.sessionId, update: JSON.parse(line) },
+      });
     send({ id, result: {} });
   } else if (method === "session/new")
     send({

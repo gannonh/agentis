@@ -236,7 +236,10 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> => {
         if (sessions.get(input.runId) !== session) {
           return;
         }
-        failRun(input, `codex exited ${code}`);
+        failRun(
+          input,
+          code === 77 ? "Codex provider credentials unavailable" : `codex exited ${code}`,
+        );
         dropSession(input.runId);
       });
       sessions.set(input.runId, session);

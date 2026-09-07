@@ -1,4 +1,4 @@
-export const SCHEMA_ID = "agentis.v2.gate0.3";
+export const SCHEMA_ID = "agentis.v2.gate0.4";
 export const API_FAMILY = "v1";
 export const PACKAGE_NAME = "@agentis-labs/cli";
 export const PACKAGE_VERSION = "2.0.0";

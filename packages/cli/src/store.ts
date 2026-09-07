@@ -1,16 +1,24 @@
+import {
+  HANDOFF_DDL,
+  handoffs,
+  handoffForRun,
+  proposeHandoff,
+  rejectHandoff,
+  decideHandoff,
+  claimDraft,
+} from "./handoff-store.js";
+import { row, rows, run, withTxn, emit, message } from "./store-db.js";
 import { ProviderState } from "./provider-contract.js";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DatabaseSync, type SQLInputValue } from "node:sqlite";
+import { DatabaseSync } from "node:sqlite";
 import { Effect, Schema } from "effect";
 import {
   newActionIntentId,
   newApprovalId,
   newArtifactId,
   newCommandId,
-  newEventId,
-  newMessageId,
   newRunId,
   newTaskId,
   newThreadId,
@@ -31,6 +39,7 @@ import {
   type ActionIntentId,
   type ApprovalId,
   type CommandId,
+  type HandoffRow,
   type IdempotencyKey,
   type PrincipalKind,
   type RunId,
@@ -43,6 +52,7 @@ import {
   CODEX_CLI_PIN,
   CODEX_TRANSPORT,
   MAX_ACTIONS_PER_RUN,
+  MAX_ACTIONS_PER_TASK,
   MAX_ACTIVE_RUNS,
   MAX_ACTIVE_RUNS_PER_BOT,
   RUN_DEADLINE_MS,
@@ -133,6 +143,7 @@ export type Snapshot = {
   readonly schemaId: string;
   readonly stopAll: boolean;
   readonly tasks: readonly TaskRow[];
+  readonly handoffs: readonly HandoffRow[];
   readonly runs: readonly RunRow[];
   readonly pending: readonly PendingActionRow[];
   readonly artifacts: readonly ArtifactRow[];
@@ -255,28 +266,6 @@ export type Store = {
   readonly close: () => Effect.Effect<void>;
 };
 
-const row = <T>(db: DatabaseSync, sql: string, params: SQLInputValue[] = []) =>
-  db.prepare(sql).get(...params) as T | undefined;
-
-const rows = <T>(db: DatabaseSync, sql: string, params: SQLInputValue[] = []) =>
-  db.prepare(sql).all(...params) as T[];
-
-const run = (db: DatabaseSync, sql: string, params: SQLInputValue[] = []) => {
-  db.prepare(sql).run(...params);
-};
-
-const withTxn = <T>(db: DatabaseSync, fn: () => T): T => {
-  db.exec("BEGIN IMMEDIATE");
-  try {
-    const result = fn();
-    db.exec("COMMIT");
-    return result;
-  } catch (error) {
-    db.exec("ROLLBACK");
-    throw error;
-  }
-};
-
 const assertSchemaBeforeOpen = (db: DatabaseSync, path: string) => {
   if (!existsSync(path) || statSync(path).size === 0) {
     return;
@@ -315,7 +304,7 @@ export const openStore = (
       assertSchemaBeforeOpen(db, path);
       db.exec("PRAGMA journal_mode = WAL;");
       db.exec("PRAGMA foreign_keys = ON;");
-      db.exec(DDL);
+      db.exec(DDL + HANDOFF_DDL);
       const existing = row<{ value: string }>(
         db,
         "SELECT value FROM meta WHERE key = 'schema_id'",
@@ -330,6 +319,7 @@ export const openStore = (
         run(db, "INSERT INTO stop_all (id, latched, updated_at) VALUES (1, 0, 0)", []);
       }
       const applyCommand = (input: ApplyInput): CommandReceipt => {
+        ownerOnly(input.principal, input.command.kind);
         const payloadDigest = digest(input.command);
         const prior = row<{ id: string; payload_digest: string; result_json: string }>(
           db,
@@ -396,15 +386,6 @@ export const openStore = (
       error instanceof UnsupportedSchemaError ? error : new StoreError(String(error)),
   });
 
-const emit = (db: DatabaseSync, type: string, body: Record<string, unknown>, nowMs: number) => {
-  run(db, "INSERT INTO events (id, type, body, created_at) VALUES (?, ?, ?, ?)", [
-    newEventId(),
-    type,
-    JSON.stringify(body),
-    nowMs,
-  ]);
-};
-
 const expireApprovalAndRun = (
   db: DatabaseSync,
   approval: { id: string; run_id: string; task_id: string },
@@ -424,41 +405,13 @@ const expireApprovalAndRun = (
   emit(db, "run_failed", { runId: approval.run_id, error: "approval expired", commandId }, nowMs);
 };
 
-const message = (
-  db: DatabaseSync,
-  input: {
-    threadId: string;
-    taskId: string;
-    runId: string | null;
-    authorKind: string;
-    authorName: string;
-    body: string;
-    nowMs: number;
-  },
-) => {
-  const id = newMessageId();
-  run(
-    db,
-    `INSERT INTO messages (id, thread_id, task_id, run_id, author_kind, author_name, body, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      input.threadId,
-      input.taskId,
-      input.runId,
-      input.authorKind,
-      input.authorName,
-      input.body,
-      input.nowMs,
-    ],
-  );
-  return id;
-};
-
 const dispatch = (db: DatabaseSync, input: ApplyInput): CommandReceipt => {
   const commandId = newCommandId();
   const command = input.command;
   switch (command.kind) {
+    case "propose_handoff":
+      ownerOnly(input.principal, "propose_handoff");
+      return proposeHandoff(db, commandId, input, command);
     case "submit_task":
       return submitTask(db, commandId, input, command);
     case "resolve_approval":
@@ -917,7 +870,10 @@ const cancelRun = (
   run(db, "UPDATE runs SET status = 'canceled', waiting_reason = 'none' WHERE id = ?", [
     current.id,
   ]);
-  run(db, "UPDATE tasks SET status = 'canceled' WHERE id = ?", [current.task_id]);
+  if (
+    !rejectHandoff(db, command.runId, "rejected", "owner canceled before acceptance", input.nowMs)
+  )
+    run(db, "UPDATE tasks SET status = 'canceled' WHERE id = ?", [current.task_id]);
   run(
     db,
     "UPDATE pending_actions SET state = 'canceled' WHERE run_id = ? AND state IN ('pending','allowed')",
@@ -943,7 +899,8 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
   );
   for (const item of active) {
     run(db, "UPDATE runs SET status = 'canceled', waiting_reason = 'none' WHERE id = ?", [item.id]);
-    run(db, "UPDATE tasks SET status = 'canceled' WHERE id = ?", [item.task_id]);
+    if (!rejectHandoff(db, item.id as RunId, "rejected", "stop-all before acceptance", input.nowMs))
+      run(db, "UPDATE tasks SET status = 'canceled' WHERE id = ?", [item.task_id]);
     run(
       db,
       "UPDATE pending_actions SET state = 'canceled' WHERE run_id = ? AND state IN ('pending','allowed')",
@@ -1023,6 +980,7 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
   return {
     schemaId: schema?.value ?? "",
     stopAll: stop?.latched === 1,
+    handoffs: handoffs(db),
     tasks: tasks.map((item) => ({
       id: item.id as TaskId,
       brief: item.brief,
@@ -1124,6 +1082,26 @@ export const mutateForEngine = (storePath: string) => {
   };
   return {
     isActive: active,
+    handoff: (runId: RunId) => handoffForRun(db, runId),
+    decideHandoff: (runId: RunId, sessionId: string, text: string, nowMs: number) =>
+      withTxn(db, () => decideHandoff(db, runId, sessionId, text, nowMs)),
+    claimDraft: (runId: RunId) =>
+      withTxn(
+        db,
+        () =>
+          active(runId) && handoffForRun(db, runId)?.state === "accepted" && claimDraft(db, runId),
+      ),
+    peerProgress: (runId: RunId, body: string, nowMs: number) =>
+      withTxn(db, () => {
+        const h = handoffForRun(db, runId);
+        if (!h || h.state !== "accepted" || !active(runId)) return;
+        emit(
+          db,
+          "peer_progress",
+          { taskId: h.taskId, threadId: h.threadId, runId, author: "ivo", body },
+          nowMs,
+        );
+      }),
     isLoading: (runId: RunId) => {
       const current = row<{ loading: number; stopped: number }>(
         db,
@@ -1232,6 +1210,8 @@ export const mutateForEngine = (storePath: string) => {
         if (!current || !active(input.runId)) {
           return null;
         }
+        const handoff = handoffForRun(db, input.runId);
+        if (handoff && handoff.state !== "accepted") return null;
         const artifactId = newArtifactId();
         run(
           db,
@@ -1255,6 +1235,30 @@ export const mutateForEngine = (storePath: string) => {
         ]);
         run(db, "UPDATE tasks SET status = 'completed' WHERE id = ?", [input.taskId]);
         emit(db, "run_succeeded", { runId: input.runId, artifactId }, input.nowMs);
+        if (handoff) {
+          message(db, {
+            threadId: handoff.threadId,
+            taskId: handoff.taskId,
+            runId: input.runId,
+            authorKind: "bot",
+            authorName: "ivo",
+            body: `Draft returned: ${artifactId}`,
+            nowMs: input.nowMs,
+          });
+          emit(
+            db,
+            "handoff_artifact",
+            {
+              handoffId: handoff.id,
+              taskId: handoff.taskId,
+              threadId: handoff.threadId,
+              runId: input.runId,
+              author: "ivo",
+              artifactId,
+            },
+            input.nowMs,
+          );
+        }
         return artifactId;
       }),
     fail: (runId: RunId, taskId: TaskId, error: string, nowMs: number) =>
@@ -1265,6 +1269,7 @@ export const mutateForEngine = (storePath: string) => {
         if (!current || !active(runId)) {
           return;
         }
+        if (rejectHandoff(db, runId, "rejected", error, nowMs)) return;
         run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [runId]);
         run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [taskId]);
         emit(db, "run_failed", { runId, error }, nowMs);
@@ -1280,7 +1285,15 @@ export const mutateForEngine = (storePath: string) => {
         const budget = current
           ? (JSON.parse(current.frozen_json) as FrozenConfig).actionBudget
           : MAX_ACTIONS_PER_RUN;
-        if ((current?.action_count ?? 0) >= budget) {
+        const task = row<{ action_count: number }>(
+          db,
+          "SELECT action_count FROM tasks WHERE id=?",
+          [taskId],
+        );
+        if (
+          (current?.action_count ?? 0) >= budget ||
+          (task?.action_count ?? 0) >= MAX_ACTIONS_PER_TASK
+        ) {
           return { exhausted: true as const };
         }
         run(db, "UPDATE runs SET action_count = action_count + 1 WHERE id = ?", [runId]);
@@ -1303,6 +1316,14 @@ export const sweepRunTimeouts = (storePath: string, nowMs: number): readonly Run
   try {
     return withTxn(db, () => {
       const effects: RunSweepEffect[] = [];
+      for (const handoff of handoffs(db)) {
+        if (
+          handoff.state === "proposed" &&
+          handoff.expiresAt <= nowMs &&
+          rejectHandoff(db, handoff.recipientRunId, "expired", "acceptance timed out", nowMs)
+        )
+          effects.push({ runId: handoff.recipientRunId, effects: ["interrupt_provider"] });
+      }
       const overdue = rows<{ id: string; task_id: string }>(
         db,
         `SELECT id, task_id FROM runs

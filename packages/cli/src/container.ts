@@ -210,7 +210,7 @@ export const spawnCodexAppServerInContainer = (input: {
       command: [
         "sh",
         "-ec",
-        'mkdir -m 700 -p "$CODEX_HOME"; cp /provider-auth/auth.json "$CODEX_HOME/auth.json"; exec "$@"',
+        'test -s /provider-auth/auth.json || exit 77; mkdir -m 700 -p "$CODEX_HOME"; cp /provider-auth/auth.json "$CODEX_HOME/auth.json"; exec "$@"',
         "agentis-codex",
         CODEX_CONTAINER_PATH,
         "-c",

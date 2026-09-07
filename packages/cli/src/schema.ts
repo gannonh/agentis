@@ -120,8 +120,28 @@ export const StopAll = Schema.Struct({
   kind: Schema.Literal("stop_all"),
 });
 export const LoadSession = Schema.Struct({ kind: Schema.Literal("load_session"), runId: RunId });
+export const ProposeHandoff = Schema.Struct({
+  kind: Schema.Literal("propose_handoff"),
+  sourceRunId: RunId,
+  recipient: Schema.Literal("ivo"),
+  context: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(16000)),
+});
+export const HandoffRow = Schema.Struct({
+  id: Schema.String,
+  taskId: TaskId,
+  threadId: ThreadId,
+  sourceRunId: RunId,
+  recipientRunId: RunId,
+  context: Schema.String,
+  state: Schema.Literal("proposed", "accepted", "rejected", "expired"),
+  expiresAt: Schema.Number,
+  grants: Schema.Literal("draft_only"),
+  onwardDelegation: Schema.Literal(false),
+});
+export type HandoffRow = typeof HandoffRow.Type;
 export const Command = Schema.Union(
   SubmitTask,
+  ProposeHandoff,
   ResolveApproval,
   AnswerInput,
   CancelRun,
@@ -142,6 +162,7 @@ export const CommandReceipt = Schema.Struct({
   accepted: Schema.Boolean,
   error: Schema.optional(Schema.String),
   errorCode: Schema.optional(Schema.Literal("unsupported-provider", "unsupported-capability")),
+  handoffId: Schema.optional(Schema.String),
   taskId: Schema.optional(TaskId),
   runId: Schema.optional(RunId),
   threadId: Schema.optional(ThreadId),
@@ -231,6 +252,7 @@ export const Snapshot = Schema.Struct({
   schemaId: Schema.String,
   stopAll: Schema.Boolean,
   tasks: Schema.Array(TaskRow),
+  handoffs: Schema.Array(HandoffRow),
   runs: Schema.Array(RunRow),
   pending: Schema.Array(PendingActionRow),
   artifacts: Schema.Array(ArtifactRow),
