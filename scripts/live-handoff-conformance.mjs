@@ -8,7 +8,7 @@ const [dataRoot] = process.argv.slice(2);
 if (!dataRoot) throw new Error("Pass the dedicated provider data root");
 if (
   process.env.AGENTIS_CODEX_STUB ||
-  process.env.AGENTIS_CURSOR_STUB ||
+  process.env.AGENTIS_CLAUDE_STUB ||
   process.env.AGENTIS_TEST_DOCKER_LOG
 )
   throw new Error("Live conformance refuses fixture configuration");
@@ -94,104 +94,109 @@ try {
   }
   token = JSON.parse(readFileSync(join(dataRoot, "owner.token"), "utf8")).token;
   require(!(await status()).stopAll, "Data root stop-all already latched");
-  if (!process.argv.includes("--concurrency-only")) await record("accepted-handoff", async (result) => {
-    const source = await accept({
-      kind: "submit_task",
-      bot: "mara",
-      brief: "Reply exactly SOURCE_CONTEXT_KAT3243. Do not use tools or access files.",
+  if (!process.argv.includes("--concurrency-only"))
+    await record("accepted-handoff", async (result) => {
+      const source = await accept({
+        kind: "submit_task",
+        bot: "mara",
+        brief: "Reply exactly SOURCE_CONTEXT_KAT3243. Do not use tools or access files.",
+      });
+      result.source = source;
+      const sourceState = await wait((snapshot) =>
+        terminal(snapshot.runs.find((run) => run.id === source.runId)),
+      );
+      const sourceRun = sourceState.runs.find((run) => run.id === source.runId);
+      const sourceArtifact = sourceState.artifacts.find(
+        (artifact) => artifact.runId === source.runId,
+      );
+      require(sourceRun.status === "succeeded" && sourceArtifact, "Mara source did not succeed");
+      require(readFileSync(sourceArtifact.path, "utf8").trim() ===
+        "SOURCE_CONTEXT_KAT3243", "Source marker mismatch");
+      const proposal = {
+        kind: "propose_handoff",
+        sourceRunId: source.runId,
+        recipient: "ivo",
+        context:
+          "Produce exactly SPECIALIST_DRAFT_KAT3243 as the complete draft text. This is a text-only draft with no tools, resource changes, or onward delegation.",
+      };
+      const key = randomUUID();
+      const receipt = await accept(proposal, key);
+      result.recipient = receipt;
+      const done = await wait((snapshot) =>
+        terminal(snapshot.runs.find((run) => run.id === receipt.runId)),
+      );
+      const run = done.runs.find((run) => run.id === receipt.runId);
+      const task = done.tasks.find((task) => task.id === source.taskId);
+      const handoff = done.handoffs.find((handoff) => handoff.id === receipt.handoffId);
+      const artifact = done.artifacts.find((artifact) => artifact.runId === receipt.runId);
+      Object.assign(result, {
+        sourceFrozen: sourceRun.frozen,
+        recipientFrozen: run.frozen,
+        sourceProviderSessionId: sourceRun.providerSessionId,
+        recipientProviderSessionId: run.providerSessionId,
+        handoff,
+        task,
+        runStatus: run.status,
+        failure: run.providerState.failure,
+        artifact: artifact ?? null,
+        history: run.providerState.history,
+      });
+      require(run.status === "succeeded" &&
+        handoff.state === "accepted" &&
+        task.botName === "ivo", "Recipient did not accept and complete");
+      require(artifact &&
+        artifact.taskId === source.taskId &&
+        artifact.author === "ivo", "Artifact identity or attribution mismatch");
+      const body = readFileSync(artifact.path, "utf8");
+      result.body = body;
+      require(body.trim() === "SPECIALIST_DRAFT_KAT3243", "Specialist marker mismatch");
+      require(createHash("sha256").update(body).digest("hex") ===
+        artifact.sha256, "Artifact digest mismatch");
+      const events = done.events.map((event) => ({ type: event.type, ...JSON.parse(event.body) }));
+      result.attributedEvents = events.filter(
+        (event) =>
+          event.handoffId === receipt.handoffId ||
+          (event.type === "peer_progress" && event.runId === receipt.runId),
+      );
+      require(events.filter(
+        (event) => event.type === "handoff_accepted" && event.handoffId === receipt.handoffId,
+      ).length === 1, "Ownership transfer was not unique");
+      require(events.some(
+        (event) =>
+          event.type === "handoff_artifact" &&
+          event.artifactId === artifact.id &&
+          event.threadId === source.threadId &&
+          event.author === "ivo",
+      ), "Artifact not returned to originating conversation");
+      require(events.some(
+        (event) =>
+          event.type === "peer_progress" &&
+          event.runId === receipt.runId &&
+          event.threadId === source.threadId &&
+          event.author === "ivo",
+      ), "Peer progress attribution missing");
+      result.sameKeyReplay = await command(proposal, key);
+      result.newKeyDuplicate = await command(proposal);
+      require(result.sameKeyReplay.replayed &&
+        !result.newKeyDuplicate.accepted, "Duplicate proposal dispatched");
+      await accept({ kind: "load_session", runId: receipt.runId });
+      const loaded = await wait((snapshot) =>
+        ["succeeded", "failed"].includes(
+          snapshot.runs.find((item) => item.id === receipt.runId)?.providerState.loadStatus,
+        ),
+      );
+      const restored = loaded.runs.find((item) => item.id === receipt.runId);
+      result.loadStatus = restored.providerState.loadStatus;
+      result.loadIdentityAndHistoryUnchanged =
+        restored.providerSessionId === run.providerSessionId &&
+        same(restored.providerState.history, run.providerState.history) &&
+        same(loaded.artifacts, done.artifacts) &&
+        same(loaded.messages, done.messages);
+      require(result.loadStatus === "succeeded" &&
+        result.loadIdentityAndHistoryUnchanged, "Recipient session load failed or changed output/history");
+      result.nativeTaskEnforcement =
+        "Native delegation tools are structurally excluded from both handoff turns; native init inventory is validated by the bridge";
     });
-    result.source = source;
-    const sourceState = await wait((snapshot) =>
-      terminal(snapshot.runs.find((run) => run.id === source.runId)),
-    );
-    const sourceRun = sourceState.runs.find((run) => run.id === source.runId);
-    const sourceArtifact = sourceState.artifacts.find(
-      (artifact) => artifact.runId === source.runId,
-    );
-    require(sourceRun.status === "succeeded" && sourceArtifact, "Mara source did not succeed");
-    require(readFileSync(sourceArtifact.path, "utf8").trim() ===
-      "SOURCE_CONTEXT_KAT3243", "Source marker mismatch");
-    const proposal = {
-      kind: "propose_handoff",
-      sourceRunId: source.runId,
-      recipient: "ivo",
-      context:
-        "Produce exactly SPECIALIST_DRAFT_KAT3243 as the complete draft text. This is a text-only draft with no tools, resource changes, or onward delegation.",
-    };
-    const key = randomUUID();
-    const receipt = await accept(proposal, key);
-    result.recipient = receipt;
-    const done = await wait((snapshot) =>
-      terminal(snapshot.runs.find((run) => run.id === receipt.runId)),
-    );
-    const run = done.runs.find((run) => run.id === receipt.runId);
-    const task = done.tasks.find((task) => task.id === source.taskId);
-    const handoff = done.handoffs.find((handoff) => handoff.id === receipt.handoffId);
-    const artifact = done.artifacts.find((artifact) => artifact.runId === receipt.runId);
-    Object.assign(result, {
-      sourceFrozen: sourceRun.frozen,
-      recipientFrozen: run.frozen,
-      sourceProviderSessionId: sourceRun.providerSessionId,
-      recipientProviderSessionId: run.providerSessionId,
-      handoff,
-      task,
-      runStatus: run.status,
-      failure: run.providerState.failure,
-      artifact: artifact ?? null,
-      history: run.providerState.history,
-    });
-    require(run.status === "succeeded" &&
-      handoff.state === "accepted" &&
-      task.botName === "ivo", "Recipient did not accept and complete");
-    require(artifact &&
-      artifact.taskId === source.taskId &&
-      artifact.author === "ivo", "Artifact identity or attribution mismatch");
-    const body = readFileSync(artifact.path, "utf8");
-    result.body = body;
-    require(body.trim() === "SPECIALIST_DRAFT_KAT3243", "Specialist marker mismatch");
-    require(createHash("sha256").update(body).digest("hex") ===
-      artifact.sha256, "Artifact digest mismatch");
-    const events = done.events.map((event) => ({ type: event.type, ...JSON.parse(event.body) }));
-    result.attributedEvents = events.filter(
-      (event) =>
-        event.handoffId === receipt.handoffId ||
-        (event.type === "peer_progress" && event.runId === receipt.runId),
-    );
-    require(events.filter(
-      (event) => event.type === "handoff_accepted" && event.handoffId === receipt.handoffId,
-    ).length === 1, "Ownership transfer was not unique");
-    require(events.some(
-      (event) =>
-        event.type === "handoff_artifact" &&
-        event.artifactId === artifact.id &&
-        event.threadId === source.threadId &&
-        event.author === "ivo",
-    ), "Artifact not returned to originating conversation");
-    require(events.some(
-      (event) =>
-        event.type === "peer_progress" &&
-        event.runId === receipt.runId &&
-        event.threadId === source.threadId &&
-        event.author === "ivo",
-    ), "Peer progress attribution missing");
-    result.sameKeyReplay = await command(proposal, key);
-    result.newKeyDuplicate = await command(proposal);
-    require(result.sameKeyReplay.replayed &&
-      !result.newKeyDuplicate.accepted, "Duplicate proposal dispatched");
-    await accept({ kind: "load_session", runId: receipt.runId });
-    const loaded = await status();
-    const restored = loaded.runs.find((item) => item.id === receipt.runId);
-    result.loadStatus = restored.providerState.loadStatus;
-    result.loadIdentityAndHistoryUnchanged =
-      restored.providerSessionId === run.providerSessionId &&
-      same(restored.providerState.history, run.providerState.history) &&
-      same(loaded.artifacts, done.artifacts) &&
-      same(loaded.messages, done.messages);
-    require(result.loadStatus === "succeeded" &&
-      result.loadIdentityAndHistoryUnchanged, "Recipient session load failed or changed output/history");
-    result.nativeTaskEnforcement =
-      "NOT TESTED BY THIS HARNESS: native Task denial requires the separate subagentStart hook probe";
-  });
   for (const runId of createdRuns) {
     const run = (await status()).runs.find((run) => run.id === runId);
     if (!terminal(run)) await command({ kind: "cancel_run", runId });
@@ -226,7 +231,7 @@ try {
       peers[1].providerSessionId, "Provider sessions conflated");
     require(peers.some((run) => run.frozen.bot === "mara" && run.frozen.provider === "codex") &&
       peers.some(
-        (run) => run.frozen.bot === "ivo" && run.frozen.provider === "cursor",
+        (run) => run.frozen.bot === "ivo" && run.frozen.provider === "claude",
       ), "Frozen bot configuration conflated");
     result.globalRejection = await command({ kind: "submit_task", bot: "ivo", brief: "extra" });
     require(!result.globalRejection.accepted &&

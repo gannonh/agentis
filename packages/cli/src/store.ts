@@ -47,7 +47,7 @@ import {
 } from "./schema.js";
 import {
   APPROVAL_TTL_MS,
-  CURSOR_CLI_PIN,
+  CLAUDE_CLI_PIN,
   CODEX_AUTH_MODE,
   CODEX_CLI_PIN,
   CODEX_TRANSPORT,
@@ -528,7 +528,16 @@ const submitTask = (
       effects: [],
     });
   }
-  const provider = input.provider === "fake" ? "fake" : bot === "ivo" ? "cursor" : "codex";
+  const provider = input.provider === "fake" ? "fake" : bot === "ivo" ? "claude" : "codex";
+  if (provider === "claude" && command.mode === "plan")
+    return receiptOf({
+      commandId,
+      replayed: false,
+      accepted: false,
+      errorCode: "unsupported-capability",
+      error: "native plan mode is unavailable",
+      effects: [],
+    });
   const stop = row<{ latched: number }>(db, "SELECT latched FROM stop_all WHERE id = 1", []);
   if (stop?.latched === 1) {
     return receiptOf({
@@ -578,20 +587,16 @@ const submitTask = (
     transport:
       provider === "codex"
         ? CODEX_TRANSPORT
-        : provider === "cursor"
-          ? "acp-v1-jsonl-stdio"
+        : provider === "claude"
+          ? "claude-sdk-jsonl-stdio"
           : "fake-in-process",
     executableVersion:
-      provider === "codex" ? CODEX_CLI_PIN : provider === "cursor" ? CURSOR_CLI_PIN : "fake-1",
+      provider === "codex" ? CODEX_CLI_PIN : provider === "claude" ? CLAUDE_CLI_PIN : "fake-1",
     model:
-      provider === "codex"
-        ? "gpt-5.6-sol"
-        : provider === "cursor"
-          ? "gpt-5.6-sol[context=272k,reasoning=medium,fast=false]"
-          : "fake",
-    ...(provider === "codex" ? { effort: "medium" } : {}),
+      provider === "codex" ? "gpt-5.6-sol" : provider === "claude" ? "claude-sonnet-5" : "fake",
+    ...(provider !== "fake" ? { effort: "medium" } : {}),
     executionBoundary: input.executionBoundary,
-    authMode: provider === "codex" ? CODEX_AUTH_MODE : provider === "cursor" ? "api-key" : "none",
+    authMode: provider === "codex" ? CODEX_AUTH_MODE : provider === "claude" ? "api-key" : "none",
     workspaceId,
     deadlineMs: RUN_DEADLINE_MS,
     actionBudget: MAX_ACTIONS_PER_RUN,

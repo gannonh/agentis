@@ -15,7 +15,7 @@ import {
 import type { ApplyInput } from "./store.js";
 import { row, rows, run, emit, message } from "./store-db.js";
 import {
-  CURSOR_CLI_PIN,
+  CLAUDE_CLI_PIN,
   MAX_ACTIVE_RUNS,
   MAX_ACTIVE_RUNS_PER_BOT,
   MAX_ACTIONS_PER_TASK,
@@ -160,7 +160,7 @@ export const proposeHandoff = (
   if (source.action_count + 2 > MAX_ACTIONS_PER_TASK) return denied("task action budget exhausted");
   const original = Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(source.frozen_json));
   if (original.provider !== "codex")
-    return denied("handoff requires Codex coordinator and Cursor specialist");
+    return denied("handoff requires Codex coordinator and Claude specialist");
   const artifact = row<{ path: string; byte_size: number; sha256: string }>(
     db,
     "SELECT path,byte_size,sha256 FROM artifacts WHERE run_id=? ORDER BY created_at DESC LIMIT 1",
@@ -184,10 +184,11 @@ export const proposeHandoff = (
     deadlineMs: original.deadlineMs,
     actionBudget: original.actionBudget,
     bot: "ivo",
-    provider: "cursor",
-    transport: "acp-v1-jsonl-stdio",
-    executableVersion: CURSOR_CLI_PIN,
-    model: "gpt-5.6-sol[context=272k,reasoning=medium,fast=false]",
+    provider: "claude",
+    transport: "claude-sdk-jsonl-stdio",
+    executableVersion: CLAUDE_CLI_PIN,
+    model: "claude-sonnet-5",
+    effort: "medium",
     authMode: "api-key",
     workspaceId: join(input.workspaceId, "runs", recipientRunId),
     mode: "agent",

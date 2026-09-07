@@ -37,7 +37,7 @@ export const ExecutionBoundary = Schema.Literal(
 );
 export type ExecutionBoundary = typeof ExecutionBoundary.Type;
 
-export const ProviderKind = Schema.Literal("fake", "codex", "cursor");
+export const ProviderKind = Schema.Literal("fake", "codex", "claude");
 export type ProviderKind = typeof ProviderKind.Type;
 
 export const FixtureKind = Schema.Literal("smoke", "allow", "deny", "input", "cancel");

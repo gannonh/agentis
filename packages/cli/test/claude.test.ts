@@ -1,3 +1,5 @@
+import { spawn } from "node:child_process";
+import * as claudeContainer from "../src/claude-container.js";
 import { mkdtempSync, readFileSync, existsSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -96,9 +98,9 @@ afterEach(() => {
   delete process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS;
 });
 
-describe("Cursor ACP", () => {
-  it("routes ivo over ACP and retains negotiated capabilities", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+describe("Claude SDK bridge", () => {
+  it("routes ivo over SDK bridge and retains negotiated capabilities", async () => {
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       const submitted = await command(endpoint, owner.token, {
@@ -109,16 +111,16 @@ describe("Cursor ACP", () => {
       const state = await waitFor(endpoint, owner.token, (state) =>
         state.runs.some((run) => run.status === "succeeded"),
       );
-      expect(state.artifacts[0]?.source).toBe("cursor");
-      expect(readFileSync(state.artifacts[0]?.path ?? "", "utf8")).toBe("CURSOR_OK");
-      expect(state.runs[0]?.providerSessionId).toBe("cursor-session-1");
+      expect(state.artifacts[0]?.source).toBe("claude");
+      expect(readFileSync(state.artifacts[0]?.path ?? "", "utf8")).toBe("CLAUDE_OK");
+      expect(state.runs[0]?.providerSessionId).toBe("claude-session-1");
     } finally {
       await server.close();
-      delete process.env.AGENTIS_CURSOR_STUB;
+      delete process.env.AGENTIS_CLAUDE_STUB;
     }
   });
-  it("answers Cursor permissions without dispatching the Codex run", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+  it("answers Claude permissions without dispatching the Codex run", async () => {
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       await command(endpoint, owner.token, {
@@ -154,12 +156,12 @@ describe("Cursor ACP", () => {
       );
     } finally {
       await server.close();
-      delete process.env.AGENTIS_CURSOR_STUB;
+      delete process.env.AGENTIS_CLAUDE_STUB;
     }
   });
 
   it("loads a completed session without another prompt or duplicated history", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       const submitted = await command(endpoint, owner.token, {
@@ -177,77 +179,68 @@ describe("Cursor ACP", () => {
       expect(state.runs[0]?.providerState.failure).toBeNull();
       expect(state.runs[0]?.providerState.history).toHaveLength(2);
       expect(state.runs[0]?.status).toBe("succeeded");
-      expect(state.runs[0]?.providerSessionId).toBe("cursor-session-1");
+      expect(state.runs[0]?.providerSessionId).toBe("claude-session-1");
     } finally {
       await server.close();
-      delete process.env.AGENTIS_CURSOR_STUB;
+      delete process.env.AGENTIS_CLAUDE_STUB;
     }
   });
-  it("preserves structured question IDs and plan details through owner responses", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
-    try {
-      await command(endpoint, owner.token, {
-        idempotencyKey: newIdempotencyKey(),
-        command: { kind: "submit_task", bot: "ivo", brief: "QUESTION" },
-      });
-      const waiting = await waitFor(
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "waiting_input",
+  it.each(["BLUE", "Other color", "BLUE, RED"])(
+    "preserves native question fields and answer %s",
+    async (selected) => {
+      process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(
+        new URL("./claude-stub.mjs", import.meta.url),
       );
-      expect(JSON.parse(waiting.runs[0]?.providerState.pendingPrompt ?? "{}")).toMatchObject({
-        questions: [{ id: "color-id" }],
-      });
-      await command(endpoint, owner.token, {
-        idempotencyKey: newIdempotencyKey(),
-        command: {
-          kind: "answer_input",
-          runId: waiting.runs[0]?.id,
-          answers: { "color-id": "blue-id" },
-        },
-      });
-      const done = await waitFor(
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-      );
-      expect(readFileSync(done.artifacts[0]?.path ?? "", "utf8")).toContain(
-        '"questionId":"color-id"',
-      );
-      await command(endpoint, owner.token, {
-        idempotencyKey: newIdempotencyKey(),
-        command: { kind: "submit_task", bot: "ivo", brief: "PLAN" },
-      });
-      const planned = await waitFor(endpoint, owner.token, (state) =>
-        state.runs.some((run) => run.status === "waiting_approval"),
-      );
-      expect(JSON.parse(planned.runs[1]?.providerState.pendingPrompt ?? "{}")).toMatchObject({
-        name: "My plan",
-        overview: "One change",
-        phases: [],
-      });
-      const pending = planned.pending.find(
-        (action) => action.runId === planned.runs[1]?.id && action.approvalId,
-      );
-      await command(endpoint, owner.token, {
-        idempotencyKey: newIdempotencyKey(),
-        command: { kind: "resolve_approval", approvalId: pending?.approvalId, decision: "denied" },
-      });
-      expect((await statusOf(endpoint, owner.token)).runs[1]?.status).toBe("failed");
-    } finally {
-      await server.close();
-      delete process.env.AGENTIS_CURSOR_STUB;
-    }
-  });
+      const { endpoint, server, owner } = await boot();
+      try {
+        await command(endpoint, owner.token, {
+          idempotencyKey: newIdempotencyKey(),
+          command: { kind: "submit_task", bot: "ivo", brief: "QUESTION" },
+        });
+        const waiting = await waitFor(
+          endpoint,
+          owner.token,
+          (state) => state.runs[0]?.status === "waiting_input",
+        );
+        expect(JSON.parse(waiting.runs[0]?.providerState.pendingPrompt ?? "{}")).toMatchObject({
+          questions: [{ question: "Pick color" }],
+        });
+        await command(endpoint, owner.token, {
+          idempotencyKey: newIdempotencyKey(),
+          command: {
+            kind: "answer_input",
+            runId: waiting.runs[0]?.id,
+            answers: { "Pick color": selected },
+          },
+        });
+        const done = await waitFor(
+          endpoint,
+          owner.token,
+          (state) => state.runs[0]?.status === "succeeded",
+        );
+        expect(readFileSync(done.artifacts[0]?.path ?? "", "utf8")).toContain(
+          JSON.stringify({ "Pick color": selected }).slice(1, -1),
+        );
+        expect(readFileSync(done.artifacts[0]?.path ?? "", "utf8")).toContain('"header":"Color"');
+        expect(readFileSync(done.artifacts[0]?.path ?? "", "utf8")).toContain(
+          '"multiSelect":false',
+        );
+      } finally {
+        await server.close();
+        delete process.env.AGENTIS_CLAUDE_STUB;
+      }
+    },
+  );
   it.each([
     ["AUTH", "auth-unavailable"],
+    ["BAD_AUTH_SOURCE", "unsupported-capability"],
+    ["BAD_INVENTORY", "unsupported-capability"],
     ["QUOTA", "quota"],
     ["CRASH", "crash"],
     ["MALFORMED", "malformed-response"],
     ["EMPTY", "malformed-response"],
   ])("records %s without a successful artifact", async (brief, failure) => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       await command(endpoint, owner.token, {
@@ -263,12 +256,157 @@ describe("Cursor ACP", () => {
       expect(state.artifacts).toHaveLength(0);
     } finally {
       await server.close();
-      delete process.env.AGENTIS_CURSOR_STUB;
+      delete process.env.AGENTIS_CLAUDE_STUB;
     }
   });
 
+  it("loads newly persisted native history after cancel without creating output", async () => {
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
+    const { endpoint, server, owner } = await boot();
+    try {
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", bot: "ivo", brief: "QUESTION" },
+      });
+      const waiting = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.status === "waiting_input",
+      );
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "cancel_run", runId: waiting.runs[0]?.id },
+      });
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "load_session", runId: waiting.runs[0]?.id },
+      });
+      const loaded = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.providerState.loadStatus !== "loading",
+      );
+      expect(loaded.runs[0]?.providerState.loadStatus).toBe("succeeded");
+      expect(loaded.runs[0]?.providerState.history).toHaveLength(1);
+      expect(loaded.runs[0]?.status).toBe("canceled");
+      expect(loaded.artifacts).toHaveLength(0);
+    } finally {
+      await server.close();
+      delete process.env.AGENTIS_CLAUDE_STUB;
+    }
+  });
+  it("keeps HTTP serving when provider cleanup throws", async () => {
+    const { endpoint, server, owner } = await boot();
+    const report = vi.spyOn(process.stderr, "write").mockReturnValue(true);
+    vi.spyOn(claudeContainer, "spawnClaudeInContainer").mockImplementation((input) => {
+      const child = spawn(
+        process.execPath,
+        [fileURLToPath(new URL("./claude-stub.mjs", import.meta.url))],
+        { cwd: input.workspace, stdio: ["pipe", "pipe", "pipe"] },
+      );
+      return {
+        child,
+        stop: () => {
+          child.kill("SIGTERM");
+          throw new Error("Docker unavailable");
+        },
+      };
+    });
+    try {
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", bot: "ivo", brief: "QUESTION" },
+      });
+      const waiting = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.status === "waiting_input",
+      );
+      const canceled = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "cancel_run", runId: waiting.runs[0]?.id },
+      });
+      expect(canceled.json.accepted).toBe(true);
+      expect((await statusOf(endpoint, owner.token)).runs[0]?.status).toBe("canceled");
+      expect(report).toHaveBeenCalled();
+    } finally {
+      await server.close();
+      vi.restoreAllMocks();
+    }
+  });
+  it("records startup failure for both launch and load without losing a completed result", async () => {
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
+    const { endpoint, server, owner } = await boot();
+    try {
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", bot: "ivo", brief: "smoke" },
+      });
+      const done = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.status === "succeeded",
+      );
+      delete process.env.AGENTIS_CLAUDE_STUB;
+      vi.spyOn(claudeContainer, "spawnClaudeInContainer").mockImplementation(() => {
+        throw new Error("auth volume unavailable");
+      });
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "load_session", runId: done.runs[0]?.id },
+      });
+      const loaded = await statusOf(endpoint, owner.token);
+      expect(loaded.runs[0]?.providerState).toMatchObject({
+        loadStatus: "failed",
+        failure: "auth-unavailable",
+      });
+      expect(loaded.runs[0]?.status).toBe("succeeded");
+      expect(loaded.artifacts).toEqual(done.artifacts);
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", bot: "ivo", brief: "smoke" },
+      });
+      const failed = await statusOf(endpoint, owner.token);
+      expect(failed.runs[1]?.status).toBe("failed");
+      expect(failed.runs[1]?.providerState.failure).toBe("auth-unavailable");
+    } finally {
+      vi.restoreAllMocks();
+      await server.close();
+      delete process.env.AGENTIS_CLAUDE_STUB;
+    }
+  });
+  it("loads a completed session after its execution deadline", async () => {
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
+    const { endpoint, server, owner } = await boot();
+    try {
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", bot: "ivo", brief: "smoke" },
+      });
+      const done = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.status === "succeeded",
+      );
+      vi.spyOn(Date, "now").mockReturnValue(Date.now() + 16 * 60 * 1000);
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "load_session", runId: done.runs[0]?.id },
+      });
+      const loaded = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.providerState.loadStatus !== "loading",
+      );
+      expect(loaded.runs[0]?.providerState.loadStatus).toBe("succeeded");
+    } finally {
+      vi.restoreAllMocks();
+      await server.close();
+      delete process.env.AGENTIS_CLAUDE_STUB;
+    }
+  });
   it("terminates the active provider when an expired approval decision is rejected", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner, dataRoot } = await boot();
     try {
       await command(endpoint, owner.token, {
@@ -307,11 +445,11 @@ describe("Cursor ACP", () => {
     } finally {
       vi.restoreAllMocks();
       await server.close();
-      delete process.env.AGENTIS_CURSOR_STUB;
+      delete process.env.AGENTIS_CLAUDE_STUB;
     }
   });
   it("stop-all cancels both providers and late replies cannot revive them", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       await command(endpoint, owner.token, {
@@ -341,17 +479,17 @@ describe("Cursor ACP", () => {
         command: {
           kind: "answer_input",
           runId: stopped.runs[1]?.id,
-          answers: { "color-id": "blue-id" },
+          answers: { "Pick color": "BLUE" },
         },
       });
       expect(late.json.accepted).toBe(false);
     } finally {
       await server.close();
-      delete process.env.AGENTIS_CURSOR_STUB;
+      delete process.env.AGENTIS_CLAUDE_STUB;
     }
   });
   it("claims session loads and rejects concurrent provider operations", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       await command(endpoint, owner.token, {
@@ -394,13 +532,14 @@ describe("Cursor ACP", () => {
       expect(stopped.json.accepted).toBe(false);
     } finally {
       await server.close();
-      delete process.env.AGENTIS_CURSOR_STUB;
+      delete process.env.AGENTIS_CLAUDE_STUB;
     }
   });
   it("rejects unsupported attachments and MCP instead of dropping them", async () => {
     const { endpoint, server, owner } = await boot();
     try {
       for (const extra of [
+        { mode: "plan" },
         { attachments: [{ type: "image", data: "sample" }] },
         { mcpServers: [{ name: "sample", type: "http", url: "https://example.com" }] },
       ]) {
@@ -419,7 +558,7 @@ describe("Cursor ACP", () => {
   });
 
   it("terminates a denied provider before admitting another run", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner, dataRoot } = await boot();
     try {
       const old = await command(endpoint, owner.token, {
@@ -454,11 +593,11 @@ describe("Cursor ACP", () => {
       expect(state.artifacts.every((artifact) => artifact.runId !== old.json.runId)).toBe(true);
     } finally {
       await server.close();
-      delete process.env.AGENTIS_CURSOR_STUB;
+      delete process.env.AGENTIS_CLAUDE_STUB;
     }
   });
   it("does not let a second provider request replace the approved action", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       await command(endpoint, owner.token, {
@@ -485,16 +624,14 @@ describe("Cursor ACP", () => {
         owner.token,
         (state) => state.runs[0]?.status === "succeeded",
       );
-      expect(readFileSync(done.artifacts[0]?.path ?? "", "utf8")).toContain(
-        '"optionId":"allow-one"',
-      );
+      expect(readFileSync(done.artifacts[0]?.path ?? "", "utf8")).toContain('"behavior":"allow"');
     } finally {
       await server.close();
-      delete process.env.AGENTIS_CURSOR_STUB;
+      delete process.env.AGENTIS_CLAUDE_STUB;
     }
   });
   it("keeps ordinary error text drafts and rejects the observed proxy failure", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       await command(endpoint, owner.token, {
@@ -520,7 +657,7 @@ describe("Cursor ACP", () => {
       expect(failed.artifacts).toHaveLength(1);
     } finally {
       await server.close();
-      delete process.env.AGENTIS_CURSOR_STUB;
+      delete process.env.AGENTIS_CLAUDE_STUB;
     }
   });
 });

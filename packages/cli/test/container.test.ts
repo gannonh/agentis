@@ -1,12 +1,9 @@
-import { spawnSync } from "node:child_process";
-import { spawnCursorInContainer } from "../src/cursor-container.js";
 import {
   chmodSync,
   copyFileSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { createServer } from "node:net";
@@ -216,90 +213,6 @@ describe.sequential("Run containers", () => {
         (args) => args[0] === "network" && args[1] === "rm" && args[2] === "agentis-net-live-test",
       ),
     ).toBe(true);
-  });
-
-  it("mounts an immutable native deny policy and read-only workspace for handoff", async () => {
-    const { root, log } = fakeDocker();
-    const workspace = join(root, "workspace");
-    mkdirSync(workspace);
-    const process = spawnCursorInContainer({
-      runId: "handoff-policy",
-      workspace,
-      dataRoot: root,
-      draftOnly: true,
-    });
-    try {
-      const commands = await waitForLog(log, (entries) =>
-        entries.some((args) => args.includes("agentis-run-handoff-policy")),
-      );
-      const launch = commands.find((args) => args.includes("agentis-run-handoff-policy")) ?? [];
-      expect(launch).toContain(`type=bind,src=${workspace},dst=/workspace,readonly`);
-      expect(
-        launch.some((arg) => typeof arg === "string" && arg.startsWith("CURSOR_CONFIG_DIR=")),
-      ).toBe(false);
-      expect(JSON.parse(readFileSync(join(workspace, ".cursor", "cli.json"), "utf8"))).toEqual({
-        permissions: {
-          allow: [],
-          deny: [
-            "Shell(*)",
-            "Read(**)",
-            "Read(/**)",
-            "Write(**)",
-            "Write(/**)",
-            "WebFetch(*)",
-            "Mcp(*:*)",
-          ],
-        },
-      });
-      const hooks = JSON.parse(readFileSync(join(workspace, ".cursor", "hooks.json"), "utf8"));
-      expect(hooks.hooks.subagentStart).toEqual([
-        { command: "/bin/sh .cursor/hooks/deny-native-subagent.sh", failClosed: true, timeout: 5 },
-      ]);
-      const denied = spawnSync("/bin/sh", [".cursor/hooks/deny-native-subagent.sh"], {
-        cwd: workspace,
-        input: JSON.stringify({ subagent_type: "generalPurpose", prompt: "test" }),
-        encoding: "utf8",
-      });
-      expect(denied.status).toBe(0);
-      expect(JSON.parse(denied.stdout).permission).toBe("deny");
-    } finally {
-      process.stop();
-    }
-    for (const relative of ["hooks.json", "hooks/deny-native-subagent.sh"]) {
-      const path = join(workspace, ".cursor", relative);
-      const original = readFileSync(path, "utf8");
-      chmodSync(path, 0o600);
-      writeFileSync(path, "changed");
-      const load = {
-        runId: "handoff-policy",
-        workspace,
-        dataRoot: root,
-        draftOnly: true,
-        loadSession: true,
-      };
-      expect(() => spawnCursorInContainer(load)).toThrow("policy changed");
-      unlinkSync(path);
-      expect(() => spawnCursorInContainer(load)).toThrow("policy missing");
-      writeFileSync(path, original, { mode: 0o444 });
-    }
-  });
-
-  it("refuses changed or missing handoff policy on session load", () => {
-    const { root } = fakeDocker();
-    const workspace = join(root, "workspace");
-    mkdirSync(join(workspace, ".cursor"), { recursive: true });
-    const input = {
-      runId: "changed-policy",
-      workspace,
-      dataRoot: root,
-      draftOnly: true,
-      loadSession: true,
-    };
-    expect(() => spawnCursorInContainer(input)).toThrow("policy missing");
-    const path = join(workspace, ".cursor", "cli.json");
-    writeFileSync(path, JSON.stringify({ permissions: { allow: ["Shell(*)"], deny: [] } }));
-    expect(() => spawnCursorInContainer(input)).toThrow("policy changed");
-    unlinkSync(path);
   });
 
   it("removes the exact Run container when stopped", async () => {

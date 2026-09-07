@@ -1,4 +1,4 @@
-export const SCHEMA_ID = "agentis.v2.gate0.4";
+export const SCHEMA_ID = "agentis.v2.gate0.5";
 export const API_FAMILY = "v1";
 export const PACKAGE_NAME = "@agentis-labs/cli";
 export const PACKAGE_VERSION = "2.0.0";
@@ -23,5 +23,7 @@ export const APPROVAL_TTL_MS = 5 * 60 * 1000;
 export const BOT_NAME = "mara";
 export const BOT_ROLE = "coordinator";
 
-export const CURSOR_CLI_PIN = "2026.09.02-c22c1a3";
-export const CURSOR_IMAGE = `agentis-cursor:${CURSOR_CLI_PIN}`;
+export const CLAUDE_CLI_PIN = "2.1.263";
+export const CLAUDE_IMAGE = `agentis-claude:${CLAUDE_CLI_PIN}`;
+
+export const CLAUDE_SDK_PIN = "0.3.263";

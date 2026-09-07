@@ -65,8 +65,8 @@ const prompts = {
   plan:
     bot === "mara"
       ? "Return a native plan item proposing one step to draft a greeting. Do not execute the plan, request approval, use tools, or access files."
-      : "Use create_plan to propose a one-step plan to draft a greeting. Wait for explicit approval. Do not execute the plan or access files.",
-  input: `Use ${bot === "mara" ? "request_user_input" : "ask_question"} to ask me to choose Red or Blue. Wait for my structured answer. Do not access files or use other tools. Return the selected color only.`,
+      : "Use AskUserQuestion with the full one-step plan to draft a greeting as the question and options Approve or Reject. Wait for the answer. If Reject is selected return REJECTED without executing the plan. Do not access files.",
+  input: `Use ${bot === "mara" ? "request_user_input" : "AskUserQuestion"} to ask me to choose Red or Blue. Wait for my structured answer. Do not access files or use other tools. Return the selected color only.`,
   cancel:
     "Draft a detailed comparison of thirty imaginary greeting styles. Do not access files or use tools.",
 };
@@ -91,7 +91,7 @@ try {
         kind: "submit_task",
         bot,
         brief: prompts[name],
-        ...(name === "plan" || name === "input" ? { mode: "plan" } : {}),
+        ...(bot === "mara" && (name === "plan" || name === "input") ? { mode: "plan" } : {}),
       });
       row.runId = receipt.runId;
       row.taskId = receipt.taskId;
@@ -110,12 +110,18 @@ try {
         if (terminal(waiting.run))
           throw new Error("Provider completed without required blocking request");
         row.pendingPrompt = waiting.run.providerState.pendingPrompt;
-        if (name === "input") {
+        if (name === "input" || (bot === "ivo" && name === "plan")) {
           const request = JSON.parse(waiting.run.providerState.pendingPrompt);
           const answers = Object.fromEntries(
             request.questions.map((question) => {
-              const option = question.options.at(-1);
-              return [question.id, option.id ?? option.label];
+              const option =
+                bot === "ivo" && name === "plan"
+                  ? question.options.find((option) => option.label === "Reject")
+                  : question.options.at(-1);
+              if (!option) throw new Error("Required structured option missing");
+              return bot === "ivo"
+                ? [question.question, option.label]
+                : [question.id, option.id ?? option.label];
             }),
           );
           await command({ kind: "answer_input", runId: receipt.runId, answers });
@@ -141,7 +147,9 @@ try {
       row.artifact = artifact ?? null;
       if (artifact) row.body = readFileSync(artifact.path, "utf8");
       const expected =
-        nativeCodexPlan || ["allow", "smoke", "input"].includes(name)
+        nativeCodexPlan ||
+        (bot === "ivo" && name === "plan") ||
+        ["allow", "smoke", "input"].includes(name)
           ? "succeeded"
           : name === "cancel"
             ? "canceled"
@@ -168,6 +176,16 @@ try {
           row.planCapability?.reason !== "native-plan-output-without-blocking-approval"
         )
           throw new Error("Native plan output or honest nonblocking capability missing");
+      }
+      if (bot === "ivo" && name === "plan") {
+        const question = JSON.parse(row.pendingPrompt).questions[0]?.question ?? "";
+        row.questionMediatedPlanDecision = true;
+        if (
+          !/greeting/i.test(question) ||
+          row.body?.trim() !== "REJECTED" ||
+          done.run.actionCount !== 1
+        )
+          throw new Error("Expected plan question rejection without execution");
       }
       if (name === "no-auth" && row.failure !== "auth-unavailable")
         throw new Error("Expected typed authentication failure");
@@ -200,7 +218,7 @@ try {
         if (bot === "ivo") {
           row.historyUnchanged =
             JSON.stringify(history) === JSON.stringify(loaded.run.providerState.history);
-          if (!row.historyUnchanged) throw new Error("Cursor load changed captured history");
+          if (!row.historyUnchanged) throw new Error("Claude load changed captured history");
         } else {
           row.loadedHistoryEntries = loaded.run.providerState.history.length;
           if (!row.loadedHistoryEntries) throw new Error("Codex load returned no history");
@@ -247,7 +265,7 @@ try {
         recordedAt: new Date().toISOString(),
         fixtureMode: Boolean(
           process.env.AGENTIS_CODEX_STUB ||
-            process.env.AGENTIS_CURSOR_STUB ||
+            process.env.AGENTIS_CLAUDE_STUB ||
             process.env.AGENTIS_TEST_DOCKER_LOG,
         ),
         sourceCommit: spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim(),

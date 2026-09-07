@@ -80,14 +80,14 @@ const waitFor = async (
 };
 
 afterEach(() => {
-  delete process.env.AGENTIS_CURSOR_STUB;
+  delete process.env.AGENTIS_CLAUDE_STUB;
   delete process.env.AGENTIS_CODEX_STUB;
   delete process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS;
 });
 
 describe("bounded handoff", () => {
   it("returns Ivo's accepted draft to Mara's original conversation exactly once", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
@@ -140,7 +140,7 @@ describe("bounded handoff", () => {
         .trim()
         .split("\n");
       expect(prompts).toHaveLength(2);
-      expect(JSON.parse(prompts[1] ?? "{}").prompt[0].text).toContain("KAT3242_OK");
+      expect(JSON.parse(prompts[1] ?? "{}").text).toContain("KAT3242_OK");
       expect(done.artifacts[1]?.taskId).toBe(source.json.taskId);
       expect(readFileSync(done.artifacts[1]?.path ?? "", "utf8")).toBe("SPECIALIST_DRAFT");
       expect((await command(endpoint, owner.token, proposal)).json.replayed).toBe(true);
@@ -161,7 +161,7 @@ describe("bounded handoff", () => {
     "TOOL_HANDOFF",
     "WRONG_SESSION_HANDOFF",
   ])("keeps Mara's ownership and result on %s", async (context) => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
@@ -188,16 +188,14 @@ describe("bounded handoff", () => {
       expect(done.artifacts).toHaveLength(1);
       expect(done.handoffs[0]?.state).toBe("rejected");
       expect(
-        done.runs[1]?.providerState.history.filter(
-          (raw) => JSON.parse(raw).sessionUpdate === "user_message_chunk",
-        ),
-      ).toHaveLength(1);
+        done.runs[1]?.providerState.history.filter((raw) => JSON.parse(raw).type === "user"),
+      ).toHaveLength(context === "WRONG_SESSION_HANDOFF" ? 0 : 1);
     } finally {
       await server.close();
     }
   });
   it("expires a proposal before a late provider accepts without losing the source", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
@@ -228,8 +226,8 @@ describe("bounded handoff", () => {
   it.each(["cancel_run", "stop_all"])(
     "%s before acceptance retains the coordinator result",
     async (kind) => {
-      process.env.AGENTIS_CURSOR_STUB = fileURLToPath(
-        new URL("./cursor-stub.mjs", import.meta.url),
+      process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(
+        new URL("./claude-stub.mjs", import.meta.url),
       );
       const { endpoint, server, owner } = await boot();
       try {
@@ -264,7 +262,7 @@ describe("bounded handoff", () => {
   );
 
   it("denies guessed Bot identities even when replaying an owner's handoff key", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
@@ -294,7 +292,7 @@ describe("bounded handoff", () => {
   });
 
   it("stop-all after acceptance commit prevents the pending draft from dispatching", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
@@ -342,7 +340,7 @@ describe("bounded handoff", () => {
     }
   });
   it("preserves transferred ownership and replay receipts when the store reopens", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner, dataRoot } = await boot();
     const source = await command(endpoint, owner.token, {
       idempotencyKey: newIdempotencyKey(),
@@ -376,7 +374,7 @@ describe("bounded handoff", () => {
     }
   });
   it("counts active Ivo work and refuses onward handoff from a specialist", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
@@ -423,7 +421,7 @@ describe("bounded handoff", () => {
   });
 
   it("denies native permission requests without creating an owner approval or granting tools", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
@@ -446,15 +444,86 @@ describe("bounded handoff", () => {
         (state) => state.runs[1]?.status === "succeeded",
       );
       expect(done.pending.some((action) => action.approvalId)).toBe(false);
-      expect(readFileSync(done.artifacts[1]?.path ?? "", "utf8")).toContain(
-        '"outcome":"cancelled"',
+      expect(readFileSync(done.artifacts[1]?.path ?? "", "utf8")).toContain('"behavior":"deny"');
+    } finally {
+      await server.close();
+    }
+  });
+  it("loads a canceled accepted handoff without replaying ownership or output", async () => {
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
+    const { endpoint, server, owner } = await boot();
+    try {
+      const source = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "smoke" },
+      });
+      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      const proposed = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "propose_handoff",
+          sourceRunId: source.json.runId,
+          recipient: "ivo",
+          context: "DELAY_DRAFT",
+        },
+      });
+      await waitFor(endpoint, owner.token, (state) => state.handoffs[0]?.state === "accepted");
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "cancel_run", runId: proposed.json.runId },
+      });
+      const canceled = await statusOf(endpoint, owner.token);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await command(endpoint, owner.token, {
+          idempotencyKey: newIdempotencyKey(),
+          command: { kind: "load_session", runId: proposed.json.runId },
+        });
+        const loaded = await waitFor(
+          endpoint,
+          owner.token,
+          (state) => state.runs[1]?.providerState.loadStatus !== "loading",
+        );
+        expect(loaded.runs[1]?.providerState.loadStatus).toBe("succeeded");
+        expect(loaded.runs[1]?.providerState.history).toHaveLength(3);
+        expect(loaded.tasks).toEqual(canceled.tasks);
+        expect(loaded.artifacts).toEqual(canceled.artifacts);
+        expect(loaded.messages).toEqual(canceled.messages);
+        expect(loaded.handoffs).toEqual(canceled.handoffs);
+      }
+    } finally {
+      await server.close();
+    }
+  });
+  it("requires native inventory on the resumed draft turn", async () => {
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
+    const { endpoint, server, owner } = await boot();
+    try {
+      const source = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "smoke" },
+      });
+      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "propose_handoff",
+          sourceRunId: source.json.runId,
+          recipient: "ivo",
+          context: "NO_INIT_DRAFT",
+        },
+      });
+      const done = await waitFor(endpoint, owner.token, (state) =>
+        ["failed", "succeeded"].includes(state.runs[1]?.status ?? ""),
       );
+      expect(done.runs[1]?.status).toBe("failed");
+      expect(done.artifacts).toHaveLength(1);
     } finally {
       await server.close();
     }
   });
   it("loads the completed recipient session without redispatching its draft", async () => {
-    process.env.AGENTIS_CURSOR_STUB = fileURLToPath(new URL("./cursor-stub.mjs", import.meta.url));
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
@@ -482,7 +551,11 @@ describe("bounded handoff", () => {
         command: { kind: "load_session", runId: recipient?.id },
       });
       expect(loaded.json.accepted).toBe(true);
-      const after = await statusOf(endpoint, owner.token);
+      const after = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[1]?.providerState.loadStatus !== "loading",
+      );
       expect(after.runs[1]?.providerState.loadStatus).toBe("succeeded");
       expect(after.runs[1]?.providerState.history).toEqual(recipient?.providerState.history);
       expect(after.runs[1]?.providerSessionId).toBe(recipient?.providerSessionId);
@@ -502,8 +575,8 @@ describe("bounded handoff", () => {
   it.each(["changed", "oversized", "symlink"])(
     "rejects a %s source artifact without launching Ivo",
     async (kind) => {
-      process.env.AGENTIS_CURSOR_STUB = fileURLToPath(
-        new URL("./cursor-stub.mjs", import.meta.url),
+      process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(
+        new URL("./claude-stub.mjs", import.meta.url),
       );
       const { endpoint, server, owner, dataRoot } = await boot();
       try {

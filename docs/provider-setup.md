@@ -41,33 +41,19 @@ Containers run as UID/GID 10001 with a read-only root, dropped capabilities, no 
 Tests using the Docker fixture establish command wiring and cleanup behavior only. Live authentication, provider calls, and host/LAN isolation need separate recorded evidence in the KAT-3243 verification artifacts. This prerequisite does not establish second-provider or handoff acceptance.
 
 
-## Cursor local provisioning
-
-Cursor is installed locally from the user's official Linux arm64 archive. Agentis does not distribute the proprietary binary or publish the resulting image. This pin supports Linux arm64 only: `2026.09.02-c22c1a3`, SHA256 `fb7bc635be6172ebcf68f907fd9217e3614da51916455c6d7fdb66690997884c`. Provisioning rejects a different archive hash and builds with `--platform linux/arm64`.
+## Claude local provisioning
 
 ```sh
-pnpm agentis provider provision --provider cursor --package /absolute/path/cursor-linux-arm64.tar.gz --data-root "$HOME/.agentis/v2"
-pnpm agentis provider import-key --provider cursor --key-file /absolute/path/private-key-file --data-root "$HOME/.agentis/v2"
+pnpm agentis provider provision --provider claude --data-root "$HOME/.agentis/v2"
+pnpm agentis provider import-key --provider claude --key-file /absolute/path/private-key-file --data-root "$HOME/.agentis/v2"
 ```
 
-The key file must grant no group or other permissions. Omit `--key-file` to read one key from stdin. Import writes the key directly into a dedicated `agentis-cursor-auth-*` Docker volume. The key is not passed on the command line, stored in the image, or read automatically from `.env`. Each Run reads it inside the container into the native `CURSOR_API_KEY` environment variable. The temporary build context contains only the verified archive, Dockerfile, and Squid configuration.
+The supported authentication path is a scoped funded Anthropic API key. API usage is billed by Anthropic. Subscription credentials are not used. Gannon owns provider selection and support. The key file must have no group/other permissions; omit `--key-file` to read stdin. The key is imported into a dedicated `agentis-claude-auth-*` volume and read only inside the provider container.
 
-Cursor uses ACP protocol 1 through `@agentclientprotocol/sdk` 1.4.0. Its proxy permits exactly `api2.cursor.sh` and `agentn.global.api5.cursor.sh`, as required by the selected provider connection. The image uses the same pinned base, Squid version, resource limits, and destination-address checks as Codex. Update and package-registry destinations remain denied. No host Cursor execution is available.
+Provisioning installs Claude Agent SDK `0.3.263` and verifies native CLI `2.1.263` in a Linux arm64 image using the pinned Node base. Ivo freezes model `claude-sonnet-5` with medium effort, the direct SDK bridge transport and API-key auth. The proxy permits only `api.anthropic.com`; the native home is a separate retained per-run volume. No host execution or model fallback exists.
 
-## Fixed bots and public state
+Mara uses Codex; Ivo uses Claude. One active run per bot and two globally are admitted. Select with `--bot mara` or `--bot ivo`. The fake provider remains an explicit verification fixture. Task, run, Agentis thread and native session IDs remain distinct.
 
-A live daemon exposes Mara (coordinator, Codex app-server) and Ivo (specialist, Cursor ACP). Select the bot explicitly; one active Run per bot and two globally are admitted. The fake provider remains an explicit verification fixture.
+Ordinary Claude runs expose only Bash and AskUserQuestion. Native Agent/Task, file tools and MCP tools are absent. Bash requires an owner decision; native questions remain pending until answered or canceled. A plan decision can use AskUserQuestion, but there is no dedicated native plan approval operation or selectable Claude plan mode. MCP configuration and attachments return typed unavailable reasons. Handoff turns expose no native tools. The bridge checks native initialization against its exact tool inventory and model/auth constraints.
 
-```sh
-pnpm agentis task submit --endpoint http://127.0.0.1:43129 --data-root "$HOME/.agentis/v2" --bot ivo --brief 'Write a short draft. Do not call tools.'
-pnpm agentis task submit --endpoint http://127.0.0.1:43129 --data-root "$HOME/.agentis/v2" --bot mara --mode plan --brief 'Ask a structured question before drafting.'
-pnpm agentis session load --endpoint http://127.0.0.1:43129 --data-root "$HOME/.agentis/v2" --run RUN_ID
-```
-
-The frozen Run configuration records bot identity, provider, native transport, executable version, model, auth mode, mode, workspace and limits. Cursor's selected model is `gpt-5.6-sol[context=272k,reasoning=medium,fast=false]`; session creation must advertise that exact selector. Codex uses `gpt-5.6-sol` with medium effort. Tasks, Runs, local threads and provider sessions retain separate identities. The schema is `agentis.v2.gate0.3`; older databases are refused without migration.
-
-Doctor includes each Run's provider state: provider-advertised capabilities with typed unavailable reasons and a separate Agentis operation availability field, complete pending question/plan payloads, ordered history, explicit session-load status, and classified failures. A documented extension does not imply live proof. Cursor questions and plans use their native blocking methods. Plain text questions remain ordinary output. Attachment and MCP configuration requests receive `unsupported-capability`; provider advertisement does not enable an unimplemented Agentis operation. Approval decisions and input answers route through the Run's frozen provider. Stop-all cancels both transports and latches future submissions.
-
-Explicit session loading requires an inactive Run with a saved provider session. It creates no task, Run, draft or prompt turn. The scratch mount is read-only while loading. Cursor replays history for comparison, normalizing regenerated tool IDs and chunk boundaries; a mismatch records failure. Codex resumes with `excludeTurns: true` and pages `thread/turns/list`. Repeated loads replace the history view rather than appending duplicates. Provider session IDs remain unchanged.
-
-Draft artifacts contain returned provider text. Empty completed responses and recognized provider error responses fail instead of manufacturing a successful draft. Protocol fixtures prove adapter behavior; live product acceptance, selected account billing and structured-question support retain their separate evidence in `docs/verification/kat-3243/` and `docs/research/provider-contracts/`.
+Session loading reads the native transcript through SDK `getSessionInfo` and `getSessionMessages`, validates IDs and compares stored history without inference or conversation/artifact duplication. Stop-all cancels both providers and refuses later approvals. Schema `agentis.v2.gate0.5` refuses earlier databases without migration; preserve old roots before testing a fresh dataset.

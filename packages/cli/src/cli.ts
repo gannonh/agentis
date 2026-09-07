@@ -1,4 +1,4 @@
-import { importCursorKey, provisionCursor } from "./cursor-container.js";
+import { importClaudeKey, provisionClaude } from "./claude-container.js";
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -24,7 +24,7 @@ import { launchVerify } from "./verify.js";
 const defaultDataRoot = () => join(homedir(), ...DEFAULT_DATA_ROOT_SEGMENTS);
 
 const usage = `Usage:
-  agentis provider provision|login [--data-root DIR]
+  agentis provider provision|login|import-key [--provider codex|claude] [--data-root DIR]
   agentis serve --endpoint URL [--data-root DIR] [--profile NAME] [--provider fake|codex] [--execution-boundary docker-desktop-run-container|unverified-host-scratch]
   agentis doctor --endpoint URL | --profile NAME [--data-root DIR]
   agentis task submit --endpoint URL --brief TEXT [--fixture smoke|allow|deny|input|cancel]
@@ -102,7 +102,6 @@ export const runCli = async (argv: string[]): Promise<number> => {
       "data-root": { type: "string" },
       provider: { type: "string" },
       bot: { type: "string" },
-      package: { type: "string" },
       "key-file": { type: "string" },
       mode: { type: "string" },
       "execution-boundary": { type: "string" },
@@ -116,18 +115,17 @@ export const runCli = async (argv: string[]): Promise<number> => {
   const dataRoot =
     typeof values["data-root"] === "string" ? values["data-root"] : defaultDataRoot();
   if (verb === "provider" && positionals[0] === "provision") {
-    if (values.provider === "cursor") {
-      if (!values.package)
-        throw new Error("--package path to the pinned local Linux arm64 archive is required");
-      provisionCursor(dataRoot, values.package);
-    } else provisionProvider(dataRoot);
+    if (values.provider === "claude") {
+      provisionClaude(dataRoot);
+    } else if (!values.provider || values.provider === "codex") provisionProvider(dataRoot);
+    else throw new Error("unsupported provider");
     return 0;
   }
   if (verb === "provider" && positionals[0] === "import-key") {
-    if (values.provider !== "cursor") throw new Error("import-key requires --provider cursor");
+    if (values.provider !== "claude") throw new Error("import-key requires --provider claude");
     if (values["key-file"] && (statSync(values["key-file"]).mode & 0o077) !== 0)
       throw new Error("key file must be private (0600)");
-    importCursorKey(dataRoot, readFileSync(values["key-file"] ?? 0, "utf8"));
+    importClaudeKey(dataRoot, readFileSync(values["key-file"] ?? 0, "utf8"));
     return 0;
   }
   if (verb === "provider" && positionals[0] === "login") {

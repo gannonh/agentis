@@ -1,4 +1,4 @@
-import { interruptCursor } from "./cursor.js";
+import { interruptClaude } from "./claude.js";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { Effect, Schema } from "effect";
 import { loadOrCreateOwner, parseAuthorization } from "./auth.js";
@@ -48,7 +48,7 @@ const applySweepEffects = (store: Store, executionBoundary: typeof ExecutionBoun
   const swept = sweepRunTimeouts(store.path, Date.now());
   for (const item of swept) {
     if (item.effects.includes("interrupt_provider")) {
-      interruptCursor(item.runId);
+      interruptClaude(item.runId);
       interruptCodex(item.runId, executionBoundary);
     }
   }
@@ -56,7 +56,7 @@ const applySweepEffects = (store: Store, executionBoundary: typeof ExecutionBoun
 
 const cleanupPersistedRunContainers = (runs: Snapshot["runs"]) => {
   for (const run of runs) {
-    interruptCursor(run.id);
+    interruptClaude(run.id);
     interruptCodex(run.id, run.frozen.executionBoundary);
   }
 };

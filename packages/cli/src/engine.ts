@@ -1,10 +1,10 @@
 import {
-  spawnCursor,
-  resolveCursorApproval,
-  answerCursorInput,
-  interruptCursor,
-  interruptAllCursor,
-} from "./cursor.js";
+  spawnClaude,
+  resolveClaudeApproval,
+  answerClaudeInput,
+  interruptClaude,
+  interruptAllClaude,
+} from "./claude.js";
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -31,7 +31,7 @@ export type DriveInput = {
   readonly runId: RunId;
   readonly taskId: TaskId;
   readonly fixture: FixtureKind | null;
-  readonly provider: "fake" | "codex" | "cursor";
+  readonly provider: "fake" | "codex" | "claude";
   readonly executionBoundary: typeof ExecutionBoundary.Type;
   readonly workspace: string;
   readonly nowMs: number;
@@ -40,7 +40,7 @@ export type DriveInput = {
 };
 
 export const driveAfterCommit = (input: DriveInput): Effect.Effect<void, Error> => {
-  if (input.provider === "cursor") return spawnCursor(input);
+  if (input.provider === "claude") return spawnClaude(input);
   if (input.provider === "codex") {
     return spawnCodex(input);
   }
@@ -51,7 +51,7 @@ export const applyReceiptEffects = async (input: {
   readonly store: Store;
   readonly receipt: CommandReceipt;
   readonly command: Command;
-  readonly provider: "fake" | "codex" | "cursor";
+  readonly provider: "fake" | "codex" | "claude";
   readonly executionBoundary: typeof ExecutionBoundary.Type;
   readonly nowMs: number;
 }): Promise<void> => {
@@ -116,8 +116,8 @@ export const applyReceiptEffects = async (input: {
     receipt.runId &&
     receipt.taskId
   ) {
-    if (provider === "cursor") {
-      await resolveCursorApproval(receipt.runId, "allowed");
+    if (provider === "claude") {
+      await resolveClaudeApproval(receipt.runId, "allowed");
     } else if (provider === "codex") {
       resolveCodexApproval(receipt.runId, "allowed");
     } else {
@@ -142,7 +142,7 @@ export const applyReceiptEffects = async (input: {
     }
   }
   if (receipt.accepted && receipt.effects.includes("reject_tool") && receipt.runId) {
-    if (provider === "cursor") await resolveCursorApproval(receipt.runId, "denied");
+    if (provider === "claude") await resolveClaudeApproval(receipt.runId, "denied");
     else resolveCodexApproval(receipt.runId, "denied");
   }
   if (
@@ -151,8 +151,8 @@ export const applyReceiptEffects = async (input: {
     receipt.runId &&
     receipt.taskId
   ) {
-    if (provider === "cursor" && command.kind === "answer_input") {
-      answerCursorInput(receipt.runId, command.answers);
+    if (provider === "claude" && command.kind === "answer_input") {
+      answerClaudeInput(receipt.runId, command.answers);
     } else if (provider === "codex" && command.kind === "answer_input") {
       answerCodexInput(receipt.runId, command.answers);
     } else {
@@ -178,10 +178,10 @@ export const applyReceiptEffects = async (input: {
   }
   if (receipt.effects.includes("interrupt_provider")) {
     if (receipt.runId) {
-      interruptCursor(receipt.runId);
+      interruptClaude(receipt.runId);
       interruptCodex(receipt.runId, executionBoundary);
     } else {
-      interruptAllCursor();
+      interruptAllClaude();
       interruptAllCodex();
     }
   }

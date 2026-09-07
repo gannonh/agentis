@@ -58,7 +58,7 @@ describe("store", () => {
     expect(first.accepted).toBe(true);
     expect(second.accepted).toBe(true);
     const snapshot = await Effect.runPromise(store.snapshot());
-    expect(snapshot.runs.map((run) => run.frozen.provider)).toEqual(["codex", "cursor"]);
+    expect(snapshot.runs.map((run) => run.frozen.provider)).toEqual(["codex", "claude"]);
     expect(snapshot.tasks.map((task) => task.botName)).toEqual(["mara", "ivo"]);
     await Effect.runPromise(store.close());
   });
