@@ -40,7 +40,7 @@ const boot = async () => {
     }),
   );
   const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
-  return { endpoint, server, owner };
+  return { endpoint, server, owner, dataRoot };
 };
 
 const command = async (endpoint: URL, token: string, body: unknown) => {
@@ -87,7 +87,7 @@ afterEach(() => {
 
 describe("codex stub protocol", () => {
   it("completes a smoke turn with an artifact and frozen config", async () => {
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, dataRoot } = await boot();
     try {
       const submitted = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
@@ -103,6 +103,9 @@ describe("codex stub protocol", () => {
       expect(snap.artifacts[0]?.source).toBe("codex");
       expect(snap.artifacts[0]?.runId).toBe(submitted.json.runId);
       expect(snap.artifacts[0]?.taskId).toBe(submitted.json.taskId);
+      expect(snap.artifacts[0]?.path).toBe(
+        join(dataRoot, "scratch", "runs", String(submitted.json.runId), "hello.md"),
+      );
       expect(snap.runs[0]?.frozen).toMatchObject({
         provider: "codex",
         executionBoundary: "unverified-host-scratch",

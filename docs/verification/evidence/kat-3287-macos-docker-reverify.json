@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "issue": "KAT-3287",
+  "recordedAt": "2026-09-07T15:25:26Z",
+  "overallVerdict": "PASS",
+  "liveCodexVerdict": "UNVERIFIED",
+  "source": {
+    "repository": "gannonh/agentis",
+    "branch": "feature/kat-3287-kat-3242-follow-up-macos-docker-desktop-run-container",
+    "testedHead": "b40a83c52ea7a59a31f09cec9f968ab5d5fdacf9",
+    "remoteMainAtFinalReadback": "1b47d5d5005c0c46951c054d6e9eb0278b7f5ab2",
+    "pullRequest": "https://github.com/gannonh/agentis/pull/458",
+    "pullRequestDraftAtProbe": true
+  },
+  "acceptanceCriteria": [
+    {
+      "id": 1,
+      "verdict": "PASS",
+      "reason": "Two sequential protocol-stub Runs exercised docker-desktop-run-container on the Apple silicon Mac Mini."
+    },
+    {
+      "id": 2,
+      "verdict": "PASS",
+      "reason": "This receipt records the host, Docker Desktop, image, Agentis SHA, Codex pin, exact commands, and sanitized Run receipts."
+    },
+    {
+      "id": 3,
+      "verdict": "PASS",
+      "reason": "Each Run used its own named and labeled container and its own runs/<run-id> workspace. No bind source exposed owner.token or broad host /tmp."
+    },
+    {
+      "id": 4,
+      "verdict": "PASS",
+      "reason": "The no-stub Darwin attempt failed closed before Docker created a container. Live Codex remains UNVERIFIED with the exact missing prerequisites."
+    },
+    {
+      "id": 5,
+      "verdict": "PASS",
+      "reason": "The probe changed no external resource, mounted no owner credential, stopped both daemons, and left no Run container."
+    }
+  ],
+  "repairAcceptanceCriteria": [
+    {
+      "id": 1,
+      "verdict": "PASS",
+      "reason": "The two /workspace bind sources were distinct and ended in scratch/runs/<run-id>."
+    },
+    {
+      "id": 2,
+      "verdict": "PASS",
+      "reason": "The canceled container disappeared in 822 ms. The succeeded container disappeared in 623 ms."
+    },
+    {
+      "id": 3,
+      "verdict": "PASS",
+      "reason": "The only bind sources were each private Run workspace and the exact read-only protocol-stub file. No source was /tmp or /private/tmp, and no source contained the owner credential."
+    },
+    {
+      "id": 4,
+      "verdict": "PASS",
+      "reason": "Without the stub, Darwin returned the Linux payload, container-scoped authentication, and provider network prerequisite error before any Docker container-create event. Live Codex remains UNVERIFIED."
+    },
+    {
+      "id": 5,
+      "verdict": "PASS",
+      "reason": "The repaired head retains the focused container and store regression tests and the isolated protocol-stub fixture evidence recorded in docs/verification/kat-3242.md. The Mini re-verification did not rerun the Linux test suite."
+    }
+  ],
+  "host": {
+    "product": "macOS",
+    "version": "26.5.2",
+    "build": "25F84",
+    "architecture": "arm64",
+    "kernel": "Darwin 25.5.0"
+  },
+  "docker": {
+    "desktop": "4.68.0 (223695)",
+    "client": "29.4.0",
+    "engine": "29.3.1",
+    "engineOs": "linux",
+    "engineArchitecture": "arm64",
+    "engineKernel": "6.12.76-linuxkit",
+    "productImage": "node:24-bookworm-slim",
+    "productImageId": "sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e",
+    "productImageRepoDigest": "node@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e",
+    "productImageOs": "linux",
+    "productImageArchitecture": "arm64"
+  },
+  "codex": {
+    "pin": "0.153.4",
+    "hostVersion": "codex-cli 0.153.4",
+    "hostBinary": "<home>/.vite-plus/bin/codex",
+    "hostBinaryKind": "Mach-O 64-bit executable arm64",
+    "hostBinarySha256": "b973d440acac501fd2594a43e7ca9ce41e0a65b9dfb28d0d7a7837c99e1261e3"
+  },
+  "configuration": {
+    "executionBoundary": "docker-desktop-run-container",
+    "stubHostPath": "/Volumes/EVO/dev/agentis-worktrees/kat-3287-kat-3242-follow-up-macos-docker-desktop-run-container/packages/cli/test/codex-stub.mjs",
+    "stubContainerPath": "/opt/agentis/codex-stub.mjs",
+    "stubDataRoot": "/tmp/kat-3287-reverify-stub.oNep0A",
+    "noStubDataRoot": "/tmp/kat-3287-nostub-data.DhEl7w",
+    "stubEndpoint": "http://127.0.0.1:64605/",
+    "noStubEndpoint": "http://127.0.0.1:64742/"
+  },
+  "runs": [
+    {
+      "purpose": "cancel cleanup",
+      "runId": "a536b08b-394d-40bb-8b56-8009d70a8eda",
+      "taskId": "dee0be5e-6e51-4778-a054-16d7c5731293",
+      "containerId": "37f2caf4e2ca72f2214edff966247017e429fec6460523fe217412d1ba9c6c26",
+      "containerName": "agentis-run-a536b08b-394d-40bb-8b56-8009d70a8eda",
+      "labels": {
+        "io.agentis.managed": "run-container",
+        "io.agentis.run-id": "a536b08b-394d-40bb-8b56-8009d70a8eda"
+      },
+      "workspaceSource": "/tmp/kat-3287-reverify-stub.oNep0A/scratch/runs/a536b08b-394d-40bb-8b56-8009d70a8eda",
+      "workspaceDestination": "/workspace",
+      "workspaceReadWrite": true,
+      "stubSource": "/Volumes/EVO/dev/agentis-worktrees/kat-3287-kat-3242-follow-up-macos-docker-desktop-run-container/packages/cli/test/codex-stub.mjs",
+      "stubDestination": "/opt/agentis/codex-stub.mjs",
+      "stubReadWrite": false,
+      "terminalStatus": "canceled",
+      "cleanupMs": 822,
+      "containerAbsentAfterTerminalState": true
+    },
+    {
+      "purpose": "success cleanup",
+      "runId": "23d13577-2a4a-422a-9d39-206db66b9c52",
+      "taskId": "aabf8b7e-2056-46fa-8960-88c016a05f1b",
+      "containerId": "e2d0fa54da9d8e60a303c44330edc52f89e47f65c118ff8010cd7a8c6ca57424",
+      "containerName": "agentis-run-23d13577-2a4a-422a-9d39-206db66b9c52",
+      "labels": {
+        "io.agentis.managed": "run-container",
+        "io.agentis.run-id": "23d13577-2a4a-422a-9d39-206db66b9c52"
+      },
+      "workspaceSource": "/tmp/kat-3287-reverify-stub.oNep0A/scratch/runs/23d13577-2a4a-422a-9d39-206db66b9c52",
+      "workspaceDestination": "/workspace",
+      "workspaceReadWrite": true,
+      "stubSource": "/Volumes/EVO/dev/agentis-worktrees/kat-3287-kat-3242-follow-up-macos-docker-desktop-run-container/packages/cli/test/codex-stub.mjs",
+      "stubDestination": "/opt/agentis/codex-stub.mjs",
+      "stubReadWrite": false,
+      "terminalStatus": "succeeded",
+      "artifact": {
+        "id": "0dd0f8cc-59b8-4a1e-a644-065ae2ec197c",
+        "sha256": "d2285637a5e69a58ea65cb1237d2ca64cc42c6d38943f9e5719248d7c70ab645",
+        "byteSize": 65
+      },
+      "cleanupMs": 623,
+      "containerAbsentAfterTerminalState": true
+    }
+  ],
+  "containerInspectProjection": {
+    "image": "node:24-bookworm-slim",
+    "user": "10001:10001",
+    "command": [
+      "node",
+      "/opt/agentis/codex-stub.mjs"
+    ],
+    "networkMode": "none",
+    "readOnlyRootFilesystem": true,
+    "capabilitiesDropped": [
+      "ALL"
+    ],
+    "securityOptions": [
+      "no-new-privileges"
+    ],
+    "pidsLimit": 128,
+    "memoryBytes": 2147483648,
+    "nanoCpus": 2000000000
+  },
+  "mountAudit": {
+    "workspaceSourcesDistinct": true,
+    "workspaceSourcesEndInRunsByRunId": true,
+    "ownerTokenPathContainedByAnyBindSource": false,
+    "broadTmpBindPresent": false,
+    "onlyExpectedBindSourcesPresent": true
+  },
+  "noStubAttempt": {
+    "runId": "c8034d24-b699-4b7a-9119-04cbc55cb536",
+    "taskId": "53130d41-d0fe-4873-87ac-8b17bf06af74",
+    "terminalStatus": "failed",
+    "providerSessionId": null,
+    "artifact": null,
+    "error": "macOS Codex executable cannot run in the Linux Run container; a Linux Codex payload, container-scoped authentication, and provider network access are not provisioned",
+    "allContainerCreateEventCount": 0,
+    "productImageContainerCreateEventCount": 0,
+    "runContainerAbsent": true,
+    "verdict": "UNVERIFIED",
+    "reason": "The fail-closed Darwin prerequisite check ran before Docker created a container. No Linux Codex payload, container-scoped ChatGPT authentication, or provider network access was provisioned."
+  },
+  "commands": [
+    {
+      "name": "stub-daemon",
+      "command": "AGENTIS_CODEX_STUB=/Volumes/EVO/dev/agentis-worktrees/kat-3287-kat-3242-follow-up-macos-docker-desktop-run-container/packages/cli/test/codex-stub.mjs node packages/cli/dist/bin.js serve --endpoint http://127.0.0.1:64605/ --data-root /tmp/kat-3287-reverify-stub.oNep0A --provider codex --execution-boundary docker-desktop-run-container",
+      "exitCode": 0
+    },
+    {
+      "name": "cancel-run",
+      "command": "node packages/cli/dist/bin.js task submit --endpoint http://127.0.0.1:64605/ --data-root /tmp/kat-3287-reverify-stub.oNep0A --brief 'INPUT KAT-3287 canceled Run'; docker inspect agentis-run-a536b08b-394d-40bb-8b56-8009d70a8eda; node packages/cli/dist/bin.js run cancel --endpoint http://127.0.0.1:64605/ --data-root /tmp/kat-3287-reverify-stub.oNep0A --run a536b08b-394d-40bb-8b56-8009d70a8eda",
+      "exitCode": 0,
+      "observed": "Run reached canceled and the exact named container became absent."
+    },
+    {
+      "name": "succeed-run",
+      "command": "node packages/cli/dist/bin.js task submit --endpoint http://127.0.0.1:64605/ --data-root /tmp/kat-3287-reverify-stub.oNep0A --brief 'INPUT KAT-3287 succeeded Run'; docker inspect agentis-run-23d13577-2a4a-422a-9d39-206db66b9c52; node packages/cli/dist/bin.js input answer --endpoint http://127.0.0.1:64605/ --data-root /tmp/kat-3287-reverify-stub.oNep0A --run 23d13577-2a4a-422a-9d39-206db66b9c52 --answer color=Blue",
+      "exitCode": 0,
+      "observed": "Run reached succeeded, recorded artifact d2285637a5e69a58ea65cb1237d2ca64cc42c6d38943f9e5719248d7c70ab645, and the exact named container became absent."
+    },
+    {
+      "name": "no-stub-daemon",
+      "command": "env -u AGENTIS_CODEX_STUB node packages/cli/dist/bin.js serve --endpoint http://127.0.0.1:64742/ --data-root /tmp/kat-3287-nostub-data.DhEl7w --provider codex --execution-boundary docker-desktop-run-container",
+      "exitCode": 0
+    },
+    {
+      "name": "no-stub-attempt",
+      "command": "node packages/cli/dist/bin.js task submit --endpoint http://127.0.0.1:64742/ --data-root /tmp/kat-3287-nostub-data.DhEl7w --brief 'Reply exactly KAT3287_OK. Do not call tools or access files.'",
+      "exitCode": 0,
+      "observed": "Run failed with the expected prerequisite error. Docker events recorded zero container creates during the attempt."
+    },
+    {
+      "name": "cleanup-check",
+      "command": "docker inspect --type container agentis-run-<run-id>",
+      "exitCode": 1,
+      "observed": "docker inspect returned no such container for every exact Run name. A separate docker ps -a exact-name filter returned no row."
+    }
+  ],
+  "safety": {
+    "externalResourceMutations": [],
+    "ownerCredentialMounted": false,
+    "ownerCredentialValueRetained": false,
+    "broadTmpMounted": false,
+    "providerNetworkReached": false,
+    "containerAuthenticationReached": false,
+    "stubDaemonStopped": true,
+    "noStubDaemonStopped": true,
+    "residualRunContainers": []
+  },
+  "sanitization": {
+    "<home>": "host user home directory",
+    "ownerSession": "omitted from retained status events",
+    "ownerTokenValue": "never read or retained"
+  }
+}

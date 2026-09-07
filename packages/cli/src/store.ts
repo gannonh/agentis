@@ -279,11 +279,7 @@ const assertSchemaBeforeOpen = (db: DatabaseSync, path: string) => {
   if (!existsSync(path) || statSync(path).size === 0) {
     return;
   }
-  const meta = row<{ value: string }>(
-    db,
-    "SELECT value FROM meta WHERE key = 'schema_id'",
-    [],
-  );
+  const meta = row<{ value: string }>(db, "SELECT value FROM meta WHERE key = 'schema_id'", []);
   if (meta && meta.value !== SCHEMA_ID) {
     throw new UnsupportedSchemaError(meta.value);
   }
@@ -423,12 +419,7 @@ const expireApprovalAndRun = (
     approval.run_id,
   ]);
   run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [approval.task_id]);
-  emit(
-    db,
-    "run_failed",
-    { runId: approval.run_id, error: "approval expired", commandId },
-    nowMs,
-  );
+  emit(db, "run_failed", { runId: approval.run_id, error: "approval expired", commandId }, nowMs);
 };
 
 const message = (
@@ -531,6 +522,7 @@ const submitTask = (
   const taskId = newTaskId();
   const threadId = newThreadId();
   const runId = newRunId();
+  const workspaceId = join(input.workspaceId, "runs", runId);
   const frozen: FrozenConfig = {
     provider: input.provider,
     transport: input.provider === "codex" ? CODEX_TRANSPORT : "fake-in-process",
@@ -539,7 +531,7 @@ const submitTask = (
     ...(input.provider === "codex" ? { effort: "medium" } : {}),
     executionBoundary: input.executionBoundary,
     authMode: input.provider === "codex" ? CODEX_AUTH_MODE : "none",
-    workspaceId: input.workspaceId,
+    workspaceId,
     deadlineMs: RUN_DEADLINE_MS,
     actionBudget: MAX_ACTIONS_PER_RUN,
   };
@@ -1054,11 +1046,9 @@ export const mutateForEngine = (storePath: string) => {
       }),
     waitInput: (runId: RunId, prompt: string, nowMs: number) =>
       withTxn(db, () => {
-        run(
-          db,
-          "UPDATE runs SET status = 'waiting_input', waiting_reason = 'input' WHERE id = ?",
-          [runId],
-        );
+        run(db, "UPDATE runs SET status = 'waiting_input', waiting_reason = 'input' WHERE id = ?", [
+          runId,
+        ]);
         emit(db, "waiting_input", { runId, prompt }, nowMs);
       }),
     complete: (input: {
@@ -1106,7 +1096,9 @@ export const mutateForEngine = (storePath: string) => {
       }),
     fail: (runId: RunId, taskId: TaskId, error: string, nowMs: number) =>
       withTxn(db, () => {
-        const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [runId]);
+        const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [
+          runId,
+        ]);
         if (!current || isTerminal(current.status)) {
           return;
         }

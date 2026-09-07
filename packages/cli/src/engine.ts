@@ -3,7 +3,14 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Effect } from "effect";
 import { mutateForEngine, type Store } from "./store.js";
-import type { Command, CommandReceipt, ExecutionBoundary, FixtureKind, RunId, TaskId } from "./schema.js";
+import type {
+  Command,
+  CommandReceipt,
+  ExecutionBoundary,
+  FixtureKind,
+  RunId,
+  TaskId,
+} from "./schema.js";
 import {
   answerCodexInput,
   interruptAllCodex,
@@ -36,32 +43,10 @@ export const applyReceiptEffects = async (input: {
   readonly receipt: CommandReceipt;
   readonly command: Command;
   readonly provider: "fake" | "codex";
-  readonly workspace: string;
+  readonly executionBoundary: typeof ExecutionBoundary.Type;
   readonly nowMs: number;
 }): Promise<void> => {
-  const { receipt, store, provider, workspace, nowMs, command } = input;
-  const drive = (
-    fixture: FixtureKind | null,
-    brief: string,
-    executionBoundary: typeof ExecutionBoundary.Type,
-  ) => {
-    if (!receipt.runId || !receipt.taskId) {
-      return Promise.resolve();
-    }
-    return Effect.runPromise(
-      driveAfterCommit({
-        store,
-        runId: receipt.runId,
-        taskId: receipt.taskId,
-        fixture,
-        provider,
-        executionBoundary,
-        workspace,
-        nowMs,
-        brief,
-      }),
-    );
-  };
+  const { receipt, store, provider, executionBoundary, nowMs, command } = input;
   if (
     receipt.accepted &&
     !receipt.replayed &&
@@ -72,11 +57,21 @@ export const applyReceiptEffects = async (input: {
     const snapshot = await Effect.runPromise(store.snapshot());
     const run = snapshot.runs.find((item) => item.id === receipt.runId);
     try {
-      await drive(
-        run?.fixture ?? null,
-        snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
-        run?.frozen.executionBoundary ?? "unverified-host-scratch",
-      );
+      if (run) {
+        await Effect.runPromise(
+          driveAfterCommit({
+            store,
+            runId: receipt.runId,
+            taskId: receipt.taskId,
+            fixture: run.fixture,
+            provider,
+            executionBoundary: run.frozen.executionBoundary,
+            workspace: run.frozen.workspaceId,
+            nowMs,
+            brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
+          }),
+        );
+      }
     } catch {
       return;
     }
@@ -91,6 +86,10 @@ export const applyReceiptEffects = async (input: {
       resolveCodexApproval(receipt.runId, "allowed");
     } else {
       const snapshot = await Effect.runPromise(store.snapshot());
+      const run = snapshot.runs.find((item) => item.id === receipt.runId);
+      if (!run) {
+        return;
+      }
       await Effect.runPromise(
         finishAllowedFake({
           store,
@@ -99,7 +98,7 @@ export const applyReceiptEffects = async (input: {
           fixture: "allow",
           provider,
           executionBoundary: "unverified-host-scratch",
-          workspace,
+          workspace: run.frozen.workspaceId,
           nowMs,
           brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
         }),
@@ -119,6 +118,10 @@ export const applyReceiptEffects = async (input: {
       answerCodexInput(receipt.runId, command.answers);
     } else {
       const snapshot = await Effect.runPromise(store.snapshot());
+      const run = snapshot.runs.find((item) => item.id === receipt.runId);
+      if (!run) {
+        return;
+      }
       await Effect.runPromise(
         finishInputFake({
           store,
@@ -127,7 +130,7 @@ export const applyReceiptEffects = async (input: {
           fixture: "input",
           provider,
           executionBoundary: "unverified-host-scratch",
-          workspace,
+          workspace: run.frozen.workspaceId,
           nowMs,
           brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
         }),
@@ -136,7 +139,7 @@ export const applyReceiptEffects = async (input: {
   }
   if (receipt.accepted && receipt.effects.includes("interrupt_provider")) {
     if (receipt.runId) {
-      interruptCodex(receipt.runId);
+      interruptCodex(receipt.runId, executionBoundary);
     } else {
       interruptAllCodex();
     }

@@ -4,7 +4,12 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Effect } from "effect";
-import { readCodexVersionInContainer, spawnCodexAppServerInContainer } from "./container.js";
+import {
+  readCodexVersionInContainer,
+  removeRunContainer,
+  spawnCodexAppServerInContainer,
+  type RunContainerProcess,
+} from "./container.js";
 import { mutateForEngine } from "./store.js";
 import type { DriveInput } from "./engine.js";
 import { CODEX_CLI_PIN } from "./versions.js";
@@ -19,12 +24,12 @@ type Json = Record<string, unknown>;
 type Session = {
   readonly runId: RunId;
   readonly child: ChildProcessWithoutNullStreams;
+  readonly stop: () => void;
   readonly request: (id: string | number, method: string, params: Json) => Promise<Json>;
   readonly send: (message: Json) => void;
   pendingServerRequest: Json | null;
   threadId: string | null;
   lastText: string;
-  turnId: string | null;
 };
 
 const sessions = new Map<string, Session>();
@@ -35,24 +40,34 @@ const asJson = (value: unknown): Json =>
 const rpcTimeoutMs = () => Number(process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS ?? "180000");
 
 const spawnAppServer = (
+  runId: RunId,
   cwd: string,
   executionBoundary: typeof ExecutionBoundary.Type,
-): ChildProcessWithoutNullStreams => {
+): RunContainerProcess => {
   const stub = process.env.AGENTIS_CODEX_STUB;
   if (executionBoundary === "docker-desktop-run-container") {
     return spawnCodexAppServerInContainer({
+      runId,
       workspace: cwd,
       ...(stub ? { stub } : {}),
     });
   }
   if (stub) {
-    return spawn(process.execPath, [stub], {
+    const child = spawn(process.execPath, [stub], {
       cwd,
       env: { PATH: process.env.PATH ?? "" },
       stdio: ["pipe", "pipe", "pipe"],
     });
+    return {
+      child,
+      stop: () => {
+        if (child.exitCode === null && !child.killed) {
+          child.kill("SIGTERM");
+        }
+      },
+    };
   }
-  return spawn("codex", ["--disable", "hooks", "app-server", "--listen", "stdio://"], {
+  const child = spawn("codex", ["--disable", "hooks", "app-server", "--listen", "stdio://"], {
     cwd,
     env: {
       PATH: process.env.PATH ?? "",
@@ -61,6 +76,14 @@ const spawnAppServer = (
     },
     stdio: ["pipe", "pipe", "pipe"],
   });
+  return {
+    child,
+    stop: () => {
+      if (child.exitCode === null && !child.killed) {
+        child.kill("SIGTERM");
+      }
+    },
+  };
 };
 
 const readVersion = async (executionBoundary: typeof ExecutionBoundary.Type) => {
@@ -94,12 +117,19 @@ const failRun = (input: DriveInput, error: string) => {
   engine.close();
 };
 
+// stop() removes the Run container and throws when Docker is unreachable or the container
+// survives; callers run inside child/timer callbacks where an escaped throw kills the daemon.
 const dropSession = (runId: RunId) => {
   const session = sessions.get(runId);
   sessions.delete(runId);
-  if (session && session.child.exitCode === null && !session.child.killed) {
-    session.child.kill("SIGTERM");
+  try {
+    session?.stop();
+  } catch (error) {
+    process.stderr.write(
+      `run ${runId} cleanup failed: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
   }
+  return session !== undefined;
 };
 
 export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> =>
@@ -107,7 +137,8 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> =>
     try: async () => {
       await readVersion(input.executionBoundary);
       mkdirSync(input.workspace, { recursive: true, mode: 0o700 });
-      const child = spawnAppServer(input.workspace, input.executionBoundary);
+      const providerProcess = spawnAppServer(input.runId, input.workspace, input.executionBoundary);
+      const { child } = providerProcess;
       const pending = new Map<string | number, (value: Json) => void>();
       const send = (message: Json) => {
         child.stdin.write(`${JSON.stringify(message)}\n`);
@@ -115,11 +146,11 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> =>
       const session: Session = {
         runId: input.runId,
         child,
+        stop: providerProcess.stop,
         send,
         pendingServerRequest: null,
         threadId: null,
         lastText: "",
-        turnId: null,
         request: (id, method, params) =>
           new Promise<Json>((resolve, reject) => {
             const timer = setTimeout(
@@ -159,12 +190,16 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> =>
       child.stderr.on("data", (chunk: Buffer) => {
         writeFileSync(join(input.workspace, "codex.stderr.log"), chunk, { flag: "a" });
       });
+      child.on("error", (error) => {
+        failRun(input, error.message);
+        dropSession(input.runId);
+      });
       child.on("exit", (code) => {
         if (!sessions.has(input.runId)) {
           return;
         }
         failRun(input, `codex exited ${code}`);
-        sessions.delete(input.runId);
+        dropSession(input.runId);
       });
       sessions.set(input.runId, session);
       await session.request(1, "initialize", {
@@ -201,7 +236,7 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> =>
       const engine = mutateForEngine(input.store.path);
       engine.markRunning(input.runId, threadId, input.nowMs);
       engine.close();
-      const started = await session.request(10, "turn/start", {
+      await session.request(10, "turn/start", {
         threadId,
         input: [{ type: "text", text: input.brief }],
         ...(input.brief.includes("request_user_input")
@@ -217,10 +252,6 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> =>
             }
           : {}),
       });
-      const turn = asJson(asJson(started.result).turn);
-      if (typeof turn.id === "string") {
-        session.turnId = turn.id;
-      }
     },
     catch: (error) => {
       failRun(input, error instanceof Error ? error.message : String(error));
@@ -232,9 +263,6 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> =>
 const handleNotice = async (session: Session, input: DriveInput, value: Json) => {
   const method = typeof value.method === "string" ? value.method : "";
   const params = asJson(value.params);
-  if (typeof params.turnId === "string") {
-    session.turnId = params.turnId;
-  }
   if (method === "item/commandExecution/requestApproval") {
     session.pendingServerRequest = value;
     const command = typeof params.command === "string" ? params.command : "command";
@@ -272,9 +300,6 @@ const handleNotice = async (session: Session, input: DriveInput, value: Json) =>
     session.lastText = item.text;
   }
   const turn = "turn" in value ? asJson(value.turn) : asJson(params.turn);
-  if (typeof turn.id === "string") {
-    session.turnId = turn.id;
-  }
   if (method === "turn/completed" && turn.status === "interrupted") {
     const engine = mutateForEngine(input.store.path);
     engine.fail(input.runId, input.taskId, "interrupted", Date.now());
@@ -338,6 +363,9 @@ export const resolveCodexApproval = (runId: RunId, decision: "allowed" | "denied
     result: { decision: decision === "allowed" ? "accept" : "cancel" },
   });
   session.pendingServerRequest = null;
+  if (decision === "denied") {
+    dropSession(runId);
+  }
 };
 
 export const answerCodexInput = (runId: RunId, answers: Record<string, string>) => {
@@ -354,20 +382,10 @@ export const answerCodexInput = (runId: RunId, answers: Record<string, string>) 
   session.pendingServerRequest = null;
 };
 
-export const interruptCodex = (runId: RunId) => {
-  const session = sessions.get(runId);
-  if (!session?.threadId) {
-    dropSession(runId);
-    return;
+export const interruptCodex = (runId: RunId, executionBoundary?: typeof ExecutionBoundary.Type) => {
+  if (!dropSession(runId) && executionBoundary === "docker-desktop-run-container") {
+    removeRunContainer(runId);
   }
-  void session
-    .request(21, "turn/interrupt", {
-      threadId: session.threadId,
-      ...(session.turnId ? { turnId: session.turnId } : {}),
-    })
-    .catch(() => {
-      dropSession(runId);
-    });
 };
 
 export const interruptAllCodex = () => {

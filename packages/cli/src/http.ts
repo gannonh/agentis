@@ -12,7 +12,7 @@ import {
   type ExecutionBoundary,
   type ProviderKind,
 } from "./schema.js";
-import { openStore, sweepRunTimeouts, type Store } from "./store.js";
+import { openStore, sweepRunTimeouts, type Snapshot, type Store } from "./store.js";
 import { API_FAMILY, PACKAGE_VERSION, SCHEMA_ID } from "./versions.js";
 
 export type ServeOptions = {
@@ -43,12 +43,18 @@ const json = (response: ServerResponse, status: number, body: unknown) => {
 
 const loopback = (hostname: string) => hostname === "127.0.0.1" || hostname === "localhost";
 
-const applySweepEffects = (store: Store) => {
+const applySweepEffects = (store: Store, executionBoundary: typeof ExecutionBoundary.Type) => {
   const swept = sweepRunTimeouts(store.path, Date.now());
   for (const item of swept) {
     if (item.effects.includes("interrupt_provider")) {
-      interruptCodex(item.runId);
+      interruptCodex(item.runId, executionBoundary);
     }
+  }
+};
+
+const cleanupPersistedRunContainers = (runs: Snapshot["runs"]) => {
+  for (const run of runs) {
+    interruptCodex(run.id, run.frozen.executionBoundary);
   }
 };
 
@@ -63,8 +69,10 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
     const owner = yield* loadOrCreateOwner(options.dataRoot);
     const store = yield* openStore(options.dataRoot);
     yield* store.interruptActiveRuns(Date.now());
+    const recovered = yield* store.snapshot();
+    cleanupPersistedRunContainers(recovered.runs);
     const sweepTimer = setInterval(() => {
-      applySweepEffects(store);
+      applySweepEffects(store, options.executionBoundary);
     }, 1000);
     const server = createServer((request, response) => {
       void handle(request, response).catch((error: unknown) => {
@@ -140,7 +148,7 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
             clearInterval(poll);
             return;
           }
-          applySweepEffects(store);
+          applySweepEffects(store, options.executionBoundary);
           const live = await Effect.runPromise(store.snapshot());
           writeEvents(live.events);
         }, 250);
@@ -178,16 +186,9 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
           receipt,
           command: parsed.command,
           provider: options.provider,
-          workspace: options.workspace,
+          executionBoundary: options.executionBoundary,
           nowMs: Date.now(),
         });
-        if (receipt.effects.includes("interrupt_provider")) {
-          if (receipt.runId) {
-            interruptCodex(receipt.runId);
-          } else {
-            applySweepEffects(store);
-          }
-        }
         json(response, receipt.accepted ? 200 : 409, Schema.encodeSync(CommandReceipt)(receipt));
         return;
       }
@@ -208,6 +209,9 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
         await new Promise<void>((resolve, reject) => {
           server.close((error) => (error ? reject(error) : resolve()));
         });
+        await Effect.runPromise(store.interruptActiveRuns(Date.now()));
+        const snapshot = await Effect.runPromise(store.snapshot());
+        cleanupPersistedRunContainers(snapshot.runs);
         await Effect.runPromise(store.close());
       },
     };
