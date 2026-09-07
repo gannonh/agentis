@@ -1,0 +1,9 @@
+{
+  "recordedAt": "2026-09-07T21:12:52.014836+00:00",
+  "dataRoot": "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+  "command": "node packages/cli/dist/bin.js provider login --data-root /Users/gannonhall/.agentis/kat-3243-validation-v3",
+  "result": "Successfully logged in",
+  "authMode": "chatgpt-login",
+  "source": "native CLI completion observed after owner browser authorization",
+  "credentialsIncluded": false
+}

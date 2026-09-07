@@ -2,7 +2,7 @@
 
 Overall readiness: **BLOCKED**. The implementation is available for review in a draft PR. KAT-3243 remains In Progress; the original acceptance criteria are not complete.
 
-Product source: `67596da736bd72e13bf778f4d97aaa355f5720ef`. The subsequent evidence commit adds these receipts and adjusts only conformance report filenames and fixture-mode diagnostics. Verification ran on macOS arm64 with Docker Desktop and Node 24.20.0 on September 7, 2026.
+Latest product source: `c7cf2c70` (earlier receipts identify their original source). This revision fixes native Codex plan retention, stale approval dispatch and expired-approval cleanup, and adds the documented Cursor subagent hook for conformance testing. Verification ran on macOS arm64 with Docker Desktop and Node 24.20.0 on September 7, 2026.
 
 ## Acceptance matrix
 
@@ -10,25 +10,25 @@ PASS means the stated criterion is established; FAIL records an observed unsucce
 
 | Criterion | Status | Evidence and limits |
 | --- | --- | --- |
-| AC1: Same workflow through two live providers | UNVERIFIED | Cursor completed the live workflow. Codex native login is pending; authenticated Codex and billing eligibility remain unverified. |
-| AC2: Chosen transports preserve semantics | UNVERIFIED | Codex app-server and Cursor ACP adapters implemented and fixture-tested. Live Cursor passed; authenticated Codex remains unverified. |
-| AC3: Capabilities and blocking decisions | FAIL | Cursor live plan rejection passed, but the structured question probe completed without a blocking request. Unsupported attachment and MCP operations are explicit. Full capability conformance remains unverified. |
-| AC4: Typed unavailable states and isolation | PASS | Public-boundary fixtures cover unsupported/unknown providers and isolation. Both real-container provider launch paths returned typed unavailable authentication without artifacts. |
-| AC5: Separate identities and deduplicated history | UNVERIFIED | Live Cursor text and tool-bearing session reloads preserved identities, history, messages and one artifact. Authenticated Codex reload remains unverified. |
-| AC6: Provider decisions and failures | UNVERIFIED | Live Cursor smoke, allow, deny, plan rejection, cancel and load passed; both live missing-auth checks passed. Quota, crash and malformed cases have fixture coverage. Codex authenticated cases and Cursor blocking input remain unverified. |
-| AC7: Bounded accepted specialist handoff | UNVERIFIED | Acceptance, ownership, rejection, timeout, stale events, attribution and bounded source-artifact checks pass fixtures. Native Cursor project-policy startup/load probes succeeded; reported shell/read denials and no forbidden file were observed. Full live handoff and native Task/subagent enforcement remain unverified. |
-| AC8: Concurrent bots and stop-all | UNVERIFIED | Concurrency limits, isolation and stop-all pass public-boundary fixtures. Two authenticated live providers have not run concurrently. |
-| AC9: Malformed fixtures and mandatory real proof | UNVERIFIED | 72 tests pass, including protocol/error regressions. Partial real Cursor evidence is recorded; mandatory two-provider live evidence remains incomplete. |
+| AC1: Same bounded workflow through both live providers | PASS | Both returned the exact draft marker using their selected authentication and pinned executables. Auth/billing/support details are documented; invoice attribution is not claimed. |
+| AC2: Provider-specific transport semantics | PASS | Codex app-server and Cursor ACP preserve distinct native plan/input semantics. Codex native plans are retained without inventing a blocking plan-approval RPC. |
+| AC3: Capabilities and blocking decisions | FAIL | Codex blocking input and native plans passed; Cursor plan rejection passed. Cursor completed without emitting the required blocking question. Unsupported MCP/attachment operations are explicit. |
+| AC4: Typed unavailable states and isolation | PASS | Public-boundary fixtures cover unsupported/unknown providers; real-container missing-auth paths passed without artifacts. |
+| AC5: Separate identifiers and deduplicated history | PASS | Both providers completed text/tool session loading with stable identities, messages and artifact counts. Native Codex plan duplicate delivery is covered by regression. |
+| AC6: Decisions, cancellation and provider failures | UNVERIFIED | Both live allow/deny/cancel/load paths passed; Codex structured input passed. Missing auth passed; quota/crash/malformed cases have fixture coverage. Cursor blocking input remains unproven. |
+| AC7: Bounded accepted specialist handoff | FAIL | Live acceptance, single ownership transfer, source context, attributed draft return, duplicate refusal and load passed. The native Cursor Task test launched a subagent despite the configured denial hook. Rejection/timeout remain fixture evidence. |
+| AC8: Concurrency, limits and stop-all | PASS | Corrected live retry held both providers on native approvals with separate identities, rejected per-bot/global limit bypass, canceled both via stop-all, rejected both late approvals with HTTP 409 and no dispatch effects, and cleaned up without late artifacts. |
+| AC9: Malformed fixtures and mandatory real proof | UNVERIFIED | 80 tests pass and both providers have live receipts. Full conformance remains incomplete because of the Cursor question and native delegation failures. |
 
 ## Verification
 
-Required checks passed: `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, `pnpm test` (72 tests in 11 files), `pnpm build`, and `pnpm pack:smoke`. Captured output is in [evidence/logs](evidence/logs). Independent implementation spec and quality reviews passed within the implemented scope; those reviews do not resolve the live acceptance blockers.
+Required checks passed: `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, `pnpm test` (80 tests in 11 files), `pnpm build`, and `pnpm pack:smoke`. Captured output is in [evidence/logs](evidence/logs). Independent implementation spec and quality reviews passed within the implemented scope; those reviews do not resolve the live acceptance blockers.
 
 [Final Cursor workflow](evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-cancel.json) records five passing real product cases: exact draft marker, approved command output, denial, plan rejection and cancellation. Successful text and tool-bearing sessions reloaded without duplicate history, public messages or artifacts. Terminal container cleanup passed. `fixtureMode` is false.
 
 [Final Cursor question check](evidence/responses/provider-conformance-ivo-input.json) failed: the provider completed without the required blocking request. Earlier [protocol question probe](evidence/responses/cursor-question-probe.json) also returned plain text. Structured blocking question behavior remains unverified live.
 
-Both real-container provider launch paths passed missing-auth checks: [Codex](evidence/responses/provider-conformance-mara-no-auth.json) and [Cursor](evidence/responses/provider-conformance-ivo-no-auth.json). These prove the unavailable-auth path only. Codex refuses the missing credential in the container launcher before executing the provider binary; this is not a native Codex authentication response. Two Codex device login attempts expired before authentication completed.
+Both real-container provider launch paths passed missing-auth checks: [Codex](evidence/responses/provider-conformance-mara-no-auth.json) and [Cursor](evidence/responses/provider-conformance-ivo-no-auth.json). These prove the unavailable-auth path only. Codex refuses the missing credential in the container launcher before executing the provider binary; this is not a native Codex authentication response. The owner subsequently completed native Codex login successfully; [authentication receipt](evidence/responses/codex-authentication.json). Authentication is resolved for both providers.
 
 ## Pinned environment and boundaries
 
@@ -42,17 +42,28 @@ Both real-container provider launch paths passed missing-auth checks: [Codex](ev
 
 [Network receipt](evidence/responses/network-fixed.json) records the isolated internal Run network and exact provider proxy allowlist, with private/arbitrary destinations denied. [Host control](evidence/responses/direct-host-control.json) records the synthetic listener comparison. Containers use nonroot execution, a read-only root, scratch mounts and scoped provider credentials; no owner token or host fallback.
 
-[Native Cursor policy probe](evidence/responses/native-cursor-policy.json) records successful startup and exact marker with the project policy mounted read-only at `/workspace/.cursor/cli.json`. Provider text reported command/read permission denial, no owner permission callbacks occurred, and the forbidden file was absent. Native tool notifications still reported completed and do not expose raw results; this observation is not universal enforcement proof. [Native policy load](evidence/responses/native-cursor-policy-load.json) succeeded with the same policy. Cursor native Task/subagent preexecution enforcement has no demonstrated deny hook and remains UNVERIFIED. Agentis rejects onward delegation and owner-only operations. See [handoff contract](../../runtime/bounded-handoff.md).
+[Native Cursor policy probe](evidence/responses/native-cursor-policy.json) records successful startup and exact marker with the project policy mounted read-only at `/workspace/.cursor/cli.json`. Provider text reported command/read permission denial, no owner permission callbacks occurred, and the forbidden file was absent. Native tool notifications still reported completed and do not expose raw results; this observation is not universal enforcement proof. [Native policy load](evidence/responses/native-cursor-policy-load.json) succeeded with the same policy. This earlier probe did not establish native Task enforcement; the later Task-specific probe below records FAIL despite the documented hook. Agentis rejects onward delegation and owner-only operations. See [handoff contract](../../runtime/bounded-handoff.md).
 
 Historical failures remain in the evidence directory: initial Cursor load, initial missing-auth classification, and the unsuccessful read-only global Cursor config approach. Corrected receipts and final workflow results supersede those attempts. Raw exploratory protocol streams are retained privately outside the repository; compact observations are included here.
 
 The product refused the old synthetic schema without migration ([receipt](evidence/responses/schema-refusal.json)). The operator then preserved that test database separately before creating the new synthetic dataset ([preservation receipt](evidence/responses/test-data-preservation.json)); the product does not reset or migrate unsupported data.
 
-## Resume live acceptance
+## Latest live results and corrections
 
-1. Complete native Codex authentication using `node packages/cli/dist/bin.js provider login --data-root /Users/gannonhall/.agentis/kat-3243-validation-v3` and its browser flow. Do not paste credentials into a task or repository file.
-2. Run `node scripts/live-provider-conformance.mjs /Users/gannonhall/.agentis/kat-3243-validation-v3 mara smoke allow deny plan input cancel`. Record actual supported behavior; do not convert absent features into passes.
-3. Exercise the documented full accepted/rejected/timed-out handoff and two-provider concurrency/stop-all after both providers authenticate. Resolve or explicitly revise the spec for unavailable Cursor structured question and native delegation enforcement before claiming acceptance.
-4. Capture new receipts, update this matrix and rerun the evidence validator. Keep the PR draft until all required acceptance gates pass.
+[Codex workflow](evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json) passed smoke, allow, deny, structured input, cancellation and both session reload cases. Its `plan` case used an invalid Cursor-specific `create_plan` request; retain that failed probe without interpreting it as Codex planning failure. The corrected [native Codex plan probe](evidence/responses/provider-conformance-mara-plan.json) passed with a retained native `plan` item, no approval, and an explicit unavailable blocking-plan-approval capability.
+
+The [accepted handoff](evidence/responses/live-handoff-conformance-intermediate-text-approval.json) passed through both authenticated providers. Its concurrency setup returned a plain-text approval request from Cursor, so that intermediate attempt did not establish concurrency. The [final retry](evidence/responses/live-handoff-conformance.json) used the previously successful native tool prompt and passed concurrency, limits, stop-all, late-approval rejection and cleanup. The first stop-all run exposed late approval state revival; [historical receipt](evidence/responses/live-handoff-conformance-historical-before-fix.json) retains the failure. The fix cancels pending approvals, checks actionable run state before expiry, removes replay dispatch effects, and terminates the provider on expired rejected decisions. Public regressions include actual process termination.
+
+The [native subagent probe](evidence/responses/native-cursor-subagent-policy.json) is **FAIL**: a Task invocation progressed to completion and produced a native child agent ID and the synthetic child marker despite immutable `subagentStart` denial configuration. No denial marker or permission callback was observed. This supersedes the earlier assumption that documented configuration and static wiring might establish enforcement. No real-resource work was requested. Probe containers/network and its isolated state volume were cleaned up.
+
+## Remaining gate
+
+Authentication requires no further user action. Cursor must demonstrate blocking questions and enforce no native onward delegation before these requirements can pass. Do not weaken the spec, call the native Task failure a pass, or infer enforcement from prompt instructions. Keep the PR draft and Linear In Progress until the provider behavior is corrected or the owner explicitly approves a different specification.
+
+## Reproduce live acceptance
+
+The preserved receipts contain exact commands and source state. For a provisioned fresh synthetic dataset, run `node scripts/live-provider-conformance.mjs DATA_ROOT mara smoke allow deny plan input cancel` and the corresponding Cursor cases. `scripts/live-handoff-conformance.mjs DATA_ROOT` exercises accepted handoff and concurrent approvals followed by stop-all; run it last because stop-all latches that dataset. Provider credentials remain in scoped Docker volumes. Never reset a product dataset to rerun a probe; preserve synthetic test data explicitly, as recorded in the test-data archival receipts.
+
+The synthetic stopped dataset was preserved before retesting ([receipt](evidence/responses/stop-all-test-data-preservation.json)); provider credentials were retained and required no new login. The final verification dataset is now stop-all latched.
 
 The generated [manifest report](evidence/evidence.md) lists exact commands and receipts. Its passing-command summary is partial evidence; its blocked/failing slice results determine readiness.

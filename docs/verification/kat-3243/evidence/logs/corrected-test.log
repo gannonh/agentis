@@ -1,0 +1,50 @@
+$ "pnpm" "test"
+cwd: /Users/gannonhall/.codex/worktrees/9c04/agentis
+started_at: 2026-09-07T21:18:21.477Z
+
+
+> agentis@2.0.0 test /Users/gannonhall/.codex/worktrees/9c04/agentis
+> pnpm --filter @agentis-labs/cli test
+
+
+> @agentis-labs/cli@2.0.0 test /Users/gannonhall/.codex/worktrees/9c04/agentis/packages/cli
+> vitest run
+
+
+ RUN  v3.2.4 /Users/gannonhall/.codex/worktrees/9c04/agentis/packages/cli
+
+ ✓ test/container.test.ts (14 tests) 6503ms
+   ✓ Run containers > does not bind a host workspace or owner credentials during version preflight  349ms
+   ✓ Run containers > runs native device login using only dedicated provider storage and restricted egress  398ms
+   ✓ Run containers > starts live Codex with run-local auth and removes its proxy and internal network  560ms
+   ✓ Run containers > mounts an immutable native deny policy and read-only workspace for handoff  1504ms
+   ✓ Run containers > removes the exact Run container when stopped  322ms
+   ✓ Run containers > removes an owned terminal container before restart begins serving  412ms
+   ✓ Run containers > isolates sequential Run mounts and removes both terminal containers  908ms
+   ✓ Run containers > fails only the Run when Docker disappears while the container is active  433ms
+   ✓ Run containers > does not load a session after stop-all during native version preflight  573ms
+ ✓ test/handoff.test.ts (19 tests) 2938ms
+   ✓ bounded handoff > expires a proposal before a late provider accepts without losing the source  431ms
+   ✓ bounded handoff > cancel_run before acceptance retains the coordinator result  452ms
+   ✓ bounded handoff > stop_all before acceptance retains the coordinator result  457ms
+ ✓ test/cursor.test.ts (16 tests) 1725ms
+ ✓ test/codex.test.ts (8 tests) 2140ms
+   ✓ codex stub protocol > keeps a successful load retry intact after the crashed attempt timeout  927ms
+   ✓ codex stub protocol > classifies the native missing-credential exit as auth-unavailable  403ms
+ ✓ test/boundary.test.ts (3 tests) 1514ms
+   ✓ boundary > fails closed when Docker Desktop is required and unavailable  1510ms
+ ✓ test/http.test.ts (7 tests) 189ms
+ ✓ test/store.test.ts (9 tests) 49ms
+ ✓ test/auth.test.ts (1 test) 7ms
+ ✓ test/api.test.ts (1 test) 4ms
+ ✓ test/provider-contract.test.ts (1 test) 5ms
+ ✓ test/cli.test.ts (1 test) 3ms
+
+ Test Files  11 passed (11)
+      Tests  80 passed (80)
+   Start at  14:18:22
+   Duration  20.14s (transform 178ms, setup 0ms, collect 3.13s, tests 15.08s, environment 1ms, prepare 505ms)
+
+
+exit_code: 0
+finished_at: 2026-09-07T21:18:42.841Z

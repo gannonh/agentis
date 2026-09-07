@@ -1,0 +1,66 @@
+{
+  "recordedAt": "2026-09-07T21:13:51.588Z",
+  "fixtureMode": false,
+  "sourceCommit": "0a8c6b0efe854ba438d0e20aafabd54c16e25463",
+  "productSourceDirty": true,
+  "argv": [
+    "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+    "mara",
+    "plan"
+  ],
+  "bot": "mara",
+  "results": [
+    {
+      "case": "plan",
+      "startedAt": "2026-09-07T21:13:40.717Z",
+      "status": "PASS",
+      "runId": "5fe52cbf-476d-4463-885a-fcf0c15dd783",
+      "taskId": "c05eb752-3fa0-4876-897c-3deb371da5e8",
+      "threadId": "641d4a11-b278-46cd-82a2-4842710a3937",
+      "runStatus": "succeeded",
+      "providerSessionId": "01a07db8-42e9-72c1-9aa6-8f316058083f",
+      "failure": null,
+      "frozen": {
+        "bot": "mara",
+        "mode": "plan",
+        "provider": "codex",
+        "transport": "app-server-v2-jsonl-stdio",
+        "executableVersion": "0.153.4",
+        "model": "gpt-5.6-sol",
+        "effort": "medium",
+        "executionBoundary": "docker-desktop-run-container",
+        "authMode": "chatgpt-login",
+        "workspaceId": "/Users/gannonhall/.agentis/kat-3243-validation-v3/scratch/runs/5fe52cbf-476d-4463-885a-fcf0c15dd783",
+        "deadlineMs": 900000,
+        "actionBudget": 20
+      },
+      "artifact": {
+        "id": "33db8e74-e423-4013-b22c-5a5d0c892030",
+        "taskId": "c05eb752-3fa0-4876-897c-3deb371da5e8",
+        "runId": "5fe52cbf-476d-4463-885a-fcf0c15dd783",
+        "author": "mara",
+        "source": "codex",
+        "mediaType": "text/markdown",
+        "sha256": "b076e3a7ae52b582705254e4adc7468905c431b98c597aca753932d1fade0dda",
+        "byteSize": 75,
+        "path": "/Users/gannonhall/.agentis/kat-3243-validation-v3/scratch/runs/5fe52cbf-476d-4463-885a-fcf0c15dd783/hello.md"
+      },
+      "body": "1. Draft a brief, friendly greeting appropriate for the intended audience.\n",
+      "nativePlans": [
+        {
+          "type": "plan",
+          "id": "01a07db8-4304-7d71-8938-bc75d9d3dbdc-plan",
+          "text": "1. Draft a brief, friendly greeting appropriate for the intended audience.\n"
+        }
+      ],
+      "blockingApprovalObserved": false,
+      "planCapability": {
+        "name": "plans",
+        "operation": "unavailable",
+        "state": "documented",
+        "reason": "native-plan-output-without-blocking-approval"
+      },
+      "cleaned": true
+    }
+  ]
+}

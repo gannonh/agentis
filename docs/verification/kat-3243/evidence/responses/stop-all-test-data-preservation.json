@@ -1,0 +1,10 @@
+{
+  "reason": "Preserve synthetic stopped dataset before a new live retest. Operator test-data archival, not product migration/reset. Scratch artifacts and provider credentials remain untouched.",
+  "files": [
+    {
+      "original": "/Users/gannonhall/.agentis/kat-3243-validation-v3/state.sqlite",
+      "preserved": "/Users/gannonhall/.agentis/kat-3243-validation-v3/verification-archive/stop-all-20260907T211101Z/state.sqlite",
+      "sha256": "8493e49c8135bd516ac4049c630c8c150a1972ae43ca0ac9c2d43a5f4013a173"
+    }
+  ]
+}

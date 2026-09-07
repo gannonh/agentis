@@ -1,0 +1,15 @@
+$ "pnpm" "lint"
+cwd: /Users/gannonhall/.codex/worktrees/9c04/agentis
+started_at: 2026-09-07T21:15:12.744Z
+
+
+> agentis@2.0.0 lint /Users/gannonhall/.codex/worktrees/9c04/agentis
+> pnpm --filter @agentis-labs/cli lint
+
+
+> @agentis-labs/cli@2.0.0 lint /Users/gannonhall/.codex/worktrees/9c04/agentis/packages/cli
+> oxlint --deny-warnings src test
+
+
+exit_code: 0
+finished_at: 2026-09-07T21:15:13.531Z

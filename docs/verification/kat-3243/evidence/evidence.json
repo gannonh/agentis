@@ -4,109 +4,154 @@
   "mode": "user-facing",
   "visual": false,
   "technical_enablement": null,
-  "timestamp": "2026-09-07T20:54:17.982920+00:00",
-  "git_commit": "67596da736bd72e13bf778f4d97aaa355f5720ef",
+  "timestamp": "2026-09-07T21:23:01.399900+00:00",
+  "git_commit": "c7cf2c70",
   "gitignored": false,
   "artifacts": [
     {
       "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/codex-authentication.json",
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
+    },
+    {
+      "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/container-load-ivo-fixed.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/container-load-ivo.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/container-smoke-ivo.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/container-tool-load-ivo.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/cursor-protocol-summary.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/cursor-question-probe.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/direct-host-control.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/live-handoff-conformance-historical-before-fix.json",
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/live-handoff-conformance-intermediate-text-approval.json",
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/live-handoff-conformance.json",
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/native-cursor-hook-config.json",
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/native-cursor-policy-global-ro-failed.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/native-cursor-policy-load.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/native-cursor-policy.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/native-cursor-subagent-policy.json",
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/network-fixed.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/no-auth-ivo.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/no-auth-mara.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/provider-cases-ivo.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-input.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-no-auth.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-cancel.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-no-auth.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-plan.json",
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json",
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/schema-refusal.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/stop-all-test-data-preservation.json",
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     },
     {
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/test-data-preservation.json",
-      "description": "Sanitized receipt; final status and historical failures are explained in ../README.md."
+      "description": "Receipt; current and historical outcomes are distinguished in ../README.md."
     }
   ],
   "commands": [
@@ -284,104 +329,317 @@
       "output_path": "docs/verification/kat-3243/evidence/logs/cursor-live-question.log",
       "exit_code_path": "docs/verification/kat-3243/evidence/logs/cursor-live-question.exit",
       "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \"scripts/live-provider-conformance.mjs\" \"/Users/gannonhall/.agentis/kat-3243-validation-v3\" \"mara\" \"smoke\" \"allow\" \"deny\" \"plan\" \"input\" \"cancel\"",
+      "argv": [
+        "node",
+        "scripts/live-provider-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+        "mara",
+        "smoke",
+        "allow",
+        "deny",
+        "plan",
+        "input",
+        "cancel"
+      ],
+      "name": "codex-live-workflow",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 1,
+      "output_path": "docs/verification/kat-3243/evidence/logs/codex-live-workflow.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/codex-live-workflow.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \"scripts/live-handoff-conformance.mjs\" \"/Users/gannonhall/.agentis/kat-3243-validation-v3\"",
+      "argv": [
+        "node",
+        "scripts/live-handoff-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3243-validation-v3"
+      ],
+      "name": "live-handoff-concurrency",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 1,
+      "output_path": "docs/verification/kat-3243/evidence/logs/live-handoff-concurrency.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/live-handoff-concurrency.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \"scripts/live-provider-conformance.mjs\" \"/Users/gannonhall/.agentis/kat-3243-validation-v3\" \"mara\" \"plan\"",
+      "argv": [
+        "node",
+        "scripts/live-provider-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+        "mara",
+        "plan"
+      ],
+      "name": "codex-native-plan",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/codex-native-plan.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/codex-native-plan.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"pnpm\" \"test\"",
+      "argv": [
+        "pnpm",
+        "test"
+      ],
+      "name": "resumed-test",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/resumed-test.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/resumed-test.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"pnpm\" \"typecheck\"",
+      "argv": [
+        "pnpm",
+        "typecheck"
+      ],
+      "name": "resumed-typecheck",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/resumed-typecheck.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/resumed-typecheck.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"pnpm\" \"lint\"",
+      "argv": [
+        "pnpm",
+        "lint"
+      ],
+      "name": "resumed-lint",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/resumed-lint.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/resumed-lint.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"pnpm\" \"build\"",
+      "argv": [
+        "pnpm",
+        "build"
+      ],
+      "name": "resumed-build",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/resumed-build.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/resumed-build.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"pnpm\" \"test\"",
+      "argv": [
+        "pnpm",
+        "test"
+      ],
+      "name": "corrected-test",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/corrected-test.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/corrected-test.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"pnpm\" \"typecheck\"",
+      "argv": [
+        "pnpm",
+        "typecheck"
+      ],
+      "name": "corrected-typecheck",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/corrected-typecheck.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/corrected-typecheck.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"pnpm\" \"lint\"",
+      "argv": [
+        "pnpm",
+        "lint"
+      ],
+      "name": "corrected-lint",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/corrected-lint.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/corrected-lint.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"pnpm\" \"build\"",
+      "argv": [
+        "pnpm",
+        "build"
+      ],
+      "name": "corrected-build",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/corrected-build.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/corrected-build.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"pnpm\" \"pack:smoke\"",
+      "argv": [
+        "pnpm",
+        "pack:smoke"
+      ],
+      "name": "corrected-pack-smoke",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/corrected-pack-smoke.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/corrected-pack-smoke.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \"scripts/live-handoff-conformance.mjs\" \"/Users/gannonhall/.agentis/kat-3243-validation-v3\"",
+      "argv": [
+        "node",
+        "scripts/live-handoff-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3243-validation-v3"
+      ],
+      "name": "corrected-live-handoff-concurrency",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 1,
+      "output_path": "docs/verification/kat-3243/evidence/logs/corrected-live-handoff-concurrency.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/corrected-live-handoff-concurrency.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \"scripts/live-handoff-conformance.mjs\" \"/Users/gannonhall/.agentis/kat-3243-validation-v3\" \"--concurrency-only\"",
+      "argv": [
+        "node",
+        "scripts/live-handoff-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+        "--concurrency-only"
+      ],
+      "name": "corrected-live-concurrency-retry",
+      "cwd": "/Users/gannonhall/.codex/worktrees/9c04/agentis",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/corrected-live-concurrency-retry.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/corrected-live-concurrency-retry.exit",
+      "timed_out": false
     }
   ],
   "slices": [
     {
       "id": "AC1",
-      "name": "Same workflow through two live providers",
-      "result": "Blocked",
-      "summary": "Cursor completed the live workflow. Codex native login is pending; authenticated Codex and billing eligibility remain unverified.",
+      "name": "Same bounded workflow through both live providers",
+      "result": "Pass",
+      "summary": "Both returned the exact draft marker using their selected authentication and pinned executables. Auth/billing/support details are documented; invoice attribution is not claimed.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/final-test.log"
+        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
       ]
     },
     {
       "id": "AC2",
-      "name": "Chosen transports preserve semantics",
-      "result": "Blocked",
-      "summary": "Codex app-server and Cursor ACP adapters implemented and fixture-tested. Live Cursor passed; authenticated Codex remains unverified.",
+      "name": "Provider-specific transport semantics",
+      "result": "Pass",
+      "summary": "Codex app-server and Cursor ACP preserve distinct native plan/input semantics. Codex native plans are retained without inventing a blocking plan-approval RPC.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/final-test.log"
+        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
       ]
     },
     {
       "id": "AC3",
       "name": "Capabilities and blocking decisions",
       "result": "Fail",
-      "summary": "Cursor live plan rejection passed, but the structured question probe completed without a blocking request. Unsupported attachment and MCP operations are explicit. Full capability conformance remains unverified.",
+      "summary": "Codex blocking input and native plans passed; Cursor plan rejection passed. Cursor completed without emitting the required blocking question. Unsupported MCP/attachment operations are explicit.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/final-test.log"
+        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
       ]
     },
     {
       "id": "AC4",
       "name": "Typed unavailable states and isolation",
       "result": "Pass",
-      "summary": "Public-boundary fixtures cover unsupported/unknown providers and isolation. Both real-container provider launch paths returned typed unavailable authentication without artifacts.",
+      "summary": "Public-boundary fixtures cover unsupported/unknown providers; real-container missing-auth paths passed without artifacts.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/final-test.log"
+        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
       ]
     },
     {
       "id": "AC5",
-      "name": "Separate identities and deduplicated history",
-      "result": "Blocked",
-      "summary": "Live Cursor text and tool-bearing session reloads preserved identities, history, messages and one artifact. Authenticated Codex reload remains unverified.",
+      "name": "Separate identifiers and deduplicated history",
+      "result": "Pass",
+      "summary": "Both providers completed text/tool session loading with stable identities, messages and artifact counts. Native Codex plan duplicate delivery is covered by regression.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/final-test.log"
+        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
       ]
     },
     {
       "id": "AC6",
-      "name": "Provider decisions and failures",
+      "name": "Decisions, cancellation and provider failures",
       "result": "Blocked",
-      "summary": "Live Cursor smoke, allow, deny, plan rejection, cancel and load passed; both live missing-auth checks passed. Quota, crash and malformed cases have fixture coverage. Codex authenticated cases and Cursor blocking input remain unverified.",
+      "summary": "Both live allow/deny/cancel/load paths passed; Codex structured input passed. Missing auth passed; quota/crash/malformed cases have fixture coverage. Cursor blocking input remains unproven.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/final-test.log"
+        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
       ]
     },
     {
       "id": "AC7",
       "name": "Bounded accepted specialist handoff",
-      "result": "Blocked",
-      "summary": "Acceptance, ownership, rejection, timeout, stale events, attribution and bounded source-artifact checks pass fixtures. Native Cursor project-policy startup/load probes succeeded; reported shell/read denials and no forbidden file were observed. Full live handoff and native Task/subagent enforcement remain unverified.",
+      "result": "Fail",
+      "summary": "Live acceptance, single ownership transfer, source context, attributed draft return, duplicate refusal and load passed. The native Cursor Task test launched a subagent despite the configured denial hook. Rejection/timeout remain fixture evidence.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/final-test.log"
+        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
       ]
     },
     {
       "id": "AC8",
-      "name": "Concurrent bots and stop-all",
-      "result": "Blocked",
-      "summary": "Concurrency limits, isolation and stop-all pass public-boundary fixtures. Two authenticated live providers have not run concurrently.",
+      "name": "Concurrency, limits and stop-all",
+      "result": "Pass",
+      "summary": "Corrected live retry held both providers on native approvals with separate identities, rejected per-bot/global limit bypass, canceled both via stop-all, rejected both late approvals with HTTP 409 and no dispatch effects, and cleaned up without late artifacts.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/final-test.log"
+        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
       ]
     },
     {
       "id": "AC9",
       "name": "Malformed fixtures and mandatory real proof",
       "result": "Blocked",
-      "summary": "72 tests pass, including protocol/error regressions. Partial real Cursor evidence is recorded; mandatory two-provider live evidence remains incomplete.",
+      "summary": "80 tests pass and both providers have live receipts. Full conformance remains incomplete because of the Cursor question and native delegation failures.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
-        "docs/verification/kat-3243/evidence/logs/final-test.log"
+        "docs/verification/kat-3243/evidence/logs/corrected-test.log"
       ]
     }
   ],
   "notes": [
-    "Overall readiness: BLOCKED. Keep PR draft and Linear In Progress.",
-    "Product source is the recorded commit; the later evidence commit only adds receipts and changes conformance report naming/fixture-mode diagnostics.",
-    "Fixtures and native helper probes do not establish full live acceptance. Historical failed receipts are retained alongside corrected results.",
-    "The evidence validator is expected to fail because original acceptance criteria remain Fail or Blocked. A passing E2E command does not establish overall readiness."
+    "Overall readiness BLOCKED. Both providers are authenticated; no further login is required.",
+    "Cursor native Task launched despite configured denial: FAIL. Cursor blocking question emission remains unproven. These prevent ready-for-review.",
+    "80 tests and required checks pass. Final live accepted handoff and concurrency/stop-all pass. Fixtures and reviews do not override native enforcement failure.",
+    "Latest product code is c7cf2c70; earlier receipts identify their own source, and native hook helper ran against the same container source before commit. Later evidence edits only update docs and harness selection/prompt.",
+    "Original Codex create_plan failure was an invalid cross-provider probe. Corrected native plan probe passed; no dedicated blocking plan-approval RPC is claimed.",
+    "Readiness validator is expected to exit 1 for Fail/Blocked criteria."
   ]
 }

@@ -1,8 +1,4 @@
-FAIL: slice Same workflow through two live providers is Blocked
-FAIL: slice Chosen transports preserve semantics is Blocked
 FAIL: slice Capabilities and blocking decisions is Fail
-FAIL: slice Separate identities and deduplicated history is Blocked
-FAIL: slice Provider decisions and failures is Blocked
-FAIL: slice Bounded accepted specialist handoff is Blocked
-FAIL: slice Concurrent bots and stop-all is Blocked
+FAIL: slice Decisions, cancellation and provider failures is Blocked
+FAIL: slice Bounded accepted specialist handoff is Fail
 FAIL: slice Malformed fixtures and mandatory real proof is Blocked

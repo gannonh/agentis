@@ -94,7 +94,7 @@ try {
   }
   token = JSON.parse(readFileSync(join(dataRoot, "owner.token"), "utf8")).token;
   require(!(await status()).stopAll, "Data root stop-all already latched");
-  await record("accepted-handoff", async (result) => {
+  if (!process.argv.includes("--concurrency-only")) await record("accepted-handoff", async (result) => {
     const source = await accept({
       kind: "submit_task",
       bot: "mara",
@@ -198,7 +198,7 @@ try {
   }
   await record("concurrency-and-stop-all", async (result) => {
     const brief =
-      'Run exactly node -e "console.log(3243)" once. Request approval first and wait. Do not access files or use other tools.';
+      'Run exactly node -e "console.log(3243)" once. Request approval. Do not access files or use other tools. Then return the output as text.';
     const mara = await accept({ kind: "submit_task", bot: "mara", brief });
     await wait(
       (snapshot) =>
