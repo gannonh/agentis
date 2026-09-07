@@ -1,0 +1,124 @@
+$ "pnpm" "pack:smoke"
+cwd: /Users/gannonhall/.codex/worktrees/9c04/agentis
+started_at: 2026-09-07T20:43:25.113Z
+
+
+> agentis@2.0.0 pack:smoke /Users/gannonhall/.codex/worktrees/9c04/agentis
+> pnpm --filter @agentis-labs/cli pack:smoke
+
+
+> @agentis-labs/cli@2.0.0 pack:smoke /Users/gannonhall/.codex/worktrees/9c04/agentis/packages/cli
+> node ../../scripts/pack-smoke.mjs
+
+
+> @agentis-labs/cli@2.0.0 build /Users/gannonhall/.codex/worktrees/9c04/agentis/packages/cli
+> tsc -p tsconfig.build.json
+
+Tarball Contents
+dist/api.d.ts
+dist/api.js
+dist/api.js.map
+dist/auth.d.ts
+dist/auth.js
+dist/auth.js.map
+dist/bin.d.ts
+dist/bin.js
+dist/bin.js.map
+dist/boundary.d.ts
+dist/boundary.js
+dist/boundary.js.map
+dist/cli.d.ts
+dist/cli.js
+dist/cli.js.map
+dist/codex.d.ts
+dist/codex.js
+dist/codex.js.map
+dist/container.d.ts
+dist/container.js
+dist/container.js.map
+dist/cursor-container.d.ts
+dist/cursor-container.js
+dist/cursor-container.js.map
+dist/cursor.d.ts
+dist/cursor.js
+dist/cursor.js.map
+dist/engine.d.ts
+dist/engine.js
+dist/engine.js.map
+dist/handoff-store.d.ts
+dist/handoff-store.js
+dist/handoff-store.js.map
+dist/http.d.ts
+dist/http.js
+dist/http.js.map
+dist/ids.d.ts
+dist/ids.js
+dist/ids.js.map
+dist/profile.d.ts
+dist/profile.js
+dist/profile.js.map
+dist/provider-contract.d.ts
+dist/provider-contract.js
+dist/provider-contract.js.map
+dist/provider.d.ts
+dist/provider.js
+dist/provider.js.map
+dist/schema.d.ts
+dist/schema.js
+dist/schema.js.map
+dist/store-db.d.ts
+dist/store-db.js
+dist/store-db.js.map
+dist/store.d.ts
+dist/store.js
+dist/store.js.map
+dist/verify.d.ts
+dist/verify.js
+dist/verify.js.map
+dist/versions.d.ts
+dist/versions.js
+dist/versions.js.map
+package.json
+
+Tarball Details
+/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-pack-aKsTiB/agentis-labs-cli-2.0.0.tgz
+npm warn Unknown env config "recursive". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "approve-builds". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+added 33 packages in 7s
+npm warn install-scripts 2 packages have install scripts not yet covered by allowScripts:
+npm warn install-scripts   @parcel/watcher@2.6.0 (install: node scripts/build-from-source.js)
+npm warn install-scripts   msgpackr-extract@3.0.4 (install: node-gyp-build-optional-packages)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+{
+  "health": {
+    "ok": true,
+    "schemaId": "agentis.v2.gate0.4",
+    "apiFamily": "v1",
+    "node": "v24.20.0",
+    "packageVersion": "2.0.0"
+  },
+  "status": {
+    "schemaId": "agentis.v2.gate0.4",
+    "stopAll": false,
+    "handoffs": [],
+    "tasks": [],
+    "runs": [],
+    "pending": [],
+    "artifacts": [],
+    "messages": [],
+    "events": [
+      {
+        "seq": 1,
+        "id": "a65d4267-7d2a-46ac-85f7-606edda52255",
+        "type": "daemon_restart",
+        "body": "{\"interrupted\":[]}"
+      }
+    ]
+  }
+}
+{"ok":true,"endpoint":"http://127.0.0.1:52736/","pid":7363,"log":"/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-verify-5mXu2Q/daemon.log","tarball":"agentis-labs-cli-2.0.0.tgz","taskId":"9f2ce5a7-0258-4c73-b3cf-12824bf504aa","runId":"44e2971f-a444-4c5b-85ef-9b53b682c10a"}
+
+exit_code: 0
+finished_at: 2026-09-07T20:43:35.100Z

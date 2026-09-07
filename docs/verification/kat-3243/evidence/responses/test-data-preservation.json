@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-09-07T20:25:53.444567+00:00",
+  "kind": "manual preservation of agent-created synthetic verification data; product did not migrate or reset state",
+  "files": [
+    {
+      "name": "state.sqlite",
+      "sha256": "3b191e474ceeafff06e5a79ba2a656887534158fc9e84ad8868b83f21f1e4d4f",
+      "archive": "/Users/gannonhall/.agentis/kat-3243-validation-v3/verification-archive/gate0.3/state.sqlite"
+    },
+    {
+      "name": "state.sqlite-wal",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "archive": "/Users/gannonhall/.agentis/kat-3243-validation-v3/verification-archive/gate0.3/state.sqlite-wal"
+    },
+    {
+      "name": "state.sqlite-shm",
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb",
+      "archive": "/Users/gannonhall/.agentis/kat-3243-validation-v3/verification-archive/gate0.3/state.sqlite-shm"
+    }
+  ],
+  "providerCredentialVolumes": "unchanged",
+  "scratchArtifacts": "preserved at original paths"
+}

@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-09-07T20:25:14.053Z",
+  "argv": [
+    "packages/cli/dist/bin.js",
+    "serve",
+    "--endpoint",
+    "http://127.0.0.1:43149",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+    "--provider",
+    "codex"
+  ],
+  "exitCode": 1,
+  "refusedUnsupportedSchema": true,
+  "output": "unsupported schema agentis.v2.gate0.3; refusing to open or migrate\n"
+}

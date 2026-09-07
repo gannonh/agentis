@@ -1,0 +1,23 @@
+{
+  "recordedAt": "2026-09-07T20:47:12.995Z",
+  "fixtureMode": false,
+  "sourceCommit": "67596da736bd72e13bf778f4d97aaa355f5720ef",
+  "productSourceDirty": false,
+  "argv": [
+    "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+    "ivo",
+    "input"
+  ],
+  "bot": "ivo",
+  "results": [
+    {
+      "case": "input",
+      "startedAt": "2026-09-07T20:46:58.696Z",
+      "status": "FAIL",
+      "runId": "59dc7051-07d0-4cad-8eae-1a67f5d126f3",
+      "taskId": "be5ec9e9-9d5c-4ca6-a3f3-3d5a65b21a7f",
+      "threadId": "d696ae44-ecd7-4724-8167-35722f62a297",
+      "reason": "Provider completed without required blocking request"
+    }
+  ]
+}

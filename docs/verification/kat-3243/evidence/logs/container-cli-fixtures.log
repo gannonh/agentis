@@ -1,0 +1,23 @@
+$ "pnpm" "--filter" "@agentis-labs/cli" "exec" "vitest" "run" "test/container.test.ts"
+cwd: /Users/gannonhall/.codex/worktrees/9c04/agentis
+started_at: 2026-09-07T19:23:05.586Z
+
+
+ RUN  v3.2.4 /Users/gannonhall/.codex/worktrees/9c04/agentis/packages/cli
+
+ ✓ test/container.test.ts (10 tests) 4241ms
+   ✓ Run containers > runs native device login using only dedicated provider storage and restricted egress  574ms
+   ✓ Run containers > starts live Codex with run-local auth and removes its proxy and internal network  542ms
+   ✓ Run containers > removes the exact Run container when stopped  365ms
+   ✓ Run containers > removes an owned terminal container before restart begins serving  405ms
+   ✓ Run containers > isolates sequential Run mounts and removes both terminal containers  973ms
+   ✓ Run containers > fails only the Run when Docker disappears while the container is active  508ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  12:23:06
+   Duration  4.67s (transform 64ms, setup 0ms, collect 299ms, tests 4.24s, environment 0ms, prepare 35ms)
+
+
+exit_code: 0
+finished_at: 2026-09-07T19:23:11.073Z

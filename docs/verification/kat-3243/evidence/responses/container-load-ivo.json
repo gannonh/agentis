@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-09-07T19:47:23.559Z",
+  "runId": "04f7f48d-f703-48e1-a876-c9fa950c771b",
+  "providerSessionId": "83fdd6a5-fb70-47fe-9329-19d02e8f6a6b",
+  "loadStatus": "failed",
+  "failure": "provider-error",
+  "unchangedHistory": true,
+  "artifactCount": 1
+}

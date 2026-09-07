@@ -214,10 +214,15 @@ try {
   daemon.kill("SIGTERM");
   await exited;
   writeFileSync(
-    `docs/verification/kat-3243/evidence/responses/provider-conformance-${bot}-${cases.includes("no-auth") ? "no-auth" : "workflow"}.json`,
+    `docs/verification/kat-3243/evidence/responses/provider-conformance-${bot}-${cases.join("-")}.json`,
     JSON.stringify(
       {
         recordedAt: new Date().toISOString(),
+        fixtureMode: Boolean(
+          process.env.AGENTIS_CODEX_STUB ||
+            process.env.AGENTIS_CURSOR_STUB ||
+            process.env.AGENTIS_TEST_DOCKER_LOG,
+        ),
         sourceCommit: spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim(),
         productSourceDirty:
           spawnSync("git", ["diff", "--quiet", "HEAD", "--", "packages/cli"]).status !== 0,
