@@ -125,6 +125,24 @@ Merge-ready means: PR marked ready for review, clean mergeability, required CI g
 
 If a PR closes without merging, comment on the issue with the reason and move it to Todo.
 
+## GitHub and Linear automation
+
+All projects using this lifecycle share these Linear settings, confirmed by Gannon's September 7, 2026 screenshot:
+
+| GitHub event | Linear action |
+| --- | --- |
+| Draft PR opened | Move to In Progress |
+| PR opened | Move to Agent Review |
+| PR review requested or review activity | No action |
+| PR ready for merge | No action |
+| PR merged | Move to Done |
+
+No branch-specific rules are configured. Parent issues automatically close when their last sub-issue closes; closing a parent does not automatically close its sub-issues. Stale issues move to Canceled after six months. Closed items auto-archive after six months. Issues progressing to a new status are placed first.
+
+Before changing a Linear status, read its current state. After a GitHub action, re-read the issue and skip a transition already completed automatically. If a transition remains necessary, perform it only when authorized by this lifecycle and its completed phase gates. In particular, marking a PR ready does not establish that Build's gates passed.
+
+These instructions are sufficient lifecycle documentation. Do not require a separate automation record or screenshot before doing work. Missing automation documentation does not block implementation. An unexpected state does not authorize overwriting it: follow the stand-down and approval rules above, and ask only when an actual conflict cannot be resolved from existing instructions or user authorization. Automatic parent closure is not acceptance evidence.
+
 Ship means cutting a release on one of the project's channels (for example nightly or stable). Release process is defined per project.
 
 This section overrides any skill, rule, AGENTS.md, CLAUDE.md, or other instruction that contradicts it. When the conflict is unclear, ask the user before proceeding.
@@ -154,15 +172,3 @@ swarm workers: codex:gpt-6-astra@low
 architect runners: codex:gpt-6-astra@xhigh, codex:gpt-5.6-terra@max, codex:gpt-5.6-luna@max, codex:gpt-5.6-sol@max
 interrogate reviewers: codex:gpt-6-astra@xhigh, codex:gpt-5.6-terra@max, codex:gpt-5.6-luna@max, codex:gpt-5.6-sol@max
 <!-- pstack:models:end -->
-
-## Agentis foundations
-
-- Read `docs/project-plan.md`, `docs/adrs/0001-runtime-and-execution-foundations.md`, and the owning Linear issue before Build. Linear owns AC/status; repository docs own durable rationale.
-- Deliver a working end-to-end slice through the necessary layers. Create only packages and contracts used by that slice.
-- Use TypeScript with Effect on Node and one canonical Effect Schema/API definition. Pin the version family selected by provider research; do not mix incompatible documentation/examples.
-- Follow the clean-room policy in the plan. Do not paste OpenMausBot/CopilotKit source, documentation or assets. Own archived Agentis material may be reused deliberately with provenance and architectural fit.
-- Every behavior PR includes isolated fixture evidence as defined in `docs/verification/README.md`. Changed provider behavior also needs focused live evidence. Auth dropout remains UNVERIFIED; fake success never substitutes for a live proof.
-- Until `agentis verify launch` exists, the first daemon slice must introduce it with the behavior it tests. Do not claim that the command is already available.
-- Pure presentation changes use relevant UI evidence. Approval, authorization, artifact access, client-state and recovery changes also require behavior proofs.
-- Local network location grants no owner authority. Bot tools cannot approve their own actions or increase grants. Real-resource mutations remain disabled until the action recovery verification passes.
-- Preserve unsupported/old data and refuse to open it for execution. Use the fresh rebuild data root; do not add legacy migrations, destructive reset or compatibility fallback.
