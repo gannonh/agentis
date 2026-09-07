@@ -1,0 +1,487 @@
+{
+  "schemaVersion": 1,
+  "issue": "KAT-3287",
+  "recordedAt": "2026-09-07T00:53:00Z",
+  "overallVerdict": "FAIL",
+  "source": {
+    "repository": "gannonh/agentis",
+    "branch": "feature/kat-3287-kat-3242-follow-up-macos-docker-desktop-run-container",
+    "testedHead": "bbc4ccebb5fcffae2e5294acc240a907f359a28a",
+    "remoteMainAtProbe": "bbc4ccebb5fcffae2e5294acc240a907f359a28a"
+  },
+  "acceptanceCriteria": [
+    {
+      "id": 1,
+      "verdict": "PASS",
+      "reason": "Two product Codex protocol-stub Runs created Linux arm64 containers. The no-stub attempt exercised the separate version-check container and stopped before the app-server container launched."
+    },
+    {
+      "id": 2,
+      "verdict": "PASS",
+      "reason": "The receipt records exact host, Docker, image, Agentis, and Codex versions, commands, and sanitized identifiers."
+    },
+    {
+      "id": 3,
+      "verdict": "FAIL",
+      "reason": "Distinct containers existed, but they shared one workspace, survived terminal Run state, and exposed the synthetic session through the version check's host /tmp mount."
+    },
+    {
+      "id": 4,
+      "verdict": "PASS",
+      "reason": "Live Codex remains UNVERIFIED with the exact binary mismatch blocker. No Linux result substitutes for it."
+    },
+    {
+      "id": 5,
+      "verdict": "FAIL",
+      "reason": "No external resource changed, but the live preflight mounted all host /tmp, including the temporary Agentis data root and its generated owner.token."
+    }
+  ],
+  "host": {
+    "product": "macOS",
+    "version": "26.5.2",
+    "build": "25F84",
+    "architecture": "arm64",
+    "kernel": "Darwin 25.5.0"
+  },
+  "docker": {
+    "desktop": "4.68.0 (223695)",
+    "client": "29.4.0",
+    "engine": "29.3.1",
+    "engineOs": "linux",
+    "engineArchitecture": "arm64",
+    "engineKernel": "6.12.76-linuxkit",
+    "productImage": "node:24-bookworm-slim",
+    "productImageId": "sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e",
+    "productImageRepoDigest": "node@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e",
+    "productImageArchitecture": "arm64"
+  },
+  "codex": {
+    "pin": "0.153.4",
+    "hostVersion": "codex-cli 0.153.4",
+    "hostBinaryKind": "Mach-O 64-bit executable arm64",
+    "hostBinarySha256": "b973d440acac501fd2594a43e7ca9ce41e0a65b9dfb28d0d7a7837c99e1261e3"
+  },
+  "sanitization": {
+    "<home>": "host user home directory",
+    "ownerSession": "omitted from retained daemon status output"
+  },
+  "proofs": [
+    {
+      "claim": "The accepted boundary starts a Run container on the target Mac.",
+      "expected": "A task submitted to the Docker Desktop Run-container boundary starts one new Linux arm64 container.",
+      "observed": "The audit baseline contained no node:24-bookworm-slim containers. Each sequential synthetic Run produced exactly one new container running the Codex protocol stub.",
+      "verdict": "PASS",
+      "evidence": "probes.auditRerun"
+    },
+    {
+      "claim": "Each Run receives a distinct container.",
+      "expected": "The second Run has a different container ID from the first Run.",
+      "observed": "Run a9c0c486-da6d-4b1e-91ed-14f0611f61ff used 215081567f02d576464adf9ed8298803b458be1401f1e5a8063a8fa30b759716. Run 2acba717-3cd7-4b78-8fff-d6fe7610a475 used d17d92b0a67495691d091458010224a7d066b1033083c07a7c65c475aa03c797.",
+      "verdict": "PASS",
+      "evidence": "probes.auditRerun.runs"
+    },
+    {
+      "claim": "Each Run receives a private workspace root.",
+      "expected": "The two Run containers bind different host workspace roots to /workspace.",
+      "observed": "Both inspected containers bound /tmp/kat-3287-audit/scratch to /workspace. Both daemon Run records also used that same workspaceId.",
+      "verdict": "FAIL",
+      "evidence": "probes.auditRerun.runs"
+    },
+    {
+      "claim": "Terminal Run state cleans up its container.",
+      "expected": "A canceled or succeeded Run leaves no corresponding container in docker ps -a.",
+      "observed": "The canceled Run's container remained Up after 57 seconds. The succeeded Run's container remained Up after 39 seconds. Both required docker rm -f by exact ID.",
+      "verdict": "FAIL",
+      "evidence": "probes.auditRerun.runs"
+    },
+    {
+      "claim": "The live Codex path reaches authentication and provider execution.",
+      "expected": "The pinned Codex executable passes version preflight and the app-server container starts.",
+      "observed": "The Linux preflight container could not execute the mounted macOS Mach-O binary. No provider session or artifact was created, and the app-server container did not start.",
+      "verdict": "UNVERIFIED",
+      "evidence": "probes.liveCodex"
+    },
+    {
+      "claim": "The boundary does not mount an Agentis owner credential.",
+      "expected": "No owner token path is included in any container bind mount.",
+      "observed": "The live version preflight bound all host /tmp to /workspace, including the temporary Agentis data root and its generated owner.token.",
+      "verdict": "FAIL",
+      "evidence": "probes.versionCheckWorkspace"
+    }
+  ],
+  "commands": [
+    {
+      "name": "macos-version",
+      "command": "sw_vers",
+      "exitCode": 0,
+      "observed": "ProductName macOS; ProductVersion 26.5.2; BuildVersion 25F84"
+    },
+    {
+      "name": "host-architecture",
+      "command": "uname -m && uname -srv",
+      "exitCode": 0,
+      "observed": "arm64; Darwin 25.5.0"
+    },
+    {
+      "name": "docker-desktop-version",
+      "command": "plutil -extract CFBundleShortVersionString raw -o - /Applications/Docker.app/Contents/Info.plist",
+      "exitCode": 0,
+      "observed": "4.68.0"
+    },
+    {
+      "name": "docker-engine-version",
+      "command": "docker version --format 'client={{.Client.Version}} server={{.Server.Version}} os={{.Server.Os}} arch={{.Server.Arch}}'",
+      "exitCode": 0,
+      "observed": "client=29.4.0 server=29.3.1 os=linux arch=arm64"
+    },
+    {
+      "name": "docker-server-receipt",
+      "command": "docker version --format '{{json .Server}}'",
+      "exitCode": 0,
+      "observed": "Platform Docker Desktop 4.68.0 (223695); Engine 29.3.1; LinuxKit kernel 6.12.76-linuxkit; arm64"
+    },
+    {
+      "name": "source-head",
+      "command": "git rev-parse HEAD && git ls-remote origin refs/heads/main",
+      "exitCode": 0,
+      "observed": "HEAD and remote main were bbc4ccebb5fcffae2e5294acc240a907f359a28a"
+    },
+    {
+      "name": "codex-pin",
+      "command": "codex --version && file <home>/.codex/packages/standalone/releases/0.153.4-aarch64-apple-darwin/bin/codex && shasum -a 256 <home>/.codex/packages/standalone/releases/0.153.4-aarch64-apple-darwin/bin/codex",
+      "exitCode": 0,
+      "observed": "codex-cli 0.153.4; Mach-O 64-bit executable arm64; sha256 b973d440acac501fd2594a43e7ca9ce41e0a65b9dfb28d0d7a7837c99e1261e3"
+    },
+    {
+      "name": "product-image",
+      "command": "docker pull node:24-bookworm-slim && docker image inspect node:24-bookworm-slim --format 'id={{.Id}} repo_digests={{json .RepoDigests}} os={{.Os}} arch={{.Architecture}}'",
+      "exitCode": 0,
+      "observed": "id=sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e repo_digests=[\"node@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e\"] os=linux arch=arm64"
+    },
+    {
+      "name": "build",
+      "command": "pnpm install --frozen-lockfile && pnpm build",
+      "exitCode": 0,
+      "observed": "Lockfile install and TypeScript build completed"
+    },
+    {
+      "name": "offline-container-probe",
+      "command": "python3 docs/research/execution-boundaries/probes/container_probe.py --image mcr.microsoft.com/devcontainers/typescript-node:22@sha256:4f634c449931ac2aff140f9fac5825413196e631ccc0eb7afd17033144253be4",
+      "exitCode": 0,
+      "observed": "PASS; every recorded isolation check was true; cleanup_confirmed was true"
+    },
+    {
+      "name": "stub-daemon",
+      "command": "mkdir -p /tmp/kat-3287-product.y5O4kv/scratch && cp packages/cli/test/codex-stub.mjs /tmp/kat-3287-product.y5O4kv/scratch/codex-stub.mjs && AGENTIS_PROBE_OWNER_TOKEN=synthetic-owner-session-not-forwarded AGENTIS_CODEX_STUB=/workspace/codex-stub.mjs node packages/cli/dist/bin.js serve --endpoint http://127.0.0.1:42787/ --data-root /tmp/kat-3287-product.y5O4kv --provider codex --execution-boundary docker-desktop-run-container",
+      "exitCode": 0,
+      "observed": "Daemon started and later exited on SIGINT"
+    },
+    {
+      "name": "stub-run-one",
+      "command": "node packages/cli/dist/bin.js task submit --endpoint http://127.0.0.1:42787/ --data-root /tmp/kat-3287-product.y5O4kv --brief 'INPUT isolation hold one'",
+      "exitCode": 0,
+      "observed": "Run 768be1c9-7820-41bd-afb9-e747e7be0586 accepted"
+    },
+    {
+      "name": "discover-run-one-container",
+      "command": "docker ps --filter ancestor=node:24-bookworm-slim --format '{{.ID}} {{.Image}} {{.Status}} {{.Names}}'",
+      "exitCode": 0,
+      "observed": "0f691adece24 node:24-bookworm-slim Up 8 seconds jovial_diffie"
+    },
+    {
+      "name": "inspect-run-one",
+      "command": "docker inspect 0f691adece241d6981a7b1266aa7847b6d67bc73b09d42f9594a2d576661cc26 --format '{{json .}}'",
+      "exitCode": 0,
+      "observed": "Linux arm64 image; user 10001:10001; /workspace bind; network none; read-only root; all capabilities dropped; no-new-privileges; no labels"
+    },
+    {
+      "name": "create-synthetic-session-file",
+      "command": "mkdir -p /tmp/kat-3287-product.y5O4kv/owner && install -m 600 /dev/null /tmp/kat-3287-product.y5O4kv/owner/session",
+      "exitCode": 0,
+      "observed": "Created a zero-byte generated file for the scoped mount check"
+    },
+    {
+      "name": "run-one-isolation",
+      "command": "docker exec 0f691adece241d6981a7b1266aa7847b6d67bc73b09d42f9594a2d576661cc26 sh -c 'id -u; id -g; pwd; test -r /workspace/codex-stub.mjs; test -w /workspace; test ! -e /tmp/kat-3287-product.y5O4kv/owner/session; test ! -e /var/run/docker.sock; test -z \"$AGENTIS_PROBE_OWNER_TOKEN\"; test -z \"$CODEX_HOME\"; test \"$HOME\" = /tmp/codex-home'",
+      "exitCode": 0,
+      "observed": "uid 10001; gid 10001; pwd /workspace; every test passed"
+    },
+    {
+      "name": "cancel-run-one",
+      "command": "node packages/cli/dist/bin.js run cancel --endpoint http://127.0.0.1:42787/ --data-root /tmp/kat-3287-product.y5O4kv --run 768be1c9-7820-41bd-afb9-e747e7be0586",
+      "exitCode": 0,
+      "observed": "Agentis recorded canceled, but container 0f691adece24 remained running after 47 seconds"
+    },
+    {
+      "name": "poll-run-one-terminal-container",
+      "command": "docker ps --filter id=0f691adece241d6981a7b1266aa7847b6d67bc73b09d42f9594a2d576661cc26 --format '{{.ID}} {{.Status}}' && node packages/cli/dist/bin.js doctor --endpoint http://127.0.0.1:42787/ --data-root /tmp/kat-3287-product.y5O4kv",
+      "exitCode": 0,
+      "observed": "Container 0f691adece24 was Up 47 seconds while Agentis Run 768be1c9-7820-41bd-afb9-e747e7be0586 was canceled"
+    },
+    {
+      "name": "cleanup-run-one",
+      "command": "docker rm -f 0f691adece241d6981a7b1266aa7847b6d67bc73b09d42f9594a2d576661cc26",
+      "exitCode": 0,
+      "observed": "Removed the exact residual container"
+    },
+    {
+      "name": "stub-run-two",
+      "command": "node packages/cli/dist/bin.js task submit --endpoint http://127.0.0.1:42787/ --data-root /tmp/kat-3287-product.y5O4kv --brief 'INPUT isolation hold two'",
+      "exitCode": 0,
+      "observed": "Run b9d2144d-971b-4de3-8adb-269452d153af accepted; container 91ec770f4174930ffe0e7ff44b5b32a4864a3e164fc1bad4896ca1c5f32ef52e used the same workspace source as Run one"
+    },
+    {
+      "name": "discover-run-two-container",
+      "command": "docker ps --filter ancestor=node:24-bookworm-slim --format '{{.ID}} {{.Image}} {{.Status}} {{.Names}}'",
+      "exitCode": 0,
+      "observed": "91ec770f4174 node:24-bookworm-slim Up 10 seconds upbeat_mcclintock"
+    },
+    {
+      "name": "inspect-run-two",
+      "command": "docker inspect 91ec770f4174930ffe0e7ff44b5b32a4864a3e164fc1bad4896ca1c5f32ef52e --format 'id={{.Id}} created={{.Created}} image={{.Image}} user={{.Config.User}} workdir={{.Config.WorkingDir}} network={{.HostConfig.NetworkMode}} readonly={{.HostConfig.ReadonlyRootfs}} caps={{json .HostConfig.CapDrop}} security={{json .HostConfig.SecurityOpt}} mounts={{json .Mounts}} env={{json .Config.Env}} labels={{json .Config.Labels}}'",
+      "exitCode": 0,
+      "observed": "Distinct container ID; same /tmp/kat-3287-product.y5O4kv/scratch source mounted at /workspace; user 10001:10001; network none; read-only root; all capabilities dropped; no-new-privileges; no labels"
+    },
+    {
+      "name": "complete-run-two",
+      "command": "node packages/cli/dist/bin.js input answer --endpoint http://127.0.0.1:42787/ --data-root /tmp/kat-3287-product.y5O4kv --run b9d2144d-971b-4de3-8adb-269452d153af --answer color=Blue",
+      "exitCode": 0,
+      "observed": "Agentis recorded succeeded and artifact sha256 f5ef2ef2001088d5888375d6a6360f1b9ce9897c8d00a60698d9d0ff6aef1563, but the container remained running after 28 seconds"
+    },
+    {
+      "name": "poll-run-two-terminal-container",
+      "command": "docker ps --filter id=91ec770f4174930ffe0e7ff44b5b32a4864a3e164fc1bad4896ca1c5f32ef52e --format '{{.ID}} {{.Status}}' && node packages/cli/dist/bin.js doctor --endpoint http://127.0.0.1:42787/ --data-root /tmp/kat-3287-product.y5O4kv",
+      "exitCode": 0,
+      "observed": "Container 91ec770f4174 was Up 28 seconds while Agentis Run b9d2144d-971b-4de3-8adb-269452d153af was succeeded"
+    },
+    {
+      "name": "cleanup-run-two",
+      "command": "docker rm -f 91ec770f4174930ffe0e7ff44b5b32a4864a3e164fc1bad4896ca1c5f32ef52e",
+      "exitCode": 0,
+      "observed": "Removed the exact residual container"
+    },
+    {
+      "name": "stop-stub-daemon",
+      "command": "SIGINT sent to foreground daemon PTY session 47272",
+      "exitCode": 0,
+      "observed": "The Agentis daemon exited"
+    },
+    {
+      "name": "live-daemon",
+      "command": "AGENTIS_PROBE_OWNER_TOKEN=synthetic-owner-session-not-forwarded node packages/cli/dist/bin.js serve --endpoint http://127.0.0.1:42787/ --data-root /tmp/kat-3287-live.SUDo1V --provider codex --execution-boundary docker-desktop-run-container",
+      "exitCode": 0,
+      "observed": "Daemon started and later exited on SIGINT"
+    },
+    {
+      "name": "live-task",
+      "command": "node packages/cli/dist/bin.js task submit --endpoint http://127.0.0.1:42787/ --data-root /tmp/kat-3287-live.SUDo1V --brief 'Reply exactly KAT3287_OK. Do not call tools or access files.'",
+      "exitCode": 0,
+      "observed": "Run f7946547-fd3b-46b8-9e4d-39ef5b952d4d was accepted, then failed in version preflight"
+    },
+    {
+      "name": "live-receipt",
+      "command": "node packages/cli/dist/bin.js doctor --endpoint http://127.0.0.1:42787/ --data-root /tmp/kat-3287-live.SUDo1V",
+      "exitCode": 0,
+      "observed": "Run status failed; providerSessionId null; artifact absent; error codex --version in container exited 1"
+    },
+    {
+      "name": "stop-live-daemon",
+      "command": "SIGINT sent to foreground daemon PTY session 26193",
+      "exitCode": 0,
+      "observed": "The Agentis daemon exited"
+    },
+    {
+      "name": "codex-binary-reproduction",
+      "command": "docker run --rm -i --pull=never --network none --read-only --user=10001:10001 --cap-drop=ALL --security-opt=no-new-privileges --pids-limit=128 --memory=2g --cpus=2 --tmpfs /tmp:rw,nosuid,nodev,size=134217728 --mount type=bind,src=/tmp,dst=/workspace -w /workspace -e HOME=/tmp/codex-home -e NO_OPEN_BROWSER=1 -v <home>/.codex/packages/standalone/releases/0.153.4-aarch64-apple-darwin/bin/codex:<home>/.codex/packages/standalone/releases/0.153.4-aarch64-apple-darwin/bin/codex:ro node:24-bookworm-slim node <home>/.codex/packages/standalone/releases/0.153.4-aarch64-apple-darwin/bin/codex --version",
+      "exitCode": 1,
+      "observed": "Node reported SyntaxError: Invalid or unexpected token for the Mach-O binary"
+    },
+    {
+      "name": "tmp-mount-reproduction",
+      "command": "docker run --rm -i --pull=never --network none --read-only --user=10001:10001 --cap-drop=ALL --security-opt=no-new-privileges --pids-limit=128 --memory=2g --cpus=2 --tmpfs /tmp:rw,nosuid,nodev,size=134217728 --mount type=bind,src=/tmp,dst=/workspace -w /workspace -e HOME=/tmp/codex-home -e NO_OPEN_BROWSER=1 node:24-bookworm-slim node -e \"const fs=require('node:fs'); const p='/workspace/kat-3287-product.y5O4kv/owner/session'; console.log('synthetic_host_session_readable='+fs.existsSync(p)); process.exit(fs.existsSync(p)?0:1)\"",
+      "exitCode": 0,
+      "observed": "synthetic_host_session_readable=true"
+    },
+    {
+      "name": "final-cleanup",
+      "command": "docker ps --filter ancestor=node:24-bookworm-slim --format '{{.ID}} {{.Names}} {{.Status}}' && rm -rf /tmp/kat-3287-product.y5O4kv /tmp/kat-3287-live.SUDo1V",
+      "exitCode": 0,
+      "observed": "No matching container remained; both exact temporary data roots were removed"
+    }
+  ],
+  "probes": {
+    "offlineCandidate": {
+      "verdict": "PASS",
+      "command": "python3 docs/research/execution-boundaries/probes/container_probe.py --image mcr.microsoft.com/devcontainers/typescript-node:22@sha256:4f634c449931ac2aff140f9fac5825413196e631ccc0eb7afd17033144253be4",
+      "probeSha256": "dfedf6c7760f8b7f3916373b5b0c449a49d120dfd47746bc118f1d69b17f5673",
+      "checks": {
+        "absoluteOwnerBlocked": true,
+        "symlinkOwnerBlocked": true,
+        "dockerSocketBlocked": true,
+        "inputReadable": true,
+        "scratchWritable": true,
+        "nonRoot": true,
+        "ownerEnvironmentAbsent": true,
+        "loopbackAdminUnreachable": true,
+        "hostDockerInternalUnreachable": true
+      },
+      "cleanupConfirmed": true,
+      "scope": "Offline research candidate only. This does not prove the Agentis provider path."
+    },
+    "auditRerun": {
+      "startedAt": "2026-09-07T00:49:00Z",
+      "endedAt": "2026-09-07T00:53:00Z",
+      "setup": {
+        "command": "mkdir -p /tmp/kat-3287-audit/scratch && cp packages/cli/test/codex-stub.mjs /tmp/kat-3287-audit/scratch/codex-stub.mjs",
+        "exitCode": 0,
+        "observed": "The protocol stub was copied into the audit workspace before daemon start."
+      },
+      "baseline": {
+        "command": "docker ps -a --filter ancestor=node:24-bookworm-slim --format '{{.ID}} {{.Status}} {{.Names}}'",
+        "exitCode": 0,
+        "rawOutput": "",
+        "observed": "No matching container existed before the daemon started."
+      },
+      "daemon": {
+        "command": "AGENTIS_PROBE_OWNER_TOKEN=synthetic-owner-session-not-forwarded AGENTIS_CODEX_STUB=/workspace/codex-stub.mjs node packages/cli/dist/bin.js serve --endpoint http://127.0.0.1:42789/ --data-root /tmp/kat-3287-audit --provider codex --execution-boundary docker-desktop-run-container",
+        "exitCode": 0,
+        "rawOutput": "endpoint=http://127.0.0.1:42789/ pid=<ephemeral> dataRoot=/tmp/kat-3287-audit log=/tmp/kat-3287-audit/daemon.log; exited on SIGINT"
+      },
+      "runs": [
+        {
+          "submitCommand": "node packages/cli/dist/bin.js task submit --endpoint http://127.0.0.1:42789/ --data-root /tmp/kat-3287-audit --brief 'INPUT KAT3287 audit run one'",
+          "submitExitCode": 0,
+          "submitRawOutput": "{\"accepted\":true,\"taskId\":\"a998d3d8-5ee7-4ec1-ab84-344f1d6b3fe5\",\"runId\":\"a9c0c486-da6d-4b1e-91ed-14f0611f61ff\",\"effects\":[\"launch\"]}",
+          "discoveryCommand": "docker ps -a --filter ancestor=node:24-bookworm-slim --format '{{.ID}} {{.Status}} {{.Names}}'",
+          "discoveryExitCode": 0,
+          "discoveryRawOutput": "215081567f02 Up 8 seconds bold_shirley",
+          "containerId": "215081567f02d576464adf9ed8298803b458be1401f1e5a8063a8fa30b759716",
+          "inspectCommand": "docker inspect 215081567f02 --format 'id={{.Id}}\\ncreated={{.Created}}\\nimage={{.Image}}\\npath={{.Path}}\\nargs={{json .Args}}\\nuser={{.Config.User}}\\nworkdir={{.Config.WorkingDir}}\\nenv={{json .Config.Env}}\\nlabels={{json .Config.Labels}}\\nnetwork={{.HostConfig.NetworkMode}}\\nreadonly={{.HostConfig.ReadonlyRootfs}}\\ncapdrop={{json .HostConfig.CapDrop}}\\nsecurity={{json .HostConfig.SecurityOpt}}\\npids={{.HostConfig.PidsLimit}}\\nmemory={{.HostConfig.Memory}}\\nnanocpus={{.HostConfig.NanoCpus}}\\nipcmode={{.HostConfig.IpcMode}}\\ncgroupns={{.HostConfig.CgroupnsMode}}\\nports={{json .NetworkSettings.Ports}}\\nmounts={{json .Mounts}}'",
+          "inspectExitCode": 0,
+          "inspectRawOutput": "id=215081567f02d576464adf9ed8298803b458be1401f1e5a8063a8fa30b759716\\ncreated=2026-09-07T00:49:30.160227833Z\\nimage=sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e\\npath=docker-entrypoint.sh\\nargs=[\"node\",\"/workspace/codex-stub.mjs\"]\\nuser=10001:10001\\nworkdir=/workspace\\nenv=[\"HOME=/tmp/codex-home\",\"NO_OPEN_BROWSER=1\",\"AGENTIS_CODEX_STUB=/workspace/codex-stub.mjs\",\"PATH=/usr/local/bin:/usr/bin:/bin\",\"NODE_VERSION=24.20.0\",\"YARN_VERSION=1.22.22\"]\\nlabels={}\\nnetwork=none\\nreadonly=true\\ncapdrop=[\"ALL\"]\\nsecurity=[\"no-new-privileges\"]\\npids=128\\nmemory=2147483648\\nnanocpus=2000000000\\nipcmode=private\\ncgroupns=private\\nports={}\\nmounts=[{\"Destination\":\"/workspace\",\"Mode\":\"\",\"Propagation\":\"rprivate\",\"RW\":true,\"Source\":\"/tmp/kat-3287-audit/scratch\",\"Type\":\"bind\"}]",
+          "isolationCommand": "docker exec 215081567f02 sh -c 'printf \"uid=%s gid=%s pwd=%s home=%s\\\\n\" \"$(id -u)\" \"$(id -g)\" \"$PWD\" \"$HOME\"; test -r /workspace/codex-stub.mjs && echo workspace_input_readable=true; test -w /workspace && echo workspace_writable=true; test ! -e /workspace/../owner/session && echo owner_session_unreachable=true; test ! -e /var/run/docker.sock && echo docker_socket_absent=true; test -z \"$AGENTIS_PROBE_OWNER_TOKEN\" && echo owner_env_absent=true; test -z \"$CODEX_HOME\" && echo codex_home_absent=true'",
+          "isolationExitCode": 0,
+          "isolationRawOutput": "uid=10001 gid=10001 pwd=/workspace home=/tmp/codex-home\nworkspace_input_readable=true\nworkspace_writable=true\nowner_session_unreachable=true\ndocker_socket_absent=true\nowner_env_absent=true\ncodex_home_absent=true",
+          "terminalCommand": "node packages/cli/dist/bin.js run cancel --endpoint http://127.0.0.1:42789/ --data-root /tmp/kat-3287-audit --run a9c0c486-da6d-4b1e-91ed-14f0611f61ff",
+          "terminalExitCode": 0,
+          "terminalRawOutput": "accepted=true effects=[interrupt_provider]",
+          "doctorCommand": "node packages/cli/dist/bin.js doctor --endpoint http://127.0.0.1:42789/ --data-root /tmp/kat-3287-audit",
+          "doctorExitCode": 0,
+          "doctorSanitizedOutput": "runId=a9c0c486-da6d-4b1e-91ed-14f0611f61ff status=canceled providerSessionId=thread-stub workspaceId=/tmp/kat-3287-audit/scratch artifacts=[]",
+          "daemonTerminalState": "canceled",
+          "containerStateCommand": "docker ps -a --filter id=215081567f02d576464adf9ed8298803b458be1401f1e5a8063a8fa30b759716 --format '{{.ID}} {{.Status}} {{.Names}}'",
+          "containerStateExitCode": 0,
+          "containerStateRawOutput": "215081567f02 Up 57 seconds bold_shirley"
+        },
+        {
+          "submitCommand": "node packages/cli/dist/bin.js task submit --endpoint http://127.0.0.1:42789/ --data-root /tmp/kat-3287-audit --brief 'INPUT KAT3287 audit run two'",
+          "submitExitCode": 0,
+          "submitRawOutput": "{\"accepted\":true,\"taskId\":\"a4c96371-0da1-4958-939d-24ec2813c99b\",\"runId\":\"2acba717-3cd7-4b78-8fff-d6fe7610a475\",\"effects\":[\"launch\"]}",
+          "discoveryCommand": "docker ps -a --filter ancestor=node:24-bookworm-slim --format '{{.ID}} {{.Status}} {{.Names}}'",
+          "discoveryExitCode": 0,
+          "discoveryRawOutput": "d17d92b0a674 Up 7 seconds agitated_wilbur",
+          "containerId": "d17d92b0a67495691d091458010224a7d066b1033083c07a7c65c475aa03c797",
+          "inspectCommand": "docker inspect d17d92b0a674 --format 'id={{.Id}}\\ncreated={{.Created}}\\nimage={{.Image}}\\npath={{.Path}}\\nargs={{json .Args}}\\nuser={{.Config.User}}\\nworkdir={{.Config.WorkingDir}}\\nenv={{json .Config.Env}}\\nlabels={{json .Config.Labels}}\\nnetwork={{.HostConfig.NetworkMode}}\\nreadonly={{.HostConfig.ReadonlyRootfs}}\\ncapdrop={{json .HostConfig.CapDrop}}\\nsecurity={{json .HostConfig.SecurityOpt}}\\npids={{.HostConfig.PidsLimit}}\\nmemory={{.HostConfig.Memory}}\\nnanocpus={{.HostConfig.NanoCpus}}\\nipcmode={{.HostConfig.IpcMode}}\\ncgroupns={{.HostConfig.CgroupnsMode}}\\nports={{json .NetworkSettings.Ports}}\\nmounts={{json .Mounts}}'",
+          "inspectExitCode": 0,
+          "inspectRawOutput": "id=d17d92b0a67495691d091458010224a7d066b1033083c07a7c65c475aa03c797\\ncreated=2026-09-07T00:50:47.284224841Z\\nimage=sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e\\npath=docker-entrypoint.sh\\nargs=[\"node\",\"/workspace/codex-stub.mjs\"]\\nuser=10001:10001\\nworkdir=/workspace\\nenv=[\"NO_OPEN_BROWSER=1\",\"AGENTIS_CODEX_STUB=/workspace/codex-stub.mjs\",\"PATH=/usr/local/bin:/usr/bin:/bin\",\"HOME=/tmp/codex-home\",\"NODE_VERSION=24.20.0\",\"YARN_VERSION=1.22.22\"]\\nlabels={}\\nnetwork=none\\nreadonly=true\\ncapdrop=[\"ALL\"]\\nsecurity=[\"no-new-privileges\"]\\npids=128\\nmemory=2147483648\\nnanocpus=2000000000\\nipcmode=private\\ncgroupns=private\\nports={}\\nmounts=[{\"Destination\":\"/workspace\",\"Mode\":\"\",\"Propagation\":\"rprivate\",\"RW\":true,\"Source\":\"/tmp/kat-3287-audit/scratch\",\"Type\":\"bind\"}]",
+          "terminalCommand": "node packages/cli/dist/bin.js input answer --endpoint http://127.0.0.1:42789/ --data-root /tmp/kat-3287-audit --run 2acba717-3cd7-4b78-8fff-d6fe7610a475 --answer color=Blue",
+          "terminalExitCode": 0,
+          "terminalRawOutput": "accepted=true effects=[resume_input]",
+          "doctorCommand": "node packages/cli/dist/bin.js doctor --endpoint http://127.0.0.1:42789/ --data-root /tmp/kat-3287-audit",
+          "doctorExitCode": 0,
+          "doctorSanitizedOutput": "runId=2acba717-3cd7-4b78-8fff-d6fe7610a475 status=succeeded providerSessionId=thread-stub workspaceId=/tmp/kat-3287-audit/scratch artifactId=d8e7c807-d760-49a0-9169-aa7cf9f6d180 artifactSha256=43aa44155711e8b6b2931234b363f988299ce5cc432004892e7ba3911664d4e0",
+          "daemonTerminalState": "succeeded",
+          "artifactSha256": "43aa44155711e8b6b2931234b363f988299ce5cc432004892e7ba3911664d4e0",
+          "containerStateCommand": "docker ps -a --filter id=d17d92b0a67495691d091458010224a7d066b1033083c07a7c65c475aa03c797 --format '{{.ID}} {{.Status}} {{.Names}}'",
+          "containerStateExitCode": 0,
+          "containerStateRawOutput": "d17d92b0a674 Up 39 seconds agitated_wilbur"
+        }
+      ],
+      "attribution": "The audit began with an empty image-filtered docker ps -a baseline. Runs were submitted sequentially. Each submission was followed by exactly one matching new container whose command invoked the mounted protocol stub. The implementation supplies no Run label or deterministic container name, so direct identifier binding remains unavailable.",
+      "cleanup": {
+        "commands": [
+          "docker rm -f 215081567f02d576464adf9ed8298803b458be1401f1e5a8063a8fa30b759716",
+          "docker rm -f d17d92b0a67495691d091458010224a7d066b1033083c07a7c65c475aa03c797",
+          "docker ps -a --filter id=215081567f02d576464adf9ed8298803b458be1401f1e5a8063a8fa30b759716 --format '{{.ID}} {{.Status}} {{.Names}}'",
+          "docker ps -a --filter id=d17d92b0a67495691d091458010224a7d066b1033083c07a7c65c475aa03c797 --format '{{.ID}} {{.Status}} {{.Names}}'",
+          "rm -rf /tmp/kat-3287-audit",
+          "test ! -e /tmp/kat-3287-audit"
+        ],
+        "exitCodes": [0, 0, 0, 0, 0, 0],
+        "finalRawOutputs": [
+          "215081567f02d576464adf9ed8298803b458be1401f1e5a8063a8fa30b759716",
+          "d17d92b0a67495691d091458010224a7d066b1033083c07a7c65c475aa03c797",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "temporaryDataRootRemoved": true
+      }
+    },
+    "productStubRuns": {
+      "verdict": "FAIL",
+      "boundary": "docker-desktop-run-container",
+      "provider": "codex protocol stub",
+      "runs": [
+        {
+          "runId": "a9c0c486-da6d-4b1e-91ed-14f0611f61ff",
+          "containerId": "215081567f02d576464adf9ed8298803b458be1401f1e5a8063a8fa30b759716",
+          "terminalStatus": "canceled",
+          "containerStillRunningAfterTerminalSeconds": 57
+        },
+        {
+          "runId": "2acba717-3cd7-4b78-8fff-d6fe7610a475",
+          "containerId": "d17d92b0a67495691d091458010224a7d066b1033083c07a7c65c475aa03c797",
+          "terminalStatus": "succeeded",
+          "artifactSha256": "43aa44155711e8b6b2931234b363f988299ce5cc432004892e7ba3911664d4e0",
+          "containerStillRunningAfterTerminalSeconds": 39
+        }
+      ],
+      "distinctContainerPerObservedRun": true,
+      "containerAttribution": "Controlled sequential timing from an empty image-filtered baseline plus the inspected Codex stub command. Direct Run labels or deterministic container names were absent.",
+      "sharedWorkspaceSource": "<temporary-data-root>/scratch",
+      "workspaceDestination": "/workspace",
+      "workspaceSharedAcrossRuns": true,
+      "containerUser": "10001:10001",
+      "networkMode": "none",
+      "readOnlyRootFilesystem": true,
+      "capabilitiesDropped": ["ALL"],
+      "noNewPrivileges": true,
+      "dockerSocketAbsent": true,
+      "syntheticOwnerEnvironmentAbsent": true,
+      "syntheticOwnerSessionOutsideWorkspaceAbsent": true,
+      "containerLabels": {},
+      "cleanup": "Both residual containers were removed by exact ID with docker rm -f. docker ps -a returned no row for either exact ID afterward."
+    },
+    "liveCodex": {
+      "verdict": "UNVERIFIED",
+      "runId": "f7946547-fd3b-46b8-9e4d-39ef5b952d4d",
+      "taskId": "18d18d4e-8ebb-4571-87dd-d61194839b25",
+      "runStatus": "failed",
+      "artifact": null,
+      "providerSessionId": null,
+      "error": "codex --version in container exited 1",
+      "appServerContainerLaunched": false,
+      "diagnosis": "The version-check container mounted the macOS Mach-O Codex binary into Linux and invoked it with Node. Node reported SyntaxError: Invalid or unexpected token. Even with a Linux binary, the configured network mode is none and HOME points to an empty tmpfs with no provisioned provider authentication. Authentication and provider egress were not reached."
+    },
+    "versionCheckWorkspace": {
+      "verdict": "FAIL",
+      "hostSource": "/tmp",
+      "containerDestination": "/workspace",
+      "syntheticHostSessionReadable": true,
+      "agentisOwnerTokenIncludedByMountDefinition": true,
+      "scope": "The reproduction used only a generated zero-byte session file under the KAT-3287 temporary directory."
+    }
+  },
+  "safety": {
+    "realResourceMutations": false,
+    "actualOwnerCredentialMounts": true,
+    "mountedOwnerCredential": "The live preflight's /tmp bind included the temporary Agentis daemon data root and its generated owner.token. The probe did not read or print the token.",
+    "personalOrGlobalCredentialExposure": "UNVERIFIED because the broad /tmp mount was not limited to the probe data root",
+    "externalProviderCredentialsUsed": false,
+    "generatedAgentisOwnerCredentialMounted": true,
+    "remainingOwnedContainers": 0,
+    "temporaryDataRootsRemoved": true
+  }
+}
