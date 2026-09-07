@@ -1,0 +1,53 @@
+---
+description: development lifecycle
+alwaysApply: true
+---
+<!-- begin dev lifecycle -->
+## Issues and specs
+
+- Linear holds planning, epics, bugs, chores, specs, acceptance criteria, and status. GitHub holds code: branches, commits, pull requests, CI, and review comments on diffs.
+- GitHub Issues stay enabled as inbound only. Do not use them for internal planning or as the spec. When a GitHub Issue needs work, create a full Linear issue with spec and AC, link the GitHub Issue, and implement against Linear.
+- The Linear issue (and parent epic, if any) is the spec. Read it before implementing. Implement only the acceptance criteria written there. If research or implementation changes the spec, edit the Linear issue before continuing.
+- A request with no Linear issue gets one before Build starts; create it or ask. Small bounded edits (copy, single config value) are exempt.
+- Prefer the smallest change that satisfies the AC. File out-of-AC work as a new Backlog issue; keep it out of the current PR.
+- Every implementing PR names exactly one Linear issue id in its title or body. Prefer Linear's generated branch name so the GitHub integration links PR and issue.
+- When blocked, comment on the Linear issue with the exact ask and stop.
+
+## Docs and artifacts
+
+- Architecture docs, process docs, ADRs, and other durable artifacts live under `docs/` in the repository.
+
+## Project milestones (Linear)
+
+Linear **project milestones** are multi-ticket product gate/phase outcomes (not issue status, not epics, not project roster).
+
+- Name gated outcomes `Gate N: <outcome>` with **PASS when…** in the milestone description; later phases `Phase N: <name>` until a formal PASS exists.
+- Plan sets the milestone on implementable tickets that belong to that gate/phase.
+- Do not use milestones for sprints, weeks, or single PRs.
+
+## Work states (Linear columns)
+
+These columns are gates for **implementers**. Who moves the board for the crew is outside this file.
+
+- **Backlog** — Spec and AC. Do not implement.
+- **Todo** — Approved and queued. Wait for Start before Build.
+- **Start** — Explicit start signal. Build may begin.
+- **In Progress** — Implement on a branch/worktree keyed to this Linear id. Keep the PR **draft** until artifacts and diffs are reviewable. One agent ↔ one Linear id worktree; do not share a checkout across concurrent tickets.
+- **Agent Review** — Fix CI and answer every review thread (human or bot) on the **existing** branch. Do not open a competing PR. Author being a human does not waive this.
+- **Human Review** — **Stop.** Do not dispatch further coding agents, CI-fix loops, or review drives on this PR until the issue moves or a human says resume.
+- **Merging** — Permission to merge. Do not merge from an earlier column.
+- **Done** — Merged. Further AC proof is recorded on the Linear issue; do not flip Done yourself to mean “verified.”
+- **Canceled / Duplicate** — Terminal. New work needs a new issue.
+
+**Merge-ready:** not draft, clean mergeability, required CI green, no open review threads, no unanswered comments.
+
+If a PR closes without merging, comment on the Linear issue with the reason and leave further board moves to the human/crew.
+
+Ship means cutting a release channel (nightly, stable, TestFlight). It is not “PR merged.”
+
+### Human-driven Build
+
+If the Linear issue has the **`human-build`** label, Build is human-owned: do not expect an Eng Manager kick, and do not start a parallel crew Build on the same Linear id. You may still implement if a human briefed you directly. From **Agent Review** onward, normal review/merge rules above still apply.
+
+This section overrides conflicting skill/rule text about *when* to implement or merge. If still unclear, ask the user before proceeding.
+<!-- end dev lifecycle -->
