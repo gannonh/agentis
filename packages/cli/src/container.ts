@@ -3,6 +3,8 @@ import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:chil
 
 const CODEX_CONTAINER_PATH = "/usr/local/bin/codex";
 const CODEX_STUB_CONTAINER_PATH = "/opt/agentis/codex-stub.mjs";
+const MANAGED_CONTAINER_LABEL = "io.agentis.managed";
+const RUN_ID_LABEL = "io.agentis.run-id";
 
 const dockerRunBase = (input: {
   readonly workspace?: string;
@@ -35,7 +37,12 @@ const dockerRunBase = (input: {
     args.push("--name", input.name);
   }
   if (input.runId) {
-    args.push("--label", `io.agentis.run-id=${input.runId}`);
+    args.push(
+      "--label",
+      `${MANAGED_CONTAINER_LABEL}=run-container`,
+      "--label",
+      `${RUN_ID_LABEL}=${input.runId}`,
+    );
   }
   if (input.workspace) {
     args.push("--mount", `type=bind,src=${input.workspace},dst=/workspace`, "-w", "/workspace");
@@ -78,9 +85,42 @@ type ReadonlyBindMount = {
 };
 
 export const removeRunContainer = (runId: string): void => {
-  spawnSync("docker", ["rm", "-f", runContainerName(runId)], {
-    stdio: "ignore",
-  });
+  if (inspectRunContainer(runId) === "absent") {
+    return;
+  }
+  spawnSync("docker", ["rm", "-f", runContainerName(runId)], { stdio: "ignore" });
+  if (inspectRunContainer(runId) !== "absent") {
+    throw new Error(`Run container ${runContainerName(runId)} survived removal`);
+  }
+};
+
+const inspectRunContainer = (runId: string): "owned" | "absent" => {
+  const name = runContainerName(runId);
+  const inspected = spawnSync(
+    "docker",
+    [
+      "inspect",
+      "--type",
+      "container",
+      "--format",
+      `{{index .Config.Labels "${MANAGED_CONTAINER_LABEL}"}}|{{index .Config.Labels "${RUN_ID_LABEL}"}}`,
+      name,
+    ],
+    { encoding: "utf8" },
+  );
+  if (inspected.error) {
+    throw inspected.error;
+  }
+  if (inspected.status !== 0) {
+    if (/No such (object|container)/i.test(inspected.stderr)) {
+      return "absent";
+    }
+    throw new Error(`could not inspect Run container ${name}: ${inspected.stderr.trim()}`);
+  }
+  if (inspected.stdout.trim() !== `run-container|${runId}`) {
+    throw new Error(`refusing to remove unowned container ${name}`);
+  }
+  return "owned";
 };
 
 export const spawnInRunContainer = (input: {

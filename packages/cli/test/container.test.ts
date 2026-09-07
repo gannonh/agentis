@@ -16,11 +16,13 @@ import { loadOrCreateOwner } from "../src/auth.js";
 import {
   assertCodexContainerPlatform,
   readCodexVersionInContainer,
+  removeRunContainer,
   runContainerName,
   spawnCodexAppServerInContainer,
 } from "../src/container.js";
 import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
+import { openStore } from "../src/store.js";
 
 const originalPath = process.env.PATH;
 const stub = fileURLToPath(new URL("./codex-stub.mjs", import.meta.url));
@@ -42,12 +44,26 @@ const waitForLog = async (path: string, match: (commands: unknown[][]) => boolea
   throw new Error(`docker command not observed: ${readFileSync(path, "utf8")}`);
 };
 
+const waitForFile = async (path: string) => {
+  const deadline = Date.now() + 2000;
+  while (Date.now() <= deadline) {
+    try {
+      readFileSync(path);
+      return;
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+  }
+  throw new Error(`file not observed: ${path}`);
+};
+
 const fakeDocker = () => {
   const root = mkdtempSync(join(tmpdir(), "agentis-container-test-"));
   const bin = join(root, "bin");
   const docker = join(bin, "docker");
   const codex = join(bin, "codex");
   const log = join(root, "docker.log");
+  const state = `${log}.state`;
   mkdirSync(bin);
   writeFileSync(log, "");
   copyFileSync(fakeDockerScript, docker);
@@ -56,7 +72,7 @@ const fakeDocker = () => {
   chmodSync(codex, 0o700);
   process.env.PATH = `${bin}:${originalPath ?? ""}`;
   process.env.AGENTIS_TEST_DOCKER_LOG = log;
-  return { root, log };
+  return { root, log, state };
 };
 
 afterEach(() => {
@@ -126,7 +142,7 @@ describe.sequential("Run containers", () => {
   });
 
   it("removes the exact Run container when stopped", async () => {
-    const { root, log } = fakeDocker();
+    const { root, log, state } = fakeDocker();
     const runId = "run-3287";
     const workspace = join(root, "workspace");
     mkdirSync(workspace);
@@ -136,13 +152,93 @@ describe.sequential("Run containers", () => {
       stub,
     });
     await waitForLog(log, (commands) => commands.some((args) => args[0] === "run"));
+    await waitForFile(state);
     process.stop();
     const commands = await waitForLog(log, (entries) =>
       entries.some(
         (args) => args[0] === "rm" && args[1] === "-f" && args[2] === runContainerName(runId),
       ),
     );
+    expect(commands.some((args) => args.includes("io.agentis.managed=run-container"))).toBe(true);
     expect(commands.some((args) => args.includes(`io.agentis.run-id=${runId}`))).toBe(true);
+    expect(commands.filter((args) => args[0] === "inspect")).toHaveLength(2);
+    expect(() => readFileSync(state)).toThrow();
+  });
+
+  it("refuses to remove a container without Agentis ownership labels", () => {
+    const { log, state } = fakeDocker();
+    const runId = "run-foreign";
+    writeFileSync(
+      state,
+      JSON.stringify({
+        name: runContainerName(runId),
+        managed: "foreign",
+        runId,
+      }),
+    );
+    expect(() => removeRunContainer(runId)).toThrow(/refusing to remove unowned container/);
+    const commands = readFileSync(log, "utf8")
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as unknown[]);
+    expect(commands.some((args) => args[0] === "rm")).toBe(false);
+  });
+
+  it("removes an owned terminal container before restart begins serving", async () => {
+    const { root, state } = fakeDocker();
+    const store = await Effect.runPromise(openStore(root));
+    const submitted = await Effect.runPromise(
+      store.applyCommand({
+        principal: { kind: "owner", sessionId: "owner-session" },
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "terminal orphan" },
+        nowMs: Date.now(),
+        provider: "codex",
+        executionBoundary: "docker-desktop-run-container",
+        workspaceId: join(root, "scratch"),
+      }),
+    );
+    expect(submitted.runId).toBeDefined();
+    if (!submitted.runId) {
+      throw new Error("Run was not created");
+    }
+    const runId = submitted.runId;
+    await Effect.runPromise(
+      store.applyCommand({
+        principal: { kind: "owner", sessionId: "owner-session" },
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "cancel_run", runId },
+        nowMs: Date.now(),
+        provider: "codex",
+        executionBoundary: "docker-desktop-run-container",
+        workspaceId: join(root, "scratch"),
+      }),
+    );
+    await Effect.runPromise(store.close());
+    writeFileSync(
+      state,
+      JSON.stringify({
+        name: runContainerName(runId),
+        managed: "run-container",
+        runId,
+      }),
+    );
+
+    const server = await Effect.runPromise(
+      startServer({
+        endpoint: new URL(`http://127.0.0.1:${await port()}`),
+        dataRoot: root,
+        workspace: join(root, "scratch"),
+        provider: "codex",
+        executionBoundary: "docker-desktop-run-container",
+      }),
+    );
+    try {
+      expect(() => readFileSync(state)).toThrow();
+    } finally {
+      await server.close();
+    }
   });
 
   it("isolates sequential Run mounts and removes both terminal containers", async () => {

@@ -12,7 +12,7 @@ import {
   type ExecutionBoundary,
   type ProviderKind,
 } from "./schema.js";
-import { openStore, sweepRunTimeouts, type Store } from "./store.js";
+import { openStore, sweepRunTimeouts, type Snapshot, type Store } from "./store.js";
 import { API_FAMILY, PACKAGE_VERSION, SCHEMA_ID } from "./versions.js";
 
 export type ServeOptions = {
@@ -52,6 +52,12 @@ const applySweepEffects = (store: Store, executionBoundary: typeof ExecutionBoun
   }
 };
 
+const cleanupPersistedRunContainers = (runs: Snapshot["runs"]) => {
+  for (const run of runs) {
+    interruptCodex(run.id, run.frozen.executionBoundary);
+  }
+};
+
 export const startServer = (options: ServeOptions): Effect.Effect<RunningServer, Error> =>
   Effect.gen(function* () {
     if (!loopback(options.endpoint.hostname)) {
@@ -62,10 +68,9 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
     }
     const owner = yield* loadOrCreateOwner(options.dataRoot);
     const store = yield* openStore(options.dataRoot);
-    const interrupted = yield* store.interruptActiveRuns(Date.now());
-    for (const runId of interrupted) {
-      interruptCodex(runId, options.executionBoundary);
-    }
+    yield* store.interruptActiveRuns(Date.now());
+    const recovered = yield* store.snapshot();
+    cleanupPersistedRunContainers(recovered.runs);
     const sweepTimer = setInterval(() => {
       applySweepEffects(store, options.executionBoundary);
     }, 1000);
@@ -204,10 +209,9 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
         await new Promise<void>((resolve, reject) => {
           server.close((error) => (error ? reject(error) : resolve()));
         });
-        const interrupted = await Effect.runPromise(store.interruptActiveRuns(Date.now()));
-        for (const runId of interrupted) {
-          interruptCodex(runId, options.executionBoundary);
-        }
+        await Effect.runPromise(store.interruptActiveRuns(Date.now()));
+        const snapshot = await Effect.runPromise(store.snapshot());
+        cleanupPersistedRunContainers(snapshot.runs);
         await Effect.runPromise(store.close());
       },
     };
