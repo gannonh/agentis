@@ -7,6 +7,7 @@ import { loadOrCreateOwner } from "./auth.js";
 import { assertBoundary } from "./boundary.js";
 import { startServer } from "./http.js";
 import { newIdempotencyKey } from "./ids.js";
+import { loginProvider, provisionProvider } from "./provider.js";
 import { loadProfile, saveProfile } from "./profile.js";
 import {
   ApprovalId,
@@ -22,6 +23,7 @@ import { launchVerify } from "./verify.js";
 const defaultDataRoot = () => join(homedir(), ...DEFAULT_DATA_ROOT_SEGMENTS);
 
 const usage = `Usage:
+  agentis provider provision|login [--data-root DIR]
   agentis serve --endpoint URL [--data-root DIR] [--profile NAME] [--provider fake|codex] [--execution-boundary docker-desktop-run-container|unverified-host-scratch]
   agentis doctor --endpoint URL | --profile NAME [--data-root DIR]
   agentis task submit --endpoint URL --brief TEXT [--fixture smoke|allow|deny|input|cancel]
@@ -107,6 +109,14 @@ export const runCli = async (argv: string[]): Promise<number> => {
   });
   const dataRoot =
     typeof values["data-root"] === "string" ? values["data-root"] : defaultDataRoot();
+  if (verb === "provider" && positionals[0] === "provision") {
+    provisionProvider(dataRoot);
+    return 0;
+  }
+  if (verb === "provider" && positionals[0] === "login") {
+    loginProvider(dataRoot);
+    return 0;
+  }
   if (verb === "serve") {
     let provider: typeof ProviderKind.Type = "fake";
     let executionBoundary: typeof ExecutionBoundary.Type = "unverified-host-scratch";

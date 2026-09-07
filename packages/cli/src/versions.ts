@@ -8,6 +8,7 @@ export const EFFECT_PLATFORM_PIN = "0.97.1";
 export const EFFECT_PLATFORM_NODE_PIN = "0.108.1";
 export const TYPESCRIPT_PIN = "7.0.2";
 export const CODEX_CLI_PIN = "0.153.4";
+export const CODEX_IMAGE = `agentis-codex:${CODEX_CLI_PIN}`;
 export const CODEX_TRANSPORT = "app-server-v2-jsonl-stdio";
 export const CODEX_AUTH_MODE = "chatgpt-login";
 export const PRIMARY_PLATFORM = "macOS Apple silicon + Docker Desktop Run-container";

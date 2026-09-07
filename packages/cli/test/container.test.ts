@@ -14,12 +14,12 @@ import { Effect } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadOrCreateOwner } from "../src/auth.js";
 import {
-  assertCodexContainerPlatform,
   readCodexVersionInContainer,
   removeRunContainer,
   runContainerName,
   spawnCodexAppServerInContainer,
 } from "../src/container.js";
+import { runCli } from "../src/cli.js";
 import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
 import { openStore } from "../src/store.js";
@@ -141,6 +141,79 @@ describe.sequential("Run containers", () => {
     expect(JSON.stringify(args)).not.toContain("owner.token");
   });
 
+  it("provisions a pinned Linux image and dedicated provider volume through the CLI", async () => {
+    const { root, log } = fakeDocker();
+    await expect(runCli(["provider", "provision", "--data-root", root])).resolves.toBe(0);
+    const commands = readFileSync(log, "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as string[]);
+    expect(
+      commands.some((args) => args[0] === "build" && args.includes("agentis-codex:0.153.4")),
+    ).toBe(true);
+    expect(commands.some((args) => args[0] === "volume" && args[1] === "create")).toBe(true);
+    expect(readFileSync(`${log}.squid`, "utf8")).toContain(
+      "acl provider dstdomain -n auth.openai.com chatgpt.com",
+    );
+    expect(JSON.stringify(commands)).not.toContain("owner.token");
+  });
+
+  it("runs native device login using only dedicated provider storage and restricted egress", async () => {
+    const { root, log } = fakeDocker();
+    await expect(runCli(["provider", "login", "--data-root", root])).resolves.toBe(0);
+    const commands = readFileSync(log, "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as string[]);
+    const login = commands.find((args) => args.includes("--device-auth")) ?? [];
+    expect(login).toContain("CODEX_HOME=/provider-auth");
+    expect(
+      login.some(
+        (arg) =>
+          arg.startsWith("type=volume,src=agentis-codex-auth-") &&
+          arg.endsWith("dst=/provider-auth"),
+      ),
+    ).toBe(true);
+    expect(login.some((arg) => arg.startsWith("type=bind,"))).toBe(false);
+    expect(login).toContain("HTTPS_PROXY=http://provider-proxy:3128");
+    expect(commands.some((args) => args[0] === "network" && args.includes("--internal"))).toBe(
+      true,
+    );
+  });
+
+  it("starts live Codex with run-local auth and removes its proxy and internal network", async () => {
+    const { root, log } = fakeDocker();
+    const workspace = join(root, "workspace");
+    mkdirSync(workspace);
+    const run = spawnCodexAppServerInContainer({ runId: "live-test", workspace, dataRoot: root });
+    await waitForLog(log, (entries) => entries.some((args) => args.includes("app-server")));
+    run.stop();
+    const commands = readFileSync(log, "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as string[]);
+    const network = commands.find((args) => args[0] === "network" && args[1] === "create") ?? [];
+    expect(network).toContain("--internal");
+    expect(network).toContain("com.docker.network.bridge.gateway_mode_ipv4=isolated");
+    expect(network).toContain("--ipv6=false");
+    const launch = commands.find((args) => args.includes("app-server")) ?? [];
+    expect(launch).toContain("CODEX_HOME=/tmp/codex-home");
+    expect(launch).toContain("agentis-net-live-test");
+    expect(
+      launch.some(
+        (arg) => arg.startsWith("type=volume,") && arg.endsWith("dst=/provider-auth,readonly"),
+      ),
+    ).toBe(true);
+    expect(
+      commands.some((args) => args[0] === "rm" && args.includes("agentis-egress-live-test")),
+    ).toBe(true);
+    expect(
+      commands.some(
+        (args) => args[0] === "network" && args[1] === "rm" && args[2] === "agentis-net-live-test",
+      ),
+    ).toBe(true);
+  });
+
   it("removes the exact Run container when stopped", async () => {
     const { root, log, state } = fakeDocker();
     const runId = "run-3287";
@@ -161,7 +234,9 @@ describe.sequential("Run containers", () => {
     );
     expect(commands.some((args) => args.includes("io.agentis.managed=run-container"))).toBe(true);
     expect(commands.some((args) => args.includes(`io.agentis.run-id=${runId}`))).toBe(true);
-    expect(commands.filter((args) => args[0] === "inspect")).toHaveLength(2);
+    expect(
+      commands.filter((args) => args[0] === "inspect" && args.at(-1) === runContainerName(runId)),
+    ).toHaveLength(2);
     expect(() => readFileSync(state)).toThrow();
   });
 
@@ -369,9 +444,13 @@ describe.sequential("Run containers", () => {
     }
   });
 
-  it("rejects a macOS host Codex binary before starting a Linux container", () => {
-    expect(() => assertCodexContainerPlatform("darwin")).toThrow(
-      /macOS Codex executable cannot run in the Linux Run container/,
-    );
+  it("uses the pinned Linux payload for preflight without mounting a host executable", async () => {
+    const { log } = fakeDocker();
+    await readCodexVersionInContainer("0.153.4");
+    const commands = await waitForLog(log, (entries) => entries.length === 1);
+    expect(commands[0]).toContain("agentis-codex:0.153.4");
+    expect(
+      commands[0]?.some((arg) => typeof arg === "string" && arg.startsWith("type=bind,")),
+    ).toBe(false);
   });
 });

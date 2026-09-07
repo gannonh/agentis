@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { createInterface } from "node:readline";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { Effect } from "effect";
 import {
   readCodexVersionInContainer,
@@ -42,6 +42,7 @@ const rpcTimeoutMs = () => Number(process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS ?? "1
 const spawnAppServer = (
   runId: RunId,
   cwd: string,
+  dataRoot: string,
   executionBoundary: typeof ExecutionBoundary.Type,
 ): RunContainerProcess => {
   const stub = process.env.AGENTIS_CODEX_STUB;
@@ -49,6 +50,7 @@ const spawnAppServer = (
     return spawnCodexAppServerInContainer({
       runId,
       workspace: cwd,
+      dataRoot,
       ...(stub ? { stub } : {}),
     });
   }
@@ -137,7 +139,12 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> =>
     try: async () => {
       await readVersion(input.executionBoundary);
       mkdirSync(input.workspace, { recursive: true, mode: 0o700 });
-      const providerProcess = spawnAppServer(input.runId, input.workspace, input.executionBoundary);
+      const providerProcess = spawnAppServer(
+        input.runId,
+        input.workspace,
+        dirname(input.store.path),
+        input.executionBoundary,
+      );
       const { child } = providerProcess;
       const pending = new Map<string | number, (value: Json) => void>();
       const send = (message: Json) => {
@@ -215,7 +222,10 @@ export const spawnCodex = (input: DriveInput): Effect.Effect<void, Error> =>
         }
       }
       const thread = await session.request(2, "thread/start", {
-        cwd: input.workspace,
+        cwd:
+          input.executionBoundary === "docker-desktop-run-container"
+            ? "/workspace"
+            : input.workspace,
         model: "gpt-5.6-sol",
         approvalPolicy: "untrusted",
         approvalsReviewer: "user",
