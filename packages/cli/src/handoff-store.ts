@@ -76,13 +76,14 @@ export const rejectHandoff = (
   db: DatabaseSync,
   runId: RunId,
   state: "rejected" | "expired",
+  runStatus: "failed" | "canceled",
   reason: string,
   nowMs: number,
 ) => {
   const handoff = handoffForRun(db, runId);
   if (!handoff || handoff.state !== "proposed") return false;
   run(db, "UPDATE handoffs SET state=? WHERE id=? AND state='proposed'", [state, handoff.id]);
-  run(db, "UPDATE runs SET status='failed',waiting_reason='none' WHERE id=?", [runId]);
+  run(db, "UPDATE runs SET status=?,waiting_reason='none' WHERE id=?", [runStatus, runId]);
   run(db, "UPDATE pending_actions SET state='canceled' WHERE run_id=? AND state='pending'", [
     runId,
   ]);
@@ -268,7 +269,7 @@ export const decideHandoff = (
   const h = handoffForRun(db, runId);
   if (!h || h.state !== "proposed") return false;
   if (h.expiresAt <= nowMs) {
-    rejectHandoff(db, runId, "expired", "acceptance timed out", nowMs);
+    rejectHandoff(db, runId, "expired", "failed", "acceptance timed out", nowMs);
     return false;
   }
   const current = row<{
@@ -293,7 +294,7 @@ export const decideHandoff = (
   try {
     decision = Schema.decodeUnknownSync(Decision, { onExcessProperty: "error" })(JSON.parse(text));
   } catch {
-    rejectHandoff(db, runId, "rejected", "invalid acceptance response", nowMs);
+    rejectHandoff(db, runId, "rejected", "failed", "invalid acceptance response", nowMs);
     return false;
   }
   if (
@@ -305,6 +306,7 @@ export const decideHandoff = (
       db,
       runId,
       "rejected",
+      "failed",
       decision.handoffId !== h.id
         ? "wrong handoff identity"
         : decision.decision === "reject"

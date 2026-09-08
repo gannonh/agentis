@@ -253,6 +253,7 @@ describe("bounded handoff", () => {
         const done = await statusOf(endpoint, owner.token);
         expect(done.tasks[0]).toMatchObject({ botName: "mara", status: "completed" });
         expect(done.handoffs[0]?.state).toBe("rejected");
+        expect(done.runs.find((run) => run.id === proposed.json.runId)?.status).toBe("canceled");
         expect(done.artifacts).toHaveLength(1);
         expect(done.pending.some((action) => action.kind === "handoff_draft")).toBe(false);
       } finally {

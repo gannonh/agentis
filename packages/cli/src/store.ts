@@ -876,7 +876,14 @@ const cancelRun = (
     current.id,
   ]);
   if (
-    !rejectHandoff(db, command.runId, "rejected", "owner canceled before acceptance", input.nowMs)
+    !rejectHandoff(
+      db,
+      command.runId,
+      "rejected",
+      "canceled",
+      "owner canceled before acceptance",
+      input.nowMs,
+    )
   )
     run(db, "UPDATE tasks SET status = 'canceled' WHERE id = ?", [current.task_id]);
   run(
@@ -905,7 +912,16 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
   );
   for (const item of active) {
     run(db, "UPDATE runs SET status = 'canceled', waiting_reason = 'none' WHERE id = ?", [item.id]);
-    if (!rejectHandoff(db, item.id as RunId, "rejected", "stop-all before acceptance", input.nowMs))
+    if (
+      !rejectHandoff(
+        db,
+        item.id as RunId,
+        "rejected",
+        "canceled",
+        "stop-all before acceptance",
+        input.nowMs,
+      )
+    )
       run(db, "UPDATE tasks SET status = 'canceled' WHERE id = ?", [item.task_id]);
     run(
       db,
@@ -1276,7 +1292,7 @@ export const mutateForEngine = (storePath: string) => {
         if (!current || !active(runId)) {
           return;
         }
-        if (rejectHandoff(db, runId, "rejected", error, nowMs)) return;
+        if (rejectHandoff(db, runId, "rejected", "failed", error, nowMs)) return;
         run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [runId]);
         run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [taskId]);
         emit(db, "run_failed", { runId, error }, nowMs);
@@ -1327,7 +1343,14 @@ export const sweepRunTimeouts = (storePath: string, nowMs: number): readonly Run
         if (
           handoff.state === "proposed" &&
           handoff.expiresAt <= nowMs &&
-          rejectHandoff(db, handoff.recipientRunId, "expired", "acceptance timed out", nowMs)
+          rejectHandoff(
+            db,
+            handoff.recipientRunId,
+            "expired",
+            "failed",
+            "acceptance timed out",
+            nowMs,
+          )
         )
           effects.push({ runId: handoff.recipientRunId, effects: ["interrupt_provider"] });
       }
