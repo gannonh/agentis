@@ -1,6 +1,6 @@
 # Verification map
 
-This is a map of requirements, not a PASS record. Product implementation remains Backlog. Linear issues own acceptance criteria; evidence must identify the tested commit and environment. [Plan](../project-plan.md), [runtime ADR](../adrs/0001-runtime-and-execution-foundations.md).
+This is a map of requirements, not a PASS record. Linear issues own acceptance criteria; evidence must identify the tested commit and environment. [Plan](../project-plan.md), [runtime ADR](../adrs/0001-runtime-and-execution-foundations.md).
 
 | Area | Required evidence | Owning issue |
 | --- | --- | --- |
@@ -20,9 +20,7 @@ This is a map of requirements, not a PASS record. Product implementation remains
 
 Record each proof with issue, exact SHA, provider/SDK/OS versions, environment, command/action, expected result, observed result, artifact/log/CI URL and PASS/FAIL/UNVERIFIED. Logs redact credentials and private data irrelevant to the proof. Missing credentials or provider features remain unverified. Gate 1 and Gate 2 thresholds above are the single home for those numbers; the [fixed evaluation](../research/team-workflow-evaluation-v1.md) owns case definitions, scoring and baseline measurement. Constructed cases and internal use establish engineering gates only, not adoption or production reliability. Prototype simulations cannot substitute for integrated or live proofs.
 
-First CLI/daemon receipts for [KAT-3242](https://linear.app/kata-sh/issue/KAT-3242) live in [kat-3242.md](kat-3242.md).
-
-`agentis verify launch` is implemented by KAT-3242. It uses a temporary data root, an explicit fake registry, a stripped PATH, and prints endpoint, PID, and log paths. Fake success still cannot certify live Codex. The launcher must use temporary configuration and data, an explicit fake-engine registry, no access to real provider credentials and controlled network. Probe inherited settings, absolute executable paths and child processes; stripping PATH alone is insufficient. Print endpoint, PID and log locations, then clean up on exit/failure. Fake tests establish Agentis behavior; they cannot certify live provider eligibility or output quality.
+First CLI/daemon receipts for [KAT-3242](https://linear.app/kata-sh/issue/KAT-3242), including isolated `agentis verify launch` requirements, live in [kat-3242.md](kat-3242.md).
 
 Forced-crash cases include before launch, after launch, while waiting for approval, after decision persistence, after external acceptance, before receipt persistence and before completion reaches the client. Count controlled external effects. A restart must never turn an uncertain non-idempotent effect into an automatic retry. Test duplicate submissions/resolutions, provider crashes, invalid or expired cursors, slow viewers, stop-all, invalid credentials, unsupported schemas and missing blobs.
 
