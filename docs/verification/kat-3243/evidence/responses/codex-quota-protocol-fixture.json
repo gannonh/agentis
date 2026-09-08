@@ -1,0 +1,41 @@
+{
+  "recordedAt": "2026-09-08T22:21:37Z",
+  "fixtureMode": true,
+  "sourceCommit": "71cccf2d11ce659840a9e9fba1f9757bc761fd69",
+  "productSourceDirty": false,
+  "issue": "KAT-3302",
+  "closesVerifyGap": "KAT-3243 AC6 Codex quota",
+  "command": "pnpm --filter @agentis-labs/cli exec vitest run test/codex.test.ts -t \"classifies a protocol quota failure\"",
+  "node": "v24.20.0",
+  "exitCode": 0,
+  "log": "docs/verification/kat-3243/evidence/logs/codex-quota-protocol-fixture.log",
+  "bot": "mara",
+  "provider": "codex",
+  "transport": "app-server-v2-jsonl-stdio",
+  "results": [
+    {
+      "case": "quota",
+      "status": "PASS",
+      "runStatus": "failed",
+      "failure": "quota",
+      "artifact": null,
+      "accountQuotaBurned": false,
+      "notes": "Deterministic stub. turn/start is accepted. turn/completed follows with status failed and TurnError codexErrorInfo usageLimitExceeded. handleNotice calls failRun. classifyFailure maps usageLimitExceeded to typed quota. A live account was not used."
+    }
+  ],
+  "classifierRegression": {
+    "mutation": "Removed the usagelimit token from classifyFailure, leaving quota, rate.limit and 429.",
+    "expectedFailure": "quota",
+    "observedFailure": "provider-error",
+    "testResult": "FAIL",
+    "restored": true
+  },
+  "liveEvidenceUnchanged": {
+    "equivalentProductMerge": "edd5ad07e3e0b248ffb51c4fd7988b477aac888f",
+    "equivalentPrHead": "5415f5df",
+    "liveSuiteRerunOnThisFollowUp": false,
+    "codexNoAuthSourceCommit": "5e80f20f8853f5ccf17c3442eeb0e1c880c02a20",
+    "codexNoAuthProductSourceDirty": true,
+    "limitFor": "KAT-3247"
+  }
+}

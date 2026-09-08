@@ -1,0 +1,17 @@
+command: pnpm --filter @agentis-labs/cli exec vitest run test/codex.test.ts -t "classifies a protocol quota failure"
+cwd: /workspace
+node: v24.20.0
+sha: 71cccf2d11ce659840a9e9fba1f9757bc761fd69
+date: 2026-09-08T22:21:37Z
+-----
+
+ RUN  v3.2.4 /workspace/packages/cli
+
+ ✓ test/codex.test.ts (9 tests | 8 skipped) 119ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 8 skipped (9)
+   Start at  22:21:37
+   Duration  579ms (transform 114ms, setup 0ms, collect 324ms, tests 119ms, environment 0ms, prepare 46ms)
+
+exit: 0

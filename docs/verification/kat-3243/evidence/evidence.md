@@ -17,7 +17,7 @@ Git commit: 3c76c681ecd1be59789311d3fb3dd7ab3d555bfe
 - Pass: Capabilities and blocking decisions - Both emitted blocking questions and resumed to Blue. Claude rejected a full plan through AskUserQuestion and returned REJECTED without execution. Codex retained native plan output; dedicated blocking plan approval remains explicitly unavailable. MCP and attachment gaps are typed.
 - Pass: Typed unavailable states and isolation - Public fixtures cover unknown providers and unsupported operations. Live missing scoped authentication fails without an artifact; it is a launcher failure, not a native authentication response.
 - Pass: Separate identifiers and deduplicated history - Both text and tool-bearing sessions loaded with stable provider IDs, messages and one artifact. Repeated Codex load was stable. Canceled Claude history reconciliation has public regression coverage without replaying ownership/output.
-- Pass: Decisions, cancellation and provider failures - Both live allow, deny, input, cancel and load cases passed. Missing-auth evidence is live; quota and crash handling use deterministic protocol fixtures. No real account quota was exhausted.
+- Pass: Decisions, cancellation and provider failures - Live allow, deny, input, cancel, and load passed on both selected providers. Claude missing-auth is live. Codex missing-auth remains the dirty `5e80f20` receipt. Claude quota uses the existing stub fixture. Codex quota uses the KAT-3302 deterministic protocol fixture at SHA `71cccf2d11ce659840a9e9fba1f9757bc761fd69`. Crash handling still uses deterministic fixtures. No real account quota was exhausted.
 - Pass: Bounded accepted specialist handoff - Live acceptance transferred ownership once, returned the exact attributed draft to the originating thread, refused duplicate dispatch and loaded without duplication. Native handoff tools are structurally absent. Rejection, timeout and stale-event handling have public fixture coverage.
 - Pass: Concurrency, limits and stop-all - Both providers waited on separate native approvals. Limit bypass was rejected; stop-all canceled both, refused late approvals with no effects, and cleaned up without artifacts.
 - Pass: Malformed fixtures and mandatory real proof - 96 tests pass, covering malformed/error and lifecycle cases, alongside the selected providers’ live workflows and combined handoff/concurrency proof.
@@ -61,6 +61,7 @@ Git commit: 3c76c681ecd1be59789311d3fb3dd7ab3d555bfe
 - `docs/verification/kat-3243/evidence/responses/schema0.5-preservation.json` - Recorded receipt; historical and current evidence distinguished in README.
 - `docs/verification/kat-3243/evidence/responses/live-handoff-conformance-cursor-historical.json` - Recorded receipt; historical and current evidence distinguished in README.
 - `docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json` - Recorded receipt; historical and current evidence distinguished in README.
+- `docs/verification/kat-3243/evidence/responses/codex-quota-protocol-fixture.json` - Deterministic Codex quota fixture for KAT-3302. Accepted `turn/start`, then failed `turn/completed` with `usageLimitExceeded`. Typed `quota` at SHA `71cccf2d11ce659840a9e9fba1f9757bc761fd69`. Not a live billing receipt.
 
 ## Commands
 - Exit 0: `"node" "docs/verification/kat-3243/evidence/network-probe.mjs" "/Users/gannonhall/.agentis/kat-3243-validation"` -> `docs/verification/kat-3243/evidence/logs/provider-network.log`
@@ -94,10 +95,13 @@ Git commit: 3c76c681ecd1be59789311d3fb3dd7ab3d555bfe
 - Exit 0: `"node" "scripts/live-provider-conformance.mjs" "/Users/gannonhall/.agentis/kat-3243-validation-v3" "mara" "smoke" "allow" "deny" "plan" "input" "cancel"` -> `docs/verification/kat-3243/evidence/logs/codex-replacement-live.log`
 - Exit 0: `"node" "scripts/live-provider-conformance.mjs" "/Users/gannonhall/.agentis/kat-3243-claude-no-auth-v5" "ivo" "no-auth"` -> `docs/verification/kat-3243/evidence/logs/claude-missing-auth.log`
 - Exit 0: `"node" "scripts/live-handoff-conformance.mjs" "/Users/gannonhall/.agentis/kat-3243-validation-v3"` -> `docs/verification/kat-3243/evidence/logs/claude-codex-handoff-concurrency.log`
+- Exit 0: `"pnpm" "--filter" "@agentis-labs/cli" "exec" "vitest" "run" "test/codex.test.ts" "-t" "classifies a protocol quota failure"` -> `docs/verification/kat-3243/evidence/logs/codex-quota-protocol-fixture.log`
 
 ## Notes
 - Current selection is Codex plus Claude SDK; all nine Build slices pass. Cursor failure receipts are historical and remain rejected.
-- Live receipts identify exact source and fixtureMode=false. Quota/crash/malformed protocol, rejection/timeout and stale events use deterministic fixtures; no real account quota was exhausted.
+- Live receipts identify exact source and fixtureMode=false. Those live allow, deny, input, cancel, load, and handoff receipts stay equivalent to merged `edd5ad07` (PR head `5415f5df`). They were not re-run on this follow-up.
+- Claude quota and crash remain deterministic stub fixtures. Codex quota is the KAT-3302 protocol fixture (`fixtureMode=true`, SHA `71cccf2d11ce659840a9e9fba1f9757bc761fd69`). No real account quota was exhausted.
+- Codex missing-auth remains dirty `5e80f20` and is an explicit KAT-3247 limit.
 - Claude plan rejection uses AskUserQuestion; dedicated native plan approval and unsupported MCP/attachments remain unavailable.
 - Provision command produced no stdout; its output_path records the captured exit status. Product image identity is recorded separately.
 - Stop-all is latched on the final synthetic dataset. Earlier schema bytes were archived without product migration or credential replacement.

@@ -197,6 +197,11 @@
       "type": "response",
       "path": "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
       "description": "Recorded receipt; historical and current evidence distinguished in README."
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/kat-3243/evidence/responses/codex-quota-protocol-fixture.json",
+      "description": "Deterministic Codex quota fixture for KAT-3302. Accepted turn/start, then failed turn/completed with usageLimitExceeded. Typed quota at SHA 71cccf2d11ce659840a9e9fba1f9757bc761fd69. Not a live billing receipt."
     }
   ],
   "commands": [
@@ -696,6 +701,27 @@
       "output_path": "docs/verification/kat-3243/evidence/logs/claude-codex-handoff-concurrency.log",
       "exit_code_path": "docs/verification/kat-3243/evidence/logs/claude-codex-handoff-concurrency.exit",
       "timed_out": false
+    },
+    {
+      "kind": "contract",
+      "command": "\"pnpm\" \"--filter\" \"@agentis-labs/cli\" \"exec\" \"vitest\" \"run\" \"test/codex.test.ts\" \"-t\" \"classifies a protocol quota failure\"",
+      "argv": [
+        "pnpm",
+        "--filter",
+        "@agentis-labs/cli",
+        "exec",
+        "vitest",
+        "run",
+        "test/codex.test.ts",
+        "-t",
+        "classifies a protocol quota failure"
+      ],
+      "name": "codex-quota-protocol-fixture",
+      "cwd": "/workspace",
+      "exit_code": 0,
+      "output_path": "docs/verification/kat-3243/evidence/logs/codex-quota-protocol-fixture.log",
+      "exit_code_path": "docs/verification/kat-3243/evidence/logs/codex-quota-protocol-fixture.exit",
+      "timed_out": false
     }
   ],
   "slices": [
@@ -768,10 +794,12 @@
       "id": "AC6",
       "name": "Decisions, cancellation and provider failures",
       "result": "Pass",
-      "summary": "Both live allow, deny, input, cancel and load cases passed. Missing-auth evidence is live; quota and crash handling use deterministic protocol fixtures. No real account quota was exhausted.",
+      "summary": "Live allow, deny, input, cancel, and load passed on both selected providers. Claude missing-auth is live. Codex missing-auth remains dirty 5e80f20. Claude quota uses the existing stub fixture. Codex quota uses the KAT-3302 deterministic protocol fixture at SHA 71cccf2d11ce659840a9e9fba1f9757bc761fd69. Crash handling still uses deterministic fixtures. No real account quota was exhausted.",
       "evidence": [
         "docs/verification/kat-3243/README.md",
         "docs/verification/kat-3243/evidence/logs/claude-final-checks.log",
+        "docs/verification/kat-3243/evidence/logs/codex-quota-protocol-fixture.log",
+        "docs/verification/kat-3243/evidence/responses/codex-quota-protocol-fixture.json",
         "docs/verification/kat-3243/evidence/responses/provider-conformance-ivo-smoke-allow-deny-plan-input-cancel.json",
         "docs/verification/kat-3243/evidence/responses/provider-conformance-mara-smoke-allow-deny-plan-input-cancel.json",
         "docs/verification/kat-3243/evidence/responses/live-handoff-conformance.json"
@@ -819,7 +847,9 @@
   ],
   "notes": [
     "Current selection is Codex plus Claude SDK; all nine Build slices pass. Cursor failure receipts are historical and remain rejected.",
-    "Live receipts identify exact source and fixtureMode=false. Quota/crash/malformed protocol, rejection/timeout and stale events use deterministic fixtures; no real account quota was exhausted.",
+    "Live receipts identify exact source and fixtureMode=false. Those live allow, deny, input, cancel, load, and handoff receipts stay equivalent to merged edd5ad07 (PR head 5415f5df). They were not re-run on this follow-up.",
+    "Claude quota and crash remain deterministic stub fixtures. Codex quota is the KAT-3302 protocol fixture (fixtureMode=true, SHA 71cccf2d11ce659840a9e9fba1f9757bc761fd69). No real account quota was exhausted.",
+    "Codex missing-auth remains dirty 5e80f20 and is an explicit KAT-3247 limit.",
     "Claude plan rejection uses AskUserQuestion; dedicated native plan approval and unsupported MCP/attachments remain unavailable.",
     "Provision command produced no stdout; its output_path records the captured exit status. Product image identity is recorded separately.",
     "Stop-all is latched on the final synthetic dataset. Earlier schema bytes were archived without product migration or credential replacement."

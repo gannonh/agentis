@@ -105,6 +105,31 @@ const failRun = (input: DriveInput, error: string) => {
   engine.close();
 };
 
+const asErrorText = (error: unknown): string | null => {
+  if (typeof error === "string" && error.trim()) return error;
+  const body = asJson(error);
+  const info =
+    typeof body.codexErrorInfo === "string"
+      ? body.codexErrorInfo
+      : body.codexErrorInfo
+        ? JSON.stringify(body.codexErrorInfo)
+        : "";
+  const message = typeof body.message === "string" ? body.message : "";
+  const text = [info, message].filter(Boolean).join(" ");
+  return text || null;
+};
+
+const noticeFailure = (value: Json): string => {
+  const params = asJson(value.params);
+  const turn = "turn" in value ? asJson(value.turn) : asJson(params.turn);
+  return (
+    asErrorText(value.error) ??
+    asErrorText(turn.error) ??
+    asErrorText(params.error) ??
+    "turn failed"
+  );
+};
+
 // stop() removes the Run container and throws when Docker is unreachable or the container
 // survives; callers run inside child/timer callbacks where an escaped throw kills the daemon.
 const dropSession = (runId: RunId, expected?: Session) => {
@@ -466,6 +491,11 @@ const handleNotice = async (session: Session, input: DriveInput, value: Json) =>
     }
   }
   const turn = "turn" in value ? asJson(value.turn) : asJson(params.turn);
+  if (method === "error") {
+    failRun(input, noticeFailure(value));
+    dropSession(input.runId);
+    return;
+  }
   if (method === "turn/completed" && turn.status === "interrupted") {
     const engine = mutateForEngine(input.store.path);
     engine.fail(input.runId, input.taskId, "interrupted", Date.now());
@@ -474,15 +504,7 @@ const handleNotice = async (session: Session, input: DriveInput, value: Json) =>
     return;
   }
   if (method === "turn/completed" && turn.status === "failed") {
-    const error =
-      typeof turn.error === "string"
-        ? turn.error
-        : typeof params.error === "string"
-          ? params.error
-          : "turn failed";
-    const engine = mutateForEngine(input.store.path);
-    engine.fail(input.runId, input.taskId, error, Date.now());
-    engine.close();
+    failRun(input, noticeFailure(value));
     dropSession(input.runId);
     return;
   }
