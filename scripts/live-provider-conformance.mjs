@@ -7,6 +7,12 @@ import { randomUUID } from "node:crypto";
 const [dataRoot, bot, ...cases] = process.argv.slice(2);
 if (!dataRoot || !["mara", "ivo"].includes(bot) || !cases.length)
   throw new Error("Pass data root, mara|ivo, and cases");
+if (
+  process.env.AGENTIS_CODEX_STUB ||
+  process.env.AGENTIS_CLAUDE_STUB ||
+  process.env.AGENTIS_TEST_DOCKER_LOG
+)
+  throw new Error("Live conformance refuses fixture configuration");
 const allocator = createServer();
 await new Promise((done) => allocator.listen(0, "127.0.0.1", done));
 const endpoint = `http://127.0.0.1:${allocator.address().port}`;
