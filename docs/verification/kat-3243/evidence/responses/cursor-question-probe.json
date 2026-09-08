@@ -1,0 +1,155 @@
+{
+  "kind": "disposable-protocol-probe-not-product-acceptance",
+  "startedAt": "2026-09-07T19:38:09.514Z",
+  "root": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3243-cursor-live-SBlqs9",
+  "events": [
+    {
+      "phase": "initialize",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:14.117Z"
+    },
+    {
+      "phase": "question-agent",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:14.984Z"
+    },
+    {
+      "phase": "question-agent",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:19.732Z"
+    },
+    {
+      "phase": "question-agent",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:19.733Z"
+    },
+    {
+      "phase": "question-agent",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:19.733Z"
+    },
+    {
+      "phase": "question-agent",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:19.734Z"
+    },
+    {
+      "phase": "question-agent",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:19.735Z"
+    },
+    {
+      "phase": "question-agent",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:19.737Z"
+    },
+    {
+      "phase": "question-agent",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:19.775Z"
+    },
+    {
+      "phase": "question-agent",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:19.776Z"
+    },
+    {
+      "phase": "question-agent",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:19.776Z"
+    },
+    {
+      "phase": "question-agent",
+      "method": "session/update",
+      "at": "2026-09-07T19:38:19.777Z"
+    }
+  ],
+  "cases": [
+    {
+      "phase": "question-agent",
+      "result": {
+        "stopReason": "end_turn"
+      },
+      "text": "Which recipient do you prefer: Alice or Bob?"
+    }
+  ],
+  "capabilities": {
+    "loadSession": true,
+    "mcpCapabilities": {
+      "http": true,
+      "sse": true
+    },
+    "promptCapabilities": {
+      "audio": false,
+      "embeddedContext": false,
+      "image": true
+    },
+    "sessionCapabilities": {
+      "list": {}
+    }
+  },
+  "modelIds": [
+    "default[]",
+    "grok-4.6[effort=high,fast=true]",
+    "composer-2.5[fast=true]",
+    "claude-opus-5[thinking=true,context=300k,effort=high,fast=false]",
+    "claude-opus-4-8[thinking=true,context=300k,effort=high,fast=false]",
+    "gpt-5.6-sol[context=272k,reasoning=medium,fast=false]",
+    "gpt-5.5[context=272k,reasoning=medium,fast=false]",
+    "claude-fable-5-1[thinking=true,context=300k,effort=high]",
+    "claude-fable-5[thinking=true,context=300k,effort=high]",
+    "grok-4.5[effort=high,fast=true]",
+    "gemini-3.8-flash[reasoning_effort=high]",
+    "gemini-3.7-flash[effort=high]",
+    "gpt-5.6-terra[context=272k,reasoning=medium,fast=false]",
+    "claude-sonnet-5[thinking=true,context=300k,effort=high]",
+    "claude-sonnet-4-6[thinking=true,context=200k,effort=medium]",
+    "gpt-5.3-codex[reasoning=medium,fast=false]",
+    "claude-opus-4-7[thinking=true,context=300k,effort=xhigh,fast=false]",
+    "gpt-5.4[context=272k,reasoning=medium,fast=false]",
+    "claude-opus-4-6[thinking=true,context=200k,effort=high]",
+    "claude-opus-4-5[thinking=true]",
+    "gpt-5.2[reasoning=medium,fast=false]",
+    "gpt-5.6-luna[context=272k,reasoning=medium,fast=false]",
+    "gemini-3.6-flash[effort=high]",
+    "gemini-3.1-pro[]",
+    "gpt-5.4-mini[reasoning=medium]",
+    "gpt-5.4-nano[reasoning=medium]",
+    "claude-haiku-4-5[thinking=true]",
+    "claude-sonnet-4-5[thinking=true,context=200k]",
+    "gpt-5.1[reasoning=medium]",
+    "gemini-3-flash[]",
+    "gemini-3.5-flash[]",
+    "claude-sonnet-4[thinking=false,context=200k]",
+    "gpt-5-mini[]",
+    "gemini-2.5-flash[]",
+    "kimi-k3[reasoning=max]",
+    "kimi-k2.7-code[]",
+    "glm-5.2[reasoning=high]"
+  ],
+  "stderrBytes": 0,
+  "egress": [
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT registry.npmjs.org:443 TCP_DENIED",
+    "CONNECT registry.npmjs.org:443 TCP_DENIED",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT agentn.global.api5.cursor.sh:443 TCP_TUNNEL"
+  ]
+}

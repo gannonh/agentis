@@ -1,0 +1,15 @@
+$ "pnpm" "build"
+cwd: /Users/gannonhall/.codex/worktrees/9c04/agentis
+started_at: 2026-09-07T20:43:24.242Z
+
+
+> agentis@2.0.0 build /Users/gannonhall/.codex/worktrees/9c04/agentis
+> pnpm --filter @agentis-labs/cli build
+
+
+> @agentis-labs/cli@2.0.0 build /Users/gannonhall/.codex/worktrees/9c04/agentis/packages/cli
+> tsc -p tsconfig.build.json
+
+
+exit_code: 0
+finished_at: 2026-09-07T20:43:25.050Z

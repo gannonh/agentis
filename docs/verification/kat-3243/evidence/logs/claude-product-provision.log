@@ -1,0 +1,7 @@
+$ "node" "packages/cli/dist/bin.js" "provider" "provision" "--provider" "claude" "--data-root" "/Users/gannonhall/.agentis/kat-3243-validation-v3"
+cwd: /Users/gannonhall/.codex/worktrees/9c04/agentis
+started_at: 2026-09-07T22:03:58.907Z
+
+
+exit_code: 0
+finished_at: 2026-09-07T22:04:17.652Z

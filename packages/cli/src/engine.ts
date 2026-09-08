@@ -1,7 +1,15 @@
+import {
+  spawnClaude,
+  resolveClaudeApproval,
+  answerClaudeInput,
+  interruptClaude,
+  interruptAllClaude,
+} from "./claude.js";
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { Effect } from "effect";
+import { writeScratchFile } from "./scratch-file.js";
 import { mutateForEngine, type Store } from "./store.js";
 import type {
   Command,
@@ -24,14 +32,16 @@ export type DriveInput = {
   readonly runId: RunId;
   readonly taskId: TaskId;
   readonly fixture: FixtureKind | null;
-  readonly provider: "fake" | "codex";
+  readonly provider: "fake" | "codex" | "claude";
   readonly executionBoundary: typeof ExecutionBoundary.Type;
   readonly workspace: string;
   readonly nowMs: number;
   readonly brief: string;
+  readonly loadSession?: boolean;
 };
 
 export const driveAfterCommit = (input: DriveInput): Effect.Effect<void, Error> => {
+  if (input.provider === "claude") return spawnClaude(input);
   if (input.provider === "codex") {
     return spawnCodex(input);
   }
@@ -42,11 +52,36 @@ export const applyReceiptEffects = async (input: {
   readonly store: Store;
   readonly receipt: CommandReceipt;
   readonly command: Command;
-  readonly provider: "fake" | "codex";
+  readonly provider: "fake" | "codex" | "claude";
   readonly executionBoundary: typeof ExecutionBoundary.Type;
   readonly nowMs: number;
 }): Promise<void> => {
-  const { receipt, store, provider, executionBoundary, nowMs, command } = input;
+  const { receipt, store, executionBoundary, nowMs, command } = input;
+  const initial = await Effect.runPromise(store.snapshot());
+  const selected = initial.runs.find((run) => run.id === receipt.runId);
+  const provider = selected?.frozen.provider ?? input.provider;
+  if (
+    receipt.accepted &&
+    !receipt.replayed &&
+    receipt.effects.includes("load_session") &&
+    selected
+  ) {
+    await Effect.runPromise(
+      driveAfterCommit({
+        store,
+        runId: selected.id,
+        taskId: selected.taskId,
+        fixture: selected.fixture,
+        provider: selected.frozen.provider,
+        executionBoundary: selected.frozen.executionBoundary,
+        workspace: selected.frozen.workspaceId,
+        nowMs,
+        brief: initial.tasks.find((task) => task.id === selected.taskId)?.brief ?? "",
+        loadSession: true,
+      }),
+    ).catch(() => undefined);
+    return;
+  }
   if (
     receipt.accepted &&
     !receipt.replayed &&
@@ -82,7 +117,9 @@ export const applyReceiptEffects = async (input: {
     receipt.runId &&
     receipt.taskId
   ) {
-    if (provider === "codex") {
+    if (provider === "claude") {
+      await resolveClaudeApproval(receipt.runId, "allowed");
+    } else if (provider === "codex") {
       resolveCodexApproval(receipt.runId, "allowed");
     } else {
       const snapshot = await Effect.runPromise(store.snapshot());
@@ -106,7 +143,8 @@ export const applyReceiptEffects = async (input: {
     }
   }
   if (receipt.accepted && receipt.effects.includes("reject_tool") && receipt.runId) {
-    resolveCodexApproval(receipt.runId, "denied");
+    if (provider === "claude") await resolveClaudeApproval(receipt.runId, "denied");
+    else resolveCodexApproval(receipt.runId, "denied");
   }
   if (
     receipt.accepted &&
@@ -114,7 +152,9 @@ export const applyReceiptEffects = async (input: {
     receipt.runId &&
     receipt.taskId
   ) {
-    if (provider === "codex" && command.kind === "answer_input") {
+    if (provider === "claude" && command.kind === "answer_input") {
+      answerClaudeInput(receipt.runId, command.answers);
+    } else if (provider === "codex" && command.kind === "answer_input") {
       answerCodexInput(receipt.runId, command.answers);
     } else {
       const snapshot = await Effect.runPromise(store.snapshot());
@@ -137,10 +177,12 @@ export const applyReceiptEffects = async (input: {
       );
     }
   }
-  if (receipt.accepted && receipt.effects.includes("interrupt_provider")) {
+  if (receipt.effects.includes("interrupt_provider")) {
     if (receipt.runId) {
+      interruptClaude(receipt.runId);
       interruptCodex(receipt.runId, executionBoundary);
     } else {
+      interruptAllClaude();
       interruptAllCodex();
     }
   }
@@ -204,7 +246,7 @@ export const finishInputFake = (input: DriveInput): Effect.Effect<void, Error> =
 const writeArtifact = (engine: ReturnType<typeof mutateForEngine>, input: DriveInput) => {
   const path = join(input.workspace, "hello.md");
   const body = `# ${input.brief}\n`;
-  writeFileSync(path, body, { mode: 0o600 });
+  writeScratchFile(path, body);
   const sha256 = createHash("sha256").update(body).digest("hex");
   engine.complete({
     runId: input.runId,

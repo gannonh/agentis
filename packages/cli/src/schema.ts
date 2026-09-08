@@ -1,4 +1,5 @@
 import { Schema } from "effect";
+import { ProviderState } from "./provider-contract.js";
 
 const brand = <Name extends string>(name: Name) => Schema.String.pipe(Schema.brand(name));
 
@@ -36,7 +37,7 @@ export const ExecutionBoundary = Schema.Literal(
 );
 export type ExecutionBoundary = typeof ExecutionBoundary.Type;
 
-export const ProviderKind = Schema.Literal("fake", "codex");
+export const ProviderKind = Schema.Literal("fake", "codex", "claude");
 export type ProviderKind = typeof ProviderKind.Type;
 
 export const FixtureKind = Schema.Literal("smoke", "allow", "deny", "input", "cancel");
@@ -77,6 +78,8 @@ export const WaitingReason = Schema.Literal(
 export type WaitingReason = typeof WaitingReason.Type;
 
 export const FrozenConfig = Schema.Struct({
+  bot: Schema.Literal("mara", "ivo"),
+  mode: Schema.Literal("agent", "plan"),
   provider: ProviderKind,
   transport: Schema.String,
   executableVersion: Schema.String,
@@ -93,6 +96,10 @@ export type FrozenConfig = typeof FrozenConfig.Type;
 export const SubmitTask = Schema.Struct({
   kind: Schema.Literal("submit_task"),
   brief: Schema.String,
+  bot: Schema.optional(Schema.String),
+  attachments: Schema.optional(Schema.Array(Schema.Unknown)),
+  mcpServers: Schema.optional(Schema.Array(Schema.Unknown)),
+  mode: Schema.optional(Schema.Literal("agent", "plan")),
   fixture: Schema.optional(FixtureKind),
 });
 export const ResolveApproval = Schema.Struct({
@@ -112,7 +119,35 @@ export const CancelRun = Schema.Struct({
 export const StopAll = Schema.Struct({
   kind: Schema.Literal("stop_all"),
 });
-export const Command = Schema.Union(SubmitTask, ResolveApproval, AnswerInput, CancelRun, StopAll);
+export const LoadSession = Schema.Struct({ kind: Schema.Literal("load_session"), runId: RunId });
+export const ProposeHandoff = Schema.Struct({
+  kind: Schema.Literal("propose_handoff"),
+  sourceRunId: RunId,
+  recipient: Schema.Literal("ivo"),
+  context: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(16000)),
+});
+export const HandoffRow = Schema.Struct({
+  id: Schema.String,
+  taskId: TaskId,
+  threadId: ThreadId,
+  sourceRunId: RunId,
+  recipientRunId: RunId,
+  context: Schema.String,
+  state: Schema.Literal("proposed", "accepted", "rejected", "expired"),
+  expiresAt: Schema.Number,
+  grants: Schema.Literal("draft_only"),
+  onwardDelegation: Schema.Literal(false),
+});
+export type HandoffRow = typeof HandoffRow.Type;
+export const Command = Schema.Union(
+  SubmitTask,
+  ProposeHandoff,
+  ResolveApproval,
+  AnswerInput,
+  CancelRun,
+  StopAll,
+  LoadSession,
+);
 export type Command = typeof Command.Type;
 
 export const CommandRequest = Schema.Struct({
@@ -126,6 +161,8 @@ export const CommandReceipt = Schema.Struct({
   replayed: Schema.Boolean,
   accepted: Schema.Boolean,
   error: Schema.optional(Schema.String),
+  errorCode: Schema.optional(Schema.Literal("unsupported-provider", "unsupported-capability")),
+  handoffId: Schema.optional(Schema.String),
   taskId: Schema.optional(TaskId),
   runId: Schema.optional(RunId),
   threadId: Schema.optional(ThreadId),
@@ -169,6 +206,7 @@ export const RunRow = Schema.Struct({
   status: RunStatus,
   waitingReason: WaitingReason,
   frozen: FrozenConfig,
+  providerState: ProviderState,
   providerSessionId: Schema.NullOr(Schema.String),
   fixture: Schema.NullOr(FixtureKind),
   actionCount: Schema.Number,
@@ -214,6 +252,7 @@ export const Snapshot = Schema.Struct({
   schemaId: Schema.String,
   stopAll: Schema.Boolean,
   tasks: Schema.Array(TaskRow),
+  handoffs: Schema.Array(HandoffRow),
   runs: Schema.Array(RunRow),
   pending: Schema.Array(PendingActionRow),
   artifacts: Schema.Array(ArtifactRow),

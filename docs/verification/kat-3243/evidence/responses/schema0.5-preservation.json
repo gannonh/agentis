@@ -1,0 +1,21 @@
+{
+  "recordedAt": "2026-09-07T22:04:46.787Z",
+  "schemaRefusalExit": 1,
+  "output": "unsupported schema agentis.v2.gate0.4; refusing to open or migrate\n",
+  "archive": "/Users/gannonhall/.agentis/kat-3243-validation-v3/verification-archive/gate0.4-1788818686785",
+  "files": [
+    {
+      "name": "state.sqlite",
+      "sha256": "0967e6a02dddddef1a41990bbf0f587f1ad0f13df5036e5cab6d5d694bfd7ff0"
+    },
+    {
+      "name": "state.sqlite-wal",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "state.sqlite-shm",
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    }
+  ],
+  "purpose": "Preserve synthetic gate0.4 verification state before fresh gate0.5 dataset; provider credential volumes retained"
+}

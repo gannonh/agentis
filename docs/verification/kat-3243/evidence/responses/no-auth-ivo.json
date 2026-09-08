@@ -1,0 +1,107 @@
+{
+  "timestamp": "2026-09-07T20:12:27.132Z",
+  "receipt": {
+    "commandId": "c57624d5-e035-4f0b-b9c6-eb4a1eae3379",
+    "replayed": false,
+    "accepted": true,
+    "taskId": "aeebc2a5-3d7c-436e-b039-041bcaa5af1f",
+    "runId": "0ec22678-0068-4e74-bb43-23e73d224f97",
+    "threadId": "49ab9d6c-b11c-4717-ae2d-8ef2651c7628",
+    "effects": [
+      "launch"
+    ]
+  },
+  "run": {
+    "id": "0ec22678-0068-4e74-bb43-23e73d224f97",
+    "taskId": "aeebc2a5-3d7c-436e-b039-041bcaa5af1f",
+    "status": "failed",
+    "waitingReason": "none",
+    "frozen": {
+      "bot": "ivo",
+      "mode": "agent",
+      "provider": "cursor",
+      "transport": "acp-v1-jsonl-stdio",
+      "executableVersion": "2026.09.02-c22c1a3",
+      "model": "gpt-5.6-sol[context=272k,reasoning=medium,fast=false]",
+      "executionBoundary": "docker-desktop-run-container",
+      "authMode": "api-key",
+      "workspaceId": "/Users/gannonhall/.agentis/kat-3243-no-auth/scratch/runs/0ec22678-0068-4e74-bb43-23e73d224f97",
+      "deadlineMs": 900000,
+      "actionBudget": 20
+    },
+    "providerState": {
+      "loadStatus": "idle",
+      "capabilities": [
+        {
+          "name": "session-loading",
+          "operation": "available",
+          "state": "negotiated",
+          "reason": "advertised"
+        },
+        {
+          "name": "mcp-http",
+          "operation": "unavailable",
+          "state": "negotiated",
+          "reason": "advertised"
+        },
+        {
+          "name": "mcp-sse",
+          "operation": "unavailable",
+          "state": "negotiated",
+          "reason": "advertised"
+        },
+        {
+          "name": "images",
+          "operation": "unavailable",
+          "state": "negotiated",
+          "reason": "advertised"
+        },
+        {
+          "name": "audio",
+          "operation": "unavailable",
+          "state": "unavailable",
+          "reason": "not-advertised"
+        },
+        {
+          "name": "embedded-context",
+          "operation": "unavailable",
+          "state": "unavailable",
+          "reason": "not-advertised"
+        },
+        {
+          "name": "permissions",
+          "operation": "available",
+          "state": "documented",
+          "reason": "documented-unproven"
+        },
+        {
+          "name": "questions",
+          "operation": "available",
+          "state": "documented",
+          "reason": "documented-unproven"
+        },
+        {
+          "name": "plans",
+          "operation": "available",
+          "state": "documented",
+          "reason": "documented-unproven"
+        },
+        {
+          "name": "usage",
+          "operation": "unavailable",
+          "state": "documented",
+          "reason": "documented-unproven"
+        }
+      ],
+      "history": [],
+      "pendingPrompt": null,
+      "failureDetail": "auth-unavailable",
+      "failure": "auth-unavailable"
+    },
+    "providerSessionId": null,
+    "fixture": null,
+    "actionCount": 0,
+    "deadlineAt": 1788812844635
+  },
+  "body": null
+}

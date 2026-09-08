@@ -1,0 +1,12 @@
+{
+  "status": "OFFLINE_SETUP_PASS",
+  "inferenceStarted": false,
+  "imageId": "sha256:70c567a6f2e2f5ba06c098a827a86ea95353d34ae92ba9b48ef351b131f5fa5c",
+  "sdk": "0.3.263",
+  "npmIntegrity": "sha512-0QWoHgWWlSmgXfEqZRbVYRoXT9p4tx/yKaZ4eLJ8l1MR65SIvMGR+cd5ZXUpGYZpj9RzbYiYU9LoFg90mdIjmw==",
+  "nativeVersion": "2.1.263 (Claude Code)",
+  "files": {
+    "probe.mjs": "8056d1889dab43063d1341cc9de39470e0d1ff0f9e42de7d997e899fc5947317",
+    "run.mjs": "84335afa146f6c31bcdedc62cacb4240e5df18c3a06cdb245b567f9b362a7dcc"
+  }
+}

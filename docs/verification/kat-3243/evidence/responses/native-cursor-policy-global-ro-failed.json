@@ -1,0 +1,27 @@
+{
+  "kind": "authenticated native policy probe through product container helper; not full handoff acceptance",
+  "startedAt": "2026-09-07T20:33:08.780Z",
+  "runId": "policy-6300ec3e-04fb-44bf-ba90-2c0350426a57",
+  "cases": [],
+  "updates": [],
+  "permissionRequests": 0,
+  "capabilities": {
+    "loadSession": true,
+    "mcpCapabilities": {
+      "http": true,
+      "sse": true
+    },
+    "promptCapabilities": {
+      "audio": false,
+      "embeddedContext": false,
+      "image": true
+    },
+    "sessionCapabilities": {
+      "list": {}
+    }
+  },
+  "failedPhase": "session/new",
+  "error": "{\"code\":-32603,\"message\":\"Internal error\",\"data\":{\"details\":\"ENOENT: no such file or directory, mkdir '/agentis-cursor-policy/acp-sessions'\"}}",
+  "stderrBytes": 0,
+  "forbiddenFileExists": false
+}

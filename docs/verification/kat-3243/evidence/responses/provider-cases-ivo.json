@@ -1,0 +1,75 @@
+{
+  "recordedAt": "2026-09-07T19:58:30.792Z",
+  "bot": "ivo",
+  "results": [
+    {
+      "case": "allow",
+      "startedAt": "2026-09-07T19:57:43.873Z",
+      "status": "PASS",
+      "runId": "d301b016-0333-4049-80ec-ac2535f31312",
+      "taskId": "0b0a2daf-17ed-4e9f-ba47-d22a26ea17c8",
+      "threadId": "c612beff-4e05-433b-bfe7-3053bcd0c1ab",
+      "pendingPrompt": "{\"sessionId\":\"0ed00d5b-7f58-4544-ad91-10a659fd6f1a\",\"toolCall\":{\"toolCallId\":\"call_WHsOqNQPJSRJCjEzvebjFAz4\\nfc_0ffd4e83c62b63f8016a9f1741bf1487d1b0790265917145d5\",\"kind\":\"execute\",\"status\":\"pending\",\"title\":\"`node -e \\\"console.log(3243)\\\"`\",\"content\":[{\"content\":{\"text\":\"Not in allowlist: node\",\"type\":\"text\"},\"type\":\"content\"}]},\"options\":[{\"optionId\":\"allow-once\",\"name\":\"Allow once\",\"kind\":\"allow_once\"},{\"optionId\":\"allow-always\",\"name\":\"Allow always\",\"kind\":\"allow_always\"},{\"optionId\":\"reject-once\",\"name\":\"Reject\",\"kind\":\"reject_once\"}]}",
+      "approvalId": "cfa56031-e588-4311-964f-fba20c772ffb",
+      "runStatus": "succeeded",
+      "providerSessionId": "0ed00d5b-7f58-4544-ad91-10a659fd6f1a",
+      "failure": null,
+      "artifact": {
+        "id": "9c812af4-271e-4a90-936b-a71c5861c671",
+        "taskId": "0b0a2daf-17ed-4e9f-ba47-d22a26ea17c8",
+        "runId": "d301b016-0333-4049-80ec-ac2535f31312",
+        "author": "ivo",
+        "source": "cursor",
+        "mediaType": "text/markdown",
+        "sha256": "46008e02d0ac39b1a34c8b47375f3e23cdbccfcc06d833f972131f874558bfe2",
+        "byteSize": 4,
+        "path": "/Users/gannonhall/.agentis/kat-3243-validation-v3/scratch/runs/d301b016-0333-4049-80ec-ac2535f31312/hello.md"
+      },
+      "body": "3243",
+      "cleaned": true
+    },
+    {
+      "case": "deny",
+      "startedAt": "2026-09-07T19:57:58.399Z",
+      "status": "PASS",
+      "runId": "7147fb7d-c7c0-4780-965b-238efb463ad5",
+      "taskId": "733acb90-4aec-45df-9e34-faf5c02721a6",
+      "threadId": "0adcd825-eac7-49af-bb44-a978e485835c",
+      "pendingPrompt": "{\"sessionId\":\"35a1c5e9-4750-4967-9d35-411a646bf6bb\",\"toolCall\":{\"toolCallId\":\"call_KmeUau3YGgtbgnMOp3vmoMqz\\nfc_0d90350e50070d5e016a9f1750b98087d1811f641f1d60454f\",\"kind\":\"execute\",\"status\":\"pending\",\"title\":\"`node -e \\\"console.log(3243)\\\"`\",\"content\":[{\"content\":{\"text\":\"Not in allowlist: node\",\"type\":\"text\"},\"type\":\"content\"}]},\"options\":[{\"optionId\":\"allow-once\",\"name\":\"Allow once\",\"kind\":\"allow_once\"},{\"optionId\":\"allow-always\",\"name\":\"Allow always\",\"kind\":\"allow_always\"},{\"optionId\":\"reject-once\",\"name\":\"Reject\",\"kind\":\"reject_once\"}]}",
+      "approvalId": "c5172360-123f-42b9-a3b8-3c37ffe08dc8",
+      "runStatus": "failed",
+      "providerSessionId": "35a1c5e9-4750-4967-9d35-411a646bf6bb",
+      "failure": null,
+      "artifact": null,
+      "cleaned": true
+    },
+    {
+      "case": "plan",
+      "startedAt": "2026-09-07T19:58:10.828Z",
+      "status": "PASS",
+      "runId": "d3bf1c47-2b86-481c-b91e-494fe522da79",
+      "taskId": "56cc9cfd-bd72-4dbb-bd3f-07cd6054b255",
+      "threadId": "dfc58f47-286c-4b9b-b91a-aca88a61fa1c",
+      "pendingPrompt": "{\"name\":\"Draft Greeting\",\"overview\":\"Draft a concise, friendly greeting after explicit approval.\",\"isProject\":false,\"phases\":[],\"toolCallId\":\"call_KZWsw4JRlFmJXj2UUh5YOQSw\\nfc_03c563396e29ede5016a9f175ce08087d1a5279318c1b04a1f\",\"plan\":\"# Draft a Greeting\\n\\n1. Write a concise, friendly greeting for the user. Do not perform any file or system operations.\",\"todos\":[{\"id\":\"draft-greeting\",\"content\":\"Draft a concise, friendly greeting\",\"status\":\"pending\"}]}",
+      "approvalId": "ee0e52ee-6ca0-4ef0-825e-072322815ab6",
+      "runStatus": "failed",
+      "providerSessionId": "945f7cea-0884-4558-9b0e-3a343945ba54",
+      "failure": null,
+      "artifact": null,
+      "cleaned": true
+    },
+    {
+      "case": "cancel",
+      "startedAt": "2026-09-07T19:58:22.992Z",
+      "status": "PASS",
+      "runId": "ad6e72a1-ab02-46a7-b8b7-283e7b4af7be",
+      "taskId": "ee5fd8f9-1eda-4c6c-bf17-37379c0769e8",
+      "threadId": "e4d8b5c3-d773-4bc3-8931-e1c3b45fb1c0",
+      "runStatus": "canceled",
+      "providerSessionId": "0fc0cce8-f351-4087-bbdd-2d68be475327",
+      "failure": null,
+      "artifact": null,
+      "cleaned": true
+    }
+  ]
+}

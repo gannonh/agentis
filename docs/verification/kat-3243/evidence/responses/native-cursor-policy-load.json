@@ -1,0 +1,74 @@
+{
+  "kind": "authenticated native policy probe through product container helper; not full handoff acceptance",
+  "startedAt": "2026-09-07T20:37:07.335Z",
+  "runId": "policy-8bc8e441-5511-48d4-994d-17c89a826b2a",
+  "cases": [],
+  "updates": [
+    {
+      "phase": "session/load",
+      "update": {
+        "sessionUpdate": "tool_call",
+        "toolCallId": "replay-1-0",
+        "title": "Terminal",
+        "kind": "execute",
+        "status": "pending",
+        "rawInput": {}
+      }
+    },
+    {
+      "phase": "session/load",
+      "update": {
+        "sessionUpdate": "tool_call_update",
+        "toolCallId": "replay-1-0",
+        "status": "completed"
+      }
+    },
+    {
+      "phase": "session/load",
+      "update": {
+        "sessionUpdate": "tool_call",
+        "toolCallId": "replay-2-0",
+        "title": "Edit `/workspace/forbidden.txt`",
+        "kind": "edit",
+        "status": "pending",
+        "rawInput": {
+          "path": "/workspace/forbidden.txt"
+        },
+        "locations": [
+          {
+            "path": "/workspace/forbidden.txt"
+          }
+        ]
+      }
+    },
+    {
+      "phase": "session/load",
+      "update": {
+        "sessionUpdate": "tool_call_update",
+        "toolCallId": "replay-2-0",
+        "status": "completed"
+      }
+    }
+  ],
+  "permissionRequests": 0,
+  "capabilities": {
+    "loadSession": true,
+    "mcpCapabilities": {
+      "http": true,
+      "sse": true
+    },
+    "promptCapabilities": {
+      "audio": false,
+      "embeddedContext": false,
+      "image": true
+    },
+    "sessionCapabilities": {
+      "list": {}
+    }
+  },
+  "providerSessionId": "0d3c4648-eef4-42e0-af57-134d61098c88",
+  "loadStatus": "succeeded",
+  "replayedMarker": true,
+  "stderrBytes": 0,
+  "forbiddenFileExists": false
+}

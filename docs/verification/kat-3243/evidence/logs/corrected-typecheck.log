@@ -1,0 +1,15 @@
+$ "pnpm" "typecheck"
+cwd: /Users/gannonhall/.codex/worktrees/9c04/agentis
+started_at: 2026-09-07T21:19:12.492Z
+
+
+> agentis@2.0.0 typecheck /Users/gannonhall/.codex/worktrees/9c04/agentis
+> pnpm --filter @agentis-labs/cli typecheck
+
+
+> @agentis-labs/cli@2.0.0 typecheck /Users/gannonhall/.codex/worktrees/9c04/agentis/packages/cli
+> tsc -p tsconfig.json --noEmit
+
+
+exit_code: 0
+finished_at: 2026-09-07T21:19:13.482Z

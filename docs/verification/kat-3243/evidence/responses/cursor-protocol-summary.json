@@ -1,0 +1,69 @@
+{
+  "kind": "disposable-protocol-probe-not-product-acceptance",
+  "startedAt": "2026-09-07T19:33:38.735Z",
+  "capabilities": {
+    "loadSession": true,
+    "mcpCapabilities": {
+      "http": true,
+      "sse": true
+    },
+    "promptCapabilities": {
+      "audio": false,
+      "embeddedContext": false,
+      "image": true
+    },
+    "sessionCapabilities": {
+      "list": {}
+    }
+  },
+  "selectedModel": "gpt-5.6-sol[context=272k,reasoning=medium,fast=false]",
+  "smoke": {
+    "stopReason": "end_turn",
+    "markerObserved": true
+  },
+  "structuredQuestionObserved": false,
+  "structuredPlanObserved": true,
+  "planRequest": {
+    "toolCallId": "call_2wsuvsF83hFB43oULno2sKG6\nfc_014a8442da8f4aac016a9f11a5f94487d183eacb31b7e2073f",
+    "name": "Scratch Greeting",
+    "overview": "Create a simple scratch greeting only after explicit approval.",
+    "plan": "# Write Scratch Greeting\n\n1. Write a short greeting in a scratch artifact after you explicitly approve this plan. Do not modify existing project files.",
+    "todos": [
+      {
+        "id": "write-greeting",
+        "content": "Write the scratch greeting after plan approval",
+        "status": "pending"
+      }
+    ],
+    "isProject": false,
+    "phases": []
+  },
+  "planDecision": "rejected after 1500ms; no plan execution authorized",
+  "stderrBytes": 0,
+  "egress": [
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT registry.npmjs.org:443 TCP_DENIED",
+    "CONNECT registry.npmjs.org:443 TCP_DENIED",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT api2.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT agentn.global.api5.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT agentn.global.api5.cursor.sh:443 TCP_TUNNEL",
+    "CONNECT agentn.global.api5.cursor.sh:443 TCP_TUNNEL"
+  ],
+  "limit": "Disposable protocol probe; product adapter acceptance still required. Question prompt produced plain text, not a blocking extension."
+}

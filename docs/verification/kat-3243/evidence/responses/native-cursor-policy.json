@@ -1,0 +1,122 @@
+{
+  "kind": "authenticated native policy probe through product container helper; not full handoff acceptance",
+  "startedAt": "2026-09-07T20:34:44.775Z",
+  "runId": "policy-8bc8e441-5511-48d4-994d-17c89a826b2a",
+  "cases": [
+    {
+      "name": "smoke",
+      "result": {
+        "stopReason": "end_turn"
+      },
+      "text": "KAT3243_POLICY_OK"
+    },
+    {
+      "name": "shell",
+      "result": {
+        "stopReason": "end_turn"
+      },
+      "text": "Permission denied: Command blocked by permissions configuration"
+    },
+    {
+      "name": "write",
+      "result": {
+        "stopReason": "end_turn"
+      },
+      "text": "Error: Read permission denied: /workspace/forbidden.txt"
+    }
+  ],
+  "updates": [
+    {
+      "phase": "shell",
+      "update": {
+        "sessionUpdate": "tool_call",
+        "toolCallId": "call_mY3Ty01qIew70GT6f1Z279s6\nfc_052874a68be73fef016a9f1feea84887d1ab9265c13e7ad4f8",
+        "title": "`node -e \"console.log(3243)\"`",
+        "kind": "execute",
+        "status": "pending",
+        "rawInput": {
+          "command": "node -e \"console.log(3243)\""
+        }
+      }
+    },
+    {
+      "phase": "shell",
+      "update": {
+        "sessionUpdate": "tool_call_update",
+        "toolCallId": "call_mY3Ty01qIew70GT6f1Z279s6\nfc_052874a68be73fef016a9f1feea84887d1ab9265c13e7ad4f8",
+        "status": "in_progress"
+      }
+    },
+    {
+      "phase": "shell",
+      "update": {
+        "sessionUpdate": "tool_call_update",
+        "toolCallId": "call_mY3Ty01qIew70GT6f1Z279s6\nfc_052874a68be73fef016a9f1feea84887d1ab9265c13e7ad4f8",
+        "status": "completed"
+      }
+    },
+    {
+      "phase": "write",
+      "update": {
+        "sessionUpdate": "tool_call",
+        "toolCallId": "call_OIoZCEd16dSN1mLzye7fTQVA\nctc_0a758ed337ae58ec016a9f1ff2eeb887d19c091d258da64509",
+        "title": "Edit File",
+        "kind": "edit",
+        "status": "pending",
+        "rawInput": {}
+      }
+    },
+    {
+      "phase": "write",
+      "update": {
+        "sessionUpdate": "tool_call_update",
+        "toolCallId": "call_OIoZCEd16dSN1mLzye7fTQVA\nctc_0a758ed337ae58ec016a9f1ff2eeb887d19c091d258da64509",
+        "title": "Edit `/workspace/forbidden.txt`",
+        "rawInput": {
+          "path": "/workspace/forbidden.txt"
+        },
+        "locations": [
+          {
+            "path": "/workspace/forbidden.txt"
+          }
+        ]
+      }
+    },
+    {
+      "phase": "write",
+      "update": {
+        "sessionUpdate": "tool_call_update",
+        "toolCallId": "call_OIoZCEd16dSN1mLzye7fTQVA\nctc_0a758ed337ae58ec016a9f1ff2eeb887d19c091d258da64509",
+        "status": "in_progress"
+      }
+    },
+    {
+      "phase": "write",
+      "update": {
+        "sessionUpdate": "tool_call_update",
+        "toolCallId": "call_OIoZCEd16dSN1mLzye7fTQVA\nctc_0a758ed337ae58ec016a9f1ff2eeb887d19c091d258da64509",
+        "status": "completed"
+      }
+    }
+  ],
+  "permissionRequests": 0,
+  "capabilities": {
+    "loadSession": true,
+    "mcpCapabilities": {
+      "http": true,
+      "sse": true
+    },
+    "promptCapabilities": {
+      "audio": false,
+      "embeddedContext": false,
+      "image": true
+    },
+    "sessionCapabilities": {
+      "list": {}
+    }
+  },
+  "providerSessionId": "0d3c4648-eef4-42e0-af57-134d61098c88",
+  "modelSelection": "succeeded",
+  "stderrBytes": 0,
+  "forbiddenFileExists": false
+}

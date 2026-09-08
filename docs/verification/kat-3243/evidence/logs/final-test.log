@@ -1,0 +1,48 @@
+$ "pnpm" "test"
+cwd: /Users/gannonhall/.codex/worktrees/9c04/agentis
+started_at: 2026-09-07T20:43:07.427Z
+
+
+> agentis@2.0.0 test /Users/gannonhall/.codex/worktrees/9c04/agentis
+> pnpm --filter @agentis-labs/cli test
+
+
+> @agentis-labs/cli@2.0.0 test /Users/gannonhall/.codex/worktrees/9c04/agentis/packages/cli
+> vitest run
+
+
+ RUN  v3.2.4 /Users/gannonhall/.codex/worktrees/9c04/agentis/packages/cli
+
+ ✓ test/container.test.ts (14 tests) 5619ms
+   ✓ Run containers > runs native device login using only dedicated provider storage and restricted egress  438ms
+   ✓ Run containers > starts live Codex with run-local auth and removes its proxy and internal network  544ms
+   ✓ Run containers > mounts an immutable native deny policy and read-only workspace for handoff  733ms
+   ✓ Run containers > removes the exact Run container when stopped  343ms
+   ✓ Run containers > removes an owned terminal container before restart begins serving  402ms
+   ✓ Run containers > isolates sequential Run mounts and removes both terminal containers  976ms
+   ✓ Run containers > fails only the Run when Docker disappears while the container is active  428ms
+   ✓ Run containers > does not load a session after stop-all during native version preflight  549ms
+ ✓ test/cursor.test.ts (15 tests) 1246ms
+ ✓ test/codex.test.ts (6 tests) 1317ms
+   ✓ codex stub protocol > keeps a successful load retry intact after the crashed attempt timeout  896ms
+ ✓ test/boundary.test.ts (3 tests) 1039ms
+   ✓ boundary > fails closed when Docker Desktop is required and unavailable  1036ms
+ ✓ test/handoff.test.ts (19 tests) 2961ms
+   ✓ bounded handoff > expires a proposal before a late provider accepts without losing the source  442ms
+   ✓ bounded handoff > cancel_run before acceptance retains the coordinator result  453ms
+   ✓ bounded handoff > stop_all before acceptance retains the coordinator result  452ms
+ ✓ test/http.test.ts (2 tests) 78ms
+ ✓ test/store.test.ts (9 tests) 39ms
+ ✓ test/auth.test.ts (1 test) 6ms
+ ✓ test/api.test.ts (1 test) 4ms
+ ✓ test/provider-contract.test.ts (1 test) 3ms
+ ✓ test/cli.test.ts (1 test) 2ms
+
+ Test Files  11 passed (11)
+      Tests  72 passed (72)
+   Start at  13:43:08
+   Duration  15.52s (transform 120ms, setup 0ms, collect 2.01s, tests 12.31s, environment 1ms, prepare 294ms)
+
+
+exit_code: 0
+finished_at: 2026-09-07T20:43:24.169Z

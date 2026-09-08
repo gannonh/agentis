@@ -1,4 +1,11 @@
-import { realpathSync } from "node:fs";
+import {
+  docker,
+  prepareProviderNetwork,
+  providerNetworkEnv,
+  providerVolume,
+  removeProviderNetwork,
+} from "./provider.js";
+import { CODEX_IMAGE } from "./versions.js";
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
 
 const CODEX_CONTAINER_PATH = "/usr/local/bin/codex";
@@ -8,9 +15,11 @@ const RUN_ID_LABEL = "io.agentis.run-id";
 
 const dockerRunBase = (input: {
   readonly workspace?: string;
+  readonly workspaceReadonly?: boolean;
   readonly name?: string;
   readonly runId?: string;
   readonly extraEnv?: Record<string, string>;
+  readonly network?: string;
 }) => {
   const args = [
     "run",
@@ -18,7 +27,7 @@ const dockerRunBase = (input: {
     "-i",
     "--pull=never",
     "--network",
-    "none",
+    input.network ?? "none",
     "--read-only",
     "--user=10001:10001",
     "--cap-drop=ALL",
@@ -45,7 +54,12 @@ const dockerRunBase = (input: {
     );
   }
   if (input.workspace) {
-    args.push("--mount", `type=bind,src=${input.workspace},dst=/workspace`, "-w", "/workspace");
+    args.push(
+      "--mount",
+      `type=bind,src=${input.workspace},dst=/workspace${input.workspaceReadonly ? ",readonly" : ""}`,
+      "-w",
+      "/workspace",
+    );
   }
   for (const [key, value] of Object.entries(input.extraEnv ?? {})) {
     args.push("-e", `${key}=${value}`);
@@ -54,25 +68,6 @@ const dockerRunBase = (input: {
 };
 
 export const runContainerName = (runId: string) => `agentis-run-${runId}`;
-
-export const assertCodexContainerPlatform = (
-  platform: NodeJS.Platform = process.platform,
-): void => {
-  if (platform === "darwin") {
-    throw new Error(
-      "macOS Codex executable cannot run in the Linux Run container; " +
-        "a Linux Codex payload, container-scoped authentication, and provider network access are not provisioned",
-    );
-  }
-};
-
-const resolveCodexBinary = () => {
-  const which = spawnSync("which", ["codex"], { encoding: "utf8" });
-  if (which.status !== 0 || !which.stdout.trim()) {
-    throw new Error("codex not found on PATH");
-  }
-  return realpathSync(which.stdout.trim());
-};
 
 export type RunContainerProcess = {
   readonly child: ChildProcessWithoutNullStreams;
@@ -85,13 +80,13 @@ type ReadonlyBindMount = {
 };
 
 export const removeRunContainer = (runId: string): void => {
-  if (inspectRunContainer(runId) === "absent") {
-    return;
-  }
-  spawnSync("docker", ["rm", "-f", runContainerName(runId)], { stdio: "ignore" });
   if (inspectRunContainer(runId) !== "absent") {
-    throw new Error(`Run container ${runContainerName(runId)} survived removal`);
+    spawnSync("docker", ["rm", "-f", runContainerName(runId)], { stdio: "ignore" });
+    if (inspectRunContainer(runId) !== "absent") {
+      throw new Error(`Run container ${runContainerName(runId)} survived removal`);
+    }
   }
+  removeProviderNetwork(runId);
 };
 
 const inspectRunContainer = (runId: string): "owned" | "absent" => {
@@ -129,18 +124,34 @@ export const spawnInRunContainer = (input: {
   readonly command: readonly string[];
   readonly env?: Record<string, string>;
   readonly readonlyMounts?: readonly ReadonlyBindMount[];
+  readonly image?: string;
+  readonly network?: string;
+  readonly providerAuthVolume?: string;
+  readonly providerHomeVolume?: string;
+  readonly workspaceReadonly?: boolean;
 }): RunContainerProcess => {
   const name = runContainerName(input.runId);
   const args = dockerRunBase({
     workspace: input.workspace,
+    ...(input.workspaceReadonly ? { workspaceReadonly: true } : {}),
     name,
     runId: input.runId,
+    ...(input.network ? { network: input.network } : {}),
     ...(input.env ? { extraEnv: input.env } : {}),
   });
   for (const mount of input.readonlyMounts ?? []) {
     args.push("--mount", `type=bind,src=${mount.source},dst=${mount.destination},readonly`);
   }
-  args.push("node:24-bookworm-slim", ...input.command);
+  if (input.providerAuthVolume) {
+    args.push(
+      "--mount",
+      `type=volume,src=${input.providerAuthVolume},dst=/provider-auth,readonly`,
+      ...providerNetworkEnv,
+    );
+  }
+  if (input.providerHomeVolume)
+    args.push("--mount", `type=volume,src=${input.providerHomeVolume},dst=/provider-home`);
+  args.push(input.image ?? "node:24-bookworm-slim", ...input.command);
   const child = spawn("docker", args, {
     cwd: input.workspace,
     stdio: ["pipe", "pipe", "pipe"],
@@ -160,6 +171,8 @@ export const spawnCodexAppServerInContainer = (input: {
   readonly runId: string;
   readonly workspace: string;
   readonly stub?: string;
+  readonly dataRoot?: string;
+  readonly loadSession?: boolean;
 }): RunContainerProcess => {
   if (input.stub) {
     return spawnInRunContainer({
@@ -178,22 +191,46 @@ export const spawnCodexAppServerInContainer = (input: {
       command: ["node", CODEX_STUB_CONTAINER_PATH],
     });
   }
-  assertCodexContainerPlatform();
-  const codex = resolveCodexBinary();
-  return spawnInRunContainer({
-    runId: input.runId,
-    workspace: input.workspace,
-    readonlyMounts: [{ source: codex, destination: CODEX_CONTAINER_PATH }],
-    command: [CODEX_CONTAINER_PATH, "--disable", "hooks", "app-server", "--listen", "stdio://"],
-  });
+  if (!input.dataRoot) throw new Error("live Codex requires a provider data root");
+  const volume = providerVolume(input.dataRoot);
+  docker(["volume", "inspect", volume]);
+  const homeVolume = `agentis-provider-state-${input.runId}`;
+  docker(["volume", "create", "--label", "io.agentis.managed=provider-state", homeVolume]);
+  const network = prepareProviderNetwork(input.runId);
+  try {
+    return spawnInRunContainer({
+      runId: input.runId,
+      workspace: input.workspace,
+      image: CODEX_IMAGE,
+      network,
+      providerAuthVolume: volume,
+      providerHomeVolume: homeVolume,
+      ...(input.loadSession ? { workspaceReadonly: true } : {}),
+      env: { CODEX_HOME: "/provider-home", HOME: "/provider-home" },
+      command: [
+        "sh",
+        "-ec",
+        'test -s /provider-auth/auth.json || exit 77; mkdir -m 700 -p "$CODEX_HOME"; test -s "$CODEX_HOME/auth.json" || cp /provider-auth/auth.json "$CODEX_HOME/auth.json"; exec "$@"',
+        "agentis-codex",
+        CODEX_CONTAINER_PATH,
+        "-c",
+        'cli_auth_credentials_store="file"',
+        "--disable",
+        "hooks",
+        "app-server",
+        "--listen",
+        "stdio://",
+      ],
+    });
+  } catch (error) {
+    removeProviderNetwork(input.runId);
+    throw error;
+  }
 };
 
 export const readCodexVersionInContainer = async (pin: string) => {
-  assertCodexContainerPlatform();
-  const codex = resolveCodexBinary();
   const args = dockerRunBase({});
-  args.push("--mount", `type=bind,src=${codex},dst=${CODEX_CONTAINER_PATH},readonly`);
-  args.push("node:24-bookworm-slim", CODEX_CONTAINER_PATH, "--version");
+  args.push(CODEX_IMAGE, CODEX_CONTAINER_PATH, "--version");
   const child = spawn("docker", args, { stdio: ["ignore", "pipe", "pipe"] });
   const text = await new Promise<string>((resolve, reject) => {
     let out = "";

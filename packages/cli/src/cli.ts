@@ -1,4 +1,5 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { importClaudeKey, provisionClaude } from "./claude-container.js";
+import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
@@ -7,6 +8,7 @@ import { loadOrCreateOwner } from "./auth.js";
 import { assertBoundary } from "./boundary.js";
 import { startServer } from "./http.js";
 import { newIdempotencyKey } from "./ids.js";
+import { loginProvider, provisionProvider } from "./provider.js";
 import { loadProfile, saveProfile } from "./profile.js";
 import {
   ApprovalId,
@@ -22,9 +24,11 @@ import { launchVerify } from "./verify.js";
 const defaultDataRoot = () => join(homedir(), ...DEFAULT_DATA_ROOT_SEGMENTS);
 
 const usage = `Usage:
+  agentis provider provision|login|import-key [--provider codex|claude] [--data-root DIR]
   agentis serve --endpoint URL [--data-root DIR] [--profile NAME] [--provider fake|codex] [--execution-boundary docker-desktop-run-container|unverified-host-scratch]
   agentis doctor --endpoint URL | --profile NAME [--data-root DIR]
   agentis task submit --endpoint URL --brief TEXT [--fixture smoke|allow|deny|input|cancel]
+  agentis task handoff --endpoint URL --run SOURCE_RUN --brief CONTEXT
   agentis approval allow|deny --endpoint URL --approval ID
   agentis input answer --endpoint URL --run ID --answer KEY=VALUE
   agentis run cancel --endpoint URL --run ID
@@ -97,6 +101,9 @@ export const runCli = async (argv: string[]): Promise<number> => {
       profile: { type: "string" },
       "data-root": { type: "string" },
       provider: { type: "string" },
+      bot: { type: "string" },
+      "key-file": { type: "string" },
+      mode: { type: "string" },
       "execution-boundary": { type: "string" },
       brief: { type: "string" },
       fixture: { type: "string" },
@@ -107,6 +114,24 @@ export const runCli = async (argv: string[]): Promise<number> => {
   });
   const dataRoot =
     typeof values["data-root"] === "string" ? values["data-root"] : defaultDataRoot();
+  if (verb === "provider" && positionals[0] === "provision") {
+    if (values.provider === "claude") {
+      provisionClaude(dataRoot);
+    } else if (!values.provider || values.provider === "codex") provisionProvider(dataRoot);
+    else throw new Error("unsupported provider");
+    return 0;
+  }
+  if (verb === "provider" && positionals[0] === "import-key") {
+    if (values.provider !== "claude") throw new Error("import-key requires --provider claude");
+    if (values["key-file"] && (statSync(values["key-file"]).mode & 0o077) !== 0)
+      throw new Error("key file must be private (0600)");
+    importClaudeKey(dataRoot, readFileSync(values["key-file"] ?? 0, "utf8"));
+    return 0;
+  }
+  if (verb === "provider" && positionals[0] === "login") {
+    loginProvider(dataRoot);
+    return 0;
+  }
   if (verb === "serve") {
     let provider: typeof ProviderKind.Type = "fake";
     let executionBoundary: typeof ExecutionBoundary.Type = "unverified-host-scratch";
@@ -183,11 +208,33 @@ export const runCli = async (argv: string[]): Promise<number> => {
     );
     return health.ok && status.ok ? 0 : 1;
   }
+  if (verb === "session" && positionals[0] === "load") {
+    if (!values.run) throw new Error("--run is required");
+    const result = await commandFetch(control.endpoint, control.dataRoot, {
+      kind: "load_session",
+      runId: Schema.decodeUnknownSync(RunId)(values.run),
+    });
+    process.stdout.write(`${result.body}\n`);
+    return result.status === 200 ? 0 : 1;
+  }
+  if (verb === "task" && positionals[0] === "handoff") {
+    if (!values.run || !values.brief) throw new Error("--run and --brief are required");
+    const result = await commandFetch(control.endpoint, control.dataRoot, {
+      kind: "propose_handoff",
+      sourceRunId: Schema.decodeUnknownSync(RunId)(values.run),
+      recipient: "ivo",
+      context: values.brief,
+    });
+    process.stdout.write(`${result.body}\n`);
+    return result.status === 200 ? 0 : 1;
+  }
   if (verb === "task" && positionals[0] === "submit") {
     if (typeof values.brief !== "string") throw new Error("--brief is required");
     const result = await commandFetch(control.endpoint, control.dataRoot, {
       kind: "submit_task",
       brief: values.brief,
+      ...(typeof values.bot === "string" ? { bot: values.bot } : {}),
+      ...(values.mode === "plan" ? { mode: "plan" as const } : {}),
       ...(typeof values.fixture === "string"
         ? { fixture: Schema.decodeUnknownSync(FixtureKind)(values.fixture) }
         : {}),

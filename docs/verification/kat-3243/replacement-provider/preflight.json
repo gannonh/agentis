@@ -1,0 +1,6 @@
+{
+  "status": "BLOCKED",
+  "reason": "Missing scoped funded ANTHROPIC_API_KEY",
+  "inferenceStarted": false,
+  "recordedAt": "2026-09-07T21:33:34.385Z"
+}

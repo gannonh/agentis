@@ -1,0 +1,13 @@
+{
+  "recordedAt": "2026-09-07T22:06:26.946Z",
+  "sourceCommit": "3c76c681ecd1be59789311d3fb3dd7ab3d555bfe",
+  "image": "sha256:2a091e1cc2804aebfeac6dce858338b86949917ad551f21e15fe53e06611906b",
+  "sdk": "0.3.263",
+  "nativeCli": "2.1.263",
+  "model": "claude-sonnet-5",
+  "effort": "medium",
+  "auth": "Anthropic API key imported via private stdin into scoped Docker volume",
+  "billing": "Anthropic API usage",
+  "supportOwner": "Gannon Hall",
+  "hostFallback": false
+}

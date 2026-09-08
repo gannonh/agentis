@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-09-07T20:11:51.917Z",
+  "receipt": {
+    "commandId": "b98c2c0a-42f7-48e9-91a2-bd6dd4387005",
+    "replayed": false,
+    "accepted": true,
+    "taskId": "cd54a043-a1dd-4ede-ae94-8081d9124a2b",
+    "runId": "f9a5700d-8d05-4b68-a75d-f04c0e5e2545",
+    "threadId": "68907f00-4c67-4af1-b0fa-adc88f379318",
+    "effects": [
+      "launch"
+    ]
+  },
+  "run": {
+    "id": "f9a5700d-8d05-4b68-a75d-f04c0e5e2545",
+    "taskId": "cd54a043-a1dd-4ede-ae94-8081d9124a2b",
+    "status": "failed",
+    "waitingReason": "none",
+    "frozen": {
+      "bot": "mara",
+      "mode": "agent",
+      "provider": "codex",
+      "transport": "app-server-v2-jsonl-stdio",
+      "executableVersion": "0.153.4",
+      "model": "gpt-5.6-sol",
+      "effort": "medium",
+      "executionBoundary": "docker-desktop-run-container",
+      "authMode": "chatgpt-login",
+      "workspaceId": "/Users/gannonhall/.agentis/kat-3243-no-auth/scratch/runs/f9a5700d-8d05-4b68-a75d-f04c0e5e2545",
+      "deadlineMs": 900000,
+      "actionBudget": 20
+    },
+    "providerState": {
+      "loadStatus": "idle",
+      "capabilities": [],
+      "history": [],
+      "pendingPrompt": null,
+      "failure": "crash"
+    },
+    "providerSessionId": null,
+    "fixture": null,
+    "actionCount": 0,
+    "deadlineAt": 1788812809832
+  },
+  "body": null
+}

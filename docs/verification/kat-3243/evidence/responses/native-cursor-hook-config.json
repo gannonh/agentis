@@ -1,0 +1,28 @@
+{
+  "kind": "native pinned Linux hook config loader; no authentication or inference",
+  "runId": "subagent-policy-40fd3a75-12f3-4742-8fb2-bec30ba94f52",
+  "result": {
+    "config": {
+      "errors": [],
+      "configDirs": {
+        "project": "/workspace/.cursor"
+      },
+      "projectHooks": {
+        "version": 1,
+        "hooks": {
+          "subagentStart": [
+            {
+              "command": "/bin/sh .cursor/hooks/deny-native-subagent.sh",
+              "failClosed": true,
+              "timeout": 5
+            }
+          ]
+        }
+      }
+    },
+    "configuredSteps": [
+      "subagentStart"
+    ]
+  },
+  "checkedAt": "2026-09-07T21:20:41.385Z"
+}
