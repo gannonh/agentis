@@ -65,6 +65,7 @@ const statusOf = async (endpoint: URL, token: string) => {
       providerState: {
         loadStatus: string;
         failure: string | null;
+        pendingPrompt: string | null;
         history: string[];
         capabilities: { name: string; operation?: string; reason: string }[];
       };
@@ -147,9 +148,12 @@ describe("codex stub protocol", () => {
         },
       });
       expect(allowed.json.accepted).toBe(true);
-      await waitFor(endpoint, owner.token, (value) =>
+      const allowDone = await waitFor(endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === allow.json.runId && item.status === "succeeded"),
       );
+      expect(
+        allowDone.runs.find((item) => item.id === allow.json.runId)?.providerState.pendingPrompt,
+      ).toBeNull();
 
       const deny = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
@@ -171,9 +175,12 @@ describe("codex stub protocol", () => {
           decision: "denied",
         },
       });
-      await waitFor(endpoint, owner.token, (value) =>
+      const denyDone = await waitFor(endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === deny.json.runId && item.status === "failed"),
       );
+      expect(
+        denyDone.runs.find((item) => item.id === deny.json.runId)?.providerState.pendingPrompt,
+      ).toBeNull();
 
       const input = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
@@ -186,9 +193,12 @@ describe("codex stub protocol", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "answer_input", runId: input.json.runId, answers: { color: "Blue" } },
       });
-      await waitFor(endpoint, owner.token, (value) =>
+      const inputDone = await waitFor(endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === input.json.runId && item.status === "succeeded"),
       );
+      expect(
+        inputDone.runs.find((item) => item.id === input.json.runId)?.providerState.pendingPrompt,
+      ).toBeNull();
 
       const cancel = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),

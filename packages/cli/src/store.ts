@@ -759,6 +759,11 @@ const resolveApproval = (
     { approvalId: approval.id, decision: next, runId: approval.run_id, commandId },
     input.nowMs,
   );
+  run(
+    db,
+    "UPDATE runs SET provider_state=json_set(provider_state,'$.pendingPrompt',null) WHERE id=?",
+    [approval.run_id],
+  );
   if (next === "denied") {
     run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [
       approval.run_id,
@@ -810,7 +815,11 @@ const answerInput = (
       effects: [],
     });
   }
-  run(db, "UPDATE runs SET status = 'running', waiting_reason = 'none' WHERE id = ?", [current.id]);
+  run(
+    db,
+    "UPDATE runs SET status = 'running', waiting_reason = 'none', provider_state=json_set(provider_state,'$.pendingPrompt',null) WHERE id = ?",
+    [current.id],
+  );
   message(db, {
     threadId: current.thread_id,
     taskId: current.task_id,
