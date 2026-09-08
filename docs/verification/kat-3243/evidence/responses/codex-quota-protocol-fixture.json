@@ -1,7 +1,7 @@
 {
-  "recordedAt": "2026-09-08T20:50:19Z",
+  "recordedAt": "2026-09-08T22:21:37Z",
   "fixtureMode": true,
-  "sourceCommit": "18ee190b9c9a9d76948d2ee544c93aa0d72ec833",
+  "sourceCommit": "71cccf2d11ce659840a9e9fba1f9757bc761fd69",
   "productSourceDirty": false,
   "issue": "KAT-3302",
   "closesVerifyGap": "KAT-3243 AC6 Codex quota",
@@ -20,11 +20,11 @@
       "failure": "quota",
       "artifact": null,
       "accountQuotaBurned": false,
-      "notes": "Deterministic stub. turn/start JSON-RPC error message is quota exceeded. classifyFailure maps that text to typed quota. A live account was not used."
+      "notes": "Deterministic stub. turn/start is accepted. turn/completed follows with status failed and TurnError codexErrorInfo usageLimitExceeded. handleNotice calls failRun. classifyFailure maps usageLimitExceeded to typed quota. A live account was not used."
     }
   ],
   "classifierRegression": {
-    "mutation": "Removed the quota token from classifyFailure, leaving rate.limit and 429.",
+    "mutation": "Removed the usagelimit token from classifyFailure, leaving quota, rate.limit and 429.",
     "expectedFailure": "quota",
     "observedFailure": "provider-error",
     "testResult": "FAIL",
