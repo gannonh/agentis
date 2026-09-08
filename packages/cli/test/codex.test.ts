@@ -339,6 +339,24 @@ describe("codex stub protocol", () => {
       await server.close();
     }
   });
+  it("classifies a protocol quota failure without a successful artifact", async () => {
+    const { endpoint, server, owner } = await boot();
+    try {
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "QUOTA" },
+      });
+      const done = await waitFor(
+        endpoint,
+        owner.token,
+        (state) => state.runs[0]?.status === "failed",
+      );
+      expect(done.runs[0]?.providerState.failure).toBe("quota");
+      expect(done.artifacts).toHaveLength(0);
+    } finally {
+      await server.close();
+    }
+  });
   it("retains native plan-only output without inventing a blocking approval", async () => {
     const { endpoint, server, owner } = await boot();
     try {

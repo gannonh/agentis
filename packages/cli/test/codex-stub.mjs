@@ -48,6 +48,13 @@ createInterface({ input: process.stdin }).on("line", (line) => {
   if (message.method === "turn/start") {
     const text = message.params?.input?.[0]?.text ?? "";
     turnId = `turn-${Date.now()}`;
+    if (text === "QUOTA") {
+      send({
+        id: message.id,
+        error: { code: -32000, message: "quota exceeded" },
+      });
+      return;
+    }
     send({ id: message.id, result: { turn: { id: turnId } } });
     if (text === "PLAN_ONLY" || text === "PLAN_DUPLICATE") {
       send({
