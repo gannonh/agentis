@@ -20,10 +20,6 @@ Control commands need `--endpoint` or `--profile`. The CLI does not guess a port
 
 The former implementation remains on [`archive/agentis-v1`](https://github.com/gannonh/agentis/tree/archive/agentis-v1) at commit [`78bf37491942552b6cb14cfe43b1a7463b723f48`](https://github.com/gannonh/agentis/commit/78bf37491942552b6cb14cfe43b1a7463b723f48).
 
-## Planned data policy
-
-See the [runtime ADR](docs/adrs/0001-runtime-and-execution-foundations.md).
-
 ## Documentation
 
 The repository records the rebuild's direction and required evidence in these documents:
