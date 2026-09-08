@@ -6,9 +6,10 @@ import {
   interruptAllClaude,
 } from "./claude.js";
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { Effect } from "effect";
+import { writeScratchFile } from "./scratch-file.js";
 import { mutateForEngine, type Store } from "./store.js";
 import type {
   Command,
@@ -245,7 +246,7 @@ export const finishInputFake = (input: DriveInput): Effect.Effect<void, Error> =
 const writeArtifact = (engine: ReturnType<typeof mutateForEngine>, input: DriveInput) => {
   const path = join(input.workspace, "hello.md");
   const body = `# ${input.brief}\n`;
-  writeFileSync(path, body, { mode: 0o600 });
+  writeScratchFile(path, body);
   const sha256 = createHash("sha256").update(body).digest("hex");
   engine.complete({
     runId: input.runId,

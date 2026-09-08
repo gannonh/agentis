@@ -5,6 +5,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { Effect, Schema } from "effect";
+import { writeScratchFile } from "./scratch-file.js";
 import {
   readCodexVersionInContainer,
   removeRunContainer,
@@ -508,7 +509,7 @@ const finish = (session: Session, input: DriveInput, text: string) => {
     dropSession(input.runId);
     return;
   }
-  writeFileSync(path, body, { mode: 0o600 });
+  writeScratchFile(path, body);
   engine.complete({
     runId: input.runId,
     taskId: input.taskId,

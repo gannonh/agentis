@@ -1,11 +1,12 @@
 import { scheduler } from "node:timers/promises";
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { dirname, join } from "node:path";
 import { Effect, Schema } from "effect";
 import type { DriveInput } from "./engine.js";
+import { writeScratchFile } from "./scratch-file.js";
 import { mutateForEngine } from "./store.js";
 import type { RunId } from "./schema.js";
 import {
@@ -173,10 +174,7 @@ export const spawnClaude = (input: DriveInput): Effect.Effect<void, Error> =>
           Schema.Record({ key: Schema.String, value: Schema.Unknown }),
         )(value.input);
         const details = { toolCallId: id, ...nativeInput };
-        const reply = (result: unknown) => {
-          update(input, (state) => ({ ...state, pendingPrompt: null }));
-          session.send({ kind: "permission", id, result });
-        };
+        const reply = (result: unknown) => session.send({ kind: "permission", id, result });
         if (value.name === "AskUserQuestion") {
           const decoded = Schema.decodeUnknownSync(QuestionInput)(value.input);
           engineCall(input, (engine) =>
@@ -385,7 +383,7 @@ export const spawnClaude = (input: DriveInput): Effect.Effect<void, Error> =>
           engineCall(input, (engine) => {
             if (!engine.isActive(input.runId)) return;
             const path = join(input.workspace, "hello.md");
-            writeFileSync(path, body, { mode: 0o600 });
+            writeScratchFile(path, body);
             engine.complete({
               runId: input.runId,
               taskId: input.taskId,
