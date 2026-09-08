@@ -351,10 +351,12 @@ describe("Claude SDK bridge", () => {
       vi.spyOn(claudeContainer, "spawnClaudeInContainer").mockImplementation(() => {
         throw new Error("auth volume unavailable");
       });
-      await command(endpoint, owner.token, {
+      const receipt = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "load_session", runId: done.runs[0]?.id },
       });
+      expect(receipt.status).toBe(200);
+      expect(receipt.json).toMatchObject({ accepted: true, effects: ["load_session"] });
       const loaded = await statusOf(endpoint, owner.token);
       expect(loaded.runs[0]?.providerState).toMatchObject({
         loadStatus: "failed",

@@ -261,7 +261,9 @@ describe("codex stub protocol", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "load_session", runId: submitted.json.runId },
       });
-      await first;
+      const crashed = await first;
+      expect(crashed.status).toBe(200);
+      expect(crashed.json).toMatchObject({ accepted: true, effects: ["load_session"] });
       await new Promise((resolve) => setTimeout(resolve, 750));
       const state = await statusOf(endpoint, owner.token);
       expect(state.runs[0]?.providerState).toMatchObject({

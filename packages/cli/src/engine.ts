@@ -79,7 +79,7 @@ export const applyReceiptEffects = async (input: {
         brief: initial.tasks.find((task) => task.id === selected.taskId)?.brief ?? "",
         loadSession: true,
       }),
-    );
+    ).catch(() => undefined);
     return;
   }
   if (
