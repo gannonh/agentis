@@ -35,7 +35,8 @@ createInterface({ input: process.stdin }).on("line", async (line) => {
   const previousId = current?.id;
   current = command;
   if (command.kind === "load") {
-    setTimeout(() => send({ id: command.id, sessionId, history }), 100);
+    const slow = history.some((item) => item.message.content === "SLOW_LOAD");
+    setTimeout(() => send({ id: command.id, sessionId, history }), slow ? 1500 : 100);
     return;
   }
   appendFileSync("prompts.jsonl", JSON.stringify(command) + "\n");

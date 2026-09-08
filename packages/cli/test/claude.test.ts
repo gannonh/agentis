@@ -496,7 +496,7 @@ describe("Claude SDK bridge", () => {
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
-        command: { kind: "submit_task", bot: "ivo", brief: "smoke" },
+        command: { kind: "submit_task", bot: "ivo", brief: "SLOW_LOAD" },
       });
       const done = await waitFor(
         endpoint,
