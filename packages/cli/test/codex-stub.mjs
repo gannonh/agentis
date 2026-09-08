@@ -49,9 +49,17 @@ createInterface({ input: process.stdin }).on("line", (line) => {
     const text = message.params?.input?.[0]?.text ?? "";
     turnId = `turn-${Date.now()}`;
     if (text === "QUOTA") {
+      send({ id: message.id, result: { turn: { id: turnId } } });
       send({
-        id: message.id,
-        error: { code: -32000, message: "quota exceeded" },
+        method: "turn/completed",
+        turn: {
+          id: turnId,
+          status: "failed",
+          error: {
+            message: "You've hit your usage limit",
+            codexErrorInfo: "usageLimitExceeded",
+          },
+        },
       });
       return;
     }

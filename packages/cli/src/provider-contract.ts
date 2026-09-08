@@ -52,7 +52,7 @@ export const emptyProviderState = (): ProviderState => ({
 export const classifyFailure = (error: string): NonNullable<ProviderState["failure"]> =>
   /auth|credential|api.key|login/i.test(error)
     ? "auth-unavailable"
-    : /quota|rate.limit|429/i.test(error)
+    : /quota|rate.limit|usagelimit|429/i.test(error)
       ? "quota"
       : /exit|closed|crash/i.test(error)
         ? "crash"
