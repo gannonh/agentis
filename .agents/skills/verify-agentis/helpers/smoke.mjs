@@ -267,8 +267,6 @@ const daemonGone = async (info, limit) => {
     const processInfo = processAt(info.pid);
     if (!processInfo.known) throw new Error(`cannot inspect daemon: ${processInfo.error}`);
     if (!processInfo.exists) return true;
-    if (!ownsDaemon(info, processInfo.command))
-      throw new Error(`daemon pid ${info.pid} changed ownership`);
     await wait(100);
   }
   return false;
@@ -351,13 +349,15 @@ const cleanup = async () => {
   const info = launchInfo ?? discoverLaunch();
   if (info) {
     try {
-      const processInfo = signalDaemon(info, "SIGTERM");
-      daemonInspection = processInfo;
-      if (!processInfo.exists || (await daemonGone(info, cleanupLimit))) daemonStopped = true;
-      else {
-        daemonInspection.forced = signalDaemon(info, "SIGKILL");
-        daemonStopped = await daemonGone(info, 2_000);
-        if (!daemonStopped) throw new Error(`daemon pid ${info.pid} did not disappear`);
+      daemonStopped = await daemonGone(info, cleanupLimit);
+      if (!daemonStopped) {
+        daemonInspection = signalDaemon(info, "SIGTERM");
+        daemonStopped = await daemonGone(info, cleanupLimit);
+        if (!daemonStopped) {
+          daemonInspection.forced = signalDaemon(info, "SIGKILL");
+          daemonStopped = await daemonGone(info, 2_000);
+          if (!daemonStopped) throw new Error(`daemon pid ${info.pid} did not disappear`);
+        }
       }
     } catch (error) {
       errors.push(`daemon cleanup: ${text(error)}`);
