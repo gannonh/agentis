@@ -659,10 +659,17 @@ const main = async () => {
     ]);
     if (
       observed.submit.parsed.accepted !== true ||
-      typeof observed.submit.parsed.runId !== "string" ||
-      typeof observed.submit.parsed.taskId !== "string"
+      ["runId", "taskId", "threadId"].some(
+        (key) =>
+          typeof observed.submit.parsed[key] !== "string" || !observed.submit.parsed[key].trim(),
+      ) ||
+      !Array.isArray(observed.submit.parsed.effects) ||
+      observed.submit.parsed.effects.length !== 1 ||
+      observed.submit.parsed.effects[0] !== "launch"
     )
-      throw new Error("smoke submit was rejected or lacked ids");
+      throw new Error(
+        'smoke submit must be accepted with runId, taskId, threadId and effects ["launch"]',
+      );
     runId = observed.submit.parsed.runId;
     taskId = observed.submit.parsed.taskId;
     observed.status = await poll(info);
@@ -673,7 +680,10 @@ const main = async () => {
     await cleanup();
     process.removeListener("SIGINT", sigint);
     process.removeListener("SIGTERM", sigterm);
+    if (interrupted && !failures.length)
+      fail("interruption", new Error(`interrupted by ${interrupted}`));
     const passed =
+      !interrupted &&
       !failures.length &&
       observed.submit &&
       observed.status &&
