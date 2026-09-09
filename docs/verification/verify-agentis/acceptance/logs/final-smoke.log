@@ -1,0 +1,7 @@
+$ "node" ".agents/skills/verify-agentis/helpers/smoke.mjs" "docs/verification/verify-agentis/acceptance/final-smoke"
+cwd: /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ
+started_at: 2026-09-09T20:08:18.778Z
+
+
+exit_code: 1
+finished_at: 2026-09-09T20:08:24.985Z

@@ -1,0 +1,20 @@
+$ "bash" "/tmp/kat3315-manual-check.sh"
+cwd: /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ
+started_at: 2026-09-09T20:01:24.530Z
+
+Scope: all 2 workspace projects
+(node:37043) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+Done in 380ms using pnpm v9.15.9
+
+> agentis@2.0.0 build /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ
+> pnpm --filter @agentis-labs/cli build
+
+
+> @agentis-labs/cli@2.0.0 build /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json
+
+dataRoot is outside this launch parent

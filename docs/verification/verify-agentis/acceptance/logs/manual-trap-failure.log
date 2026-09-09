@@ -1,0 +1,14 @@
+Scope: all 2 workspace projects
+(node:90872) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+Done in 330ms using pnpm v9.15.9
+
+> agentis@2.0.0 build /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ
+> pnpm --filter @agentis-labs/cli build
+
+
+> @agentis-labs/cli@2.0.0 build /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json

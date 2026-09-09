@@ -1,0 +1,11 @@
+{
+  "recordedAt": "2026-09-09T20:09:54.153Z",
+  "failures": [
+    {
+      "stage": "smoke",
+      "error": "submit did not return JSON: Unexpected end of JSON input",
+      "at": "2026-09-09T20:09:54.153Z"
+    }
+  ],
+  "tempParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-5sgPcy"
+}

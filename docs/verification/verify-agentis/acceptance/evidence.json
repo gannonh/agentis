@@ -1,0 +1,320 @@
+{
+  "scope": "KAT-3315 verify-agentis skill and isolated fixture smoke",
+  "target": "cli",
+  "mode": "user-facing",
+  "visual": false,
+  "technical_enablement": null,
+  "timestamp": "2026-09-09T19:01:51.548Z",
+  "git_commit": "47612889f9d05346f82e3e0e206bee7c3cce7497",
+  "gitignored": false,
+  "artifacts": [
+    {
+      "type": "json",
+      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/metadata.json",
+      "description": "Exact source SHA and runtime versions"
+    },
+    {
+      "type": "json",
+      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/launch.json",
+      "description": "Public launch command and exit receipt"
+    },
+    {
+      "type": "json",
+      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/doctor.json",
+      "description": "Public health and authenticated status"
+    },
+    {
+      "type": "json",
+      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/submit.json",
+      "description": "Public task submission receipt"
+    },
+    {
+      "type": "json",
+      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/status.json",
+      "description": "Completed task and succeeded run"
+    },
+    {
+      "type": "json",
+      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/artifact.json",
+      "description": "Owned file, exact content, byte size and SHA-256 checks"
+    },
+    {
+      "type": "text",
+      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/artifact/hello.md",
+      "description": "Retained output bytes"
+    },
+    {
+      "type": "json",
+      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/cleanup.json",
+      "description": "Owned daemon stopped, endpoint closed and scratch removed"
+    },
+    {
+      "type": "json",
+      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/result.json",
+      "description": "Expected and observed results with PASS verdict"
+    }
+  ],
+  "commands": [
+    {
+      "kind": "supporting",
+      "command": "\"zsh\" \"-c\" \"pnpm typecheck && pnpm lint && pnpm test\"",
+      "argv": [
+        "zsh",
+        "-c",
+        "pnpm typecheck && pnpm lint && pnpm test"
+      ],
+      "name": "project-checks",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/feat-verification-skill",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/project-checks.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/project-checks.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \".agents/skills/verify-agentis/helpers/smoke.mjs\" \"docs/verification/verify-agentis/acceptance/smoke\"",
+      "argv": [
+        "node",
+        ".agents/skills/verify-agentis/helpers/smoke.mjs",
+        "docs/verification/verify-agentis/acceptance/smoke"
+      ],
+      "name": "verification-smoke",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/verification-smoke.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/verification-smoke.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"python3\" \"-c\" \"import pathlib,subprocess,hashlib,json,os; p=pathlib.Path(\\\"docs/verification/verify-agentis/acceptance/smoke\\\"); before={str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in p.rglob(\\\"*\\\") if f.is_file()}; r=subprocess.run([\\\"node\\\",\\\".agents/skills/verify-agentis/helpers/smoke.mjs\\\",str(p)],capture_output=True,text=True); assert r.returncode==1 and \\\"already exists\\\" in r.stderr,r; after={str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in p.rglob(\\\"*\\\") if f.is_file()}; assert before==after; c=json.loads((p/\\\"cleanup.json\\\").read_text()); assert not pathlib.Path(c[\\\"temporaryParent\\\"]).exists(); pid=json.loads((p/\\\"launch.json\\\").read_text())[\\\"parsed\\\"][\\\"pid\\\"]; assert subprocess.run([\\\"ps\\\",\\\"-p\\\",str(pid)],stdout=subprocess.DEVNULL).returncode!=0; assert (p/\\\"artifact/hello.md\\\").read_bytes()==b\\\"# verification-smoke\\\\n\\\"; print(\\\"PASS: existing evidence refused unchanged; daemon absent; scratch removed; artifact retained.\\\")\"",
+      "argv": [
+        "python3",
+        "-c",
+        "import pathlib,subprocess,hashlib,json,os; p=pathlib.Path(\"docs/verification/verify-agentis/acceptance/smoke\"); before={str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in p.rglob(\"*\") if f.is_file()}; r=subprocess.run([\"node\",\".agents/skills/verify-agentis/helpers/smoke.mjs\",str(p)],capture_output=True,text=True); assert r.returncode==1 and \"already exists\" in r.stderr,r; after={str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in p.rglob(\"*\") if f.is_file()}; assert before==after; c=json.loads((p/\"cleanup.json\").read_text()); assert not pathlib.Path(c[\"temporaryParent\"]).exists(); pid=json.loads((p/\"launch.json\").read_text())[\"parsed\"][\"pid\"]; assert subprocess.run([\"ps\",\"-p\",str(pid)],stdout=subprocess.DEVNULL).returncode!=0; assert (p/\"artifact/hello.md\").read_bytes()==b\"# verification-smoke\\n\"; print(\"PASS: existing evidence refused unchanged; daemon absent; scratch removed; artifact retained.\")"
+      ],
+      "name": "evidence-preservation",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/evidence-preservation.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/evidence-preservation.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"python3\" \"docs/verification/verify-agentis/acceptance/examples/interrupt-check.py\"",
+      "argv": [
+        "python3",
+        "docs/verification/verify-agentis/acceptance/examples/interrupt-check.py"
+      ],
+      "name": "interruption-cleanup",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/interruption-cleanup.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/interruption-cleanup.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"pnpm\" \"build\"",
+      "argv": [
+        "pnpm",
+        "build"
+      ],
+      "name": "build",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/build.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/build.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"bash\" \"/tmp/kat3315-manual-check.sh\"",
+      "argv": [
+        "bash",
+        "/tmp/kat3315-manual-check.sh"
+      ],
+      "name": "manual-reference",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 1,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/manual-reference.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/manual-reference.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"bash\" \"/tmp/kat3315-manual-check.sh\"",
+      "argv": [
+        "bash",
+        "/tmp/kat3315-manual-check.sh"
+      ],
+      "name": "manual-reference-fixed",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/manual-reference-fixed.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/manual-reference-fixed.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \".agents/skills/verify-agentis/helpers/smoke.mjs\" \"docs/verification/verify-agentis/acceptance/final-smoke\"",
+      "argv": [
+        "node",
+        ".agents/skills/verify-agentis/helpers/smoke.mjs",
+        "docs/verification/verify-agentis/acceptance/final-smoke"
+      ],
+      "name": "final-smoke",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 1,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/final-smoke.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/final-smoke.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \".agents/skills/verify-agentis/helpers/smoke.mjs\" \"docs/verification/verify-agentis/acceptance/smoke-final\"",
+      "argv": [
+        "node",
+        ".agents/skills/verify-agentis/helpers/smoke.mjs",
+        "docs/verification/verify-agentis/acceptance/smoke-final"
+      ],
+      "name": "smoke-final",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/smoke-final.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/smoke-final.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"python3\" \"docs/verification/verify-agentis/acceptance/examples/interrupt-check.py\" \"docs/verification/verify-agentis/acceptance/interruption-final\"",
+      "argv": [
+        "python3",
+        "docs/verification/verify-agentis/acceptance/examples/interrupt-check.py",
+        "docs/verification/verify-agentis/acceptance/interruption-final"
+      ],
+      "name": "interruption-final",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/interruption-final.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/interruption-final.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"python3\" \"docs/verification/verify-agentis/acceptance/examples/startup-check.py\" \"docs/verification/verify-agentis/acceptance/startup-final\"",
+      "argv": [
+        "python3",
+        "docs/verification/verify-agentis/acceptance/examples/startup-check.py",
+        "docs/verification/verify-agentis/acceptance/startup-final"
+      ],
+      "name": "startup-final",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/startup-final.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/startup-final.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \".agents/skills/verify-agentis/helpers/smoke.mjs\" \"docs/verification/verify-agentis/acceptance/smoke-reviewed\"",
+      "argv": [
+        "node",
+        ".agents/skills/verify-agentis/helpers/smoke.mjs",
+        "docs/verification/verify-agentis/acceptance/smoke-reviewed"
+      ],
+      "name": "smoke-reviewed",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/smoke-reviewed.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/smoke-reviewed.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"python3\" \"docs/verification/verify-agentis/acceptance/examples/interrupt-check.py\" \"docs/verification/verify-agentis/acceptance/late-interruption\" \"artifact.json\"",
+      "argv": [
+        "python3",
+        "docs/verification/verify-agentis/acceptance/examples/interrupt-check.py",
+        "docs/verification/verify-agentis/acceptance/late-interruption",
+        "artifact.json"
+      ],
+      "name": "late-interruption",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/late-interruption.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/late-interruption.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"python3\" \"docs/verification/verify-agentis/acceptance/examples/receipt-check.py\" \"docs/verification/verify-agentis/acceptance/malformed\"",
+      "argv": [
+        "python3",
+        "docs/verification/verify-agentis/acceptance/examples/receipt-check.py",
+        "docs/verification/verify-agentis/acceptance/malformed"
+      ],
+      "name": "receipt-contract",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/receipt-contract.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/receipt-contract.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "name": "manual-trap-success",
+      "command": "PATH=/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin:$PATH bash docs/verification/verify-agentis/acceptance/examples/manual-session-tested.sh",
+      "argv": [
+        "bash",
+        "docs/verification/verify-agentis/acceptance/examples/manual-session-tested.sh"
+      ],
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/manual-trap-success.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/manual-trap-success.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "name": "manual-trap-failure",
+      "command": "PATH=/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin:$PATH bash /tmp/kat3315-manual-session-failure.sh",
+      "argv": [
+        "bash",
+        "/tmp/kat3315-manual-session-failure.sh"
+      ],
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/manual-trap-failure.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/manual-trap-failure.exit",
+      "timed_out": false
+    }
+  ],
+  "slices": [
+    {
+      "id": "verification-smoke",
+      "name": "Fresh-agent CLI smoke and retained proof",
+      "result": "Pass",
+      "evidence": [
+        "docs/verification/verify-agentis/acceptance/smoke-reviewed/result.json",
+        "docs/verification/verify-agentis/acceptance/smoke-reviewed/artifact/hello.md",
+        "docs/verification/verify-agentis/acceptance/smoke-reviewed/cleanup.json"
+      ]
+    }
+  ],
+  "notes": [
+    "Fixture evidence only. Live provider support and Gate 0 acceptance are UNVERIFIED.",
+    "Screenshots and video are not applicable to this nonvisual CLI workflow.",
+    "Build, typecheck, lint and 99 tests passed on the unchanged application baseline.",
+    "The helper ran on implementation commit 72d233a37720abbffcad72f7548de921676b764f. Baseline project checks ran before helper changes; application sources are unchanged.",
+    "The separate checkout initially selected Node 26 and emitted engine warnings. The build and required E2E were then run with explicit Node 24.20.0 PATH selection.",
+    "Manual instructions initially failed on a trailing TMPDIR slash; failed receipt and ownership-checked cleanup are retained. Normalized parent construction passed the complete documented manual session.",
+    "Final helper commit 8f26f3faed22b0522ce60510efbb80a1842008b6 passed smoke-final, interruption-final, and startup-final. Earlier receipts remain as development history; startup-failure attempts before this commit included working-tree changes.",
+    "The final-smoke attempt on 692502dd exposed a transient teardown identity mismatch. No unowned process was signaled. recovery.json proves later PID absence and owned-root removal; 8f26f3fa adds a bounded read-only wait before fallback signals.",
+    "Quality review corrections in 47612889f9d05346f82e3e0e206bee7c3cce7497 validate threadId and exact launch effect, and reject late interruption. smoke-reviewed passed; late-interruption, malformed-thread and malformed-effects produced expected FAIL with cleanup PASS. Earlier startup/interruption checks apply to unchanged cleanup logic.",
+    "The final manual trap success exited0 (manual-1788986197-89528); injected false before submit exited1 (manual-1788986217-90871). Both cleanup receipts pass. The temporary failure script is defined by examples/manual-failure-injection.txt against the saved manual example. Earlier manual argv mismatch recovery is retained in manual-1788986029-75801/recovery.json."
+  ]
+}

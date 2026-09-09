@@ -1,0 +1,24 @@
+{
+  "recordedAt": "2026-09-09T20:22:25.481Z",
+  "failures": [
+    {
+      "stage": "interruption",
+      "error": "interrupted by SIGTERM",
+      "at": "2026-09-09T20:22:25.481Z"
+    }
+  ],
+  "tempParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI",
+  "cleanup": {
+    "finishedAt": "2026-09-09T20:22:25.480Z",
+    "removed": true,
+    "launcherStopped": true,
+    "daemonStopped": true,
+    "endpointUnreachable": true,
+    "startupInspection": [],
+    "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI",
+    "temporaryParentExists": false,
+    "preservedTemporaryParent": false,
+    "errors": [],
+    "ok": true
+  }
+}

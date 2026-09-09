@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "id": "b80ecbb4-cda7-41a3-a236-0c7e48a4fbae",
+    "taskId": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+    "runId": "af65d5f9-8515-465b-9143-f8a4afdb413c",
+    "author": "mara",
+    "source": "fake",
+    "mediaType": "text/markdown",
+    "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+    "byteSize": 21,
+    "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-sc7Dvo/agentis-verify-0rsIYB/scratch/runs/af65d5f9-8515-465b-9143-f8a4afdb413c/hello.md"
+  },
+  "realpath": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-sc7Dvo/agentis-verify-0rsIYB/scratch/runs/af65d5f9-8515-465b-9143-f8a4afdb413c/hello.md",
+  "dataRoot": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-sc7Dvo/agentis-verify-0rsIYB",
+  "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-sc7Dvo/agentis-verify-0rsIYB/scratch",
+  "insideDataRoot": true,
+  "insideWorkspace": true,
+  "regularFile": true,
+  "expectedBody": "# verification-smoke\n",
+  "observedByteSize": 21,
+  "observedContentByteSize": 21,
+  "observedSha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+  "byteSizeMatches": true,
+  "sha256Matches": true,
+  "bodyMatches": true,
+  "sourceExpected": true,
+  "mediaTypeExpected": true,
+  "authorExpected": true,
+  "copyPath": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/docs/verification/verify-agentis/acceptance/smoke-final/artifact/hello.md",
+  "copyByteSize": 21,
+  "copySha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+  "copyMatches": true
+}

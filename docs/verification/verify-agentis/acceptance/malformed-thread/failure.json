@@ -1,0 +1,11 @@
+{
+  "recordedAt": "2026-09-09T20:22:32.157Z",
+  "failures": [
+    {
+      "stage": "smoke",
+      "error": "smoke submit must be accepted with runId, taskId, threadId and effects [\"launch\"]",
+      "at": "2026-09-09T20:22:32.157Z"
+    }
+  ],
+  "tempParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-voxOCl"
+}

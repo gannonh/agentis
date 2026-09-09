@@ -1,0 +1,27 @@
+{
+  "finishedAt": "2026-09-09T20:10:00.417Z",
+  "removed": true,
+  "launcherStopped": true,
+  "daemonStopped": null,
+  "endpointUnreachable": null,
+  "startupInspection": [
+    {
+      "root": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-nv6uGR/agentis-verify-2lxw33",
+      "rootPath": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-nv6uGR/agentis-verify-2lxw33",
+      "before": {
+        "owned": [],
+        "unknown": []
+      },
+      "terminated": [],
+      "after": {
+        "owned": [],
+        "unknown": []
+      }
+    }
+  ],
+  "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-nv6uGR",
+  "temporaryParentExists": false,
+  "preservedTemporaryParent": false,
+  "errors": [],
+  "ok": true
+}

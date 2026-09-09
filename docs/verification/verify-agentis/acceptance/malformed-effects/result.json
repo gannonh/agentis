@@ -1,0 +1,103 @@
+{
+  "schema": "kat-3315.verify-agentis.smoke.v1",
+  "recordedAt": "2026-09-09T20:22:38.343Z",
+  "sourceSha": "47612889f9d05346f82e3e0e206bee7c3cce7497",
+  "expected": {
+    "launch": "verify launch reports owned endpoint/data root",
+    "doctor": "public doctor succeeds",
+    "submit": "public smoke fixture is accepted",
+    "run": "selected run succeeds",
+    "task": "selected task completes",
+    "artifact": "matching artifact SHA and byte size inside scratch",
+    "cleanup": "owned daemon disappears, endpoint is unreachable, and temp parent is removed"
+  },
+  "observed": {
+    "launch": {
+      "endpoint": "http://127.0.0.1:56260/",
+      "pid": 47638,
+      "dataRoot": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-ZgcyQc/agentis-verify-qY7pv8",
+      "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-ZgcyQc/agentis-verify-qY7pv8/scratch",
+      "log": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-ZgcyQc/agentis-verify-qY7pv8/daemon.log"
+    },
+    "registry": {
+      "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-ZgcyQc/agentis-verify-qY7pv8/registry.json",
+      "providers": [
+        "fake"
+      ],
+      "credentialCount": 0,
+      "noCredentials": true
+    },
+    "ownerCredential": {
+      "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-ZgcyQc/agentis-verify-qY7pv8/owner.token",
+      "exists": true,
+      "privateMode": true
+    },
+    "doctor": {
+      "exitCode": 0,
+      "parsed": {
+        "health": {
+          "ok": true,
+          "schemaId": "agentis.v2.gate0.5",
+          "apiFamily": "v1",
+          "node": "v24.20.0",
+          "packageVersion": "2.0.0"
+        },
+        "status": {
+          "schemaId": "agentis.v2.gate0.5",
+          "stopAll": false,
+          "handoffs": [],
+          "tasks": [],
+          "runs": [],
+          "pending": [],
+          "artifacts": [],
+          "messages": [],
+          "events": [
+            {
+              "seq": 1,
+              "id": "961d839e-dea8-4696-9b6d-78d60b4b509a",
+              "type": "daemon_restart",
+              "body": "{\"interrupted\":[]}"
+            }
+          ]
+        }
+      }
+    },
+    "submit": {
+      "exitCode": 0,
+      "parsed": {
+        "commandId": "cab7152c-cfad-41f8-982a-f54bfc870072",
+        "replayed": false,
+        "accepted": true,
+        "taskId": "6fabc346-6233-4663-99e4-c4bd3df66c36",
+        "runId": "406c884f-5116-452e-969b-4c3770e8dc83",
+        "threadId": "13153114-abb2-4d93-a3d8-51136aaa95fa",
+        "effects": [
+          "unexpected"
+        ]
+      }
+    },
+    "status": null,
+    "artifact": null,
+    "failures": [
+      {
+        "stage": "smoke",
+        "error": "smoke submit must be accepted with runId, taskId, threadId and effects [\"launch\"]",
+        "at": "2026-09-09T20:22:38.323Z"
+      }
+    ],
+    "cleanup": {
+      "finishedAt": "2026-09-09T20:22:38.342Z",
+      "removed": true,
+      "launcherStopped": true,
+      "daemonStopped": true,
+      "endpointUnreachable": true,
+      "startupInspection": [],
+      "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-ZgcyQc",
+      "temporaryParentExists": false,
+      "preservedTemporaryParent": false,
+      "errors": [],
+      "ok": true
+    }
+  },
+  "verdict": "FAIL"
+}

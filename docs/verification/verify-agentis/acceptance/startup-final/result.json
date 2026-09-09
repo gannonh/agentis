@@ -1,0 +1,57 @@
+{
+  "schema": "kat-3315.verify-agentis.smoke.v1",
+  "recordedAt": "2026-09-09T20:10:00.417Z",
+  "sourceSha": "8f26f3faed22b0522ce60510efbb80a1842008b6",
+  "expected": {
+    "launch": "verify launch reports owned endpoint/data root",
+    "doctor": "public doctor succeeds",
+    "submit": "public smoke fixture is accepted",
+    "run": "selected run succeeds",
+    "task": "selected task completes",
+    "artifact": "matching artifact SHA and byte size inside scratch",
+    "cleanup": "owned daemon disappears, endpoint is unreachable, and temp parent is removed"
+  },
+  "observed": {
+    "registry": null,
+    "ownerCredential": null,
+    "doctor": null,
+    "submit": null,
+    "status": null,
+    "artifact": null,
+    "failures": [
+      {
+        "stage": "smoke",
+        "error": "verify launch did not report readiness before deadline",
+        "at": "2026-09-09T20:10:00.330Z"
+      }
+    ],
+    "cleanup": {
+      "finishedAt": "2026-09-09T20:10:00.417Z",
+      "removed": true,
+      "launcherStopped": true,
+      "daemonStopped": null,
+      "endpointUnreachable": null,
+      "startupInspection": [
+        {
+          "root": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-nv6uGR/agentis-verify-2lxw33",
+          "rootPath": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-nv6uGR/agentis-verify-2lxw33",
+          "before": {
+            "owned": [],
+            "unknown": []
+          },
+          "terminated": [],
+          "after": {
+            "owned": [],
+            "unknown": []
+          }
+        }
+      ],
+      "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-nv6uGR",
+      "temporaryParentExists": false,
+      "preservedTemporaryParent": false,
+      "errors": [],
+      "ok": true
+    }
+  },
+  "verdict": "FAIL"
+}

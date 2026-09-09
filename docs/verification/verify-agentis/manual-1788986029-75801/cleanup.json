@@ -1,0 +1,42 @@
+{
+  "recordedAt": "2026-09-09T20:33:57.195Z",
+  "launcherStopped": false,
+  "daemonStopped": false,
+  "endpointUnreachable": true,
+  "startupInspection": [
+    {
+      "root": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.aEOmBC/agentis-verify-n0abeX",
+      "rootPath": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.aEOmBC/agentis-verify-n0abeX",
+      "before": {
+        "owned": [
+          {
+            "pid": 75872,
+            "endpoint": "http://127.0.0.1:56726/",
+            "dataRoot": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.aEOmBC/agentis-verify-n0abeX",
+            "command": "/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin/node /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli/dist/bin.js serve --endpoint http://127.0.0.1:56726/ --data-root /var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.aEOmBC/agentis-verify-n0abeX --provider fake --execution-boundary unverified-host-scratch --profile verify"
+          }
+        ],
+        "unknown": []
+      },
+      "terminated": [
+        {
+          "pid": 75872,
+          "endpoint": "http://127.0.0.1:56726/",
+          "signal": "SIGTERM"
+        }
+      ],
+      "after": {
+        "owned": [],
+        "unknown": []
+      }
+    }
+  ],
+  "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.aEOmBC",
+  "temporaryParentExists": true,
+  "removed": false,
+  "preservedTemporaryParent": true,
+  "errors": [
+    "launcher did not stop within bounded wait"
+  ],
+  "ok": false
+}

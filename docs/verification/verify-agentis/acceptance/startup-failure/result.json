@@ -1,0 +1,42 @@
+{
+  "schema": "kat-3315.verify-agentis.smoke.v1",
+  "recordedAt": "2026-09-09T20:05:17.883Z",
+  "sourceSha": "72d233a37720abbffcad72f7548de921676b764f",
+  "expected": {
+    "launch": "verify launch reports owned endpoint/data root",
+    "doctor": "public doctor succeeds",
+    "submit": "public smoke fixture is accepted",
+    "run": "selected run succeeds",
+    "task": "selected task completes",
+    "artifact": "matching artifact SHA and byte size inside scratch",
+    "cleanup": "owned daemon disappears, endpoint is unreachable, and temp parent is removed"
+  },
+  "observed": {
+    "registry": null,
+    "ownerCredential": null,
+    "doctor": null,
+    "submit": null,
+    "status": null,
+    "artifact": null,
+    "failures": [
+      {
+        "stage": "smoke",
+        "error": "verify launch did not report readiness before deadline",
+        "at": "2026-09-09T20:05:17.811Z"
+      }
+    ],
+    "cleanup": {
+      "finishedAt": "2026-09-09T20:05:17.883Z",
+      "removed": true,
+      "launcherStopped": true,
+      "daemonStopped": null,
+      "endpointUnreachable": null,
+      "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-Bxzynh",
+      "temporaryParentExists": false,
+      "preservedTemporaryParent": false,
+      "errors": [],
+      "ok": true
+    }
+  },
+  "verdict": "FAIL"
+}

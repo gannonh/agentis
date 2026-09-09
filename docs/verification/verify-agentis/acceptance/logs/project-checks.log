@@ -1,0 +1,66 @@
+$ "zsh" "-c" "pnpm typecheck && pnpm lint && pnpm test"
+cwd: /Volumes/EVO/herdr-worktrees/agentis/feat-verification-skill
+started_at: 2026-09-09T19:09:53.899Z
+
+
+> agentis@2.0.0 typecheck /Volumes/EVO/herdr-worktrees/agentis/feat-verification-skill
+> pnpm --filter @agentis-labs/cli typecheck
+
+
+> @agentis-labs/cli@2.0.0 typecheck /Volumes/EVO/herdr-worktrees/agentis/feat-verification-skill/packages/cli
+> tsc -p tsconfig.json --noEmit
+
+
+> agentis@2.0.0 lint /Volumes/EVO/herdr-worktrees/agentis/feat-verification-skill
+> pnpm --filter @agentis-labs/cli lint
+
+
+> @agentis-labs/cli@2.0.0 lint /Volumes/EVO/herdr-worktrees/agentis/feat-verification-skill/packages/cli
+> oxlint --deny-warnings src test
+
+
+> agentis@2.0.0 test /Volumes/EVO/herdr-worktrees/agentis/feat-verification-skill
+> pnpm --filter @agentis-labs/cli test
+
+
+> @agentis-labs/cli@2.0.0 test /Volumes/EVO/herdr-worktrees/agentis/feat-verification-skill/packages/cli
+> vitest run
+
+
+ RUN  v3.2.4 /Volumes/EVO/herdr-worktrees/agentis/feat-verification-skill/packages/cli
+
+ ✓ test/claude.test.ts (24 tests) 2340ms
+ ✓ test/handoff.test.ts (21 tests) 3601ms
+   ✓ bounded handoff > expires a proposal before a late provider accepts without losing the source  400ms
+   ✓ bounded handoff > cancel_run before acceptance retains the coordinator result  404ms
+   ✓ bounded handoff > stop_all before acceptance retains the coordinator result  408ms
+   ✓ bounded handoff > loads a canceled accepted handoff without replaying ownership or output  451ms
+ ✓ test/container.test.ts (12 tests) 5136ms
+   ✓ Run containers > runs native device login using only dedicated provider storage and restricted egress  416ms
+   ✓ Run containers > starts live Codex with run-local auth and removes its proxy and internal network  657ms
+   ✓ Run containers > removes the exact Run container when stopped  389ms
+   ✓ Run containers > removes an owned terminal container before restart begins serving  483ms
+   ✓ Run containers > isolates sequential Run mounts and removes both terminal containers  959ms
+   ✓ Run containers > fails only the Run when Docker disappears while the container is active  480ms
+   ✓ Run containers > does not load a session after stop-all during native version preflight  590ms
+ ✓ test/codex.test.ts (9 tests) 1396ms
+   ✓ codex stub protocol > keeps a successful load retry intact after the crashed attempt timeout  881ms
+ ✓ test/http.test.ts (7 tests) 177ms
+ ✓ test/store.test.ts (9 tests) 66ms
+ ✓ test/claude-container.test.ts (5 tests) 4ms
+ ✓ test/scratch-file.test.ts (2 tests) 2ms
+ ✓ test/boundary.test.ts (3 tests) 1158ms
+   ✓ boundary > fails closed when Docker Desktop is required and unavailable  1156ms
+ ✓ test/claude-result.test.ts (4 tests) 1ms
+ ✓ test/auth.test.ts (1 test) 6ms
+ ✓ test/api.test.ts (1 test) 3ms
+ ✓ test/cli.test.ts (1 test) 2ms
+
+ Test Files  13 passed (13)
+      Tests  99 passed (99)
+   Start at  12:09:58
+   Duration  17.20s (transform 146ms, setup 0ms, collect 1.87s, tests 13.89s, environment 1ms, prepare 348ms)
+
+
+exit_code: 0
+finished_at: 2026-09-09T19:10:15.312Z

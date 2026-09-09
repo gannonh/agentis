@@ -1,0 +1,117 @@
+{
+  "health": {
+    "ok": true,
+    "schemaId": "agentis.v2.gate0.5",
+    "apiFamily": "v1",
+    "node": "v24.20.0",
+    "packageVersion": "2.0.0"
+  },
+  "status": {
+    "schemaId": "agentis.v2.gate0.5",
+    "stopAll": false,
+    "handoffs": [],
+    "tasks": [
+      {
+        "id": "232e83bc-ced2-42d7-b563-80e9d2237cbd",
+        "brief": "verification-smoke",
+        "ownerSession": "a3aa4f3c-0872-4b86-bbbe-6dfae6fc03f8",
+        "botName": "mara",
+        "botRole": "coordinator",
+        "status": "completed",
+        "actionCount": 0
+      }
+    ],
+    "runs": [
+      {
+        "id": "434ec0e8-933a-402c-966f-9fc037044ae1",
+        "taskId": "232e83bc-ced2-42d7-b563-80e9d2237cbd",
+        "status": "succeeded",
+        "waitingReason": "none",
+        "frozen": {
+          "bot": "mara",
+          "mode": "agent",
+          "provider": "fake",
+          "transport": "fake-in-process",
+          "executableVersion": "fake-1",
+          "model": "fake",
+          "executionBoundary": "unverified-host-scratch",
+          "authMode": "none",
+          "workspaceId": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.aEOmBC/agentis-verify-n0abeX/scratch/runs/434ec0e8-933a-402c-966f-9fc037044ae1",
+          "deadlineMs": 900000,
+          "actionBudget": 20
+        },
+        "providerState": {
+          "loadStatus": "idle",
+          "capabilities": [],
+          "history": [],
+          "pendingPrompt": null,
+          "failure": null
+        },
+        "providerSessionId": "fake:434ec0e8-933a-402c-966f-9fc037044ae1",
+        "fixture": "smoke",
+        "actionCount": 0,
+        "deadlineAt": 1788986930989
+      }
+    ],
+    "pending": [
+      {
+        "id": "92d0429a-1cd4-4a90-b936-de81f4f43fe3",
+        "runId": "434ec0e8-933a-402c-966f-9fc037044ae1",
+        "kind": "launch",
+        "state": "claimed",
+        "payload": "{\"taskId\":\"232e83bc-ced2-42d7-b563-80e9d2237cbd\",\"threadId\":\"02ae90f8-a1f7-46f7-8e0f-c50fadaa9489\"}",
+        "approvalId": null
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "19e5002c-787b-438e-a189-b789949a5418",
+        "taskId": "232e83bc-ced2-42d7-b563-80e9d2237cbd",
+        "runId": "434ec0e8-933a-402c-966f-9fc037044ae1",
+        "author": "mara",
+        "source": "fake",
+        "mediaType": "text/markdown",
+        "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+        "byteSize": 21,
+        "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.aEOmBC/agentis-verify-n0abeX/scratch/runs/434ec0e8-933a-402c-966f-9fc037044ae1/hello.md"
+      }
+    ],
+    "messages": [
+      {
+        "id": "325b34f3-4f91-4702-9468-2a5280e0098e",
+        "threadId": "02ae90f8-a1f7-46f7-8e0f-c50fadaa9489",
+        "taskId": "232e83bc-ced2-42d7-b563-80e9d2237cbd",
+        "runId": "434ec0e8-933a-402c-966f-9fc037044ae1",
+        "authorKind": "human",
+        "authorName": "owner",
+        "body": "verification-smoke"
+      }
+    ],
+    "events": [
+      {
+        "seq": 1,
+        "id": "3ff09aea-d468-4b83-8473-cc47a408146d",
+        "type": "daemon_restart",
+        "body": "{\"interrupted\":[]}"
+      },
+      {
+        "seq": 2,
+        "id": "490edd02-8d8c-41a5-aa2a-22521c2e2cc7",
+        "type": "task_submitted",
+        "body": "{\"taskId\":\"232e83bc-ced2-42d7-b563-80e9d2237cbd\",\"runId\":\"434ec0e8-933a-402c-966f-9fc037044ae1\",\"threadId\":\"02ae90f8-a1f7-46f7-8e0f-c50fadaa9489\",\"owner\":\"a3aa4f3c-0872-4b86-bbbe-6dfae6fc03f8\",\"bot\":\"mara\",\"commandId\":\"030d4cd3-1da1-4aa5-939c-d03c319fc825\"}"
+      },
+      {
+        "seq": 3,
+        "id": "455f10a0-c8eb-4f4f-bd24-679eb6c4c9d8",
+        "type": "run_running",
+        "body": "{\"runId\":\"434ec0e8-933a-402c-966f-9fc037044ae1\",\"providerSessionId\":\"fake:434ec0e8-933a-402c-966f-9fc037044ae1\"}"
+      },
+      {
+        "seq": 4,
+        "id": "2279e3a9-b208-4e7c-9542-27723a5039a6",
+        "type": "run_succeeded",
+        "body": "{\"runId\":\"434ec0e8-933a-402c-966f-9fc037044ae1\",\"artifactId\":\"19e5002c-787b-438e-a189-b789949a5418\"}"
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "verify launch",
+  "command": [
+    "/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin/node",
+    "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli/dist/bin.js",
+    "verify",
+    "launch"
+  ],
+  "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+  "startedAt": "2026-09-09T20:06:28.820Z",
+  "finishedAt": "2026-09-09T20:06:29.059Z",
+  "stdout": "",
+  "stderr": "forced startup failure for AC6\n",
+  "exitCode": 1,
+  "signal": null,
+  "timedOut": false
+}

@@ -1,0 +1,25 @@
+{
+  "name": "submit",
+  "command": [
+    "/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin/node",
+    "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli/dist/bin.js",
+    "task",
+    "submit",
+    "--endpoint",
+    "http://127.0.0.1:55810/",
+    "--data-root",
+    "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-5sgPcy/agentis-verify-Y7p1r7",
+    "--brief",
+    "verification-smoke",
+    "--fixture",
+    "smoke"
+  ],
+  "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+  "startedAt": "2026-09-09T20:09:53.981Z",
+  "finishedAt": "2026-09-09T20:09:54.153Z",
+  "stdout": "",
+  "stderr": "fetch failed\n",
+  "exitCode": 1,
+  "signal": null,
+  "timedOut": false
+}

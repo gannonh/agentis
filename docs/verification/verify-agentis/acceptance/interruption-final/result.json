@@ -1,0 +1,90 @@
+{
+  "schema": "kat-3315.verify-agentis.smoke.v1",
+  "recordedAt": "2026-09-09T20:09:54.168Z",
+  "sourceSha": "8f26f3faed22b0522ce60510efbb80a1842008b6",
+  "expected": {
+    "launch": "verify launch reports owned endpoint/data root",
+    "doctor": "public doctor succeeds",
+    "submit": "public smoke fixture is accepted",
+    "run": "selected run succeeds",
+    "task": "selected task completes",
+    "artifact": "matching artifact SHA and byte size inside scratch",
+    "cleanup": "owned daemon disappears, endpoint is unreachable, and temp parent is removed"
+  },
+  "observed": {
+    "launch": {
+      "endpoint": "http://127.0.0.1:55810/",
+      "pid": 83757,
+      "dataRoot": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-5sgPcy/agentis-verify-Y7p1r7",
+      "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-5sgPcy/agentis-verify-Y7p1r7/scratch",
+      "log": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-5sgPcy/agentis-verify-Y7p1r7/daemon.log"
+    },
+    "registry": {
+      "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-5sgPcy/agentis-verify-Y7p1r7/registry.json",
+      "providers": [
+        "fake"
+      ],
+      "credentialCount": 0,
+      "noCredentials": true
+    },
+    "ownerCredential": {
+      "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-5sgPcy/agentis-verify-Y7p1r7/owner.token",
+      "exists": true,
+      "privateMode": true
+    },
+    "doctor": {
+      "exitCode": 0,
+      "parsed": {
+        "health": {
+          "ok": true,
+          "schemaId": "agentis.v2.gate0.5",
+          "apiFamily": "v1",
+          "node": "v24.20.0",
+          "packageVersion": "2.0.0"
+        },
+        "status": {
+          "schemaId": "agentis.v2.gate0.5",
+          "stopAll": false,
+          "handoffs": [],
+          "tasks": [],
+          "runs": [],
+          "pending": [],
+          "artifacts": [],
+          "messages": [],
+          "events": [
+            {
+              "seq": 1,
+              "id": "f29b0040-b849-4764-98f4-3cf9afc6946c",
+              "type": "daemon_restart",
+              "body": "{\"interrupted\":[]}"
+            }
+          ]
+        }
+      }
+    },
+    "submit": null,
+    "status": null,
+    "artifact": null,
+    "failures": [
+      {
+        "stage": "smoke",
+        "error": "submit did not return JSON: Unexpected end of JSON input",
+        "at": "2026-09-09T20:09:54.153Z"
+      }
+    ],
+    "cleanup": {
+      "finishedAt": "2026-09-09T20:09:54.168Z",
+      "removed": true,
+      "launcherStopped": true,
+      "daemonStopped": true,
+      "endpointUnreachable": true,
+      "startupInspection": [],
+      "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-5sgPcy",
+      "temporaryParentExists": false,
+      "preservedTemporaryParent": false,
+      "errors": [],
+      "ok": true
+    }
+  },
+  "verdict": "FAIL"
+}

@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "id": "883585ec-8944-4242-88c8-51625ad72bb0",
+    "taskId": "f113f464-9383-44b4-8b1e-788a4baa5026",
+    "runId": "737d76d8-4304-42e1-899d-68b6b7de91c6",
+    "author": "mara",
+    "source": "fake",
+    "mediaType": "text/markdown",
+    "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+    "byteSize": 21,
+    "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ/scratch/runs/737d76d8-4304-42e1-899d-68b6b7de91c6/hello.md"
+  },
+  "realpath": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ/scratch/runs/737d76d8-4304-42e1-899d-68b6b7de91c6/hello.md",
+  "dataRoot": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ",
+  "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ/scratch",
+  "insideDataRoot": true,
+  "insideWorkspace": true,
+  "regularFile": true,
+  "expectedBody": "# verification-smoke\n",
+  "observedByteSize": 21,
+  "observedContentByteSize": 21,
+  "observedSha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+  "byteSizeMatches": true,
+  "sha256Matches": true,
+  "bodyMatches": true,
+  "sourceExpected": true,
+  "mediaTypeExpected": true,
+  "authorExpected": true,
+  "copyPath": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/docs/verification/verify-agentis/acceptance/smoke-reviewed/artifact/hello.md",
+  "copyByteSize": 21,
+  "copySha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+  "copyMatches": true
+}

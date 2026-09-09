@@ -1,0 +1,4 @@
+Source: manual-session-tested.sh
+Injection: insert the shell command false on its own line immediately before the first node packages/cli/dist/bin.js task submit command.
+Generated path used for the recorded run: /tmp/kat3315-manual-session-failure.sh
+Expected exit: 1; cleanup.json must still report ok=true, removed=true and no temporary parent.
