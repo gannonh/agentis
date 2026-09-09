@@ -1,0 +1,27 @@
+{
+  "recordedAt": "2026-09-09T20:36:58.562Z",
+  "launcherStopped": true,
+  "daemonStopped": true,
+  "endpointUnreachable": true,
+  "startupInspection": [
+    {
+      "root": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.lNzvcH/agentis-verify-yhMuZ8",
+      "rootPath": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.lNzvcH/agentis-verify-yhMuZ8",
+      "before": {
+        "owned": [],
+        "unknown": []
+      },
+      "terminated": [],
+      "after": {
+        "owned": [],
+        "unknown": []
+      }
+    }
+  ],
+  "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.lNzvcH",
+  "temporaryParentExists": false,
+  "removed": true,
+  "preservedTemporaryParent": false,
+  "errors": [],
+  "ok": true
+}

@@ -1,0 +1,24 @@
+{
+  "name": "verify launch",
+  "command": [
+    "/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin/node",
+    "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli/dist/bin.js",
+    "verify",
+    "launch"
+  ],
+  "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+  "startedAt": "2026-09-09T22:26:06.722Z",
+  "finishedAt": "2026-09-09T22:26:07.533Z",
+  "stdout": "{\n  \"endpoint\": \"http://127.0.0.1:61126/\",\n  \"pid\": 24844,\n  \"dataRoot\": \"/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-3hd2p1/agentis-verify-ZtBLAl\",\n  \"log\": \"/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-3hd2p1/agentis-verify-ZtBLAl/daemon.log\",\n  \"workspace\": \"/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-3hd2p1/agentis-verify-ZtBLAl/scratch\"\n}\n",
+  "stderr": "",
+  "exitCode": 0,
+  "signal": null,
+  "timedOut": false,
+  "parsed": {
+    "endpoint": "http://127.0.0.1:61126/",
+    "pid": 24844,
+    "dataRoot": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-3hd2p1/agentis-verify-ZtBLAl",
+    "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-3hd2p1/agentis-verify-ZtBLAl/scratch",
+    "log": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-3hd2p1/agentis-verify-ZtBLAl/daemon.log"
+  }
+}

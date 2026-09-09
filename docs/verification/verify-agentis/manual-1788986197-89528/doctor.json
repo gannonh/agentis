@@ -1,0 +1,27 @@
+{
+  "health": {
+    "ok": true,
+    "schemaId": "agentis.v2.gate0.5",
+    "apiFamily": "v1",
+    "node": "v24.20.0",
+    "packageVersion": "2.0.0"
+  },
+  "status": {
+    "schemaId": "agentis.v2.gate0.5",
+    "stopAll": false,
+    "handoffs": [],
+    "tasks": [],
+    "runs": [],
+    "pending": [],
+    "artifacts": [],
+    "messages": [],
+    "events": [
+      {
+        "seq": 1,
+        "id": "a10a3b53-8c53-40e6-8b35-54bdbfa9ec68",
+        "type": "daemon_restart",
+        "body": "{\"interrupted\":[]}"
+      }
+    ]
+  }
+}

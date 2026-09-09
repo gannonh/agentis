@@ -1,0 +1,6 @@
+{
+  "daemonAbsent": true,
+  "ownedTemporaryParentRemoved": true,
+  "evidenceRetained": true,
+  "reason": "Read-only recheck after transient teardown identity mismatch"
+}

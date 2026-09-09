@@ -1,0 +1,6 @@
+ENDPOINT=http://127.0.0.1:56726/
+DATA_ROOT=/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.aEOmBC/agentis-verify-n0abeX
+WORKSPACE=/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.aEOmBC/agentis-verify-n0abeX/scratch
+DAEMON_PID=75872
+LAUNCHER_PID=75865
+LOG=/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.aEOmBC/agentis-verify-n0abeX/daemon.log

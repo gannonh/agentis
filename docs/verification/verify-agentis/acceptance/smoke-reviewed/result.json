@@ -1,0 +1,169 @@
+{
+  "schema": "kat-3315.verify-agentis.smoke.v1",
+  "recordedAt": "2026-09-09T20:22:18.766Z",
+  "sourceSha": "47612889f9d05346f82e3e0e206bee7c3cce7497",
+  "expected": {
+    "launch": "verify launch reports owned endpoint/data root",
+    "doctor": "public doctor succeeds",
+    "submit": "public smoke fixture is accepted",
+    "run": "selected run succeeds",
+    "task": "selected task completes",
+    "artifact": "matching artifact SHA and byte size inside scratch",
+    "cleanup": "owned daemon disappears, endpoint is unreachable, and temp parent is removed"
+  },
+  "observed": {
+    "launch": {
+      "endpoint": "http://127.0.0.1:56230/",
+      "pid": 44644,
+      "dataRoot": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ",
+      "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ/scratch",
+      "log": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ/daemon.log"
+    },
+    "registry": {
+      "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ/registry.json",
+      "providers": [
+        "fake"
+      ],
+      "credentialCount": 0,
+      "noCredentials": true
+    },
+    "ownerCredential": {
+      "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ/owner.token",
+      "exists": true,
+      "privateMode": true
+    },
+    "doctor": {
+      "exitCode": 0,
+      "parsed": {
+        "health": {
+          "ok": true,
+          "schemaId": "agentis.v2.gate0.5",
+          "apiFamily": "v1",
+          "node": "v24.20.0",
+          "packageVersion": "2.0.0"
+        },
+        "status": {
+          "schemaId": "agentis.v2.gate0.5",
+          "stopAll": false,
+          "handoffs": [],
+          "tasks": [],
+          "runs": [],
+          "pending": [],
+          "artifacts": [],
+          "messages": [],
+          "events": [
+            {
+              "seq": 1,
+              "id": "c4e437d3-770d-475b-bf0f-adb0d404638b",
+              "type": "daemon_restart",
+              "body": "{\"interrupted\":[]}"
+            }
+          ]
+        }
+      }
+    },
+    "submit": {
+      "exitCode": 0,
+      "parsed": {
+        "commandId": "3cb99d66-4baa-44a1-bef7-8718e3d38916",
+        "replayed": false,
+        "accepted": true,
+        "taskId": "f113f464-9383-44b4-8b1e-788a4baa5026",
+        "runId": "737d76d8-4304-42e1-899d-68b6b7de91c6",
+        "threadId": "3187636b-a323-400d-920a-d11b6c6aefe5",
+        "effects": [
+          "launch"
+        ]
+      }
+    },
+    "status": {
+      "selectedRun": {
+        "id": "737d76d8-4304-42e1-899d-68b6b7de91c6",
+        "taskId": "f113f464-9383-44b4-8b1e-788a4baa5026",
+        "status": "succeeded",
+        "waitingReason": "none",
+        "frozen": {
+          "bot": "mara",
+          "mode": "agent",
+          "provider": "fake",
+          "transport": "fake-in-process",
+          "executableVersion": "fake-1",
+          "model": "fake",
+          "executionBoundary": "unverified-host-scratch",
+          "authMode": "none",
+          "workspaceId": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ/scratch/runs/737d76d8-4304-42e1-899d-68b6b7de91c6",
+          "deadlineMs": 900000,
+          "actionBudget": 20
+        },
+        "providerState": {
+          "loadStatus": "idle",
+          "capabilities": [],
+          "history": [],
+          "pendingPrompt": null,
+          "failure": null
+        },
+        "providerSessionId": "fake:737d76d8-4304-42e1-899d-68b6b7de91c6",
+        "fixture": "smoke",
+        "actionCount": 0,
+        "deadlineAt": 1788986238732
+      },
+      "selectedTask": {
+        "id": "f113f464-9383-44b4-8b1e-788a4baa5026",
+        "brief": "verification-smoke",
+        "ownerSession": "83dca70e-2d5d-4a0f-baa3-050d80b472e6",
+        "botName": "mara",
+        "botRole": "coordinator",
+        "status": "completed",
+        "actionCount": 0
+      }
+    },
+    "artifact": {
+      "metadata": {
+        "id": "883585ec-8944-4242-88c8-51625ad72bb0",
+        "taskId": "f113f464-9383-44b4-8b1e-788a4baa5026",
+        "runId": "737d76d8-4304-42e1-899d-68b6b7de91c6",
+        "author": "mara",
+        "source": "fake",
+        "mediaType": "text/markdown",
+        "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+        "byteSize": 21,
+        "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ/scratch/runs/737d76d8-4304-42e1-899d-68b6b7de91c6/hello.md"
+      },
+      "realpath": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ/scratch/runs/737d76d8-4304-42e1-899d-68b6b7de91c6/hello.md",
+      "dataRoot": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ",
+      "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge/agentis-verify-dGipIQ/scratch",
+      "insideDataRoot": true,
+      "insideWorkspace": true,
+      "regularFile": true,
+      "expectedBody": "# verification-smoke\n",
+      "observedByteSize": 21,
+      "observedContentByteSize": 21,
+      "observedSha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+      "byteSizeMatches": true,
+      "sha256Matches": true,
+      "bodyMatches": true,
+      "sourceExpected": true,
+      "mediaTypeExpected": true,
+      "authorExpected": true,
+      "copyPath": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/docs/verification/verify-agentis/acceptance/smoke-reviewed/artifact/hello.md",
+      "copyByteSize": 21,
+      "copySha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+      "copyMatches": true
+    },
+    "failures": [],
+    "cleanup": {
+      "finishedAt": "2026-09-09T20:22:18.766Z",
+      "removed": true,
+      "launcherStopped": true,
+      "daemonStopped": true,
+      "endpointUnreachable": true,
+      "startupInspection": [],
+      "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-RPn5ge",
+      "temporaryParentExists": false,
+      "preservedTemporaryParent": false,
+      "errors": [],
+      "ok": true
+    }
+  },
+  "verdict": "PASS"
+}

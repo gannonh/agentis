@@ -1,0 +1,8 @@
+$ "python3" "docs/verification/verify-agentis/acceptance/examples/startup-check.py" "docs/verification/verify-agentis/acceptance/startup-final"
+cwd: /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ
+started_at: 2026-09-09T20:09:59.791Z
+
+PASS: injected startup failure retained evidence, found no surviving daemon, and removed owned state.
+
+exit_code: 0
+finished_at: 2026-09-09T20:10:05.405Z

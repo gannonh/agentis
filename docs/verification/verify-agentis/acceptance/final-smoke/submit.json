@@ -1,0 +1,36 @@
+{
+  "name": "submit",
+  "command": [
+    "/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin/node",
+    "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli/dist/bin.js",
+    "task",
+    "submit",
+    "--endpoint",
+    "http://127.0.0.1:55771/",
+    "--data-root",
+    "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-YFXrNz/agentis-verify-k4qxuH",
+    "--brief",
+    "verification-smoke",
+    "--fixture",
+    "smoke"
+  ],
+  "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+  "startedAt": "2026-09-09T20:08:19.769Z",
+  "finishedAt": "2026-09-09T20:08:19.956Z",
+  "stdout": "{\"commandId\":\"509a1821-0e62-4a79-ab9c-cb8c8bd3268f\",\"replayed\":false,\"accepted\":true,\"taskId\":\"b5f50980-b7be-4918-ab23-8978c583f567\",\"runId\":\"3f3d2600-5276-46f2-95cd-53d084d7b335\",\"threadId\":\"04e2e30f-892f-4a3d-85a8-e4aee46f3167\",\"effects\":[\"launch\"]}\n\n",
+  "stderr": "",
+  "exitCode": 0,
+  "signal": null,
+  "timedOut": false,
+  "parsed": {
+    "commandId": "509a1821-0e62-4a79-ab9c-cb8c8bd3268f",
+    "replayed": false,
+    "accepted": true,
+    "taskId": "b5f50980-b7be-4918-ab23-8978c583f567",
+    "runId": "3f3d2600-5276-46f2-95cd-53d084d7b335",
+    "threadId": "04e2e30f-892f-4a3d-85a8-e4aee46f3167",
+    "effects": [
+      "launch"
+    ]
+  }
+}

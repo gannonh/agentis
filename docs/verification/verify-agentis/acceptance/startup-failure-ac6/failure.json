@@ -1,0 +1,11 @@
+{
+  "recordedAt": "2026-09-09T20:06:29.127Z",
+  "failures": [
+    {
+      "stage": "smoke",
+      "error": "verify launch did not report readiness before deadline",
+      "at": "2026-09-09T20:06:29.127Z"
+    }
+  ],
+  "tempParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-IWDz4S"
+}

@@ -1,0 +1,6 @@
+{
+  "daemonStopped": true,
+  "temporaryParentRemoved": true,
+  "expectedFailure": "TMPDIR trailing slash made textual containment check reject normalized dataRoot",
+  "recovery": "Exact readiness process command verified before SIGTERM and owned parent removal"
+}

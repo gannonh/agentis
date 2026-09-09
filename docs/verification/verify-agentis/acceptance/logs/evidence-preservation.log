@@ -1,0 +1,8 @@
+$ "python3" "-c" "import pathlib,subprocess,hashlib,json,os; p=pathlib.Path(\"docs/verification/verify-agentis/acceptance/smoke\"); before={str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in p.rglob(\"*\") if f.is_file()}; r=subprocess.run([\"node\",\".agents/skills/verify-agentis/helpers/smoke.mjs\",str(p)],capture_output=True,text=True); assert r.returncode==1 and \"already exists\" in r.stderr,r; after={str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in p.rglob(\"*\") if f.is_file()}; assert before==after; c=json.loads((p/\"cleanup.json\").read_text()); assert not pathlib.Path(c[\"temporaryParent\"]).exists(); pid=json.loads((p/\"launch.json\").read_text())[\"parsed\"][\"pid\"]; assert subprocess.run([\"ps\",\"-p\",str(pid)],stdout=subprocess.DEVNULL).returncode!=0; assert (p/\"artifact/hello.md\").read_bytes()==b\"# verification-smoke\\n\"; print(\"PASS: existing evidence refused unchanged; daemon absent; scratch removed; artifact retained.\")"
+cwd: /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ
+started_at: 2026-09-09T19:48:10.546Z
+
+PASS: existing evidence refused unchanged; daemon absent; scratch removed; artifact retained.
+
+exit_code: 0
+finished_at: 2026-09-09T19:48:10.691Z

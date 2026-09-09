@@ -1,0 +1,8 @@
+$ "python3" "docs/verification/verify-agentis/acceptance/examples/receipt-check.py" "docs/verification/verify-agentis/acceptance/malformed"
+cwd: /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ
+started_at: 2026-09-09T20:22:31.073Z
+
+PASS: missing threadId and incorrect effects each fail with owned cleanup.
+
+exit_code: 0
+finished_at: 2026-09-09T20:22:43.359Z

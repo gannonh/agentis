@@ -1,0 +1,175 @@
+{
+  "schema": "kat-3315.verify-agentis.smoke.v1",
+  "recordedAt": "2026-09-09T20:22:25.481Z",
+  "sourceSha": "47612889f9d05346f82e3e0e206bee7c3cce7497",
+  "expected": {
+    "launch": "verify launch reports owned endpoint/data root",
+    "doctor": "public doctor succeeds",
+    "submit": "public smoke fixture is accepted",
+    "run": "selected run succeeds",
+    "task": "selected task completes",
+    "artifact": "matching artifact SHA and byte size inside scratch",
+    "cleanup": "owned daemon disappears, endpoint is unreachable, and temp parent is removed"
+  },
+  "observed": {
+    "launch": {
+      "endpoint": "http://127.0.0.1:56239/",
+      "pid": 45836,
+      "dataRoot": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI/agentis-verify-kf1FYO",
+      "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI/agentis-verify-kf1FYO/scratch",
+      "log": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI/agentis-verify-kf1FYO/daemon.log"
+    },
+    "registry": {
+      "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI/agentis-verify-kf1FYO/registry.json",
+      "providers": [
+        "fake"
+      ],
+      "credentialCount": 0,
+      "noCredentials": true
+    },
+    "ownerCredential": {
+      "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI/agentis-verify-kf1FYO/owner.token",
+      "exists": true,
+      "privateMode": true
+    },
+    "doctor": {
+      "exitCode": 0,
+      "parsed": {
+        "health": {
+          "ok": true,
+          "schemaId": "agentis.v2.gate0.5",
+          "apiFamily": "v1",
+          "node": "v24.20.0",
+          "packageVersion": "2.0.0"
+        },
+        "status": {
+          "schemaId": "agentis.v2.gate0.5",
+          "stopAll": false,
+          "handoffs": [],
+          "tasks": [],
+          "runs": [],
+          "pending": [],
+          "artifacts": [],
+          "messages": [],
+          "events": [
+            {
+              "seq": 1,
+              "id": "d43546c2-50c9-49ba-b44a-b5176b1aa256",
+              "type": "daemon_restart",
+              "body": "{\"interrupted\":[]}"
+            }
+          ]
+        }
+      }
+    },
+    "submit": {
+      "exitCode": 0,
+      "parsed": {
+        "commandId": "10c757e5-db85-4fc2-8b69-85be085abb00",
+        "replayed": false,
+        "accepted": true,
+        "taskId": "13c677ec-a7c1-4c7f-a186-d4410587f044",
+        "runId": "8b5b7f9a-15c5-4a8d-b9ff-c098b9c1d26a",
+        "threadId": "d04792c3-b572-405f-b4b3-20acb19651d6",
+        "effects": [
+          "launch"
+        ]
+      }
+    },
+    "status": {
+      "selectedRun": {
+        "id": "8b5b7f9a-15c5-4a8d-b9ff-c098b9c1d26a",
+        "taskId": "13c677ec-a7c1-4c7f-a186-d4410587f044",
+        "status": "succeeded",
+        "waitingReason": "none",
+        "frozen": {
+          "bot": "mara",
+          "mode": "agent",
+          "provider": "fake",
+          "transport": "fake-in-process",
+          "executableVersion": "fake-1",
+          "model": "fake",
+          "executionBoundary": "unverified-host-scratch",
+          "authMode": "none",
+          "workspaceId": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI/agentis-verify-kf1FYO/scratch/runs/8b5b7f9a-15c5-4a8d-b9ff-c098b9c1d26a",
+          "deadlineMs": 900000,
+          "actionBudget": 20
+        },
+        "providerState": {
+          "loadStatus": "idle",
+          "capabilities": [],
+          "history": [],
+          "pendingPrompt": null,
+          "failure": null
+        },
+        "providerSessionId": "fake:8b5b7f9a-15c5-4a8d-b9ff-c098b9c1d26a",
+        "fixture": "smoke",
+        "actionCount": 0,
+        "deadlineAt": 1788986245447
+      },
+      "selectedTask": {
+        "id": "13c677ec-a7c1-4c7f-a186-d4410587f044",
+        "brief": "verification-smoke",
+        "ownerSession": "600171ee-59da-4518-b3e2-00f152686649",
+        "botName": "mara",
+        "botRole": "coordinator",
+        "status": "completed",
+        "actionCount": 0
+      }
+    },
+    "artifact": {
+      "metadata": {
+        "id": "37b74181-5e7b-4d97-90fd-4c8d2a7cccd9",
+        "taskId": "13c677ec-a7c1-4c7f-a186-d4410587f044",
+        "runId": "8b5b7f9a-15c5-4a8d-b9ff-c098b9c1d26a",
+        "author": "mara",
+        "source": "fake",
+        "mediaType": "text/markdown",
+        "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+        "byteSize": 21,
+        "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI/agentis-verify-kf1FYO/scratch/runs/8b5b7f9a-15c5-4a8d-b9ff-c098b9c1d26a/hello.md"
+      },
+      "realpath": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI/agentis-verify-kf1FYO/scratch/runs/8b5b7f9a-15c5-4a8d-b9ff-c098b9c1d26a/hello.md",
+      "dataRoot": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI/agentis-verify-kf1FYO",
+      "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI/agentis-verify-kf1FYO/scratch",
+      "insideDataRoot": true,
+      "insideWorkspace": true,
+      "regularFile": true,
+      "expectedBody": "# verification-smoke\n",
+      "observedByteSize": 21,
+      "observedContentByteSize": 21,
+      "observedSha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+      "byteSizeMatches": true,
+      "sha256Matches": true,
+      "bodyMatches": true,
+      "sourceExpected": true,
+      "mediaTypeExpected": true,
+      "authorExpected": true,
+      "copyPath": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/docs/verification/verify-agentis/acceptance/late-interruption/artifact/hello.md",
+      "copyByteSize": 21,
+      "copySha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+      "copyMatches": true
+    },
+    "failures": [
+      {
+        "stage": "interruption",
+        "error": "interrupted by SIGTERM",
+        "at": "2026-09-09T20:22:25.481Z"
+      }
+    ],
+    "cleanup": {
+      "finishedAt": "2026-09-09T20:22:25.480Z",
+      "removed": true,
+      "launcherStopped": true,
+      "daemonStopped": true,
+      "endpointUnreachable": true,
+      "startupInspection": [],
+      "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI",
+      "temporaryParentExists": false,
+      "preservedTemporaryParent": false,
+      "errors": [],
+      "ok": true
+    }
+  },
+  "verdict": "FAIL"
+}

@@ -1,0 +1,13 @@
+{
+  "path": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.lKG7wk/agentis-verify-buV5Ej/scratch/runs/70cbbc63-1152-4f99-b330-dba06a0bb2c4/hello.md",
+  "mediaType": "text/markdown",
+  "publicByteSize": 21,
+  "bytesRead": 21,
+  "publicSha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+  "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+  "expectedBytes": "# verification-smoke\n",
+  "observedBytes": "# verification-smoke\n",
+  "expected": "# verification-smoke\n",
+  "observed": "matching regular file, byte count, SHA-256, and body",
+  "verdict": "PASS"
+}

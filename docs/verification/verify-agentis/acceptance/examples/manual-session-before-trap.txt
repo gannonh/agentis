@@ -1,0 +1,218 @@
+#!/usr/bin/env bash
+set -eu
+pnpm install --frozen-lockfile
+pnpm build
+
+EVIDENCE_DIR="docs/verification/verify-agentis/manual-$(date +%s)-$$"
+test ! -e "$EVIDENCE_DIR"
+mkdir "$EVIDENCE_DIR"
+git rev-parse HEAD > "$EVIDENCE_DIR/source-sha.txt"
+{
+  node --version
+  pnpm --version
+  node -p "require('./package.json').version"
+  uname -srm
+  printf '%s\n' 'provider=fake' 'executionBoundary=unverified-host-scratch'
+} > "$EVIDENCE_DIR/environment.txt"
+
+TEMP_BASE="${TMPDIR:-/tmp}"
+TMP_PARENT="$(mktemp -d "${TEMP_BASE%/}/agentis-manual.XXXXXX")"
+unset ENDPOINT DATA_ROOT WORKSPACE DAEMON_PID LAUNCHER_PID LOG READY_FILE
+
+: > "$TMP_PARENT/launcher.stdout"
+: > "$TMP_PARENT/launcher.stderr"
+TMPDIR="$TMP_PARENT" node packages/cli/dist/bin.js verify launch \
+  > "$TMP_PARENT/launcher.stdout" \
+  2> "$TMP_PARENT/launcher.stderr" &
+LAUNCHER_PID=$!
+READY_FILE="$EVIDENCE_DIR/readiness.json"
+READY_TARGET="$READY_FILE.tmp"
+READY_FOUND=0
+READY_ATTEMPT=1
+while [ "$READY_ATTEMPT" -le 100 ]; do
+  rm -f "$READY_TARGET"
+  if READY_SOURCE="$TMP_PARENT/launcher.stdout" READY_TARGET="$READY_TARGET" node --input-type=module <<'NODE'
+import { readFileSync, writeFileSync } from "node:fs";
+
+try {
+  const value = JSON.parse(readFileSync(process.env.READY_SOURCE, "utf8"));
+  for (const key of ["endpoint", "pid", "dataRoot", "log", "workspace"]) {
+    if (!(key in value)) throw new Error(`readiness missing ${key}`);
+  }
+  if (typeof value.endpoint !== "string" || !Number.isInteger(value.pid)) {
+    throw new Error("readiness endpoint or pid is malformed");
+  }
+  writeFileSync(process.env.READY_TARGET, `${JSON.stringify(value, null, 2)}\n`);
+} catch {
+  process.exitCode = 1;
+}
+NODE
+  then
+    mv "$READY_TARGET" "$READY_FILE"
+    READY_FOUND=1
+    break
+  fi
+  if ! kill -0 "$LAUNCHER_PID" 2>/dev/null; then
+    break
+  fi
+  sleep 0.1
+  READY_ATTEMPT=$((READY_ATTEMPT + 1))
+done
+test "$READY_FOUND" -eq 1
+
+ENDPOINT="$(READY_FILE="$READY_FILE" node --input-type=module -e 'import { readFileSync } from "node:fs"; process.stdout.write(JSON.parse(readFileSync(process.env.READY_FILE, "utf8")).endpoint)')"
+DATA_ROOT="$(READY_FILE="$READY_FILE" node --input-type=module -e 'import { readFileSync } from "node:fs"; process.stdout.write(JSON.parse(readFileSync(process.env.READY_FILE, "utf8")).dataRoot)')"
+WORKSPACE="$(READY_FILE="$READY_FILE" node --input-type=module -e 'import { readFileSync } from "node:fs"; process.stdout.write(JSON.parse(readFileSync(process.env.READY_FILE, "utf8")).workspace)')"
+LOG="$(READY_FILE="$READY_FILE" node --input-type=module -e 'import { readFileSync } from "node:fs"; process.stdout.write(JSON.parse(readFileSync(process.env.READY_FILE, "utf8")).log)')"
+DAEMON_PID="$(READY_FILE="$READY_FILE" node --input-type=module -e 'import { readFileSync } from "node:fs"; process.stdout.write(String(JSON.parse(readFileSync(process.env.READY_FILE, "utf8")).pid))')"
+
+case "$DATA_ROOT" in
+  "$TMP_PARENT"/agentis-verify-*) ;;
+  *) echo "dataRoot is outside this launch parent" >&2; exit 1 ;;
+esac
+test "$WORKSPACE" = "$DATA_ROOT/scratch"
+test "$LOG" = "$DATA_ROOT/daemon.log"
+case "$DAEMON_PID" in
+  ''|*[!0-9]*) echo "daemon pid is malformed" >&2; exit 1 ;;
+esac
+kill -0 "$DAEMON_PID"
+{
+  printf 'ENDPOINT=%s\n' "$ENDPOINT"
+  printf 'DATA_ROOT=%s\n' "$DATA_ROOT"
+  printf 'WORKSPACE=%s\n' "$WORKSPACE"
+  printf 'DAEMON_PID=%s\n' "$DAEMON_PID"
+  printf 'LAUNCHER_PID=%s\n' "$LAUNCHER_PID"
+  printf 'LOG=%s\n' "$LOG"
+} > "$EVIDENCE_DIR/launch-bindings.txt"
+
+if ENDPOINT="$ENDPOINT" node --input-type=module -e 'const response = await fetch(new URL("/v1/health", process.env.ENDPOINT), { signal: AbortSignal.timeout(5000) }); const body = await response.json(); if (!response.ok || body.ok !== true) process.exit(1); process.stdout.write(JSON.stringify(body) + "\n")' > "$EVIDENCE_DIR/health.json" 2> "$EVIDENCE_DIR/health.stderr"; then
+  HEALTH_FOUND=1
+else
+  HEALTH_FOUND=0
+fi
+test "$HEALTH_FOUND" -eq 1
+
+PERSISTED_ENDPOINT="$(tr -d '\n' < "$DATA_ROOT/endpoint")"
+PERSISTED_PID="$(tr -d '\n' < "$DATA_ROOT/pid")"
+test "$PERSISTED_ENDPOINT" = "$ENDPOINT"
+test "$PERSISTED_PID" = "$DAEMON_PID"
+DAEMON_COMMAND="$(ps -ww -p "$DAEMON_PID" -o command= | sed 's/^[[:space:]]*//')"
+EXPECTED_COMMAND="$(node -p process.execPath) $PWD/packages/cli/dist/bin.js serve --endpoint $ENDPOINT --data-root $DATA_ROOT --provider fake --execution-boundary unverified-host-scratch --profile verify"
+test "$DAEMON_COMMAND" = "$EXPECTED_COMMAND"
+
+node --input-type=module -e '
+import { readFileSync, statSync } from "node:fs";
+const path = process.argv[1];
+const mode = statSync(path).mode & 0o777;
+const owner = JSON.parse(readFileSync(path, "utf8"));
+if (mode !== 0o600 || typeof owner.sessionId !== "string" || typeof owner.token !== "string" || owner.token.length === 0) {
+  throw new Error("owner.token is missing, not 0600, or malformed");
+}
+process.stdout.write("owner.token precheck ok\n");
+' "$DATA_ROOT/owner.token" > "$EVIDENCE_DIR/owner-precheck.txt"
+
+node packages/cli/dist/bin.js doctor \
+  --endpoint "$ENDPOINT" \
+  --data-root "$DATA_ROOT" \
+  > "$EVIDENCE_DIR/doctor.json"
+node packages/cli/dist/bin.js task submit \
+  --endpoint "$ENDPOINT" \
+  --data-root "$DATA_ROOT" \
+  --brief "verification-smoke" \
+  --fixture smoke \
+  > "$EVIDENCE_DIR/submit.json"
+node packages/cli/dist/bin.js doctor \
+  --endpoint "$ENDPOINT" \
+  --data-root "$DATA_ROOT" \
+  > "$EVIDENCE_DIR/status.json"
+
+RUN_ID="$(SUBMIT_FILE="$EVIDENCE_DIR/submit.json" node --input-type=module -e 'import { readFileSync } from "node:fs"; process.stdout.write(JSON.parse(readFileSync(process.env.SUBMIT_FILE, "utf8")).runId)')"
+EXPECTED_BRIEF="verification-smoke"
+STATUS_FILE="${STATUS_FILE:-$EVIDENCE_DIR/status.json}"
+RUN_ID="$RUN_ID" STATUS_FILE="$STATUS_FILE" ARTIFACT_ROW="$EVIDENCE_DIR/artifact-row.json" node --input-type=module <<'NODE'
+import { readFileSync, writeFileSync } from "node:fs";
+
+const document = JSON.parse(readFileSync(process.env.STATUS_FILE, "utf8"));
+const snapshot = document.status ?? document;
+const row = snapshot.artifacts?.find((item) => item.runId === process.env.RUN_ID);
+if (!row) throw new Error("no artifact row for RUN_ID");
+writeFileSync(process.env.ARTIFACT_ROW, `${JSON.stringify(row, null, 2)}\n`);
+NODE
+
+DATA_ROOT="$DATA_ROOT" WORKSPACE="$WORKSPACE" EXPECTED_BRIEF="$EXPECTED_BRIEF" ARTIFACT_ROW="$EVIDENCE_DIR/artifact-row.json" node --input-type=module <<'NODE' > "$EVIDENCE_DIR/artifact-check.json"
+import { createHash } from "node:crypto";
+import { lstatSync, readFileSync, realpathSync } from "node:fs";
+import { resolve } from "node:path";
+
+const row = JSON.parse(readFileSync(process.env.ARTIFACT_ROW, "utf8"));
+const dataRoot = realpathSync(process.env.DATA_ROOT);
+const workspace = realpathSync(process.env.WORKSPACE);
+if (workspace !== resolve(dataRoot, "scratch")) throw new Error("workspace escaped data root");
+const path = realpathSync(row.path);
+if (!path.startsWith(`${workspace}/`)) throw new Error("artifact escaped workspace");
+if (!lstatSync(path).isFile()) throw new Error("artifact is not a regular file");
+const bytes = readFileSync(path);
+const sha256 = createHash("sha256").update(bytes).digest("hex");
+const expected = Buffer.from(`# ${process.env.EXPECTED_BRIEF ?? ""}\n`);
+const matches = bytes.byteLength === row.byteSize && sha256 === row.sha256 && bytes.equals(expected);
+process.stdout.write(`${JSON.stringify({
+  path,
+  mediaType: row.mediaType,
+  publicByteSize: row.byteSize,
+  bytesRead: bytes.byteLength,
+  publicSha256: row.sha256,
+  sha256,
+  expectedBytes: expected.toString(),
+  observedBytes: bytes.toString(),
+  expected: expected.toString(),
+  observed: matches ? "matching regular file, byte count, SHA-256, and body" : "artifact comparison failed",
+  verdict: matches ? "PASS" : "FAIL",
+}, null, 2)}\n`);
+if (!matches) process.exitCode = 1;
+NODE
+
+if kill -0 "$LAUNCHER_PID" 2>/dev/null; then
+  kill -TERM "$LAUNCHER_PID"
+fi
+LAUNCHER_WAIT=1
+while [ "$LAUNCHER_WAIT" -le 50 ] && kill -0 "$LAUNCHER_PID" 2>/dev/null; do
+  sleep 0.1
+  LAUNCHER_WAIT=$((LAUNCHER_WAIT + 1))
+done
+if kill -0 "$LAUNCHER_PID" 2>/dev/null; then
+  echo "launcher did not exit within 5 seconds" >&2
+  exit 1
+fi
+wait "$LAUNCHER_PID" 2>/dev/null || true
+
+DAEMON_WAIT=1
+while [ "$DAEMON_WAIT" -le 50 ] && kill -0 "$DAEMON_PID" 2>/dev/null; do
+  sleep 0.1
+  DAEMON_WAIT=$((DAEMON_WAIT + 1))
+done
+if kill -0 "$DAEMON_PID" 2>/dev/null; then
+  echo "daemon did not disappear within 5 seconds" >&2
+  exit 1
+fi
+
+cp "$TMP_PARENT/launcher.stdout" "$EVIDENCE_DIR/launcher.stdout.log"
+cp "$TMP_PARENT/launcher.stderr" "$EVIDENCE_DIR/launcher.stderr.log"
+DATA_ROOT="$DATA_ROOT" TMP_PARENT="$TMP_PARENT" node --input-type=module <<'NODE'
+import { rmSync } from "node:fs";
+import { basename, resolve } from "node:path";
+
+const parent = resolve(process.env.TMP_PARENT);
+const root = resolve(process.env.DATA_ROOT);
+if (!basename(parent).startsWith("agentis-manual.")) throw new Error("temporary parent is not owned");
+if (!root.startsWith(`${parent}/agentis-verify-`)) throw new Error("data root is outside the owned parent");
+rmSync(root, { recursive: true, force: true });
+rmSync(parent, { recursive: true, force: true });
+NODE
+test ! -e "$DATA_ROOT"
+test ! -e "$TMP_PARENT"
+test -s "$EVIDENCE_DIR/readiness.json"
+test -s "$EVIDENCE_DIR/launch-bindings.txt"
+test -s "$EVIDENCE_DIR/doctor.json"
+test -s "$EVIDENCE_DIR/submit.json"
+test -s "$EVIDENCE_DIR/status.json"
+printf "Manual launch, doctor, artifact and cleanup PASS\n"

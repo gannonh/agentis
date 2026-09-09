@@ -1,0 +1,309 @@
+{
+  "finishedAt": "2026-09-09T20:09:47.255Z",
+  "attempts": [
+    {
+      "at": "2026-09-09T20:09:47.255Z",
+      "status": 200,
+      "runStatus": "succeeded",
+      "taskStatus": "completed"
+    }
+  ],
+  "last": {
+    "at": "2026-09-09T20:09:47.255Z",
+    "status": 200,
+    "payload": {
+      "schemaId": "agentis.v2.gate0.5",
+      "stopAll": false,
+      "handoffs": [],
+      "tasks": [
+        {
+          "id": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+          "brief": "verification-smoke",
+          "ownerSession": "4f5ff578-f312-4460-afa3-0cc3f4e27a39",
+          "botName": "mara",
+          "botRole": "coordinator",
+          "status": "completed",
+          "actionCount": 0
+        }
+      ],
+      "runs": [
+        {
+          "id": "af65d5f9-8515-465b-9143-f8a4afdb413c",
+          "taskId": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+          "status": "succeeded",
+          "waitingReason": "none",
+          "frozen": {
+            "bot": "mara",
+            "mode": "agent",
+            "provider": "fake",
+            "transport": "fake-in-process",
+            "executableVersion": "fake-1",
+            "model": "fake",
+            "executionBoundary": "unverified-host-scratch",
+            "authMode": "none",
+            "workspaceId": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-sc7Dvo/agentis-verify-0rsIYB/scratch/runs/af65d5f9-8515-465b-9143-f8a4afdb413c",
+            "deadlineMs": 900000,
+            "actionBudget": 20
+          },
+          "providerState": {
+            "loadStatus": "idle",
+            "capabilities": [],
+            "history": [],
+            "pendingPrompt": null,
+            "failure": null
+          },
+          "providerSessionId": "fake:af65d5f9-8515-465b-9143-f8a4afdb413c",
+          "fixture": "smoke",
+          "actionCount": 0,
+          "deadlineAt": 1788985487229
+        }
+      ],
+      "pending": [
+        {
+          "id": "914c6ee4-f2ce-4921-9c0b-3f7ae0065b41",
+          "runId": "af65d5f9-8515-465b-9143-f8a4afdb413c",
+          "kind": "launch",
+          "state": "claimed",
+          "payload": "{\"taskId\":\"96ec323c-8392-4672-a0a0-4953bba3fe55\",\"threadId\":\"20293b5a-f443-40a5-b38b-142c20d276a0\"}",
+          "approvalId": null
+        }
+      ],
+      "artifacts": [
+        {
+          "id": "b80ecbb4-cda7-41a3-a236-0c7e48a4fbae",
+          "taskId": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+          "runId": "af65d5f9-8515-465b-9143-f8a4afdb413c",
+          "author": "mara",
+          "source": "fake",
+          "mediaType": "text/markdown",
+          "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+          "byteSize": 21,
+          "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-sc7Dvo/agentis-verify-0rsIYB/scratch/runs/af65d5f9-8515-465b-9143-f8a4afdb413c/hello.md"
+        }
+      ],
+      "messages": [
+        {
+          "id": "5287112b-9278-425f-96ca-8ba753247f20",
+          "threadId": "20293b5a-f443-40a5-b38b-142c20d276a0",
+          "taskId": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+          "runId": "af65d5f9-8515-465b-9143-f8a4afdb413c",
+          "authorKind": "human",
+          "authorName": "owner",
+          "body": "verification-smoke"
+        }
+      ],
+      "events": [
+        {
+          "seq": 1,
+          "id": "5c714ad9-be16-430c-9489-038c7417248c",
+          "type": "daemon_restart",
+          "body": "{\"interrupted\":[]}"
+        },
+        {
+          "seq": 2,
+          "id": "c8921b8a-cb6a-4419-8602-d0dceb9f0c6f",
+          "type": "task_submitted",
+          "body": "{\"taskId\":\"96ec323c-8392-4672-a0a0-4953bba3fe55\",\"runId\":\"af65d5f9-8515-465b-9143-f8a4afdb413c\",\"threadId\":\"20293b5a-f443-40a5-b38b-142c20d276a0\",\"owner\":\"4f5ff578-f312-4460-afa3-0cc3f4e27a39\",\"bot\":\"mara\",\"commandId\":\"5b6b8071-68b1-43a5-ab7f-8f48d4dd53c2\"}"
+        },
+        {
+          "seq": 3,
+          "id": "f95023c7-d695-465f-b456-0f6fcd0db729",
+          "type": "run_running",
+          "body": "{\"runId\":\"af65d5f9-8515-465b-9143-f8a4afdb413c\",\"providerSessionId\":\"fake:af65d5f9-8515-465b-9143-f8a4afdb413c\"}"
+        },
+        {
+          "seq": 4,
+          "id": "d95b41ab-88b0-430b-8a88-031d2964ff15",
+          "type": "run_succeeded",
+          "body": "{\"runId\":\"af65d5f9-8515-465b-9143-f8a4afdb413c\",\"artifactId\":\"b80ecbb4-cda7-41a3-a236-0c7e48a4fbae\"}"
+        }
+      ]
+    },
+    "selectedRun": {
+      "id": "af65d5f9-8515-465b-9143-f8a4afdb413c",
+      "taskId": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+      "status": "succeeded",
+      "waitingReason": "none",
+      "frozen": {
+        "bot": "mara",
+        "mode": "agent",
+        "provider": "fake",
+        "transport": "fake-in-process",
+        "executableVersion": "fake-1",
+        "model": "fake",
+        "executionBoundary": "unverified-host-scratch",
+        "authMode": "none",
+        "workspaceId": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-sc7Dvo/agentis-verify-0rsIYB/scratch/runs/af65d5f9-8515-465b-9143-f8a4afdb413c",
+        "deadlineMs": 900000,
+        "actionBudget": 20
+      },
+      "providerState": {
+        "loadStatus": "idle",
+        "capabilities": [],
+        "history": [],
+        "pendingPrompt": null,
+        "failure": null
+      },
+      "providerSessionId": "fake:af65d5f9-8515-465b-9143-f8a4afdb413c",
+      "fixture": "smoke",
+      "actionCount": 0,
+      "deadlineAt": 1788985487229
+    },
+    "selectedTask": {
+      "id": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+      "brief": "verification-smoke",
+      "ownerSession": "4f5ff578-f312-4460-afa3-0cc3f4e27a39",
+      "botName": "mara",
+      "botRole": "coordinator",
+      "status": "completed",
+      "actionCount": 0
+    }
+  },
+  "final": {
+    "schemaId": "agentis.v2.gate0.5",
+    "stopAll": false,
+    "handoffs": [],
+    "tasks": [
+      {
+        "id": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+        "brief": "verification-smoke",
+        "ownerSession": "4f5ff578-f312-4460-afa3-0cc3f4e27a39",
+        "botName": "mara",
+        "botRole": "coordinator",
+        "status": "completed",
+        "actionCount": 0
+      }
+    ],
+    "runs": [
+      {
+        "id": "af65d5f9-8515-465b-9143-f8a4afdb413c",
+        "taskId": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+        "status": "succeeded",
+        "waitingReason": "none",
+        "frozen": {
+          "bot": "mara",
+          "mode": "agent",
+          "provider": "fake",
+          "transport": "fake-in-process",
+          "executableVersion": "fake-1",
+          "model": "fake",
+          "executionBoundary": "unverified-host-scratch",
+          "authMode": "none",
+          "workspaceId": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-sc7Dvo/agentis-verify-0rsIYB/scratch/runs/af65d5f9-8515-465b-9143-f8a4afdb413c",
+          "deadlineMs": 900000,
+          "actionBudget": 20
+        },
+        "providerState": {
+          "loadStatus": "idle",
+          "capabilities": [],
+          "history": [],
+          "pendingPrompt": null,
+          "failure": null
+        },
+        "providerSessionId": "fake:af65d5f9-8515-465b-9143-f8a4afdb413c",
+        "fixture": "smoke",
+        "actionCount": 0,
+        "deadlineAt": 1788985487229
+      }
+    ],
+    "pending": [
+      {
+        "id": "914c6ee4-f2ce-4921-9c0b-3f7ae0065b41",
+        "runId": "af65d5f9-8515-465b-9143-f8a4afdb413c",
+        "kind": "launch",
+        "state": "claimed",
+        "payload": "{\"taskId\":\"96ec323c-8392-4672-a0a0-4953bba3fe55\",\"threadId\":\"20293b5a-f443-40a5-b38b-142c20d276a0\"}",
+        "approvalId": null
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "b80ecbb4-cda7-41a3-a236-0c7e48a4fbae",
+        "taskId": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+        "runId": "af65d5f9-8515-465b-9143-f8a4afdb413c",
+        "author": "mara",
+        "source": "fake",
+        "mediaType": "text/markdown",
+        "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+        "byteSize": 21,
+        "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-sc7Dvo/agentis-verify-0rsIYB/scratch/runs/af65d5f9-8515-465b-9143-f8a4afdb413c/hello.md"
+      }
+    ],
+    "messages": [
+      {
+        "id": "5287112b-9278-425f-96ca-8ba753247f20",
+        "threadId": "20293b5a-f443-40a5-b38b-142c20d276a0",
+        "taskId": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+        "runId": "af65d5f9-8515-465b-9143-f8a4afdb413c",
+        "authorKind": "human",
+        "authorName": "owner",
+        "body": "verification-smoke"
+      }
+    ],
+    "events": [
+      {
+        "seq": 1,
+        "id": "5c714ad9-be16-430c-9489-038c7417248c",
+        "type": "daemon_restart",
+        "body": "{\"interrupted\":[]}"
+      },
+      {
+        "seq": 2,
+        "id": "c8921b8a-cb6a-4419-8602-d0dceb9f0c6f",
+        "type": "task_submitted",
+        "body": "{\"taskId\":\"96ec323c-8392-4672-a0a0-4953bba3fe55\",\"runId\":\"af65d5f9-8515-465b-9143-f8a4afdb413c\",\"threadId\":\"20293b5a-f443-40a5-b38b-142c20d276a0\",\"owner\":\"4f5ff578-f312-4460-afa3-0cc3f4e27a39\",\"bot\":\"mara\",\"commandId\":\"5b6b8071-68b1-43a5-ab7f-8f48d4dd53c2\"}"
+      },
+      {
+        "seq": 3,
+        "id": "f95023c7-d695-465f-b456-0f6fcd0db729",
+        "type": "run_running",
+        "body": "{\"runId\":\"af65d5f9-8515-465b-9143-f8a4afdb413c\",\"providerSessionId\":\"fake:af65d5f9-8515-465b-9143-f8a4afdb413c\"}"
+      },
+      {
+        "seq": 4,
+        "id": "d95b41ab-88b0-430b-8a88-031d2964ff15",
+        "type": "run_succeeded",
+        "body": "{\"runId\":\"af65d5f9-8515-465b-9143-f8a4afdb413c\",\"artifactId\":\"b80ecbb4-cda7-41a3-a236-0c7e48a4fbae\"}"
+      }
+    ]
+  },
+  "selectedRun": {
+    "id": "af65d5f9-8515-465b-9143-f8a4afdb413c",
+    "taskId": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+    "status": "succeeded",
+    "waitingReason": "none",
+    "frozen": {
+      "bot": "mara",
+      "mode": "agent",
+      "provider": "fake",
+      "transport": "fake-in-process",
+      "executableVersion": "fake-1",
+      "model": "fake",
+      "executionBoundary": "unverified-host-scratch",
+      "authMode": "none",
+      "workspaceId": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-sc7Dvo/agentis-verify-0rsIYB/scratch/runs/af65d5f9-8515-465b-9143-f8a4afdb413c",
+      "deadlineMs": 900000,
+      "actionBudget": 20
+    },
+    "providerState": {
+      "loadStatus": "idle",
+      "capabilities": [],
+      "history": [],
+      "pendingPrompt": null,
+      "failure": null
+    },
+    "providerSessionId": "fake:af65d5f9-8515-465b-9143-f8a4afdb413c",
+    "fixture": "smoke",
+    "actionCount": 0,
+    "deadlineAt": 1788985487229
+  },
+  "selectedTask": {
+    "id": "96ec323c-8392-4672-a0a0-4953bba3fe55",
+    "brief": "verification-smoke",
+    "ownerSession": "4f5ff578-f312-4460-afa3-0cc3f4e27a39",
+    "botName": "mara",
+    "botRole": "coordinator",
+    "status": "completed",
+    "actionCount": 0
+  }
+}

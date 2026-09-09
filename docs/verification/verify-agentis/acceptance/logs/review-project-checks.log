@@ -1,0 +1,66 @@
+$ "sh" "-c" "pnpm typecheck && pnpm lint && pnpm test"
+cwd: /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ
+started_at: 2026-09-09T22:25:41.233Z
+
+
+> agentis@2.0.0 typecheck /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ
+> pnpm --filter @agentis-labs/cli typecheck
+
+
+> @agentis-labs/cli@2.0.0 typecheck /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli
+> tsc -p tsconfig.json --noEmit
+
+
+> agentis@2.0.0 lint /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ
+> pnpm --filter @agentis-labs/cli lint
+
+
+> @agentis-labs/cli@2.0.0 lint /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli
+> oxlint --deny-warnings src test
+
+
+> agentis@2.0.0 test /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ
+> pnpm --filter @agentis-labs/cli test
+
+
+> @agentis-labs/cli@2.0.0 test /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli
+> vitest run
+
+
+ RUN  v3.2.4 /Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli
+
+ ✓ test/claude.test.ts (24 tests) 2222ms
+ ✓ test/handoff.test.ts (21 tests) 3555ms
+   ✓ bounded handoff > expires a proposal before a late provider accepts without losing the source  405ms
+   ✓ bounded handoff > cancel_run before acceptance retains the coordinator result  402ms
+   ✓ bounded handoff > stop_all before acceptance retains the coordinator result  396ms
+   ✓ bounded handoff > loads a canceled accepted handoff without replaying ownership or output  458ms
+ ✓ test/container.test.ts (12 tests) 4701ms
+   ✓ Run containers > runs native device login using only dedicated provider storage and restricted egress  396ms
+   ✓ Run containers > starts live Codex with run-local auth and removes its proxy and internal network  622ms
+   ✓ Run containers > removes the exact Run container when stopped  348ms
+   ✓ Run containers > removes an owned terminal container before restart begins serving  370ms
+   ✓ Run containers > isolates sequential Run mounts and removes both terminal containers  899ms
+   ✓ Run containers > fails only the Run when Docker disappears while the container is active  528ms
+   ✓ Run containers > does not load a session after stop-all during native version preflight  517ms
+ ✓ test/codex.test.ts (9 tests) 1452ms
+   ✓ codex stub protocol > keeps a successful load retry intact after the crashed attempt timeout  888ms
+ ✓ test/http.test.ts (7 tests) 163ms
+ ✓ test/store.test.ts (9 tests) 41ms
+ ✓ test/claude-container.test.ts (5 tests) 4ms
+ ✓ test/scratch-file.test.ts (2 tests) 3ms
+ ✓ test/boundary.test.ts (3 tests) 1684ms
+   ✓ boundary > fails closed when Docker Desktop is required and unavailable  1683ms
+ ✓ test/claude-result.test.ts (4 tests) 2ms
+ ✓ test/auth.test.ts (1 test) 8ms
+ ✓ test/api.test.ts (1 test) 3ms
+ ✓ test/cli.test.ts (1 test) 4ms
+
+ Test Files  13 passed (13)
+      Tests  99 passed (99)
+   Start at  15:25:44
+   Duration  17.05s (transform 143ms, setup 0ms, collect 1.75s, tests 13.84s, environment 1ms, prepare 361ms)
+
+
+exit_code: 0
+finished_at: 2026-09-09T22:26:02.126Z

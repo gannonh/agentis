@@ -1,0 +1,47 @@
+{
+  "name": "doctor",
+  "command": [
+    "/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin/node",
+    "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ/packages/cli/dist/bin.js",
+    "doctor",
+    "--endpoint",
+    "http://127.0.0.1:56239/",
+    "--data-root",
+    "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-HSXLNI/agentis-verify-kf1FYO"
+  ],
+  "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+  "startedAt": "2026-09-09T20:22:25.066Z",
+  "finishedAt": "2026-09-09T20:22:25.275Z",
+  "stdout": "{\n  \"health\": {\n    \"ok\": true,\n    \"schemaId\": \"agentis.v2.gate0.5\",\n    \"apiFamily\": \"v1\",\n    \"node\": \"v24.20.0\",\n    \"packageVersion\": \"2.0.0\"\n  },\n  \"status\": {\n    \"schemaId\": \"agentis.v2.gate0.5\",\n    \"stopAll\": false,\n    \"handoffs\": [],\n    \"tasks\": [],\n    \"runs\": [],\n    \"pending\": [],\n    \"artifacts\": [],\n    \"messages\": [],\n    \"events\": [\n      {\n        \"seq\": 1,\n        \"id\": \"d43546c2-50c9-49ba-b44a-b5176b1aa256\",\n        \"type\": \"daemon_restart\",\n        \"body\": \"{\\\"interrupted\\\":[]}\"\n      }\n    ]\n  }\n}\n",
+  "stderr": "",
+  "exitCode": 0,
+  "signal": null,
+  "timedOut": false,
+  "parsed": {
+    "health": {
+      "ok": true,
+      "schemaId": "agentis.v2.gate0.5",
+      "apiFamily": "v1",
+      "node": "v24.20.0",
+      "packageVersion": "2.0.0"
+    },
+    "status": {
+      "schemaId": "agentis.v2.gate0.5",
+      "stopAll": false,
+      "handoffs": [],
+      "tasks": [],
+      "runs": [],
+      "pending": [],
+      "artifacts": [],
+      "messages": [],
+      "events": [
+        {
+          "seq": 1,
+          "id": "d43546c2-50c9-49ba-b44a-b5176b1aa256",
+          "type": "daemon_restart",
+          "body": "{\"interrupted\":[]}"
+        }
+      ]
+    }
+  }
+}
