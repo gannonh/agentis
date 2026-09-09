@@ -183,6 +183,53 @@ const processAt = (pid) => {
   if (!command) return { known: false, error: "ps returned no command" };
   return { known: true, exists: true, command };
 };
+const startupDaemons = (root, rootPath) => {
+  const result = spawnSync("ps", ["-ww", "-axo", "pid=,command="], { encoding: "utf8" });
+  if (result.error || result.status !== 0)
+    throw new Error(
+      `cannot inspect startup daemons: ${text(result.error ?? new Error(`ps exited ${result.status}`))}`,
+    );
+  const owned = [];
+  const unknown = [];
+  const references = [root, rootPath].filter(
+    (item, index, all) => item && all.indexOf(item) === index,
+  );
+  const prefix = `${process.execPath} ${cli} serve --endpoint `;
+  const marker = " --data-root ";
+  const suffix = " --provider fake --execution-boundary unverified-host-scratch --profile verify";
+  for (const line of String(result.stdout ?? "").split("\n")) {
+    const match = line.match(/^\s*(\d+)\s+(.+)$/);
+    if (!match) continue;
+    const [, pidText, command] = match;
+    if (!references.some((reference) => command.includes(reference))) continue;
+    const markerAt = command.indexOf(marker, prefix.length);
+    const suffixAt = command.length - suffix.length;
+    if (
+      !command.startsWith(prefix) ||
+      markerAt < prefix.length ||
+      suffixAt <= markerAt + marker.length ||
+      !command.endsWith(suffix)
+    ) {
+      unknown.push({ pid: Number(pidText), command });
+      continue;
+    }
+    const endpointText = command.slice(prefix.length, markerAt);
+    const dataRootText = command.slice(markerAt + marker.length, suffixAt);
+    try {
+      const endpoint = new URL(endpointText);
+      if (
+        !endpoint.port ||
+        !["127.0.0.1", "localhost"].includes(endpoint.hostname) ||
+        realpathSync(dataRootText) !== root
+      )
+        throw new Error("startup command identity mismatch");
+      owned.push({ pid: Number(pidText), endpoint: endpointText, dataRoot: dataRootText });
+    } catch {
+      unknown.push({ pid: Number(pidText), command });
+    }
+  }
+  return { owned, unknown };
+};
 const ownsDaemon = (info, command) => {
   const expected = [
     process.execPath,
@@ -239,12 +286,45 @@ const endpointUp = async (endpoint) => {
     clearTimeout(timer);
   }
 };
+const cleanupStartupFailure = async (inspection) => {
+  for (const entry of readdirSync(tempParentReal, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !entry.name.startsWith("agentis-verify-")) continue;
+    const rootPath = join(tempParent, entry.name);
+    const root = realpathSync(join(tempParentReal, entry.name));
+    let daemons = startupDaemons(root, rootPath);
+    const record = { root, rootPath, before: daemons, terminated: [] };
+    inspection.push(record);
+    if (daemons.unknown.length)
+      throw new Error(`cannot prove startup process ownership for ${root}`);
+    for (const candidate of daemons.owned) {
+      record.terminated.push({
+        pid: candidate.pid,
+        endpoint: candidate.endpoint,
+        signal: "SIGTERM",
+      });
+      const inspected = signalDaemon(candidate, "SIGTERM");
+      if (inspected.exists && !(await daemonGone(candidate, cleanupLimit))) {
+        record.terminated[record.terminated.length - 1].signal = "SIGKILL";
+        signalDaemon(candidate, "SIGKILL");
+        if (!(await daemonGone(candidate, 2_000)))
+          throw new Error(`startup daemon pid ${candidate.pid} did not disappear`);
+      }
+      if (await endpointUp(candidate.endpoint))
+        throw new Error(`startup daemon endpoint remained reachable: ${candidate.endpoint}`);
+    }
+    daemons = startupDaemons(root, rootPath);
+    record.after = daemons;
+    if (daemons.unknown.length || daemons.owned.length)
+      throw new Error(`could not prove startup cleanup for ${root}`);
+  }
+};
 const cleanup = async () => {
   const errors = [];
   let launcherStopped = !launcher;
   let daemonStopped = launchInfo ? false : null;
   let endpointUnreachable = launchInfo ? false : null;
   let daemonInspection;
+  const startupInspection = [];
   if (launcher && launcher.exitCode === null && launcher.signalCode === null)
     launcher.kill("SIGTERM");
   if (launcher) {
@@ -290,14 +370,9 @@ const cleanup = async () => {
     }
   } else if (tempParent) {
     try {
-      if (
-        readdirSync(tempParent, { withFileTypes: true }).some(
-          (entry) => entry.isDirectory() && entry.name.startsWith("agentis-verify-"),
-        )
-      )
-        errors.push("could not prove cleanup for a generated verify data root");
+      await cleanupStartupFailure(startupInspection);
     } catch (error) {
-      errors.push(`temporary parent inspection: ${text(error)}`);
+      errors.push(`startup cleanup: ${text(error)}`);
     }
   }
   let removed = false;
@@ -319,6 +394,7 @@ const cleanup = async () => {
     daemonStopped,
     daemonInspection,
     endpointUnreachable,
+    startupInspection,
     temporaryParent: tempParent,
     temporaryParentExists: Boolean(tempParent && existsSync(tempParent)),
     preservedTemporaryParent: Boolean(tempParent && existsSync(tempParent)),
