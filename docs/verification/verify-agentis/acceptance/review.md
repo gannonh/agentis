@@ -2,7 +2,7 @@
 
 Independent spec and quality reviewers used the requested `gpt-5.6-luna@max` route. Spec review passed all eight criteria. Quality review found three gaps: submit receipt fields, late interruption verdicts, and manual failure cleanup. All were fixed and the reviewer closed every finding.
 
-The helper implementation remains `47612889` (full SHA in `smoke-reviewed/metadata.json`); the committed verification tree was rechecked at `78c901ff`. The manual reference and its synchronized executable example passed success and injected-failure runs after adding the cleanup trap. See [the acceptance report](evidence.md) for exact commands, outcomes, failed-attempt history and limits.
+The helper implementation remains `47612889` (full SHA in the earlier helper receipt); the committed verification tree was rechecked at `78c901ff` and the complete evidence tree was recorded at `70a9d60f`. The manual reference and its synchronized executable example passed success and injected-failure runs after adding the cleanup trap. See [the acceptance report](evidence.md) for exact commands, outcomes, failed-attempt history and limits.
 
 | AC | Method | Result | Evidence |
 | --- | --- | --- | --- |

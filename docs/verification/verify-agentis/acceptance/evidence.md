@@ -3,7 +3,7 @@
 UAT Scope: KAT-3315, the verification skill and its isolated smoke task.
 Target: CLI. Evidence mode: user-facing, nonvisual.
 
-The committed-tree smoke passed on `78c901ff64e06e51c2fe3c3a000d3d4a0067316f`, using Node 24.20.0 and pnpm 9.15.9 on macOS arm64. This is fake-provider fixture evidence. Live providers, other mapped workflows and Gate 0 acceptance remain UNVERIFIED by this run.
+The committed-tree smoke passed on `78c901ff64e06e51c2fe3c3a000d3d4a0067316f`, and the complete committed evidence tree is recorded at `70a9d60ff7c79826909f84a139e3c9ceb391ada8`. It used Node 24.20.0 and pnpm 9.15.9 on macOS arm64. The later evidence commit only records the already captured receipts. This is fake-provider fixture evidence. Live providers, other mapped workflows and Gate 0 acceptance remain UNVERIFIED by this run.
 
 ## Results
 
