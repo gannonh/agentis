@@ -3,16 +3,16 @@
 UAT Scope: KAT-3315, the verification skill and its isolated smoke task.
 Target: CLI. Evidence mode: user-facing, nonvisual.
 
-The automated smoke passed on implementation commit `47612889f9d05346f82e3e0e206bee7c3cce7497`, using Node 24.20.0 and pnpm 9.15.9 on macOS arm64. This is fake-provider fixture evidence. Live providers, other mapped workflows and Gate 0 acceptance remain UNVERIFIED by this run.
+The committed-tree smoke passed on `78c901ff64e06e51c2fe3c3a000d3d4a0067316f`, using Node 24.20.0 and pnpm 9.15.9 on macOS arm64. This is fake-provider fixture evidence. Live providers, other mapped workflows and Gate 0 acceptance remain UNVERIFIED by this run.
 
 ## Results
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| Public launch, doctor and task submission | PASS | [E2E log](logs/smoke-reviewed.log), [launch](smoke-reviewed/launch.json), [doctor](smoke-reviewed/doctor.json), [submission](smoke-reviewed/submit.json) |
-| Completed task and succeeded run | PASS | [Public status](smoke-reviewed/status.json) |
-| Exact artifact content, byte size, SHA-256 and owned path | PASS | [Artifact checks](smoke-reviewed/artifact.json), [retained file](smoke-reviewed/artifact/hello.md) |
-| Daemon stopped, endpoint closed, scratch removed | PASS | [Cleanup](smoke-reviewed/cleanup.json), [independent check](logs/evidence-preservation.log) |
+| Public launch, doctor and task submission | PASS | [E2E log](logs/review-committed-smoke.log), [launch](review-committed-smoke/launch.json), [doctor](review-committed-smoke/doctor.json), [submission](review-committed-smoke/submit.json) |
+| Completed task and succeeded run | PASS | [Public status](review-committed-smoke/status.json) |
+| Exact artifact content, byte size, SHA-256 and owned path | PASS | [Artifact checks](review-committed-smoke/artifact.json), [retained file](review-committed-smoke/artifact/hello.md) |
+| Daemon stopped, endpoint closed, scratch removed | PASS | [Cleanup](review-committed-smoke/cleanup.json), [independent check](logs/evidence-preservation.log) |
 | Existing evidence directory refused without changes | PASS | [Preservation check](logs/evidence-preservation.log) |
 | Interrupted run reports failure and still cleans up | PASS | [Interruption check](logs/interruption-final.log), [expected failure](interruption-final/result.json), [cleanup](interruption-final/cleanup.json) |
 | Build in the PR checkout | PASS | [Build log](logs/build.log) |
@@ -22,6 +22,7 @@ The automated smoke passed on implementation commit `47612889f9d05346f82e3e0e206
 | Late interruption after artifact verification | PASS (expected helper FAIL) | [Late interruption](logs/late-interruption.log), [cleanup](late-interruption/cleanup.json) |
 | Missing threadId and incorrect launch effects | PASS (expected helper FAIL) | [Receipt regression check](logs/receipt-contract.log) |
 | Baseline typecheck, lint and tests | PASS, 99 tests in 13 files | [Project checks](logs/project-checks.log) |
+| Committed-tree build, checks and public smoke | PASS | [Build](logs/review-build.log), [checks](logs/review-project-checks.log), [smoke](logs/review-committed-smoke.log), [smoke result](review-committed-smoke/result.json) |
 
 Screenshots and video are not applicable to this nonvisual CLI workflow. [The manifest](evidence.json) records commands, exit codes and artifact paths. The interrupted run's FAIL verdict is the expected outcome of the interruption test; it is separate from the passing smoke run.
 

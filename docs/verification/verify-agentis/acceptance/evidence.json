@@ -5,52 +5,52 @@
   "visual": false,
   "technical_enablement": null,
   "timestamp": "2026-09-09T19:01:51.548Z",
-  "git_commit": "47612889f9d05346f82e3e0e206bee7c3cce7497",
+  "git_commit": "78c901ff64e06e51c2fe3c3a000d3d4a0067316f",
   "gitignored": false,
   "artifacts": [
     {
       "type": "json",
-      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/metadata.json",
+      "path": "docs/verification/verify-agentis/acceptance/review-committed-smoke/metadata.json",
       "description": "Exact source SHA and runtime versions"
     },
     {
       "type": "json",
-      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/launch.json",
+      "path": "docs/verification/verify-agentis/acceptance/review-committed-smoke/launch.json",
       "description": "Public launch command and exit receipt"
     },
     {
       "type": "json",
-      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/doctor.json",
+      "path": "docs/verification/verify-agentis/acceptance/review-committed-smoke/doctor.json",
       "description": "Public health and authenticated status"
     },
     {
       "type": "json",
-      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/submit.json",
+      "path": "docs/verification/verify-agentis/acceptance/review-committed-smoke/submit.json",
       "description": "Public task submission receipt"
     },
     {
       "type": "json",
-      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/status.json",
+      "path": "docs/verification/verify-agentis/acceptance/review-committed-smoke/status.json",
       "description": "Completed task and succeeded run"
     },
     {
       "type": "json",
-      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/artifact.json",
+      "path": "docs/verification/verify-agentis/acceptance/review-committed-smoke/artifact.json",
       "description": "Owned file, exact content, byte size and SHA-256 checks"
     },
     {
       "type": "text",
-      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/artifact/hello.md",
+      "path": "docs/verification/verify-agentis/acceptance/review-committed-smoke/artifact/hello.md",
       "description": "Retained output bytes"
     },
     {
       "type": "json",
-      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/cleanup.json",
+      "path": "docs/verification/verify-agentis/acceptance/review-committed-smoke/cleanup.json",
       "description": "Owned daemon stopped, endpoint closed and scratch removed"
     },
     {
       "type": "json",
-      "path": "docs/verification/verify-agentis/acceptance/smoke-reviewed/result.json",
+      "path": "docs/verification/verify-agentis/acceptance/review-committed-smoke/result.json",
       "description": "Expected and observed results with PASS verdict"
     }
   ],
@@ -291,6 +291,50 @@
       "output_path": "docs/verification/verify-agentis/acceptance/logs/manual-trap-failure.log",
       "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/manual-trap-failure.exit",
       "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"pnpm\" \"build\"",
+      "argv": [
+        "pnpm",
+        "build"
+      ],
+      "name": "review-build",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/review-build.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/review-build.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"sh\" \"-c\" \"pnpm typecheck && pnpm lint && pnpm test\"",
+      "argv": [
+        "sh",
+        "-c",
+        "pnpm typecheck && pnpm lint && pnpm test"
+      ],
+      "name": "review-project-checks",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/review-project-checks.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/review-project-checks.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "e2e",
+      "command": "\"node\" \".agents/skills/verify-agentis/helpers/smoke.mjs\" \"docs/verification/verify-agentis/acceptance/review-committed-smoke\"",
+      "argv": [
+        "node",
+        ".agents/skills/verify-agentis/helpers/smoke.mjs",
+        "docs/verification/verify-agentis/acceptance/review-committed-smoke"
+      ],
+      "name": "review-committed-smoke",
+      "cwd": "/Volumes/EVO/herdr-worktrees/agentis/kat3315-pr.rOqUXJ",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/acceptance/logs/review-committed-smoke.log",
+      "exit_code_path": "docs/verification/verify-agentis/acceptance/logs/review-committed-smoke.exit",
+      "timed_out": false
     }
   ],
   "slices": [
@@ -299,9 +343,9 @@
       "name": "Fresh-agent CLI smoke and retained proof",
       "result": "Pass",
       "evidence": [
-        "docs/verification/verify-agentis/acceptance/smoke-reviewed/result.json",
-        "docs/verification/verify-agentis/acceptance/smoke-reviewed/artifact/hello.md",
-        "docs/verification/verify-agentis/acceptance/smoke-reviewed/cleanup.json"
+        "docs/verification/verify-agentis/acceptance/review-committed-smoke/result.json",
+        "docs/verification/verify-agentis/acceptance/review-committed-smoke/artifact/hello.md",
+        "docs/verification/verify-agentis/acceptance/review-committed-smoke/cleanup.json"
       ]
     }
   ],
@@ -315,6 +359,7 @@
     "Final helper commit 8f26f3faed22b0522ce60510efbb80a1842008b6 passed smoke-final, interruption-final, and startup-final. Earlier receipts remain as development history; startup-failure attempts before this commit included working-tree changes.",
     "The final-smoke attempt on 692502dd exposed a transient teardown identity mismatch. No unowned process was signaled. recovery.json proves later PID absence and owned-root removal; 8f26f3fa adds a bounded read-only wait before fallback signals.",
     "Quality review corrections in 47612889f9d05346f82e3e0e206bee7c3cce7497 validate threadId and exact launch effect, and reject late interruption. smoke-reviewed passed; late-interruption, malformed-thread and malformed-effects produced expected FAIL with cleanup PASS. Earlier startup/interruption checks apply to unchanged cleanup logic.",
-    "The final manual trap success exited0 (manual-1788986197-89528); injected false before submit exited1 (manual-1788986217-90871). Both cleanup receipts pass. The temporary failure script is defined by examples/manual-failure-injection.txt against the saved manual example. Earlier manual argv mismatch recovery is retained in manual-1788986029-75801/recovery.json."
+    "The final manual trap success exited0 (manual-1788986197-89528); injected false before submit exited1 (manual-1788986217-90871). Both cleanup receipts pass. The temporary failure script is defined by examples/manual-failure-injection.txt against the saved manual example. Earlier manual argv mismatch recovery is retained in manual-1788986029-75801/recovery.json.",
+    "The committed tree at 78c901ff was rechecked with build, typecheck, lint, tests, and a fresh public smoke. Those receipts are review-build, review-project-checks, and review-committed-smoke."
   ]
 }
