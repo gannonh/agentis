@@ -4,7 +4,6 @@ import { Effect, Schema } from "effect";
 import { loadOrCreateOwner, parseAuthorization } from "./auth.js";
 import { applyReceiptEffects } from "./engine.js";
 import { interruptCodex } from "./codex.js";
-import { newIdempotencyKey } from "./ids.js";
 import {
   CommandRequest,
   CommandReceipt,
@@ -219,26 +218,3 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
       },
     };
   });
-
-export const postCommand = async (input: {
-  endpoint: URL;
-  token: string;
-  request: typeof CommandRequest.Type;
-  bot?: boolean;
-}) => {
-  const response = await fetch(new URL("/v1/commands", input.endpoint), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: input.bot ? `Bot ${input.token}` : `Bearer ${input.token}`,
-      host: `${input.endpoint.hostname}:${input.endpoint.port}`,
-    },
-    body: JSON.stringify(input.request),
-  });
-  return { status: response.status, body: (await response.json()) as unknown };
-};
-
-export const freshCommand = (command: (typeof CommandRequest.Type)["command"]) => ({
-  idempotencyKey: newIdempotencyKey(),
-  command,
-});

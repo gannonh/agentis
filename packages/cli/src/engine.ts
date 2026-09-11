@@ -163,7 +163,7 @@ export const applyReceiptEffects = async (input: {
         return;
       }
       await Effect.runPromise(
-        finishInputFake({
+        finishAllowedFake({
           store,
           runId: receipt.runId,
           taskId: receipt.taskId,
@@ -239,9 +239,6 @@ export const finishAllowedFake = (input: DriveInput): Effect.Effect<void, Error>
     },
     catch: (error) => (error instanceof Error ? error : new Error(String(error))),
   });
-
-export const finishInputFake = (input: DriveInput): Effect.Effect<void, Error> =>
-  finishAllowedFake(input);
 
 const writeArtifact = (engine: ReturnType<typeof mutateForEngine>, input: DriveInput) => {
   const path = join(input.workspace, "hello.md");

@@ -600,19 +600,6 @@ const main = async () => {
   try {
     observed.metadata = metadata();
     const info = await launch();
-    observed.registry = (() => {
-      const raw = json(readFileSync(join(info.dataRoot, "registry.json"), "utf8"));
-      const value = {
-        path: join(info.dataRoot, "registry.json"),
-        providers: raw.providers,
-        credentialCount: raw.credentials?.length ?? null,
-        noCredentials: Array.isArray(raw.credentials) && raw.credentials.length === 0,
-      };
-      writeEvidence("registry.json", value);
-      return value;
-    })();
-    if (!observed.registry.noCredentials || !observed.registry.providers.includes("fake"))
-      throw new Error("fake registry is missing or contains credentials");
     const ownerPath = join(info.dataRoot, "owner.token");
     const ownerStat = lstatSync(ownerPath);
     if (!ownerStat.isFile() || (ownerStat.mode & 0o777) !== 0o600)
@@ -704,7 +691,6 @@ const main = async () => {
       },
       observed: {
         launch: launchInfo,
-        registry: observed.registry ?? null,
         ownerCredential: observed.ownerCredential ?? null,
         doctor: observed.doctor
           ? { exitCode: observed.doctor.exitCode, parsed: observed.doctor.parsed }

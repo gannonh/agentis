@@ -23,8 +23,6 @@ export const SessionId = brand("SessionId");
 export type SessionId = typeof SessionId.Type;
 export const EventId = brand("EventId");
 export type EventId = typeof EventId.Type;
-export const ProviderSessionId = brand("ProviderSessionId");
-export type ProviderSessionId = typeof ProviderSessionId.Type;
 export const IdempotencyKey = brand("IdempotencyKey");
 export type IdempotencyKey = typeof IdempotencyKey.Type;
 
@@ -63,7 +61,6 @@ export const ActionState = Schema.Literal(
   "expired",
   "canceled",
   "claimed",
-  "unknown",
   "confirmed",
 );
 export type ActionState = typeof ActionState.Type;
@@ -72,7 +69,6 @@ export const WaitingReason = Schema.Literal(
   "approval",
   "input",
   "interrupted",
-  "unknown_outcome",
   "none",
 );
 export type WaitingReason = typeof WaitingReason.Type;

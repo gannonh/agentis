@@ -10,12 +10,6 @@ export type OwnerSession = {
   readonly token: string;
 };
 
-export type BotSession = {
-  readonly kind: "bot";
-  readonly token: string;
-  readonly runId: string;
-};
-
 const OwnerFile = Schema.Struct({
   sessionId: SessionId,
   token: Schema.String,

@@ -15,7 +15,7 @@ pnpm build
 node packages/cli/dist/bin.js verify launch
 ```
 
-`verify launch` stays in the foreground. It creates a temporary data root named `agentis-verify-*`, writes a fake provider registry with no credentials, allocates an explicit loopback port, starts the daemon with `unverified-host-scratch`, and prints one JSON readiness object:
+`verify launch` stays in the foreground. It creates a temporary data root named `agentis-verify-*`, allocates an explicit loopback port, starts the daemon with `unverified-host-scratch`, and prints one JSON readiness object:
 
 ```json
 {
