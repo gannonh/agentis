@@ -35,3 +35,9 @@ An independent inherited-model architecture lane compared the Docker implementat
 The initially failed receipts remain preserved. Final acceptance uses the committed repairs, not these preliminary dirty-source checks.
 
 A final independent code review of `e2769a79` against `70e8b204` found no material correctness issues and no useless new comments or suppressions. It covered fixture containment, relay lifetime/cleanup, readiness, packaged probes and the Claude prompts. The reviewer did not run tests or providers. Its remaining request for live accepted/rejected handoff evidence was satisfied by the committed-SHA receipts.
+
+## External review corrections
+
+Codex review identified global fixture discovery as a cleanup ownership bug (P1) and hard-coded audit roots as a reproduction defect (P2). Cursor independently reported the same cleanup bug. Both were fixed in `0af5e00dc7ac81288d9d7e556caa3a019ee7ef05`; all three GitHub review threads received a disposition and were resolved.
+
+The helper now cleans container/root state only from validated readiness for its own launch. Before readiness, it stops only its spawned launcher and retains unidentified diagnostic roots. A regression reproduced the old behavior terminating a separate live fixture; the corrected helper preserves that fixture's endpoint, marker, owner token and container. The audit accepts explicit scope/root/output arguments and records missing inputs as FAIL without exposing secrets. Four helper regression tests pass locally and in Linux core CI. The full fresh-root rerun is recorded under `evidence/reviewed/`.

@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "id": "0f923386-0bd2-4f88-8c9e-6660c9c0c61c",
+    "taskId": "54784665-162e-47c3-9ad5-4a1990e3d130",
+    "runId": "a672ae14-b985-4a9b-90a0-7619ec7a58e0",
+    "author": "mara",
+    "source": "fake",
+    "mediaType": "text/markdown",
+    "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+    "byteSize": 21,
+    "path": "/private/tmp/agentis-verify-bhAIgT/scratch/runs/a672ae14-b985-4a9b-90a0-7619ec7a58e0/hello.md"
+  },
+  "realpath": "/private/tmp/agentis-verify-bhAIgT/scratch/runs/a672ae14-b985-4a9b-90a0-7619ec7a58e0/hello.md",
+  "dataRoot": "/private/tmp/agentis-verify-bhAIgT",
+  "workspace": "/private/tmp/agentis-verify-bhAIgT/scratch",
+  "insideDataRoot": true,
+  "insideWorkspace": true,
+  "regularFile": true,
+  "expectedBody": "# verification-smoke\n",
+  "observedByteSize": 21,
+  "observedContentByteSize": 21,
+  "observedSha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+  "byteSizeMatches": true,
+  "sha256Matches": true,
+  "bodyMatches": true,
+  "sourceExpected": true,
+  "mediaTypeExpected": true,
+  "authorExpected": true,
+  "copyPath": "/Users/gannonhall/.codex/worktrees/8921/agentis/docs/verification/verify-agentis/acceptance/kat-3247-reviewed-20260911/artifact/hello.md",
+  "copyByteSize": 21,
+  "copySha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+  "copyMatches": true
+}

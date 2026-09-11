@@ -1,6 +1,6 @@
 # Provider access and evidence register
 
-The September 11, 2026 [KAT-3247 verification](verification/kat-3247/README.md) exercised product commit `e2769a79f7e59d7c4d5c771a29a6874f2151df2b` on macOS Apple silicon with Docker Desktop. Codex app-server and direct Claude Agent SDK each passed the six live scratch cases. All nine Gate 0 verification criteria pass, including native rejected-handoff ownership and packaged fixture isolation. At handoff, merge and milestone closure remain pending; Gate 1 has not been started or approved.
+The September 11, 2026 [KAT-3247 verification](verification/kat-3247/README.md) exercised product commit `0af5e00dc7ac81288d9d7e556caa3a019ee7ef05` on macOS Apple silicon with Docker Desktop. Codex app-server and direct Claude Agent SDK each passed the six live scratch cases. All nine Gate 0 verification criteria pass, including native rejected-handoff ownership and packaged fixture isolation. At handoff, merge and milestone closure remain pending; Gate 1 has not been started or approved.
 
 The [runtime ADR](adrs/0001-runtime-and-execution-foundations.md) owns provider policy. [KAT-3251 research](research/provider-contracts/README.md) is the September 6 research snapshot. Its initial Cursor selection was superseded by the [recorded KAT-3243 replacement](verification/kat-3243/README.md). Historical failed-provider receipts remain evidence of that decision.
 

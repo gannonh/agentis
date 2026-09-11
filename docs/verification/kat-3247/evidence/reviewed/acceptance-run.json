@@ -1,0 +1,131 @@
+{
+  "sourceCommit": "0af5e00dc7ac81288d9d7e556caa3a019ee7ef05",
+  "runs": [
+    {
+      "case": "helper-regressions",
+      "command": [
+        "node",
+        "--test",
+        ".agents/skills/verify-agentis/helpers/smoke-ownership.test.mjs",
+        "docs/verification/kat-3247/audit-evidence.test.mjs"
+      ],
+      "startedAt": "2026-09-11T21:36:14.992Z",
+      "finishedAt": "2026-09-11T21:36:17.301Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "mara",
+      "command": [
+        "node",
+        "scripts/live-provider-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-reviewed-20260911",
+        "mara",
+        "smoke",
+        "allow",
+        "deny",
+        "plan",
+        "input",
+        "cancel"
+      ],
+      "startedAt": "2026-09-11T21:36:17.303Z",
+      "finishedAt": "2026-09-11T21:37:20.603Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "ivo",
+      "command": [
+        "node",
+        "scripts/live-provider-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-reviewed-20260911",
+        "ivo",
+        "smoke",
+        "allow",
+        "deny",
+        "plan",
+        "input",
+        "cancel"
+      ],
+      "startedAt": "2026-09-11T21:37:20.603Z",
+      "finishedAt": "2026-09-11T21:38:10.572Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "handoff",
+      "command": [
+        "node",
+        "scripts/live-handoff-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-reviewed-20260911"
+      ],
+      "startedAt": "2026-09-11T21:38:10.573Z",
+      "finishedAt": "2026-09-11T21:38:52.098Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "rejected-handoff",
+      "command": [
+        "node",
+        "docs/verification/kat-3247/rejected-handoff.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-reviewed-rejection-20260911",
+        "docs/verification/kat-3247/evidence/reviewed/rejected-handoff.json"
+      ],
+      "startedAt": "2026-09-11T21:38:52.098Z",
+      "finishedAt": "2026-09-11T21:39:06.650Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "crash-containment",
+      "command": [
+        "node",
+        "docs/verification/kat-3247/crash-containment.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-reviewed-rejection-20260911",
+        "docs/verification/kat-3247/evidence/reviewed/crash-containment.json"
+      ],
+      "startedAt": "2026-09-11T21:39:06.650Z",
+      "finishedAt": "2026-09-11T21:39:24.474Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "recovery",
+      "command": [
+        "node",
+        "docs/verification/kat-3247/recovery.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-reviewed-recovery-20260911",
+        "docs/verification/kat-3247/evidence/reviewed/recovery.json"
+      ],
+      "startedAt": "2026-09-11T21:39:24.475Z",
+      "finishedAt": "2026-09-11T21:39:25.134Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "fixture-lifecycle",
+      "command": [
+        "node",
+        "docs/verification/kat-3247/fixture-lifecycle.mjs",
+        "docs/verification/kat-3247/evidence/reviewed/fixture-lifecycle.json"
+      ],
+      "startedAt": "2026-09-11T21:39:25.134Z",
+      "finishedAt": "2026-09-11T21:39:42.775Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "skill-smoke",
+      "command": [
+        "node",
+        ".agents/skills/verify-agentis/helpers/smoke.mjs",
+        "docs/verification/verify-agentis/acceptance/kat-3247-reviewed-20260911"
+      ],
+      "startedAt": "2026-09-11T21:39:42.776Z",
+      "finishedAt": "2026-09-11T21:39:51.186Z",
+      "exitCode": 0,
+      "status": "PASS"
+    }
+  ]
+}

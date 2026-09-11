@@ -1,0 +1,91 @@
+{
+  "recordedAt": "2026-09-11T21:40:20.232Z",
+  "status": "PASS",
+  "sourceCommit": "0af5e00dc7ac81288d9d7e556caa3a019ee7ef05",
+  "command": [
+    "/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin/node",
+    "/Users/gannonhall/.codex/worktrees/8921/agentis/docs/verification/kat-3247/audit-evidence.mjs"
+  ],
+  "argv": [
+    "--output",
+    "docs/verification/kat-3247/evidence/reviewed/cleanup-and-redaction.json",
+    "--scope",
+    "docs/verification/kat-3247",
+    "--scope",
+    "docs/verification/verify-agentis/acceptance/kat-3247-completion-20260911",
+    "--scope",
+    "docs/verification/verify-agentis/acceptance/kat-3247-e2085e98",
+    "--scope",
+    "docs/verification/verify-agentis/acceptance/kat-3247-reviewed-20260911",
+    "--scope",
+    "docs/verification/verify-agentis/acceptance/kat-3247-docker-initial",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3247-e2085e98",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3247-rejection-e2085e98",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3247-recovery-e2085e98",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3247-completion-20260911",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3247-completion-rejection-20260911",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3247-reviewed-20260911",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3247-reviewed-rejection-20260911",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3247-reviewed-recovery-20260911"
+  ],
+  "cwd": "/Users/gannonhall/.codex/worktrees/8921/agentis",
+  "output": "/Users/gannonhall/.codex/worktrees/8921/agentis/docs/verification/kat-3247/evidence/reviewed/cleanup-and-redaction.json",
+  "scope": [
+    "/Users/gannonhall/.codex/worktrees/8921/agentis/docs/verification/kat-3247",
+    "/Users/gannonhall/.codex/worktrees/8921/agentis/docs/verification/verify-agentis/acceptance/kat-3247-completion-20260911",
+    "/Users/gannonhall/.codex/worktrees/8921/agentis/docs/verification/verify-agentis/acceptance/kat-3247-e2085e98",
+    "/Users/gannonhall/.codex/worktrees/8921/agentis/docs/verification/verify-agentis/acceptance/kat-3247-reviewed-20260911",
+    "/Users/gannonhall/.codex/worktrees/8921/agentis/docs/verification/verify-agentis/acceptance/kat-3247-docker-initial"
+  ],
+  "scopeFailures": [],
+  "ownerTokenScan": {
+    "fileCount": 145,
+    "comparison": "Literal owner token contents from the supplied local data roots; filenames and paths are retained as provenance",
+    "dataRoots": [
+      "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+      "/Users/gannonhall/.agentis/kat-3247-e2085e98",
+      "/Users/gannonhall/.agentis/kat-3247-rejection-e2085e98",
+      "/Users/gannonhall/.agentis/kat-3247-recovery-e2085e98",
+      "/Users/gannonhall/.agentis/kat-3247-completion-20260911",
+      "/Users/gannonhall/.agentis/kat-3247-completion-rejection-20260911",
+      "/Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911",
+      "/Users/gannonhall/.agentis/kat-3247-reviewed-20260911",
+      "/Users/gannonhall/.agentis/kat-3247-reviewed-rejection-20260911",
+      "/Users/gannonhall/.agentis/kat-3247-reviewed-recovery-20260911"
+    ],
+    "tokenFailures": [],
+    "additionalPattern": "sk-ant-api\\d+-[a-zA-Z0-9_-]{20,}",
+    "matches": [],
+    "status": "PASS"
+  },
+  "runningContainers": {
+    "command": [
+      "docker",
+      "ps",
+      "--format",
+      "{{.Names}}"
+    ],
+    "argv": [
+      "ps",
+      "--format",
+      "{{.Names}}"
+    ],
+    "exitCode": 0,
+    "names": [],
+    "managedNames": [],
+    "status": "PASS"
+  },
+  "limitations": "This is a point-in-time container inventory and scoped content scan, not proof of absence of every secret, stopped resource, retained volume, or host process. Running containers without the Agentis managed name prefix are retained in inventory but do not determine the verdict."
+}
