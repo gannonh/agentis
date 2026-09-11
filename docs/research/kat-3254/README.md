@@ -4,6 +4,12 @@
 
 Read the [comparison and selection](comparison.md), [measurement protocol](protocol.md), and [requirements for the next slices](adoption.md).
 
+## What you are looking at
+
+The page has two surfaces. The bordered **Simulated Agentis product** pane is the interface being evaluated. The study rail explains the comparison, shows the current phase, and contains controls that advance scripted teammate events. Those controls are not product actions.
+
+You are comparing three layouts for one fixed fictional release-readiness request. A is the selected shared team room. B is a manager direct message with a separate specialist summary. C is a task-first workspace with a linked conversation. The request, handoff, approval rule, and recovery path stay the same in all three. Nothing calls a provider, connector, repository, Linear action, task runner, computer, or scheduler.
+
 ## Start the prototype
 
 From the repository root, run this command with Python 3.
@@ -12,7 +18,7 @@ From the repository root, run this command with Python 3.
 python3 -m http.server 4173 --bind 127.0.0.1 --directory docs/research/kat-3254/prototypes
 ```
 
-Open [A, shared team room](http://127.0.0.1:4173/?variant=A), [B, manager direct message](http://127.0.0.1:4173/?variant=B), or [C, task first](http://127.0.0.1:4173/?variant=C). Use the top switcher to compare them. Stop the server with Ctrl+C.
+Open [A, shared team room](http://127.0.0.1:4173/?variant=A&build=clarity-4) first. Use the detailed cards in the study rail, or the quick switcher in the header, to compare B and C after you finish a moment in A. Stop the server with Ctrl+C.
 
 Use a separate browser profile for research. Each alternative stores its own fictional scenario in browser local storage under `kat3254-research-A`, `-B`, or `-C`. **Restart this simulated scenario** clears only that alternative's demonstration state. Refresh retains its current state. Unrecognized saved data is preserved and refused. This storage is disposable research data, not the Agentis data root.
 
@@ -20,15 +26,18 @@ The corrected onboarding flow uses research state version 2. Version 1 records a
 
 ## Walk through the same task
 
-1. Choose **Use demonstration environment**, then **Allow this source read**. These separate the fictional provider/execution choice from authority to read sources for the first task. Setup starts no task.
-2. In C, choose **Start a request**. A and B show the composer after setup.
-3. Choose **Send request** to ask Mara for the supplied release brief. The first task starts in conversation after connection and source authority, without roster or workflow configuration. Only the supplied scenario text is accepted.
-4. In the research controls below the workspace, choose **Simulate Mara offering handoff**. Mara still owns the task. Choose **Simulate Ivo accepting** to transfer ownership explicitly.
-5. In C, open the linked conversation. Read Ivo's question and choose **Send reply** to limit the brief to release blockers.
-6. Choose **Simulate Ivo delivering brief** in the research controls. Choose **Inspect release brief**, expand both source excerpts, and close the dialog.
-7. Choose **Review exact action**. Inspect the account, destination, exact title/body, scope, duration, human approver, and attempt. Choose **Connect this demonstration destination**. That setup step permits requesting approval and grants no write.
-8. Choose **Approve this exact action once**. The approval is recorded before a simulated effect or receipt exists.
-9. Choose **Simulate completion receipt**, then **Inspect receipt**. The receipt identifies `action-1 v1`, `attempt-1`, `brief-v1`, and the fictional `SIM-LIN-104` issue. No real issue exists.
+The study rail always shows one current instruction. Follow that instruction before moving to the next phase.
+
+1. In the product pane, click **Use demonstration environment**.
+2. In the product pane, click **Allow this source read**.
+3. In A or B, review the prefilled message and click **Send request**. In C, click **Start a request** first, then click **Send request**.
+4. In the study rail, click **Simulate Mara offering handoff**, then **Simulate Ivo accepting**. Mara keeps ownership until Ivo accepts.
+5. In the product pane, read Ivo's question and click **Send reply**. In C, open the linked conversation first.
+6. In the study rail, click **Simulate Ivo delivering brief**. In the product pane, click **Inspect release brief**, expand both source excerpts, and close the dialog.
+7. Click **Review exact action**. Inspect the destination, exact content, scope, duration, approver, and attempt. Click **Connect this demonstration destination**, then click **Approve this exact action once**.
+8. In the study rail, click **Simulate completion receipt**, then click **Inspect receipt**. The receipt identifies `action-1 v1`, `attempt-1`, `brief-v1`, and the fictional `SIM-LIN-104` issue. No real issue exists.
+
+The study rail marks steps advanced by you as **Your next action**. It marks scripted teammate or fault events as **Simulation step**. Use the failure and interruption controls only when you want to inspect those branches.
 
 For the failure branch, restart and choose **Simulate handoff failure** after the offer. Mara retains ownership and no specialist starts. A deliberate new offer can be accepted.
 

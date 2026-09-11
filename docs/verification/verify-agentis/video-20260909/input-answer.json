@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/Users/gannonhall/.vite-plus/bin/node",
+    "/Volumes/EVO/dev/agentis/packages/cli/dist/bin.js",
+    "input",
+    "answer",
+    "--run",
+    "204ae24b-177f-428a-b529-a4bd1d08c56a",
+    "--answer",
+    "color=Blue",
+    "--endpoint",
+    "http://127.0.0.1:63376/",
+    "--data-root",
+    "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-video-wrykdupv/agentis-verify-SdSvEH"
+  ],
+  "exitCode": 0,
+  "stdout": "{\"commandId\":\"f22210bd-b812-4ed1-80b1-2398bf4109e9\",\"replayed\":false,\"accepted\":true,\"taskId\":\"b3bc60b0-099f-42ab-a5c3-4b42f7be23e1\",\"runId\":\"204ae24b-177f-428a-b529-a4bd1d08c56a\",\"effects\":[\"resume_input\"]}\n\n",
+  "stderr": ""
+}

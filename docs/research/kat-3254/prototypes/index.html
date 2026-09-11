@@ -6,23 +6,31 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
   <link rel="icon" href="data:,">
   <title>Agentis interaction research · KAT-3254</title>
-  <link rel="stylesheet" href="style.css">
-  <script type="module" src="app.js"></script>
+  <link rel="stylesheet" href="style.css?v=clarity-1">
+  <script type="module" src="app.js?v=clarity-4"></script>
 </head>
 <body>
   <a class="skip" href="#workspace">Skip to workspace</a>
   <header class="research-bar">
-    <span><strong>INTERACTION LAB</strong> / KAT-3254</span>
+    <span><strong>AGENTIS INTERACTION STUDY</strong> / KAT-3254</span>
     <nav aria-label="Research alternatives">
-      <a href="?variant=A" data-variant="A">A · Team room</a>
-      <a href="?variant=B" data-variant="B">B · Manager DM</a>
-      <a href="?variant=C" data-variant="C">C · Task first</a>
+      <a href="?variant=A&amp;build=clarity-4" data-variant="A">A · Team room</a>
+      <a href="?variant=B&amp;build=clarity-4" data-variant="B">B · Manager DM</a>
+      <a href="?variant=C&amp;build=clarity-4" data-variant="C">C · Task first</a>
     </nav>
     <span class="simulation-label">All agent behavior is simulated</span>
   </header>
   <div class="brand"><strong><span class="brand-mark">a</span> agentis</strong><span>Northstar studio <span class="muted">/ fictional workspace</span></span><span>Alex <span class="muted">· human owner</span></span></div>
-  <main id="workspace" tabindex="-1"></main>
-  <footer id="lab"></footer>
+  <main id="study-layout">
+    <aside id="study-rail" aria-label="Prototype walkthrough">
+      <div id="study-content"></div>
+      <div id="lab"></div>
+    </aside>
+    <section id="product-frame" aria-label="Simulated Agentis product">
+      <div class="product-frame-heading"><strong>SIMULATED AGENTIS PRODUCT</strong><span>Only this pane is the product layout under evaluation.</span></div>
+      <div id="workspace" tabindex="-1"></div>
+    </section>
+  </main>
   <dialog id="detail" aria-labelledby="detail-title"></dialog>
   <div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
 </body>

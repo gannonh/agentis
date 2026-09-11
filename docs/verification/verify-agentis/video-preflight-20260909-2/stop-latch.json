@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/Users/gannonhall/.vite-plus/bin/node",
+    "/Volumes/EVO/dev/agentis/packages/cli/dist/bin.js",
+    "task",
+    "submit",
+    "--brief",
+    "after-stop",
+    "--fixture",
+    "smoke",
+    "--endpoint",
+    "http://127.0.0.1:63268/",
+    "--data-root",
+    "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-video-ivxwxrie/agentis-verify-1acAZH"
+  ],
+  "exitCode": 1,
+  "stdout": "{\"commandId\":\"7f3b4dc2-6c84-47ec-a3ca-6fad79098575\",\"replayed\":false,\"accepted\":false,\"error\":\"stop-all is latched\",\"effects\":[]}\n\n",
+  "stderr": ""
+}

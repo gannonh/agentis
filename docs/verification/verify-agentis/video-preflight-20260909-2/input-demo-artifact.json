@@ -1,0 +1,16 @@
+{
+  "metadata": {
+    "id": "f28e7d28-42cd-45fd-8362-2263a2286c44",
+    "taskId": "d1629c2f-a596-4354-bf25-44dd570ef0a8",
+    "runId": "6949b513-ae3e-4934-8896-5fa7a25fa411",
+    "author": "mara",
+    "source": "fake",
+    "mediaType": "text/markdown",
+    "sha256": "202e970110db343a52d78719211f73f84bbe3ddda5cfc764b01158043d9cc1b2",
+    "byteSize": 13,
+    "path": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-video-xfp_m0qz/agentis-verify-Xqg3Td/scratch/runs/6949b513-ae3e-4934-8896-5fa7a25fa411/hello.md"
+  },
+  "observedBytes": 13,
+  "observedSha256": "202e970110db343a52d78719211f73f84bbe3ddda5cfc764b01158043d9cc1b2",
+  "contentMatches": true
+}

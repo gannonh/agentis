@@ -1,0 +1,11 @@
+{
+  "sourceSha": "f69a7a0575d3a275cd85d29af087643b84875cb5",
+  "node": "v24.20.0",
+  "pnpm": "9.15.9",
+  "os": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+  "provider": "fake",
+  "boundary": "unverified-host-scratch",
+  "packageVersion": "2.0.0",
+  "liveProviders": "UNVERIFIED",
+  "gate0": "UNVERIFIED"
+}

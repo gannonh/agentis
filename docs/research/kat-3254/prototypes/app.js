@@ -19,6 +19,73 @@ const save = () => localStorage.setItem(key, JSON.stringify(state));
 const announce = text => { document.querySelector('#announcement').textContent = text; };
 const info = () => stages[state.stage];
 
+const study = {
+  build: 'clarity-4',
+  variants: [
+    { id: 'A', title: 'Shared team room', description: 'You, Mara, and Ivo share one attributed conversation. Work and decisions stay beside it.' },
+    { id: 'B', title: 'Manager direct message', description: 'You work with Mara directly. Ivo’s work appears in a separate summary.' },
+    { id: 'C', title: 'Task first', description: 'Tasks lead. Each task links to its conversation.' },
+  ],
+  phases: [
+    { title: 'Set up', description: 'Choose the fictional environment and source.' },
+    { title: 'Request', description: 'Send the prefilled outcome to Mara.' },
+    { title: 'Handoff', description: 'Mara offers. Ivo accepts or the handoff fails.' },
+    { title: 'Clarify', description: 'Answer Ivo’s question.' },
+    { title: 'Brief', description: 'Ivo returns a cited brief.' },
+    { title: 'Exact decision', description: 'Inspect and approve or deny one action.' },
+    { title: 'Receipt or recovery', description: 'Inspect the receipt or reconcile an interruption.' },
+  ],
+};
+
+function guideFor() {
+  if (state.stage === 'connect') return { phase: 1, actor: 'you', title: 'Choose the demonstration environment', instruction: 'Click “Use demonstration environment” in the product pane. This selects the fictional provider and starts no task.', location: 'Product pane' };
+  if (state.stage === 'authority') return { phase: 1, actor: 'you', title: 'Allow the source read', instruction: 'Click “Allow this source read” in the product pane. It grants read-only access to the fictional sources for this task.', location: 'Product pane' };
+  if (state.stage === 'welcome' && variant === 'C' && view === 'tasks') return { phase: 2, actor: 'you', title: 'Open the request composer', instruction: 'Click “Start a request” in the product pane. The composer opens with the fixed scenario message.', location: 'Product pane' };
+  if (state.stage === 'welcome') return { phase: 2, actor: 'you', title: 'Send the request', instruction: 'Review the prefilled request and click “Send request”. This creates the first simulated task.', location: 'Product pane' };
+  if (state.stage === 'assigned') return { phase: 3, actor: 'simulation', title: 'Advance Mara’s handoff', instruction: 'In the study rail, open the simulation controls and click “Simulate Mara offering handoff”.', location: 'Study rail' };
+  if (state.stage === 'proposed') return { phase: 3, actor: 'simulation', title: 'Advance Ivo’s acceptance', instruction: 'In the study rail, click “Simulate Ivo accepting”. Choose the failure control only when testing the failure branch.', location: 'Study rail' };
+  if (state.stage === 'failed') return { phase: 3, actor: 'simulation', title: 'Choose the handoff branch', instruction: 'In the study rail, click “Simulate a new handoff offer” to try the bounded handoff again, or restart the scenario.', location: 'Study rail' };
+  if (state.stage === 'clarification' && variant === 'C' && view !== 'conversation') return { phase: 4, actor: 'you', title: 'Open the linked conversation', instruction: 'Click “Open linked conversation” in the product pane. Then read Ivo’s question.', location: 'Product pane' };
+  if (state.stage === 'clarification') return { phase: 4, actor: 'you', title: 'Reply to Ivo', instruction: 'Read Ivo’s question and click “Send reply” with the prefilled release-blocker answer.', location: 'Product pane' };
+  if (state.stage === 'drafting') return { phase: 5, actor: 'simulation', title: 'Advance Ivo’s brief', instruction: 'In the study rail, click “Simulate Ivo delivering brief”.', location: 'Study rail' };
+  if (state.stage === 'review' && !state.inspected) return { phase: 5, actor: 'you', title: 'Inspect the release brief', instruction: 'Click “Inspect release brief” in the product pane. Expand both source excerpts, then close the dialog.', location: 'Product pane' };
+  if (state.stage === 'review' && !state.linear) return { phase: 6, actor: 'you', title: 'Connect the demonstration destination', instruction: 'Click “Review exact action”. In the dialog, click “Connect this demonstration destination”.', location: 'Product pane' };
+  if (state.stage === 'review') return { phase: 6, actor: 'you', title: 'Approve or deny the exact action', instruction: 'Review the exact payload, then click “Approve this exact action once”. Choose “Deny action” to test the denial branch.', location: 'Product pane' };
+  if (state.stage === 'approved') return { phase: 7, actor: 'simulation', title: 'Advance the outcome', instruction: 'In the study rail, click “Simulate completion receipt”. Choose interruption to test the unknown-outcome branch.', location: 'Study rail' };
+  if (state.stage === 'unknown') return { phase: 7, actor: 'simulation', title: 'Reconcile the interruption', instruction: 'In the study rail, click “Simulate read-only receipt lookup”. It resolves the action without sending a second effect.', location: 'Study rail' };
+  if (state.stage === 'denied') return { phase: 7, actor: 'you', title: 'Inspect the retained result', instruction: 'Click “Inspect release brief” to confirm the brief remains available. No issue was created.', location: 'Product pane' };
+  return { phase: 7, actor: 'you', title: 'Inspect the receipt', instruction: 'Click “Inspect receipt” in the product pane. It records the simulated result and one approved action.', location: 'Product pane' };
+}
+
+function renderStudy() {
+  const guide = guideFor();
+  const activeVariant = study.variants.find(item => item.id === variant);
+  document.querySelector('#study-content').innerHTML = `<section class="study-intro">
+    <span class="eyebrow">START HERE</span>
+    <h2>Compare one task in three layouts</h2>
+    <p>This is a disposable interaction study. You are comparing how Agentis presents a named team task, not using a live Agentis app.</p>
+    <div class="study-boundary"><strong>Separate the two surfaces</strong><p>The bordered pane is the simulated product UI. The study rail explains the test and advances scripted teammate events.</p><p>Nothing here calls a provider, connector, repository, Linear action, task runner, computer, or scheduler.</p></div>
+  </section>
+  <section class="variant-section" aria-labelledby="variant-heading">
+    <span class="eyebrow">CHOOSE A LAYOUT TO EVALUATE</span>
+    <h2 id="variant-heading">Same scenario. Different presentation.</h2>
+    <p>Each option uses the same request, handoff, approval rule, and recovery path. Only the layout changes.</p>
+    <div class="variant-cards">${study.variants.map(item => `<a class="variant-card ${item.id === variant ? 'selected' : ''}" href="?variant=${item.id}&amp;build=${study.build}" data-variant-card="${item.id}"><span class="variant-card-title"><strong>${item.id} · ${item.title}</strong>${item.id === variant ? '<span class="current-mark">Current</span>' : ''}</span><span>${item.description}</span></a>`).join('')}</div>
+    <p class="variant-note">You are viewing <strong>${variant} · ${activeVariant.title}</strong>. Switch to another option to compare the same moment in a different layout.</p>
+  </section>
+  <section class="flow-section" aria-labelledby="flow-heading">
+    <span class="eyebrow">THE SCENARIO</span>
+    <h2 id="flow-heading">Follow the task from request to result</h2>
+    <ol class="flow-list">${study.phases.map((phase, index) => `<li class="${index + 1 < guide.phase ? 'complete' : ''} ${index + 1 === guide.phase ? 'current' : ''}"><span class="flow-number">${index + 1}</span><span><strong>${phase.title}</strong><small>${phase.description}</small></span></li>`).join('')}</ol>
+  </section>
+  <section class="next-action ${guide.actor === 'simulation' ? 'simulation-next' : ''}" aria-label="Current walkthrough step" data-probe="study-next">
+    <span class="eyebrow">${guide.actor === 'simulation' ? 'SIMULATION STEP' : 'YOUR NEXT ACTION'}</span>
+    <strong>Step ${guide.phase} of ${study.phases.length} · ${guide.title}</strong>
+    <p>${guide.instruction}</p>
+    <small>${guide.location}. Follow this instruction before moving on.</small>
+  </section>`;
+}
+
 function status() {
   return `<section class="work-status" aria-label="Current work">
     <div><span class="eyebrow">CURRENT OWNER</span><strong data-probe="owner">${info().owner}</strong></div>
@@ -53,8 +120,8 @@ function conversation() {
 }
 
 function setup() {
-  if (state.stage === 'connect') return `<section class="setup"><span class="eyebrow">FIRST-RUN SETUP · 1 OF 2</span><h2>Choose where this request runs</h2><p>Provider <strong>Sample engine</strong> · fictional, no live model</p><p>Execution <strong>This browser</strong> · simulation only</p><p>No credentials are requested. A real setup must disclose which prompts, files, and tool outputs leave the host, plus eligibility and billing. Those are unverified here.</p>${button('connect', 'Use demonstration environment')}</section>`;
-  if (state.stage === 'authority') return `<section class="setup"><span class="eyebrow">FIRST-RUN SETUP · 2 OF 2</span><h2>Allow the source for this task</h2><p>Account <strong>Alex / Northstar demo</strong></p><p>Read <strong>northstar/launchpad</strong> issues and PRs, frozen sources S1 and S2. Duration <strong>this task only</strong>. No repository writes.</p><p>Simulated connection. No GitHub request or account access occurs.</p>${button('grant', 'Allow this source read')}</section>`;
+  if (state.stage === 'connect') return `<section class="setup"><span class="eyebrow">PRODUCT SETUP · 1 OF 2 · TASK NOT STARTED</span><h2>Choose where this request runs</h2><p>Provider <strong>Sample engine</strong> · fictional, no live model</p><p>Execution <strong>This browser</strong> · simulation only</p><p>This is the first action in the simulated product. It selects the fictional environment and starts no task.</p>${button('connect', 'Use demonstration environment')}</section>`;
+  if (state.stage === 'authority') return `<section class="setup"><span class="eyebrow">PRODUCT SETUP · 2 OF 2 · TASK NOT STARTED</span><h2>Allow the source for this task</h2><p>Account <strong>Alex / Northstar demo</strong></p><p>Read <strong>northstar/launchpad</strong> issues and PRs, frozen sources S1 and S2. Duration <strong>this task only</strong>. No repository writes.</p><p>This is the second setup action. It grants read-only access to the fictional sources and starts no task.</p>${button('grant', 'Allow this source read')}</section>`;
   return '';
 }
 
@@ -79,6 +146,7 @@ function render(focus = false) {
     workspace.innerHTML = '<h1>Saved research data cannot be opened</h1><p>It is preserved. Use a new browser profile for a fresh demonstration.</p>';
     return;
   }
+  renderStudy();
   document.querySelector(`[data-variant="${variant}"]`).setAttribute('aria-current', 'page');
   const title = { A: 'A · Shared team room', B: 'B · Manager direct message', C: 'C · Task first' }[variant];
   const main = variant === 'C' ? `<nav class="task-nav" aria-label="Task navigation">${button('tasks', 'Work list', view === 'tasks' ? 'selected' : '')}${!state.taskCount ? button('conversation', 'New conversation') : button('overview', 'Release readiness', view === 'overview' ? 'selected' : '')}${state.taskCount ? button('conversation', 'Linked conversation', view === 'conversation' ? 'selected' : '') : ''}</nav>${view === 'tasks' ? `<section class="task-list"><h1>Your work</h1>${state.taskCount ? `<button data-action="overview" class="task-row"><strong>Release readiness</strong><span>${info().status}</span><span>Owner · ${info().owner}</span></button>${work()}` : `<p>Start with a conversation. No task form or workflow setup.</p>${button('conversation', 'Start a request')}</section>`}` : view === 'conversation' ? `<div class="content-grid">${conversation()}${work()}</div>` : `<div class="task-overview"><h1>Release readiness</h1><p>${request}</p>${button('conversation', 'Open linked conversation')}${work()}</div>`}` : `<div class="content-grid">${conversation()}<aside class="right-rail">${variant === 'B' ? specialist() : ''}${work()}</aside></div>`;
@@ -102,7 +170,7 @@ function renderLab() {
     approved: [['complete', 'Simulate completion receipt'], ['interrupt', 'Simulate interruption before receipt']],
     unknown: [['reconcile', 'Simulate read-only receipt lookup']],
   };
-  document.querySelector('#lab').innerHTML = `<details open class="simulation-controls"><summary>Research controls · these stand in for agents and faults</summary><div>${(controls[state.stage] || []).map(([id, label]) => button(id, label, 'lab-button')).join('')}${button('replay', 'Repeat last notification', 'lab-button')}${button('reset', 'Restart this simulated scenario', 'lab-button')}</div><p data-probe="counts">Tasks ${state.taskCount} · specialist starts ${state.dispatchCount} · simulated external effects ${state.effectCount} · duplicate notices suppressed ${state.suppressed}</p><p>Research-only browser memory. No provider, connector, task execution, computer control, or scheduling. Refresh restores the display without executing work.</p></details>`;
+  document.querySelector('#lab').innerHTML = `<details open class="simulation-controls"><summary><span class="eyebrow">STUDY-ONLY CONTROLS</span><strong>Advance the scripted scenario</strong></summary><p class="control-explanation">These buttons move Mara and Ivo through the fixed scenario or inject a fault. They are not product actions. Use them only when the walkthrough says “Simulation step”.</p><div>${(controls[state.stage] || []).map(([id, label]) => button(id, label, 'lab-button')).join('')}${button('replay', 'Repeat last notification', 'lab-button')}${button('reset', 'Restart this simulated scenario', 'lab-button')}</div><p data-probe="counts">Tasks ${state.taskCount} · specialist starts ${state.dispatchCount} · simulated external effects ${state.effectCount} · duplicate notices suppressed ${state.suppressed}</p><p>Research-only browser memory. No provider, connector, task execution, computer control, or scheduling. Refresh restores the display without executing work.</p></details>`;
 }
 
 function openDetail(kind, opener) {
@@ -112,6 +180,7 @@ function openDetail(kind, opener) {
   if (kind === 'artifact') {
     state.inspected = true;
     save();
+    renderStudy();
     title = 'Release brief · v1';
     content = `<p class="badge">Original fictional artifact · simulated output</p><h3>Hold launch for the release smoke check</h3><p>PR #42 has review approval but no passing smoke check [S1]. Issue #17 reports a retry failure without verification evidence [S2]. Restore the smoke check and verify retry behavior before launch.</p><h3>Proposed follow-up</h3><p>${action.title}. Keep all source access read-only.</p><h3>Sources in the frozen snapshot</h3><details><summary>[S1] northstar/launchpad · PR #42</summary><p>“Release smoke check removed during CI cleanup. Review approved. Latest check absent.” Fictional record, captured 2026-09-06.</p></details><details><summary>[S2] northstar/launchpad · Issue #17</summary><p>“Retry after a timeout can stall. No verification run attached.” Fictional record, captured 2026-09-06.</p></details><p class="provenance">Artifact brief-v1 · task-1 · attempt-1 · Ivo<br>Source snapshot demo-2026-09-06 · No live GitHub content</p>`;
   } else if (kind === 'environment') {
@@ -170,6 +239,7 @@ document.addEventListener('click', event => {
   else if (command === 'connect-linear') {
     state = { ...state, linear: true };
     save();
+    renderStudy();
     openDetail(sourceOpen, target);
     return;
   }

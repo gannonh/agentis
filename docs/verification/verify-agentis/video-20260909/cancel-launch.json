@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/Users/gannonhall/.vite-plus/bin/node",
+    "/Volumes/EVO/dev/agentis/packages/cli/dist/bin.js",
+    "verify",
+    "launch"
+  ],
+  "readiness": {
+    "endpoint": "http://127.0.0.1:63396/",
+    "pid": 94476,
+    "dataRoot": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-video-qf8xkxad/agentis-verify-kFeItc",
+    "log": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-video-qf8xkxad/agentis-verify-kFeItc/daemon.log",
+    "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-video-qf8xkxad/agentis-verify-kFeItc/scratch"
+  }
+}

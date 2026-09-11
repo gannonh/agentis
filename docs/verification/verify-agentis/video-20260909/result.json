@@ -1,0 +1,62 @@
+{
+  "verdict": "PASS",
+  "cases": [
+    {
+      "case": "task-and-artifact",
+      "verdict": "PASS"
+    },
+    {
+      "case": "approval-allow",
+      "verdict": "PASS"
+    },
+    {
+      "case": "approval-deny",
+      "verdict": "PASS"
+    },
+    {
+      "case": "input-answer",
+      "verdict": "PASS"
+    },
+    {
+      "case": "cancel-run",
+      "verdict": "PASS"
+    },
+    {
+      "case": "stop-all-and-latch",
+      "verdict": "PASS"
+    }
+  ],
+  "chapters": [
+    {
+      "title": "1. Submit a task and inspect its saved result",
+      "seconds": 0.36
+    },
+    {
+      "title": "2. Approve a pending action",
+      "seconds": 11.541
+    },
+    {
+      "title": "3. Deny a pending action",
+      "seconds": 26.552
+    },
+    {
+      "title": "4. Answer a question and resume the task",
+      "seconds": 41.584
+    },
+    {
+      "title": "5. Cancel a waiting run",
+      "seconds": 56.952
+    },
+    {
+      "title": "6. Stop all work and reject later submissions",
+      "seconds": 72.091
+    },
+    {
+      "title": "Recorded results",
+      "seconds": 87.976
+    }
+  ],
+  "liveProviders": "UNVERIFIED",
+  "handoff": "UNVERIFIED",
+  "gate0": "UNVERIFIED"
+}
