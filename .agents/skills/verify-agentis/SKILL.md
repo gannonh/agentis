@@ -137,6 +137,12 @@ The verification helper is at `.agents/skills/verify-agentis/helpers/smoke.mjs`.
 node .agents/skills/verify-agentis/helpers/smoke.mjs EVIDENCE_DIR
 ```
 
-The supplied `EVIDENCE_DIR` must not already exist. The helper contract is deliberately small: create and own the helper temp parent, spawn the foreground `verify launch`, parse the readiness object, validate the Docker fixture profile and exact container ID/name/labels/mount, pre-read and validate `owner.token` without printing it, run `doctor`, submit the smoke fixture with brief `verification-smoke`, fetch authenticated public status, validate the owned artifact bytes and hash against `# verification-smoke\n`, write redacted evidence, SIGTERM the launcher, stop/remove only the inspected fixture container, await the host supervisor and relay endpoint disappearance, and remove only the validated Docker data root and helper temp parent. It must return non-zero on any assertion or cleanup failure and retain evidence on failure.
+The supplied `EVIDENCE_DIR` must not already exist. The helper contract is deliberately small: create and own the helper temp parent, spawn the foreground `verify launch`, parse the readiness object, validate the Docker fixture profile and exact container ID/name/labels/mount, pre-read and validate `owner.token` without printing it, run `doctor`, submit the smoke fixture with brief `verification-smoke`, fetch authenticated public status, validate the owned artifact bytes and hash against `# verification-smoke\n`, write redacted evidence, SIGTERM the launcher, stop/remove only the inspected fixture container, await the host supervisor and relay endpoint disappearance, and remove only the validated Docker data root and helper temp parent. It must return non-zero on any assertion or cleanup failure and retain evidence on failure. Before validated readiness, cleanup terminates only the launcher it spawned. It never discovers or adopts another container/root from global temporary directories; unidentified diagnostic roots remain untouched.
 
 When routes, commands, fixture states, or artifact fields change, update this skill and its feature map through `pstack:maintain-verification-skill`, then rerun the public recipes.
+
+The helper ownership regression uses a separate live fixture and a failing launcher, then confirms the separate fixture and its data survive:
+
+```sh
+node --test .agents/skills/verify-agentis/helpers/smoke-ownership.test.mjs
+```

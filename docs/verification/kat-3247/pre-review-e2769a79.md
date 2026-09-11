@@ -1,4 +1,6 @@
-# Gate 0 verification
+# Gate 0 verification before external helper review
+
+Historical acceptance report. Subsequent external review found helper cleanup ownership and audit portability defects; the [current report](README.md) includes their repairs and final evidence.
 
 **All nine verification criteria PASS** on product and harness commit `e2769a79f7e59d7c4d5c771a29a6874f2151df2b`, September 11, 2026. Both live providers completed without authentication dropout. The repair and verification work is complete. At this handoff, PR #465 awaits human review and merge; milestone closure still requires its in-scope issues to be Done. Gate 1 has not been started or approved.
 
@@ -41,10 +43,10 @@ node docs/verification/kat-3247/crash-containment.mjs /Users/gannonhall/.agentis
 node docs/verification/kat-3247/recovery.mjs /Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911 docs/verification/kat-3247/evidence/repaired/recovery.json
 node docs/verification/kat-3247/fixture-lifecycle.mjs docs/verification/kat-3247/evidence/repaired/fixture-lifecycle.json
 node .agents/skills/verify-agentis/helpers/smoke.mjs docs/verification/verify-agentis/acceptance/kat-3247-completion-20260911
-node docs/verification/kat-3247/audit-evidence.mjs --output AUDIT_RECEIPT.json --scope EVIDENCE_DIR --data-root DATA_ROOT --data-root REJECTION_ROOT --data-root RECOVERY_ROOT
+node docs/verification/kat-3247/audit-evidence.mjs
 ```
 
-Use fresh dedicated roots and new evidence destinations for a rerun. For the audit command, replace the named placeholders with those roots and the evidence directory; repeat `--scope` and `--data-root` for additional directories. Missing scopes or owner-token files produce a failing receipt. The handoff suite intentionally latches stop-all. The first two live scripts write to their historical KAT-3243 destinations; this run copied the new receipts into `evidence/repaired/` and restored the historical files byte-for-byte.
+Use fresh dedicated roots and new evidence destinations for a rerun. The handoff suite intentionally latches stop-all. The first two live scripts write to their historical KAT-3243 destinations; this run copied the new receipts into `evidence/repaired/` and restored the historical files byte-for-byte.
 
 [Artifact verification](evidence/repaired/artifact-checks.json) independently read ten native artifact files and matched their byte counts and SHA-256 values. The packaged smoke separately verifies literal artifact content, size, hash and canonical containment. The [public fixture smoke](../verify-agentis/acceptance/kat-3247-completion-20260911/result.json) retains its artifact copy and confirms container, supervisor, endpoint and temporary-root cleanup.
 

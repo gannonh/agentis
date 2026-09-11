@@ -7,7 +7,6 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -201,32 +200,6 @@ const launch = async () => {
   launchInfo = { ...candidate, boundary: profile.executionBoundary };
   return launchInfo;
 };
-const discoverLaunch = () => {
-  if (!existsSync(fixtureTempRoot)) return null;
-  const candidates = [];
-  for (const entry of readdirSync(fixtureTempRoot, { withFileTypes: true })) {
-    if (!entry.isDirectory() || !entry.name.startsWith(fixtureNamePrefix)) continue;
-    const root = join(fixtureTempRoot, entry.name);
-    try {
-      const profile = json(readFileSync(join(root, "profiles", "verify.json"), "utf8"));
-      const container = discoverFixtureContainer(root);
-      if (!container) continue;
-      const info = validateLaunch({
-        endpoint: profile.endpoint,
-        pid: Number(readFileSync(join(root, "pid"), "utf8")),
-        ...container,
-        dataRoot: profile.dataRoot,
-        workspace: join(profile.dataRoot, "scratch"),
-        log: join(profile.dataRoot, "daemon.log"),
-        boundary: profile.executionBoundary ?? profile.boundary,
-      });
-      validateFixtureProfile(info);
-      inspectOwnedContainer(info);
-      candidates.push({ ...info, boundary: profile.executionBoundary });
-    } catch {}
-  }
-  return candidates.length === 1 ? candidates[0] : null;
-};
 const processAt = (pid) => {
   const result = spawnSync("ps", ["-ww", "-p", String(pid), "-o", "command="], {
     encoding: "utf8",
@@ -292,38 +265,6 @@ const inspectOwnedContainer = (info) => {
   if (Object.keys(container.NetworkSettings?.Ports ?? {}).length !== 0)
     throw new Error(`fixture container ${info.containerId} publishes an unexpected port`);
   return { container, labels, mounts, rootMount: rootMounts[0] };
-};
-const listFixtureContainers = () => {
-  const result = spawnSync(
-    "docker",
-    ["ps", "-aq", "--no-trunc", "--filter", `label=${fixtureManagedLabel}=${fixtureManagedValue}`],
-    { encoding: "utf8" },
-  );
-  if (result.error) throw result.error;
-  if (result.status !== 0)
-    throw new Error(`cannot list fixture containers: ${String(result.stderr ?? "").trim()}`);
-  return String(result.stdout ?? "")
-    .split("\n")
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .map((containerId) => inspectContainer(containerId))
-    .filter(Boolean);
-};
-const discoverFixtureContainer = (dataRoot) => {
-  const candidates = listFixtureContainers().filter((container) =>
-    (container.Mounts ?? []).some(
-      (mount) =>
-        mount?.Type === "bind" &&
-        mount.RW === true &&
-        mount.Source === dataRoot &&
-        mount.Destination === dataRoot,
-    ),
-  );
-  if (candidates.length > 1) throw new Error(`multiple fixture containers own ${dataRoot}`);
-  const container = candidates[0];
-  if (!container) return null;
-  const name = String(container.Name ?? "").replace(/^\/+/, "");
-  return { containerId: container.Id, containerName: name };
 };
 const ownsSupervisor = (info, command) =>
   /(?:^|\s)(?:docker|docker\.exe)\s+run(?:\s|$)/.test(command.trim()) &&
@@ -399,44 +340,6 @@ const removeOwnedDataRoot = (info) => {
   if (existsSync(info.dataRoot)) throw new Error("fixture dataRoot still exists");
   return true;
 };
-const cleanupStartupFailure = async (inspection) => {
-  for (const entry of readdirSync(tempParentReal, { withFileTypes: true })) {
-    if (!entry.isDirectory() || !entry.name.startsWith("agentis-verify-")) continue;
-    const rootPath = join(tempParent, entry.name);
-    const root = realpathSync(join(tempParentReal, entry.name));
-    const discovered = discoverFixtureContainer(root);
-    const record = { root, rootPath, container: discovered, terminated: [] };
-    inspection.push(record);
-    if (!discovered) continue;
-    const profile = json(readFileSync(join(root, "profiles", "verify.json"), "utf8"));
-    const info = validateLaunch({
-      endpoint: profile.endpoint,
-      pid: Number(readFileSync(join(root, "pid"), "utf8")),
-      containerId: discovered.containerId,
-      containerName: discovered.containerName,
-      dataRoot: root,
-      workspace: join(root, "scratch"),
-      log: join(root, "daemon.log"),
-      boundary: profile.executionBoundary ?? profile.boundary,
-    });
-    record.before = inspectOwnedContainer(info);
-    record.terminated.push(stopOwnedContainer(info));
-    if (!(await supervisorGone(info, cleanupLimit))) {
-      record.supervisor = signalSupervisor(info, "SIGTERM");
-      if (!(await supervisorGone(info, 2_000))) {
-        record.supervisor.forced = signalSupervisor(info, "SIGKILL");
-        if (!(await supervisorGone(info, 2_000)))
-          throw new Error(`fixture supervisor pid ${info.pid} did not disappear`);
-      }
-    }
-    if (await endpointUp(info.endpoint))
-      throw new Error(`fixture relay endpoint remained reachable: ${info.endpoint}`);
-    record.after = {
-      container: inspectContainer(info.containerId),
-      supervisor: processAt(info.pid),
-    };
-  }
-};
 const cleanup = async () => {
   const errors = [];
   let launcherStopped = !launcher;
@@ -445,7 +348,6 @@ const cleanup = async () => {
   let endpointUnreachable = launchInfo ? false : null;
   let dataRootRemoved = launchInfo ? false : null;
   let containerInspection;
-  const startupInspection = [];
   if (launcher && launcher.exitCode === null && launcher.signalCode === null)
     launcher.kill("SIGTERM");
   if (launcher) {
@@ -469,7 +371,7 @@ const cleanup = async () => {
       parsed: launchInfo,
     });
   }
-  const info = launchInfo ?? discoverLaunch();
+  const info = launchInfo;
   if (info) {
     try {
       containerInspection = stopOwnedContainer(info);
@@ -501,12 +403,6 @@ const cleanup = async () => {
         errors.push(`dataRoot cleanup: ${text(error)}`);
       }
     }
-  } else if (tempParent) {
-    try {
-      await cleanupStartupFailure(startupInspection);
-    } catch (error) {
-      errors.push(`startup cleanup: ${text(error)}`);
-    }
   }
   let removed = false;
   if (!errors.length && tempParent) {
@@ -530,7 +426,10 @@ const cleanup = async () => {
     dataRoot: info?.dataRoot ?? null,
     containerInspection,
     endpointUnreachable,
-    startupInspection,
+    ownershipVerified: Boolean(info),
+    cleanupScope: info
+      ? "validated launch resources"
+      : "owned launcher only; unidentified fixture roots are retained",
     temporaryParent: tempParent,
     temporaryParentExists: Boolean(tempParent && existsSync(tempParent)),
     preservedTemporaryParent: Boolean(tempParent && existsSync(tempParent)),
