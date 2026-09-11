@@ -1,0 +1,24 @@
+✖ failed readiness never adopts a separate running fixture (4565.5665ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4675.727625
+
+✖ failing tests:
+
+test at .agents/skills/verify-agentis/helpers/smoke-ownership.test.mjs:17:1
+✖ failed readiness never adopts a separate running fixture (4565.5665ms)
+  [TypeError: fetch failed] {
+    [cause]: Error: connect ECONNREFUSED 127.0.0.1:58416
+        at TCPConnectWrap.afterConnect [as oncomplete] (node:net:2017:16) {
+      errno: -61,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 58416
+    }
+  }

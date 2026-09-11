@@ -1,0 +1,161 @@
+{
+  "schema": "kat-3315.verify-agentis.smoke.v1",
+  "recordedAt": "2026-09-11T19:58:34.542Z",
+  "sourceSha": "e2085e98c27d530b0c9e66224d07e853f68f5f17",
+  "expected": {
+    "launch": "verify launch reports owned endpoint/data root",
+    "doctor": "public doctor succeeds",
+    "submit": "public smoke fixture is accepted",
+    "run": "selected run succeeds",
+    "task": "selected task completes",
+    "artifact": "matching artifact SHA and byte size inside scratch",
+    "cleanup": "owned daemon disappears, endpoint is unreachable, and temp parent is removed"
+  },
+  "observed": {
+    "launch": {
+      "endpoint": "http://127.0.0.1:50441/",
+      "pid": 3118,
+      "dataRoot": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo",
+      "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo/scratch",
+      "log": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo/daemon.log"
+    },
+    "ownerCredential": {
+      "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo/owner.token",
+      "exists": true,
+      "privateMode": true
+    },
+    "doctor": {
+      "exitCode": 0,
+      "parsed": {
+        "health": {
+          "ok": true,
+          "schemaId": "agentis.v2.gate0.5",
+          "apiFamily": "v1",
+          "node": "v24.20.0",
+          "packageVersion": "2.0.0"
+        },
+        "status": {
+          "schemaId": "agentis.v2.gate0.5",
+          "stopAll": false,
+          "handoffs": [],
+          "tasks": [],
+          "runs": [],
+          "pending": [],
+          "artifacts": [],
+          "messages": [],
+          "events": [
+            {
+              "seq": 1,
+              "id": "10b9ef9e-31f5-434a-862f-e4e39bdfd634",
+              "type": "daemon_restart",
+              "body": "{\"interrupted\":[]}"
+            }
+          ]
+        }
+      }
+    },
+    "submit": {
+      "exitCode": 0,
+      "parsed": {
+        "commandId": "546759cb-3764-4d6c-862d-63d308b32407",
+        "replayed": false,
+        "accepted": true,
+        "taskId": "15c8d916-b5c4-4f9d-97b6-c0e2f547838a",
+        "runId": "fd9ef0d2-cb46-4df9-83ff-bde806a680eb",
+        "threadId": "4777a736-6c5a-4414-84fd-83a44e8cdde2",
+        "effects": [
+          "launch"
+        ]
+      }
+    },
+    "status": {
+      "selectedRun": {
+        "id": "fd9ef0d2-cb46-4df9-83ff-bde806a680eb",
+        "taskId": "15c8d916-b5c4-4f9d-97b6-c0e2f547838a",
+        "status": "succeeded",
+        "waitingReason": "none",
+        "frozen": {
+          "bot": "mara",
+          "mode": "agent",
+          "provider": "fake",
+          "transport": "fake-in-process",
+          "executableVersion": "fake-1",
+          "model": "fake",
+          "executionBoundary": "unverified-host-scratch",
+          "authMode": "none",
+          "workspaceId": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo/scratch/runs/fd9ef0d2-cb46-4df9-83ff-bde806a680eb",
+          "deadlineMs": 900000,
+          "actionBudget": 20
+        },
+        "providerState": {
+          "loadStatus": "idle",
+          "capabilities": [],
+          "history": [],
+          "pendingPrompt": null,
+          "failure": null
+        },
+        "providerSessionId": "fake:fd9ef0d2-cb46-4df9-83ff-bde806a680eb",
+        "fixture": "smoke",
+        "actionCount": 0,
+        "deadlineAt": 1789157614504
+      },
+      "selectedTask": {
+        "id": "15c8d916-b5c4-4f9d-97b6-c0e2f547838a",
+        "brief": "verification-smoke",
+        "ownerSession": "33021be5-d35b-406c-aab8-32addf3a98dd",
+        "botName": "mara",
+        "botRole": "coordinator",
+        "status": "completed",
+        "actionCount": 0
+      }
+    },
+    "artifact": {
+      "metadata": {
+        "id": "6766f5ff-83e4-4e7a-8736-13a6394e77a1",
+        "taskId": "15c8d916-b5c4-4f9d-97b6-c0e2f547838a",
+        "runId": "fd9ef0d2-cb46-4df9-83ff-bde806a680eb",
+        "author": "mara",
+        "source": "fake",
+        "mediaType": "text/markdown",
+        "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+        "byteSize": 21,
+        "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo/scratch/runs/fd9ef0d2-cb46-4df9-83ff-bde806a680eb/hello.md"
+      },
+      "realpath": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo/scratch/runs/fd9ef0d2-cb46-4df9-83ff-bde806a680eb/hello.md",
+      "dataRoot": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo",
+      "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo/scratch",
+      "insideDataRoot": true,
+      "insideWorkspace": true,
+      "regularFile": true,
+      "expectedBody": "# verification-smoke\n",
+      "observedByteSize": 21,
+      "observedContentByteSize": 21,
+      "observedSha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+      "byteSizeMatches": true,
+      "sha256Matches": true,
+      "bodyMatches": true,
+      "sourceExpected": true,
+      "mediaTypeExpected": true,
+      "authorExpected": true,
+      "copyPath": "/Users/gannonhall/.codex/worktrees/8921/agentis/docs/verification/verify-agentis/acceptance/kat-3247-e2085e98/artifact/hello.md",
+      "copyByteSize": 21,
+      "copySha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+      "copyMatches": true
+    },
+    "failures": [],
+    "cleanup": {
+      "finishedAt": "2026-09-11T19:58:34.542Z",
+      "removed": true,
+      "launcherStopped": true,
+      "daemonStopped": true,
+      "endpointUnreachable": true,
+      "startupInspection": [],
+      "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh",
+      "temporaryParentExists": false,
+      "preservedTemporaryParent": false,
+      "errors": [],
+      "ok": true
+    }
+  },
+  "verdict": "PASS"
+}

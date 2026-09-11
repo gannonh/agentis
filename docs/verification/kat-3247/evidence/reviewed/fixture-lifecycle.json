@@ -1,0 +1,50 @@
+{
+  "recordedAt": "2026-09-11T21:39:28.231Z",
+  "sourceCommit": "0af5e00dc7ac81288d9d7e556caa3a019ee7ef05",
+  "results": [
+    {
+      "case": "launcher-killed",
+      "status": "PASS",
+      "report": {
+        "endpoint": "http://127.0.0.1:60263/",
+        "pid": 54398,
+        "containerId": "59cdc2846a04f7bdc0177ad97f4f1bc7c5c72ea4d204ad802a82880c6e6a0748",
+        "containerName": "agentis-verify-138cd972-21a6-4d87-9936-46a96716c410",
+        "dataRoot": "/private/tmp/agentis-verify-pgQ5qC",
+        "log": "/private/tmp/agentis-verify-pgQ5qC/daemon.log",
+        "workspace": "/private/tmp/agentis-verify-pgQ5qC/scratch"
+      },
+      "exit": {
+        "code": null,
+        "signal": "SIGKILL"
+      },
+      "containerAbsent": true,
+      "endpointClosed": true
+    },
+    {
+      "case": "container-stopped",
+      "status": "PASS",
+      "report": {
+        "endpoint": "http://127.0.0.1:60268/",
+        "pid": 54560,
+        "containerId": "715d590a7d3fd12fd66f943ed6a76711d54d35af01891cfafb8651c03af87326",
+        "containerName": "agentis-verify-1a2c4221-722d-42b7-9531-3268bb9739af",
+        "dataRoot": "/private/tmp/agentis-verify-gNnlNX",
+        "log": "/private/tmp/agentis-verify-gNnlNX/daemon.log",
+        "workspace": "/private/tmp/agentis-verify-gNnlNX/scratch"
+      },
+      "exit": {
+        "code": 13,
+        "signal": null
+      },
+      "containerAbsent": true,
+      "endpointClosed": true
+    },
+    {
+      "case": "missing-docker-fails-closed",
+      "status": "PASS",
+      "exitCode": 1,
+      "reason": "Docker executable missing; no host fallback"
+    }
+  ]
+}

@@ -1,17 +1,23 @@
 # Provider access and evidence register
 
-Research snapshot from September 6, 2026. This register separates documentation findings from Agentis support; the [runtime ADR](adrs/0001-runtime-and-execution-foundations.md) §5 owns provider policy. [KAT-3251 research](research/provider-contracts/README.md) selects Codex stdio app-server and Cursor stdio ACP, with disposable live evidence and explicit support blockers. No authenticated Agentis application workflow has been executed or certified. KAT-3242/KAT-3243 own live implementation proof.
+The September 11, 2026 [KAT-3247 verification](verification/kat-3247/README.md) exercised product commit `0af5e00dc7ac81288d9d7e556caa3a019ee7ef05` on macOS Apple silicon with Docker Desktop. Codex app-server and direct Claude Agent SDK each passed the six live scratch cases. All nine Gate 0 verification criteria pass, including native rejected-handoff ownership and packaged fixture isolation. At handoff, merge and milestone closure remain pending; Gate 1 has not been started or approved.
 
-| Candidate | Documented basis | Agentis status and required evidence |
+The [runtime ADR](adrs/0001-runtime-and-execution-foundations.md) owns provider policy. [KAT-3251 research](research/provider-contracts/README.md) is the September 6 research snapshot. Its initial Cursor selection was superseded by the [recorded KAT-3243 replacement](verification/kat-3243/README.md). Historical failed-provider receipts remain evidence of that decision.
+
+| Provider | Access and transport recorded for this run | Observed support and limits |
 | --- | --- | --- |
-| Codex local | App-server 0.153.4 over stdio, Codex-managed ChatGPT login; compared with current codex-acp 1.10.0 | Selected for implementation. Disposable Linux allow/deny/input/cancel/load evidence exists. Product, macOS, isolation, and recovery support remain unverified. Maintainer Gannon Hall. |
-| Cursor local | CLI 2026.09.02-c22c1a3, ACP v1 over stdio, explicit Cursor user API-key mode | Selected with blocking-input support blocked. Linux model/allow/deny/cancel/load evidence exists; question probe emitted no structured request. Native isolation, billing attribution, and product/macOS evidence remain unverified. Maintainer Gannon Hall. |
-| Claude local | SDK 0.3.263 documents an eligible API-key path. Current ACP 0.75.1 pins SDK 0.3.257. Third-party claude.ai access requires prior approval | API-auth alternative documented but not selected or live verified. No API key was available to this run. Subscription integration unavailable without approval; local credential custody does not resolve eligibility. |
-| Cursor, Claude and Codex cloud | Separate remote execution, entitlement, billing, and lifecycle contracts | Deferred. See the four-target table and exact unknowns in the research. No cloud calls or parity claim. |
+| Codex local | App-server 0.153.4 over stdio, Codex-managed ChatGPT login, model `gpt-5.6-sol`, medium effort | Selected. Live scratch output, allow, deny, native plan output, structured input, cancel and history loading passed on macOS Docker Desktop. Dedicated blocking native plan approval is unavailable. Invoice attribution and interrupted-action recovery were not verified. |
+| Claude local | Direct Agent SDK 0.3.263, native CLI 2.1.263, scoped Anthropic API-key auth, model `claude-sonnet-5`, medium effort | Selected. Live scratch output, allow, deny, AskUserQuestion plan rejection, structured input, cancel and history loading passed. Accepted specialist handoff and concurrent stop-all passed. Native rejection with retained sender ownership passed. API usage is billed through the provisioned Anthropic account; this run did not reconcile invoices or certify subscription access. |
+| Cursor local | Historical CLI 2026.09.02-c22c1a3 over ACP | Rejected after the retained live failures. Runtime paths were removed. Cursor is not an advertised provider or fallback. |
+| Cloud providers | Separate remote execution, entitlement, billing and lifecycle contracts | Deferred. No cloud calls or parity claim. |
+
+Gannon Hall owns integration and support. The [provider setup](provider-setup.md) documents authentication custody and container prerequisites. This run reused dedicated provider credential volumes and existing pinned images. It did not demonstrate clean login or fresh image provisioning. Provider credentials remain available to their native tools inside their own container; they are separate from Agentis owner credentials.
+
+Provider-session loading is history loading, not interrupted-action recovery. MCP and attachments remain unavailable. The installed fixture launcher passed exact container-policy and 14 host-resource/network denial checks. Its fresh fixture token/database and image-local executables remain intentionally available inside the offline boundary. Generic direct fake serving remains explicitly unverified. The [gate matrix](verification/kat-3247/README.md) records those distinctions and every requirement verdict.
 
 Each supported integration records exact binary/SDK/protocol versions, source retrieval date, eligibility basis, model/capability discovery, real workflow evidence, limits, maintainer and incompatibility handling.
 
-Reference findings were checked during the project review and must be refreshed during provider selection:
+The following references belong to the earlier research snapshot. Their policies were not re-fetched or recertified during this verification run:
 
 - [Anthropic Agent SDK policy](https://code.claude.com/docs/en/agent-sdk/overview)
 - [Claude ACP adapter](https://raw.githubusercontent.com/agentclientprotocol/claude-agent-acp/main/README.md)

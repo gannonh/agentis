@@ -1,0 +1,98 @@
+{
+  "recordedAt": "2026-09-11T19:59:17.164Z",
+  "sourceCommit": {
+    "command": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "exitCode": 0,
+    "stdout": "e2085e98c27d530b0c9e66224d07e853f68f5f17",
+    "stderr": ""
+  },
+  "productDiff": {
+    "command": [
+      "git",
+      "diff",
+      "HEAD",
+      "--",
+      "packages/cli",
+      "scripts"
+    ],
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "platform": {
+    "command": [
+      "uname",
+      "-sm"
+    ],
+    "exitCode": 0,
+    "stdout": "Darwin arm64",
+    "stderr": ""
+  },
+  "os": {
+    "command": [
+      "sw_vers"
+    ],
+    "exitCode": 0,
+    "stdout": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.2\nBuildVersion:\t\t25F84",
+    "stderr": ""
+  },
+  "node": {
+    "command": [
+      "node",
+      "--version"
+    ],
+    "exitCode": 0,
+    "stdout": "v24.20.0",
+    "stderr": ""
+  },
+  "pnpm": {
+    "command": [
+      "pnpm",
+      "--version"
+    ],
+    "exitCode": 0,
+    "stdout": "9.15.9",
+    "stderr": ""
+  },
+  "docker": {
+    "command": [
+      "docker",
+      "version",
+      "--format",
+      "{{json .}}"
+    ],
+    "exitCode": 0,
+    "stdout": "{\"Client\":{\"Version\":\"29.4.0\",\"ApiVersion\":\"1.54\",\"DefaultAPIVersion\":\"1.54\",\"GitCommit\":\"9d7ad9f\",\"GoVersion\":\"go1.26.4\",\"Os\":\"darwin\",\"Arch\":\"arm64\",\"BuildTime\":\"Fri Aug  7 04:38:56 2026\",\"Context\":\"desktop-linux\"},\"Server\":{\"Platform\":{\"Name\":\"Docker Desktop 4.68.0 (223695)\"},\"Version\":\"29.3.1\",\"ApiVersion\":\"1.54\",\"MinAPIVersion\":\"1.40\",\"Os\":\"linux\",\"Arch\":\"arm64\",\"Components\":[{\"Name\":\"Engine\",\"Version\":\"29.3.1\",\"Details\":{\"ApiVersion\":\"1.54\",\"Arch\":\"arm64\",\"BuildTime\":\"Wed Mar 25 16:14:30 2026\",\"Experimental\":\"false\",\"GitCommit\":\"f78c987\",\"GoVersion\":\"go1.25.8\",\"KernelVersion\":\"6.12.76-linuxkit\",\"MinAPIVersion\":\"1.40\",\"Os\":\"linux\"}},{\"Name\":\"containerd\",\"Version\":\"v2.2.1\",\"Details\":{\"GitCommit\":\"dea7da592f5d1d2b7755e3a161be07f43fad8f75\"}},{\"Name\":\"runc\",\"Version\":\"1.3.4\",\"Details\":{\"GitCommit\":\"v1.3.4-0-gd6d73eb8\"}},{\"Name\":\"docker-init\",\"Version\":\"0.19.0\",\"Details\":{\"GitCommit\":\"de40ad0\"}}],\"GitCommit\":\"f78c987\",\"GoVersion\":\"go1.25.8\",\"KernelVersion\":\"6.12.76-linuxkit\",\"BuildTime\":\"2026-03-25T16:14:30.000000000+00:00\"}}",
+    "stderr": ""
+  },
+  "context": {
+    "command": [
+      "docker",
+      "context",
+      "show"
+    ],
+    "exitCode": 0,
+    "stdout": "desktop-linux",
+    "stderr": ""
+  },
+  "images": {
+    "command": [
+      "docker",
+      "image",
+      "inspect",
+      "agentis-codex:0.153.4",
+      "agentis-claude:2.1.263",
+      "--format",
+      "{{.Id}} {{.Architecture}}"
+    ],
+    "exitCode": 0,
+    "stdout": "sha256:3faa3d64ce3ffa7c3d5f1d62d5bd5cab1b1d5692247fbec207a1edec24e4d6a1 arm64\nsha256:2a091e1cc2804aebfeac6dce858338b86949917ad551f21e15fe53e06611906b arm64",
+    "stderr": ""
+  },
+  "dataRoot": "/Users/gannonhall/.agentis/kat-3247-e2085e98",
+  "credentialPreparation": "Copied dedicated existing Codex and Claude provider auth volumes from root kat-3243-validation-v3 into fresh root volumes using network-none container, read-only source mounts, no credential output. No host provider credentials used."
+}

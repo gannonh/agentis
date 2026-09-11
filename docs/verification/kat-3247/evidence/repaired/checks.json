@@ -1,0 +1,66 @@
+{
+  "sourceCommit": "e2769a79f7e59d7c4d5c771a29a6874f2151df2b",
+  "results": [
+    {
+      "name": "install",
+      "command": [
+        "pnpm",
+        "install",
+        "--frozen-lockfile"
+      ],
+      "startedAt": "2026-09-11T21:08:38.685Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "typecheck",
+      "command": [
+        "pnpm",
+        "typecheck"
+      ],
+      "startedAt": "2026-09-11T21:08:39.488Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "lint",
+      "command": [
+        "pnpm",
+        "lint"
+      ],
+      "startedAt": "2026-09-11T21:08:40.784Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "tests",
+      "command": [
+        "pnpm",
+        "test"
+      ],
+      "startedAt": "2026-09-11T21:08:41.747Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "build",
+      "command": [
+        "pnpm",
+        "build"
+      ],
+      "startedAt": "2026-09-11T21:09:03.418Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "name": "pack-smoke",
+      "command": [
+        "pnpm",
+        "pack:smoke"
+      ],
+      "startedAt": "2026-09-11T21:09:05.190Z",
+      "exitCode": 0,
+      "status": "PASS"
+    }
+  ]
+}

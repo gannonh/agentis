@@ -1,0 +1,8 @@
+{
+  "recordedAt": "2026-09-11T20:01:17.811Z",
+  "endpoint": "http://127.0.0.1:50971",
+  "dataRoot": "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+  "stopAll": true,
+  "activeRuns": 0,
+  "observation": "Read-only public status after initial HTTP 409 submissions"
+}

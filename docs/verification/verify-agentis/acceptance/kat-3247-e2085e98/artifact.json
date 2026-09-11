@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "id": "6766f5ff-83e4-4e7a-8736-13a6394e77a1",
+    "taskId": "15c8d916-b5c4-4f9d-97b6-c0e2f547838a",
+    "runId": "fd9ef0d2-cb46-4df9-83ff-bde806a680eb",
+    "author": "mara",
+    "source": "fake",
+    "mediaType": "text/markdown",
+    "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+    "byteSize": 21,
+    "path": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo/scratch/runs/fd9ef0d2-cb46-4df9-83ff-bde806a680eb/hello.md"
+  },
+  "realpath": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo/scratch/runs/fd9ef0d2-cb46-4df9-83ff-bde806a680eb/hello.md",
+  "dataRoot": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo",
+  "workspace": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh/agentis-verify-9VXduo/scratch",
+  "insideDataRoot": true,
+  "insideWorkspace": true,
+  "regularFile": true,
+  "expectedBody": "# verification-smoke\n",
+  "observedByteSize": 21,
+  "observedContentByteSize": 21,
+  "observedSha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+  "byteSizeMatches": true,
+  "sha256Matches": true,
+  "bodyMatches": true,
+  "sourceExpected": true,
+  "mediaTypeExpected": true,
+  "authorExpected": true,
+  "copyPath": "/Users/gannonhall/.codex/worktrees/8921/agentis/docs/verification/verify-agentis/acceptance/kat-3247-e2085e98/artifact/hello.md",
+  "copyByteSize": 21,
+  "copySha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+  "copyMatches": true
+}

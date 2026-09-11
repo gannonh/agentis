@@ -1,0 +1,104 @@
+{
+  "recordedAt": "2026-09-11T20:07:04.748Z",
+  "rows": [
+    {
+      "receipt": "mara.json",
+      "case": "smoke",
+      "path": "/Users/gannonhall/.agentis/kat-3247-e2085e98/scratch/runs/0f7202fb-b999-4b0a-8a9b-59fd147a0314/hello.md",
+      "byteSize": 20,
+      "actualByteSize": 20,
+      "sha256": "bd729ae24f728706eab9f72989663b1426af4c34d65f11e666d4f540767fd933",
+      "actualSha256": "bd729ae24f728706eab9f72989663b1426af4c34d65f11e666d4f540767fd933",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "mara.json",
+      "case": "allow",
+      "path": "/Users/gannonhall/.agentis/kat-3247-e2085e98/scratch/runs/c42fbfdb-77d0-4d66-b885-a24910001cc5/hello.md",
+      "byteSize": 4,
+      "actualByteSize": 4,
+      "sha256": "46008e02d0ac39b1a34c8b47375f3e23cdbccfcc06d833f972131f874558bfe2",
+      "actualSha256": "46008e02d0ac39b1a34c8b47375f3e23cdbccfcc06d833f972131f874558bfe2",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "mara.json",
+      "case": "plan",
+      "path": "/Users/gannonhall/.agentis/kat-3247-e2085e98/scratch/runs/bda64d73-c44c-4c94-ad5e-aed4d036177d/hello.md",
+      "byteSize": 91,
+      "actualByteSize": 91,
+      "sha256": "37fc8385d220224eff18ea3168576b813f3d76052678a4d6c1a40bdda6020899",
+      "actualSha256": "37fc8385d220224eff18ea3168576b813f3d76052678a4d6c1a40bdda6020899",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "mara.json",
+      "case": "input",
+      "path": "/Users/gannonhall/.agentis/kat-3247-e2085e98/scratch/runs/1591f978-3dd2-4969-b830-ba14721a4517/hello.md",
+      "byteSize": 4,
+      "actualByteSize": 4,
+      "sha256": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "actualSha256": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "ivo.json",
+      "case": "smoke",
+      "path": "/Users/gannonhall/.agentis/kat-3247-e2085e98/scratch/runs/c88eec95-4533-4415-a3be-b093372ae9eb/hello.md",
+      "byteSize": 20,
+      "actualByteSize": 20,
+      "sha256": "bd729ae24f728706eab9f72989663b1426af4c34d65f11e666d4f540767fd933",
+      "actualSha256": "bd729ae24f728706eab9f72989663b1426af4c34d65f11e666d4f540767fd933",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "ivo.json",
+      "case": "allow",
+      "path": "/Users/gannonhall/.agentis/kat-3247-e2085e98/scratch/runs/5e34de13-7454-4a4c-b884-aac8d3f81d2b/hello.md",
+      "byteSize": 4,
+      "actualByteSize": 4,
+      "sha256": "46008e02d0ac39b1a34c8b47375f3e23cdbccfcc06d833f972131f874558bfe2",
+      "actualSha256": "46008e02d0ac39b1a34c8b47375f3e23cdbccfcc06d833f972131f874558bfe2",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "ivo.json",
+      "case": "plan",
+      "path": "/Users/gannonhall/.agentis/kat-3247-e2085e98/scratch/runs/3fc11474-7cc4-49c7-b865-52699eba7ce0/hello.md",
+      "byteSize": 8,
+      "actualByteSize": 8,
+      "sha256": "04cc0e71ffcffb522791a4e0119fe4cf339d8e85a4fadea0a13df0f3062ad8bf",
+      "actualSha256": "04cc0e71ffcffb522791a4e0119fe4cf339d8e85a4fadea0a13df0f3062ad8bf",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "ivo.json",
+      "case": "input",
+      "path": "/Users/gannonhall/.agentis/kat-3247-e2085e98/scratch/runs/b7caf725-45a2-4e82-9d34-f50e1aa53d28/hello.md",
+      "byteSize": 4,
+      "actualByteSize": 4,
+      "sha256": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "actualSha256": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "handoff.json",
+      "case": "accepted-handoff",
+      "path": "/Users/gannonhall/.agentis/kat-3247-e2085e98/scratch/runs/18f58795-2ab2-4841-bacf-edc8f4c5b635/hello.md",
+      "byteSize": 24,
+      "actualByteSize": 24,
+      "sha256": "7c0a851718cef97b3d53e93e0efbf1b78ec9b3cdf9256eaf02042b99b10fd6f4",
+      "actualSha256": "7c0a851718cef97b3d53e93e0efbf1b78ec9b3cdf9256eaf02042b99b10fd6f4",
+      "regularFile": true,
+      "status": "PASS"
+    }
+  ]
+}

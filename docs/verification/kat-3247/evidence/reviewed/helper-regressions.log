@@ -1,0 +1,12 @@
+✔ failed readiness never adopts a separate running fixture (2220.623334ms)
+✔ audit accepts repeatable scopes and roots and records a clean receipt (280.980834ms)
+✔ audit fails on a token match without printing token contents (474.950166ms)
+✔ audit writes a FAIL receipt and exits nonzero for a missing owner token (340.558375ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2273.262625

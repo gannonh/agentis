@@ -1,0 +1,55 @@
+{
+  "recordedAt": "2026-09-11T19:57:35.695Z",
+  "fixtureMode": false,
+  "sourceCommit": "e2085e98c27d530b0c9e66224d07e853f68f5f17",
+  "productSourceDirty": false,
+  "argv": [
+    "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+    "mara",
+    "smoke",
+    "allow",
+    "deny",
+    "plan",
+    "input",
+    "cancel"
+  ],
+  "bot": "mara",
+  "results": [
+    {
+      "case": "smoke",
+      "startedAt": "2026-09-11T19:57:30.994Z",
+      "status": "FAIL",
+      "reason": "Command HTTP 409"
+    },
+    {
+      "case": "allow",
+      "startedAt": "2026-09-11T19:57:31.001Z",
+      "status": "FAIL",
+      "reason": "Command HTTP 409"
+    },
+    {
+      "case": "deny",
+      "startedAt": "2026-09-11T19:57:31.005Z",
+      "status": "FAIL",
+      "reason": "Command HTTP 409"
+    },
+    {
+      "case": "plan",
+      "startedAt": "2026-09-11T19:57:31.011Z",
+      "status": "FAIL",
+      "reason": "Command HTTP 409"
+    },
+    {
+      "case": "input",
+      "startedAt": "2026-09-11T19:57:31.016Z",
+      "status": "FAIL",
+      "reason": "Command HTTP 409"
+    },
+    {
+      "case": "cancel",
+      "startedAt": "2026-09-11T19:57:31.024Z",
+      "status": "FAIL",
+      "reason": "Command HTTP 409"
+    }
+  ]
+}

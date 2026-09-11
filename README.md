@@ -16,6 +16,8 @@ pnpm build
 pnpm agentis verify launch
 ```
 
+`verify launch` requires a running Docker engine and a non-root user on macOS or Linux. It fetches the pinned Node image if missing, then runs the fixture daemon in an offline container. Its loopback endpoint remains accessible to the host CLI. Ctrl-C stops the fixture container; the fresh temporary data root remains available for inspection.
+
 Control commands need `--endpoint` or `--profile`. The CLI does not guess a port. After publication, the npm install target is `@agentis-labs/cli@2`.
 
 The former implementation remains on [`archive/agentis-v1`](https://github.com/gannonh/agentis/tree/archive/agentis-v1) at commit [`78bf37491942552b6cb14cfe43b1a7463b723f48`](https://github.com/gannonh/agentis/commit/78bf37491942552b6cb14cfe43b1a7463b723f48).

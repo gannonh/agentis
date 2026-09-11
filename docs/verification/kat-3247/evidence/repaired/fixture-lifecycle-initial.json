@@ -1,0 +1,50 @@
+{
+  "recordedAt": "2026-09-11T21:05:50.108Z",
+  "sourceCommit": "70e8b204de0737e1f5c7b1674eca499daa8122d3",
+  "results": [
+    {
+      "case": "launcher-killed",
+      "status": "PASS",
+      "report": {
+        "endpoint": "http://127.0.0.1:55926/",
+        "pid": 93511,
+        "containerId": "482d3a929db579d42582735f1692ad680ef1972bcd59c06b8bb6e22790b38d44",
+        "containerName": "agentis-verify-4e90eede-f158-4b27-9c16-4e616a55d0d4",
+        "dataRoot": "/private/tmp/agentis-verify-qMUuja",
+        "log": "/private/tmp/agentis-verify-qMUuja/daemon.log",
+        "workspace": "/private/tmp/agentis-verify-qMUuja/scratch"
+      },
+      "exit": {
+        "code": null,
+        "signal": "SIGKILL"
+      },
+      "containerAbsent": true,
+      "endpointClosed": true
+    },
+    {
+      "case": "container-stopped",
+      "status": "PASS",
+      "report": {
+        "endpoint": "http://127.0.0.1:55947/",
+        "pid": 93673,
+        "containerId": "c6355671a567356ed42532485573f16d7e154dc9cf4a26f2f9cdaa90393a1818",
+        "containerName": "agentis-verify-9e2bbcc7-b503-4f3f-ab85-2cbe597243cc",
+        "dataRoot": "/private/tmp/agentis-verify-Xf9WAi",
+        "log": "/private/tmp/agentis-verify-Xf9WAi/daemon.log",
+        "workspace": "/private/tmp/agentis-verify-Xf9WAi/scratch"
+      },
+      "exit": {
+        "code": 13,
+        "signal": null
+      },
+      "containerAbsent": true,
+      "endpointClosed": true
+    },
+    {
+      "case": "missing-docker-fails-closed",
+      "status": "PASS",
+      "exitCode": 1,
+      "reason": "Docker executable missing; no host fallback"
+    }
+  ]
+}

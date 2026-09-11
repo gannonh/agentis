@@ -1,0 +1,129 @@
+
+> agentis@2.0.0 pack:smoke /Users/gannonhall/.codex/worktrees/8921/agentis
+> pnpm --filter @agentis-labs/cli pack:smoke
+
+
+> @agentis-labs/cli@2.0.0 pack:smoke /Users/gannonhall/.codex/worktrees/8921/agentis/packages/cli
+> node ../../scripts/pack-smoke.mjs
+
+
+> @agentis-labs/cli@2.0.0 build /Users/gannonhall/.codex/worktrees/8921/agentis/packages/cli
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json && esbuild src/fixture-daemon.ts --bundle --platform=node --format=esm --outfile=dist/fixture-daemon.mjs
+
+
+  dist/fixture-daemon.mjs  993.0kb
+
+⚡ Done in 51ms
+Tarball Contents
+dist/auth.d.ts
+dist/auth.js
+dist/auth.js.map
+dist/bin.d.ts
+dist/bin.js
+dist/bin.js.map
+dist/boundary.d.ts
+dist/boundary.js
+dist/boundary.js.map
+dist/claude-bridge.d.ts
+dist/claude-bridge.js
+dist/claude-bridge.js.map
+dist/claude-container.d.ts
+dist/claude-container.js
+dist/claude-container.js.map
+dist/claude-result.d.ts
+dist/claude-result.js
+dist/claude-result.js.map
+dist/claude.d.ts
+dist/claude.js
+dist/claude.js.map
+dist/cli.d.ts
+dist/cli.js
+dist/cli.js.map
+dist/codex.d.ts
+dist/codex.js
+dist/codex.js.map
+dist/container.d.ts
+dist/container.js
+dist/container.js.map
+dist/engine.d.ts
+dist/engine.js
+dist/engine.js.map
+dist/fixture-daemon.d.ts
+dist/fixture-daemon.js
+dist/fixture-daemon.js.map
+dist/fixture-daemon.mjs
+dist/fixture-runtime.d.ts
+dist/fixture-runtime.js
+dist/fixture-runtime.js.map
+dist/handoff-store.d.ts
+dist/handoff-store.js
+dist/handoff-store.js.map
+dist/http.d.ts
+dist/http.js
+dist/http.js.map
+dist/ids.d.ts
+dist/ids.js
+dist/ids.js.map
+dist/profile.d.ts
+dist/profile.js
+dist/profile.js.map
+dist/provider-contract.d.ts
+dist/provider-contract.js
+dist/provider-contract.js.map
+dist/provider.d.ts
+dist/provider.js
+dist/provider.js.map
+dist/schema.d.ts
+dist/schema.js
+dist/schema.js.map
+dist/scratch-file.d.ts
+dist/scratch-file.js
+dist/scratch-file.js.map
+dist/store-db.d.ts
+dist/store-db.js
+dist/store-db.js.map
+dist/store.d.ts
+dist/store.js
+dist/store.js.map
+dist/verify.d.ts
+dist/verify.js
+dist/verify.js.map
+dist/versions.d.ts
+dist/versions.js
+dist/versions.js.map
+package.json
+
+Tarball Details
+/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-pack-i0bLqk/agentis-labs-cli-2.0.0.tgz
+npm warn Unknown env config "recursive". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "approve-builds". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+added 5 packages in 731ms
+{
+  "health": {
+    "ok": true,
+    "schemaId": "agentis.v2.gate0.5",
+    "apiFamily": "v1",
+    "node": "v24.20.0",
+    "packageVersion": "2.0.0"
+  },
+  "status": {
+    "schemaId": "agentis.v2.gate0.5",
+    "stopAll": false,
+    "handoffs": [],
+    "tasks": [],
+    "runs": [],
+    "pending": [],
+    "artifacts": [],
+    "messages": [],
+    "events": [
+      {
+        "seq": 1,
+        "id": "f7a6dcb9-6438-4a06-be7b-f9967ad58f2d",
+        "type": "daemon_restart",
+        "body": "{\"interrupted\":[]}"
+      }
+    ]
+  }
+}
+{"ok":true,"endpoint":"http://127.0.0.1:56519/","containerId":"d9bac40c956ac935848c10783f0d31f76b77ce70f6cc6ab137a6868629682900","tarball":"agentis-labs-cli-2.0.0.tgz","taskId":"e7a2b4ba-24d1-4467-9a93-dd3a342e0c83","runId":"bb33ff7e-5664-477e-b25e-beebebb4fdf1","artifact":{"id":"c443266c-b5b2-4bb4-a446-77c9d5330cd2","taskId":"e7a2b4ba-24d1-4467-9a93-dd3a342e0c83","runId":"bb33ff7e-5664-477e-b25e-beebebb4fdf1","author":"mara","source":"fake","mediaType":"text/markdown","sha256":"fe7aad31b0771bd81b842a91c284649c2f389380135def0336a4ee260b619fa1","byteSize":13,"path":"/private/tmp/agentis-verify-v6UvhP/scratch/runs/bb33ff7e-5664-477e-b25e-beebebb4fdf1/hello.md"},"isolation":{"status":"PASS","containerId":"d9bac40c956ac935848c10783f0d31f76b77ce70f6cc6ab137a6868629682900","image":"sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e","scope":"Child process in the actual launched fixture container; identical mounts, user, environment and network namespace. Host administration and kernel escape are outside this check.","network":"none","mounts":[{"Source":"/private/tmp/agentis-verify-v6UvhP","Destination":"/private/tmp/agentis-verify-v6UvhP","RW":true},{"Source":"/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-install-yE1Pnw/node_modules/@agentis-labs/cli/dist/fixture-daemon.mjs","Destination":"/opt/agentis/fixture-daemon.mjs","RW":false}],"checks":[{"name":"host credential read","denied":true,"code":"ENOENT"},{"name":"host configuration read","denied":true,"code":"ENOENT"},{"name":"host absolute executable","denied":true,"code":"ENOENT"},{"name":"image shell cannot read host credential","denied":true},{"name":"host write","denied":true,"code":"ENOENT"},{"name":"symlink escape","denied":true,"code":"ENOENT"},{"name":"Docker socket absent","denied":true,"code":"ENOENT"},{"name":"root filesystem write","denied":true,"code":"EROFS"},{"name":"inherited environment stripped","denied":true},{"name":"network 127.0.0.1:56518","denied":true,"code":"ECONNREFUSED"},{"name":"network host.docker.internal:56518","denied":true,"code":"EAI_AGAIN"},{"name":"network 172.17.0.1:56518","denied":true,"code":"ENETUNREACH"},{"name":"network 1.1.1.1:443","denied":true,"code":"ENETUNREACH"},{"name":"network 2606:4700:4700::1111:443","denied":true,"code":"ENETUNREACH"}]},"cleanup":"launcher exited; container absent; endpoint closed"}

@@ -1,0 +1,118 @@
+{
+  "sourceCommit": "e2769a79f7e59d7c4d5c771a29a6874f2151df2b",
+  "runs": [
+    {
+      "case": "mara",
+      "command": [
+        "node",
+        "scripts/live-provider-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-completion-20260911",
+        "mara",
+        "smoke",
+        "allow",
+        "deny",
+        "plan",
+        "input",
+        "cancel"
+      ],
+      "startedAt": "2026-09-11T21:10:10.303Z",
+      "finishedAt": "2026-09-11T21:11:12.382Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "ivo",
+      "command": [
+        "node",
+        "scripts/live-provider-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-completion-20260911",
+        "ivo",
+        "smoke",
+        "allow",
+        "deny",
+        "plan",
+        "input",
+        "cancel"
+      ],
+      "startedAt": "2026-09-11T21:11:12.431Z",
+      "finishedAt": "2026-09-11T21:12:06.455Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "handoff",
+      "command": [
+        "node",
+        "scripts/live-handoff-conformance.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-completion-20260911"
+      ],
+      "startedAt": "2026-09-11T21:12:06.494Z",
+      "finishedAt": "2026-09-11T21:12:51.396Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "rejected-handoff",
+      "command": [
+        "node",
+        "docs/verification/kat-3247/rejected-handoff.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-completion-rejection-20260911",
+        "docs/verification/kat-3247/evidence/repaired/rejected-handoff.json"
+      ],
+      "startedAt": "2026-09-11T21:12:51.442Z",
+      "finishedAt": "2026-09-11T21:13:06.060Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "crash-containment",
+      "command": [
+        "node",
+        "docs/verification/kat-3247/crash-containment.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-completion-rejection-20260911",
+        "docs/verification/kat-3247/evidence/repaired/crash-containment.json"
+      ],
+      "startedAt": "2026-09-11T21:13:06.115Z",
+      "finishedAt": "2026-09-11T21:13:25.268Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "recovery",
+      "command": [
+        "node",
+        "docs/verification/kat-3247/recovery.mjs",
+        "/Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911",
+        "docs/verification/kat-3247/evidence/repaired/recovery.json"
+      ],
+      "startedAt": "2026-09-11T21:13:25.317Z",
+      "finishedAt": "2026-09-11T21:13:25.978Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "fixture-lifecycle",
+      "command": [
+        "node",
+        "docs/verification/kat-3247/fixture-lifecycle.mjs",
+        "docs/verification/kat-3247/evidence/repaired/fixture-lifecycle.json"
+      ],
+      "startedAt": "2026-09-11T21:13:26.039Z",
+      "finishedAt": "2026-09-11T21:13:43.945Z",
+      "exitCode": 0,
+      "status": "PASS"
+    },
+    {
+      "case": "skill-smoke",
+      "command": [
+        "node",
+        ".agents/skills/verify-agentis/helpers/smoke.mjs",
+        "docs/verification/verify-agentis/acceptance/kat-3247-completion-20260911"
+      ],
+      "startedAt": "2026-09-11T21:13:44.052Z",
+      "finishedAt": "2026-09-11T21:13:53.644Z",
+      "exitCode": 0,
+      "status": "PASS"
+    }
+  ]
+}

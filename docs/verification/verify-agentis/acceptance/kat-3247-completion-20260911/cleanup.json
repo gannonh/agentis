@@ -1,0 +1,24 @@
+{
+  "finishedAt": "2026-09-11T21:13:48.965Z",
+  "removed": true,
+  "launcherStopped": true,
+  "containerStopped": true,
+  "supervisorStopped": true,
+  "dataRootRemoved": true,
+  "dataRoot": "/private/tmp/agentis-verify-IXDSHH",
+  "containerInspection": {
+    "before": null,
+    "stopped": false,
+    "removed": true,
+    "after": null
+  },
+  "endpointUnreachable": true,
+  "startupInspection": [],
+  "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-VLGp3X",
+  "temporaryParentExists": false,
+  "preservedTemporaryParent": false,
+  "dataRootExists": false,
+  "preservedDataRoot": false,
+  "errors": [],
+  "ok": true
+}

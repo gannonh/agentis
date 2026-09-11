@@ -1,0 +1,36 @@
+{
+  "name": "submit",
+  "command": [
+    "/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin/node",
+    "/Users/gannonhall/.codex/worktrees/8921/agentis/packages/cli/dist/bin.js",
+    "task",
+    "submit",
+    "--endpoint",
+    "http://127.0.0.1:57398/",
+    "--data-root",
+    "/private/tmp/agentis-verify-IXDSHH",
+    "--brief",
+    "verification-smoke",
+    "--fixture",
+    "smoke"
+  ],
+  "cwd": "/Users/gannonhall/.codex/worktrees/8921/agentis",
+  "startedAt": "2026-09-11T21:13:48.041Z",
+  "finishedAt": "2026-09-11T21:13:48.458Z",
+  "stdout": "{\"commandId\":\"22ff8295-340c-4042-833d-aae3b3029921\",\"replayed\":false,\"accepted\":true,\"taskId\":\"ace1a6f5-683b-4abd-a351-be37ebb54c8d\",\"runId\":\"a3fde3d2-86ac-4dfa-b3d7-ca6e9259293d\",\"threadId\":\"936782ab-1c52-4b7b-b0fe-3043d1a94862\",\"effects\":[\"launch\"]}\n\n",
+  "stderr": "",
+  "exitCode": 0,
+  "signal": null,
+  "timedOut": false,
+  "parsed": {
+    "commandId": "22ff8295-340c-4042-833d-aae3b3029921",
+    "replayed": false,
+    "accepted": true,
+    "taskId": "ace1a6f5-683b-4abd-a351-be37ebb54c8d",
+    "runId": "a3fde3d2-86ac-4dfa-b3d7-ca6e9259293d",
+    "threadId": "936782ab-1c52-4b7b-b0fe-3043d1a94862",
+    "effects": [
+      "launch"
+    ]
+  }
+}

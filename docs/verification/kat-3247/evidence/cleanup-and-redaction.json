@@ -1,0 +1,33 @@
+{
+  "recordedAt": "2026-09-11T20:15:05.344Z",
+  "sourceCommit": "e2085e98c27d530b0c9e66224d07e853f68f5f17",
+  "command": "node docs/verification/kat-3247/audit-evidence.mjs",
+  "scope": [
+    "docs/verification/kat-3247",
+    "docs/verification/verify-agentis/acceptance/kat-3247-e2085e98"
+  ],
+  "ownerTokenScan": {
+    "fileCount": 42,
+    "comparison": "Literal owner token contents from the four named local data roots; filenames and paths are retained as provenance",
+    "dataRoots": [
+      "/Users/gannonhall/.agentis/kat-3243-validation-v3",
+      "/Users/gannonhall/.agentis/kat-3247-e2085e98",
+      "/Users/gannonhall/.agentis/kat-3247-rejection-e2085e98",
+      "/Users/gannonhall/.agentis/kat-3247-recovery-e2085e98"
+    ],
+    "additionalPattern": "sk-ant-api\\d+-[a-zA-Z0-9_-]{20,}",
+    "matches": [],
+    "status": "PASS"
+  },
+  "runningContainers": {
+    "command": [
+      "docker",
+      "ps",
+      "--format",
+      "{{.Names}}"
+    ],
+    "exitCode": 0,
+    "names": []
+  },
+  "limitations": "This is a point-in-time container inventory and scoped content scan, not proof of absence of every secret, stopped resource, retained volume, or host process."
+}

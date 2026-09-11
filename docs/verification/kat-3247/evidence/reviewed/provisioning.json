@@ -1,0 +1,15 @@
+{
+  "recordedAt": "2026-09-11T21:27:21.372Z",
+  "sourceSuffix": "785854262ba07bc8a1bd4575",
+  "method": "Dedicated auth volumes copied with no network, read-only sources and no credential output",
+  "roots": [
+    {
+      "root": "/Users/gannonhall/.agentis/kat-3247-reviewed-20260911",
+      "suffix": "766acd1a610820a79a6e0716"
+    },
+    {
+      "root": "/Users/gannonhall/.agentis/kat-3247-reviewed-rejection-20260911",
+      "suffix": "02e6b1cb4badfc98ae1d239a"
+    }
+  ]
+}

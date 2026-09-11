@@ -1,0 +1,106 @@
+{
+  "recordedAt": "2026-09-11T21:13:55.174Z",
+  "sourceCommit": "e2769a79f7e59d7c4d5c771a29a6874f2151df2b",
+  "rows": [
+    {
+      "receipt": "mara",
+      "path": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/9f392c21-6650-4b59-be8b-7d9f2b4193b1/hello.md",
+      "expectedByteSize": 20,
+      "actualByteSize": 20,
+      "expectedSha256": "bd729ae24f728706eab9f72989663b1426af4c34d65f11e666d4f540767fd933",
+      "actualSha256": "bd729ae24f728706eab9f72989663b1426af4c34d65f11e666d4f540767fd933",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "mara",
+      "path": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/19a3b036-998f-40bb-8606-e0c044987a75/hello.md",
+      "expectedByteSize": 4,
+      "actualByteSize": 4,
+      "expectedSha256": "46008e02d0ac39b1a34c8b47375f3e23cdbccfcc06d833f972131f874558bfe2",
+      "actualSha256": "46008e02d0ac39b1a34c8b47375f3e23cdbccfcc06d833f972131f874558bfe2",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "mara",
+      "path": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/21f7f5c4-8f50-4603-b7c8-092edc12d9b6/hello.md",
+      "expectedByteSize": 95,
+      "actualByteSize": 95,
+      "expectedSha256": "b6990cd4ced12e7387f2ef5dd543507c791a34a11e745258ccef8bddaf5fbba8",
+      "actualSha256": "b6990cd4ced12e7387f2ef5dd543507c791a34a11e745258ccef8bddaf5fbba8",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "mara",
+      "path": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/d430c97b-a2c3-4eda-a15e-343f44998c3e/hello.md",
+      "expectedByteSize": 4,
+      "actualByteSize": 4,
+      "expectedSha256": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "actualSha256": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "ivo",
+      "path": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/38c228d2-a75c-445b-bfbe-86c92251a6bd/hello.md",
+      "expectedByteSize": 20,
+      "actualByteSize": 20,
+      "expectedSha256": "bd729ae24f728706eab9f72989663b1426af4c34d65f11e666d4f540767fd933",
+      "actualSha256": "bd729ae24f728706eab9f72989663b1426af4c34d65f11e666d4f540767fd933",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "ivo",
+      "path": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/a0362b92-ce8f-436a-b9d1-8dd9b8ea0529/hello.md",
+      "expectedByteSize": 4,
+      "actualByteSize": 4,
+      "expectedSha256": "46008e02d0ac39b1a34c8b47375f3e23cdbccfcc06d833f972131f874558bfe2",
+      "actualSha256": "46008e02d0ac39b1a34c8b47375f3e23cdbccfcc06d833f972131f874558bfe2",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "ivo",
+      "path": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/947982fb-20c1-4eb2-9579-bfb91659a5fa/hello.md",
+      "expectedByteSize": 8,
+      "actualByteSize": 8,
+      "expectedSha256": "04cc0e71ffcffb522791a4e0119fe4cf339d8e85a4fadea0a13df0f3062ad8bf",
+      "actualSha256": "04cc0e71ffcffb522791a4e0119fe4cf339d8e85a4fadea0a13df0f3062ad8bf",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "ivo",
+      "path": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/80324e45-0f49-4c5c-b440-317634f585f5/hello.md",
+      "expectedByteSize": 4,
+      "actualByteSize": 4,
+      "expectedSha256": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "actualSha256": "ec7d56a01607001e6401366417c5e2eb00ffa0df17ca1a9a831e0b32c8f11bf7",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "handoff",
+      "path": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/1b838a30-13af-4b46-a8d9-aef26be8ea1e/hello.md",
+      "expectedByteSize": 24,
+      "actualByteSize": 24,
+      "expectedSha256": "7c0a851718cef97b3d53e93e0efbf1b78ec9b3cdf9256eaf02042b99b10fd6f4",
+      "actualSha256": "7c0a851718cef97b3d53e93e0efbf1b78ec9b3cdf9256eaf02042b99b10fd6f4",
+      "regularFile": true,
+      "status": "PASS"
+    },
+    {
+      "receipt": "crash-containment",
+      "path": "/Users/gannonhall/.agentis/kat-3247-completion-rejection-20260911/scratch/runs/a0297f22-669d-4a89-a061-4c6cdf281859/hello.md",
+      "expectedByteSize": 4,
+      "actualByteSize": 4,
+      "expectedSha256": "46008e02d0ac39b1a34c8b47375f3e23cdbccfcc06d833f972131f874558bfe2",
+      "actualSha256": "46008e02d0ac39b1a34c8b47375f3e23cdbccfcc06d833f972131f874558bfe2",
+      "regularFile": true,
+      "status": "PASS"
+    }
+  ]
+}

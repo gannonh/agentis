@@ -1,0 +1,1 @@
+[{"case":"launcher-killed","status":"PASS"},{"case":"container-stopped","status":"PASS"},{"case":"missing-docker-fails-closed","status":"PASS","reason":"Docker executable missing; no host fallback"}]

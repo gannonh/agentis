@@ -19,6 +19,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm pack:smoke
+      - run: node --test .agents/skills/verify-agentis/helpers/smoke-ownership.test.mjs docs/verification/kat-3247/audit-evidence.test.mjs
 
   exclusions:
     name: report platform exclusions
@@ -27,7 +28,8 @@ jobs:
       - run: |
           cat <<'EOF'
           Core CI matrix: ubuntu-latest linux-x64, Node 24.20.0.
-          Excluded: macOS Apple silicon (primary target, isolation UNVERIFIED here).
+          Excluded: macOS Apple silicon (primary target; separate manual Gate 0 evidence).
           Excluded: Windows.
-          Docker Desktop Run-container enforcement is not exercised in this matrix.
+          Packaged fake-fixture Docker isolation is exercised by pack:smoke.
+          Live-provider Docker Desktop Run-container enforcement is not exercised in this matrix.
           EOF
