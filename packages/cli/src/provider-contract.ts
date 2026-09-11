@@ -42,13 +42,6 @@ export const ProviderState = Schema.Struct({
   ),
 });
 export type ProviderState = typeof ProviderState.Type;
-export const emptyProviderState = (): ProviderState => ({
-  loadStatus: "idle",
-  capabilities: [],
-  history: [],
-  pendingPrompt: null,
-  failure: null,
-});
 export const classifyFailure = (error: string): NonNullable<ProviderState["failure"]> =>
   /auth|credential|api.key|login/i.test(error)
     ? "auth-unavailable"

@@ -44,10 +44,6 @@ export const launchVerify = async (): Promise<LaunchHandle> => {
     provider: "fake",
     executionBoundary: "unverified-host-scratch",
   });
-  writeFileSync(
-    join(dataRoot, "registry.json"),
-    `${JSON.stringify({ providers: ["fake"], credentials: [] })}\n`,
-  );
   const bin = fileURLToPath(new URL("./bin.js", import.meta.url));
   const child = spawn(
     process.execPath,
@@ -69,7 +65,6 @@ export const launchVerify = async (): Promise<LaunchHandle> => {
       env: {
         PATH: "/usr/bin:/bin",
         HOME: dataRoot,
-        AGENTIS_FAKE_REGISTRY: join(dataRoot, "registry.json"),
       },
       stdio: ["ignore", "pipe", "pipe"],
       detached: true,
