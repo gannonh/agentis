@@ -32,6 +32,7 @@ The repository records the rebuild's direction and required evidence in these do
 - [Provider access and evidence register](docs/compliance.md): eligibility research and unverified provider candidates.
 - [Contributing](CONTRIBUTING.md): checkout steps and the contribution process.
 - [Development lifecycle](AGENTS.md#issues-and-specs): Linear specifications, approval, review, and merge gates.
+- [Environment variables](docs/operations/environment-variables.md): source-build secrets load from a 1Password Environment.
 
 ## License and reuse
 

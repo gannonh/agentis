@@ -13,7 +13,7 @@
     "lint": "pnpm --filter @agentis-labs/cli lint",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
-    "test": "pnpm --filter @agentis-labs/cli test",
+    "test": "pnpm --filter @agentis-labs/cli test && node --test scripts/lib/load-repo-env.test.mjs",
     "pack:smoke": "pnpm --filter @agentis-labs/cli pack:smoke",
     "agentis": "node packages/cli/dist/bin.js"
   },

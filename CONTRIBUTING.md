@@ -21,6 +21,10 @@ pnpm test
 pnpm build
 ```
 
+Source-build secrets come from a 1Password Environment. See
+[environment variables](docs/operations/environment-variables.md) and
+`.agents/skills/1password`. Do not create dotenv files.
+
 `agentis serve` and `agentis doctor` require `--endpoint` or `--profile`. Run `git diff --check` before submission. Issue approval, lifecycle gates, review, and merge rules live in [AGENTS.md](AGENTS.md#issues-and-specs).
 
 ## Preserve ownership and data

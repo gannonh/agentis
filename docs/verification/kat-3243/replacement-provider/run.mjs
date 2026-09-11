@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { docker, squidConfig, prepareProviderNetwork, removeProviderNetwork } from '../../../../packages/cli/dist/provider.js';
 import { spawnInRunContainer } from '../../../../packages/cli/dist/container.js';
+import { applyRepoEnv } from '../../../../scripts/lib/load-repo-env.mjs';
 const directory = dirname(fileURLToPath(import.meta.url));
 const image = 'agentis-claude-feasibility:0.3.263';
 if (process.argv.includes('--build')) {
@@ -25,6 +26,7 @@ USER 10001:10001
   console.log(docker(['run', '--rm', '--network', 'none', '--read-only', image, 'npm', 'ls', '--depth=0']));
   process.exit(0);
 }
+applyRepoEnv();
 const key = process.env.ANTHROPIC_API_KEY?.trim();
 if (!key) {
   const receipt = { status: 'BLOCKED', reason: 'Missing scoped funded ANTHROPIC_API_KEY', inferenceStarted: false, recordedAt: new Date().toISOString() };

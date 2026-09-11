@@ -3,6 +3,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { randomUUID, createHash } from "node:crypto";
+import { applyRepoEnv } from "./lib/load-repo-env.mjs";
+
+applyRepoEnv();
 
 const [dataRoot] = process.argv.slice(2);
 if (!dataRoot) throw new Error("Pass the dedicated provider data root");

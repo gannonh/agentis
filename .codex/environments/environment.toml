@@ -3,4 +3,4 @@ version = 1
 name = "agentis"
 
 [setup]
-script = "ln -sf $CODEX_SOURCE_TREE_PATH/.env $CODEX_WORKTREE_PATH/.env "
+script = "rm -f \"$CODEX_WORKTREE_PATH/.env\" \"$CODEX_WORKTREE_PATH/.env.local\""
