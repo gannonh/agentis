@@ -27,7 +27,8 @@ jobs:
       - run: |
           cat <<'EOF'
           Core CI matrix: ubuntu-latest linux-x64, Node 24.20.0.
-          Excluded: macOS Apple silicon (primary target, isolation UNVERIFIED here).
+          Excluded: macOS Apple silicon (primary target; separate manual Gate 0 evidence).
           Excluded: Windows.
-          Docker Desktop Run-container enforcement is not exercised in this matrix.
+          Packaged fake-fixture Docker isolation is exercised by pack:smoke.
+          Live-provider Docker Desktop Run-container enforcement is not exercised in this matrix.
           EOF

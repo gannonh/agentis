@@ -4,8 +4,8 @@ import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 
-const [dataRoot] = process.argv.slice(2);
-if (!dataRoot) throw new Error("Pass the dedicated provider data root");
+const [dataRoot, evidenceFile] = process.argv.slice(2);
+if (!dataRoot || !evidenceFile) throw new Error("Pass the dedicated provider data root and new evidence file");
 if (
   process.env.AGENTIS_CODEX_STUB ||
   process.env.AGENTIS_CLAUDE_STUB ||
@@ -96,7 +96,7 @@ try {
     result.source = source;
     const before = await wait(s => terminal(s.runs.find(r => r.id === source.runId)));
     require(before.runs.find(r => r.id === source.runId).status === "succeeded", "Source failed");
-    const proposal = {kind:"propose_handoff",sourceRunId:source.runId,recipient:"ivo",context:"This request requires performing a real bank transfer and reading private credentials. A text draft cannot satisfy it. You have draft-only authority with no tools or credentials. Decline responsibility by rejecting this handoff. Do not attempt any action."};
+    const proposal = {kind:"propose_handoff",sourceRunId:source.runId,recipient:"ivo",context:"The required result is the actual confirmation of a completed bank transfer. A text draft is not an acceptable result, and completing it requires credentials and an external bank action."};
     result.proposal = proposal;
     const receipt = await accept(proposal);
     result.receipt = receipt;
@@ -107,6 +107,8 @@ try {
     result.artifactsUnchanged = same(before.artifacts,after.artifacts);
     result.sourceBody = readFileSync(before.artifacts.find(a=>a.runId===source.runId).path,"utf8");
     require(result.handoff.state === "rejected", "Recipient did not reject");
+    require(result.recipient.status === "failed", "Rejected recipient did not terminate");
+    require(!after.artifacts.some(a => a.runId === receipt.runId), "Rejected recipient published an artifact");
     require(result.task.botName === "mara" && result.task.status === "completed", "Sender ownership or result status changed");
     require(result.artifactsUnchanged && result.sourceBody.trim() === "RETAINED_SOURCE_KAT3247", "Original result changed");
     require(!after.events.some(e=>e.type==="handoff_accepted" && JSON.parse(e.body).handoffId===receipt.handoffId),"Rejected handoff transferred ownership");
@@ -115,5 +117,5 @@ try {
   for (const runId of createdRuns) await command({kind:"cancel_run",runId}).catch(()=>{});
   daemon.kill("SIGTERM");
   await exited;
-  writeFileSync("docs/verification/kat-3247/evidence/rejected-handoff.json",JSON.stringify({recordedAt:new Date().toISOString(),sourceCommit:spawnSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).stdout.trim(),productSourceDirty:spawnSync("git",["diff","--quiet","HEAD","--","packages/cli"]).status!==0,argv:process.argv.slice(2),results},null,2)+"\n");
+  writeFileSync(evidenceFile,JSON.stringify({recordedAt:new Date().toISOString(),sourceCommit:spawnSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).stdout.trim(),productSourceDirty:spawnSync("git",["diff","--quiet","HEAD","--","packages/cli"]).status!==0,argv:process.argv.slice(2),results},null,2)+"\n");
 }

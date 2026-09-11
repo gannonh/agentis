@@ -6,8 +6,8 @@ This directory is the maintained source for verifying the user-facing Agentis 2.
 
 - Run from the repository root with Node `24.20.0` and pnpm `9.15.9`.
 - In a fresh checkout, run `pnpm install --frozen-lockfile`, then run `pnpm build`; use the resulting `packages/cli/dist/bin.js`.
-- For a manual recipe, follow the [manual session reference](../references/manual-session.md), start `node packages/cli/dist/bin.js verify launch` and retain its exact `endpoint`, `pid`, `dataRoot`, `workspace`, and `log` values. The smoke helper starts its own launch and discovers these values itself.
-- Use provider `fake` and boundary `unverified-host-scratch`; this map does not use real credentials.
+- For a manual recipe, follow the [manual session reference](../references/manual-session.md), start `node packages/cli/dist/bin.js verify launch` and retain its exact `endpoint`, `pid`, `containerId`, `containerName`, `dataRoot`, `workspace`, and `log` values. The smoke helper starts its own launch and discovers these values itself.
+- Use provider `fake` and the `docker-fixture-container` boundary recorded in `profiles/verify.json`; this map does not use real credentials. The daemon runs in Docker with `--network none`, and the host loopback endpoint is provided by the launcher's `docker exec` TCP relay.
 - Before a manual `doctor`, confirm `$DATA_ROOT/owner.token` exists, is mode `0600`, and is valid; the smoke helper performs this check itself.
 - Never guess a port, select a default data root, or drive an instance that this run did not start.
 
@@ -18,7 +18,7 @@ This directory is the maintained source for verifying the user-facing Agentis 2.
 - Read IDs from public receipts and status rows. Do not inspect SQLite or call engine functions.
 - Start each recipe with a clean launch. `stop-all` latches its data root, so its recipe always needs a fresh launch before another fixture.
 - Validate side effects in the owned scratch workspace with the recorded `byteSize` and `sha256`.
-- Retain proof under `docs/verification/verify-agentis/`; cleanup removes only the owned temp root.
+- Retain proof under `docs/verification/verify-agentis/`; cleanup validates the exact Docker labels and identical writable data-root mount, removes only the owned container and host supervisor, then removes only the owned temp root.
 
 ## Proof and skip reporting
 

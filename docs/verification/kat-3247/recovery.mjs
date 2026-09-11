@@ -4,8 +4,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { randomUUID } from "node:crypto";
 
-const dataRoot = process.argv[2];
-if (!dataRoot) throw new Error("Pass a fresh dedicated data root");
+const [dataRoot, evidenceFile] = process.argv.slice(2);
+if (!dataRoot || !evidenceFile) throw new Error("Pass a fresh dedicated root and new evidence file");
 const allocator = createServer();
 await new Promise(r => allocator.listen(0, "127.0.0.1", r));
 const endpoint = `http://127.0.0.1:${allocator.address().port}`;
@@ -76,6 +76,6 @@ try {
 } catch(error) {evidence.status="FAIL";evidence.reason=error.message;process.exitCode=1;}
 finally {
   if(daemon?.exitCode===null){daemon.kill("SIGTERM");await exited;}
-  writeFileSync("docs/verification/kat-3247/evidence/recovery.json",JSON.stringify(evidence,null,2)+"\n");
+  writeFileSync(evidenceFile,JSON.stringify(evidence,null,2)+"\n");
   console.log(JSON.stringify({status:evidence.status,reason:evidence.reason??null}));
 }

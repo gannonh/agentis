@@ -76,6 +76,8 @@ export const runCli = async (argv: string[]): Promise<number> => {
         {
           endpoint: result.endpoint,
           pid: result.pid,
+          containerId: result.containerId,
+          containerName: result.containerName,
           dataRoot: result.dataRoot,
           log: result.log,
           workspace: result.workspace,
@@ -154,6 +156,9 @@ export const runCli = async (argv: string[]): Promise<number> => {
     } else if (typeof values.profile !== "string") {
       executionBoundary =
         provider === "fake" ? "unverified-host-scratch" : "docker-desktop-run-container";
+    }
+    if (executionBoundary === "docker-fixture-container") {
+      throw new Error("docker-fixture-container is reserved for verify launch");
     }
     assertBoundary({ provider, executionBoundary });
     if (!endpoint.port) {

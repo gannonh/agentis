@@ -15,7 +15,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { arch, machine, platform, release, tmpdir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 const repo = resolve(process.cwd());
 const cli = resolve(repo, "packages/cli/dist/bin.js");
@@ -24,6 +24,14 @@ const launchLimit = 15_000;
 const commandLimit = 15_000;
 const smokeLimit = 10_000;
 const cleanupLimit = 5_000;
+const fixtureBoundary = "docker-fixture-container";
+const fixtureManagedLabel = "io.agentis.managed";
+const fixtureManagedValue = "verify-fixture";
+const fixtureLaunchLabel = "io.agentis.verify-launch";
+const fixtureNamePrefix = "agentis-verify-";
+const fixtureTempRoot = realpathSync("/tmp");
+const launchIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const containerIdPattern = /^[0-9a-f]{12,64}$/i;
 let evidence;
 let tempParent;
 let tempParentReal;
@@ -115,9 +123,18 @@ const capture = (name, args, env = process.env, allowRunning = false) => {
 
 const validateLaunch = (raw) => {
   if (!raw || typeof raw !== "object") throw new Error("launch output is not an object");
-  for (const key of ["endpoint", "dataRoot", "workspace", "log"])
+  for (const key of ["endpoint", "dataRoot", "workspace", "log", "containerId", "containerName"])
     if (typeof raw[key] !== "string" || !raw[key]) throw new Error(`launch output missing ${key}`);
   if (!Number.isInteger(raw.pid) || raw.pid <= 0) throw new Error("launch output has invalid pid");
+  if (!containerIdPattern.test(raw.containerId))
+    throw new Error("launch output has invalid containerId");
+  const containerName = raw.containerName.replace(/^\/+/, "");
+  const launchId = containerName.startsWith(fixtureNamePrefix)
+    ? containerName.slice(fixtureNamePrefix.length)
+    : "";
+  if (!launchIdPattern.test(launchId) || containerName !== `${fixtureNamePrefix}${launchId}`)
+    throw new Error("launch output has invalid containerName");
+  const boundary = raw.boundary ?? raw.executionBoundary ?? null;
   const endpoint = new URL(raw.endpoint);
   if (!endpoint.port || !["127.0.0.1", "localhost"].includes(endpoint.hostname))
     throw new Error("launch endpoint is not loopback");
@@ -125,11 +142,34 @@ const validateLaunch = (raw) => {
   const dataRootReal = realpathSync(dataRoot);
   const workspace = realpathSync(resolve(raw.workspace));
   const log = realpathSync(resolve(raw.log));
-  if (!tempParentReal || !within(tempParentReal, dataRootReal))
-    throw new Error("launch dataRoot is outside owned TMPDIR");
+  if (
+    dirname(dataRootReal) !== fixtureTempRoot ||
+    !basename(dataRootReal).startsWith(fixtureNamePrefix)
+  )
+    throw new Error("launch dataRoot is outside the canonical fixture temp root");
   if (!within(dataRootReal, workspace) || !within(dataRootReal, log))
     throw new Error("launch workspace or log is outside dataRoot");
-  return { endpoint: endpoint.toString(), pid: raw.pid, dataRoot, workspace, log };
+  return {
+    endpoint: endpoint.toString(),
+    pid: raw.pid,
+    containerId: raw.containerId,
+    containerName,
+    launchId,
+    boundary,
+    dataRoot,
+    dataRootReal,
+    workspace,
+    log,
+  };
+};
+const validateFixtureProfile = (info) => {
+  const profilePath = join(info.dataRoot, "profiles", "verify.json");
+  const profile = json(readFileSync(profilePath, "utf8"));
+  if (resolve(profile.dataRoot) !== info.dataRoot)
+    throw new Error("fixture profile dataRoot does not match readiness");
+  if (profile.provider !== "fake" || profile.executionBoundary !== fixtureBoundary)
+    throw new Error("fixture profile does not declare the Docker fixture boundary");
+  return profile;
 };
 const launch = async () => {
   const handle = capture(
@@ -152,26 +192,40 @@ const launch = async () => {
     }
   }
   if (!raw) throw new Error("verify launch did not report readiness before deadline");
-  launchInfo = validateLaunch(raw);
+  const candidate = validateLaunch(raw);
+  const profile = validateFixtureProfile(candidate);
+  if (!inspectOwnedContainer(candidate))
+    throw new Error(
+      `fixture container ${candidate.containerId} disappeared before ownership check`,
+    );
+  launchInfo = { ...candidate, boundary: profile.executionBoundary };
   return launchInfo;
 };
 const discoverLaunch = () => {
-  if (!tempParentReal || !existsSync(tempParentReal)) return null;
-  for (const entry of readdirSync(tempParentReal, { withFileTypes: true })) {
-    if (!entry.isDirectory() || !entry.name.startsWith("agentis-verify-")) continue;
-    const root = join(tempParentReal, entry.name);
+  if (!existsSync(fixtureTempRoot)) return null;
+  const candidates = [];
+  for (const entry of readdirSync(fixtureTempRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !entry.name.startsWith(fixtureNamePrefix)) continue;
+    const root = join(fixtureTempRoot, entry.name);
     try {
       const profile = json(readFileSync(join(root, "profiles", "verify.json"), "utf8"));
-      return validateLaunch({
+      const container = discoverFixtureContainer(root);
+      if (!container) continue;
+      const info = validateLaunch({
         endpoint: profile.endpoint,
         pid: Number(readFileSync(join(root, "pid"), "utf8")),
+        ...container,
         dataRoot: profile.dataRoot,
         workspace: join(profile.dataRoot, "scratch"),
         log: join(profile.dataRoot, "daemon.log"),
+        boundary: profile.executionBoundary ?? profile.boundary,
       });
+      validateFixtureProfile(info);
+      inspectOwnedContainer(info);
+      candidates.push({ ...info, boundary: profile.executionBoundary });
     } catch {}
   }
-  return null;
+  return candidates.length === 1 ? candidates[0] : null;
 };
 const processAt = (pid) => {
   const result = spawnSync("ps", ["-ww", "-p", String(pid), "-o", "command="], {
@@ -183,89 +237,113 @@ const processAt = (pid) => {
   if (!command) return { known: false, error: "ps returned no command" };
   return { known: true, exists: true, command };
 };
-const startupDaemons = (root, rootPath) => {
-  const result = spawnSync("ps", ["-ww", "-axo", "pid=,command="], { encoding: "utf8" });
-  if (result.error || result.status !== 0)
+const inspectContainer = (containerId) => {
+  if (!containerIdPattern.test(containerId)) throw new Error("invalid container id for inspect");
+  const result = spawnSync("docker", ["inspect", "--type", "container", containerId], {
+    encoding: "utf8",
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    if (/No such (object|container)/i.test(String(result.stderr ?? ""))) return null;
     throw new Error(
-      `cannot inspect startup daemons: ${text(result.error ?? new Error(`ps exited ${result.status}`))}`,
+      `cannot inspect fixture container ${containerId}: ${String(result.stderr ?? "").trim()}`,
     );
-  const owned = [];
-  const unknown = [];
-  const references = [root, rootPath].filter(
-    (item, index, all) => item && all.indexOf(item) === index,
-  );
-  const prefix = `${process.execPath} ${cli} serve --endpoint `;
-  const marker = " --data-root ";
-  const suffix = " --provider fake --execution-boundary unverified-host-scratch --profile verify";
-  for (const line of String(result.stdout ?? "").split("\n")) {
-    const match = line.match(/^\s*(\d+)\s+(.+)$/);
-    if (!match) continue;
-    const [, pidText, command] = match;
-    if (!references.some((reference) => command.includes(reference))) continue;
-    const markerAt = command.indexOf(marker, prefix.length);
-    const suffixAt = command.length - suffix.length;
-    if (
-      !command.startsWith(prefix) ||
-      markerAt < prefix.length ||
-      suffixAt <= markerAt + marker.length ||
-      !command.endsWith(suffix)
-    ) {
-      unknown.push({ pid: Number(pidText), command });
-      continue;
-    }
-    const endpointText = command.slice(prefix.length, markerAt);
-    const dataRootText = command.slice(markerAt + marker.length, suffixAt);
-    try {
-      const endpoint = new URL(endpointText);
-      if (
-        !endpoint.port ||
-        !["127.0.0.1", "localhost"].includes(endpoint.hostname) ||
-        realpathSync(dataRootText) !== root
-      )
-        throw new Error("startup command identity mismatch");
-      owned.push({ pid: Number(pidText), endpoint: endpointText, dataRoot: dataRootText });
-    } catch {
-      unknown.push({ pid: Number(pidText), command });
-    }
   }
-  return { owned, unknown };
-};
-const ownsDaemon = (info, command) => {
-  const expected = [
-    process.execPath,
-    cli,
-    "serve",
-    "--endpoint",
-    info.endpoint,
-    "--data-root",
-    info.dataRoot,
-    "--provider",
-    "fake",
-    "--execution-boundary",
-    "unverified-host-scratch",
-    "--profile",
-    "verify",
-  ];
-  return command.trim() === expected.join(" ");
-};
-const signalDaemon = (info, signal) => {
-  const processInfo = processAt(info.pid);
-  if (!processInfo.known) throw new Error(`cannot inspect daemon: ${processInfo.error}`);
-  if (!processInfo.exists) return processInfo;
-  if (!ownsDaemon(info, processInfo.command))
-    throw new Error(`daemon pid ${info.pid} is not owned by this launch`);
+  let values;
   try {
-    process.kill(-info.pid, signal);
+    values = json(result.stdout);
   } catch (error) {
-    if (error?.code !== "ESRCH") process.kill(info.pid, signal);
+    throw new Error(`docker inspect returned invalid JSON: ${text(error)}`);
   }
+  if (!Array.isArray(values) || values.length !== 1 || !values[0]?.Id)
+    throw new Error(`docker inspect returned no unique container for ${containerId}`);
+  if (values[0].Id !== containerId)
+    throw new Error(`docker inspect identity mismatch for ${containerId}`);
+  return values[0];
+};
+const inspectOwnedContainer = (info) => {
+  const container = inspectContainer(info.containerId);
+  if (!container) return null;
+  const labels = container.Config?.Labels ?? {};
+  if (labels[fixtureManagedLabel] !== fixtureManagedValue)
+    throw new Error(`refusing unowned fixture container ${info.containerId}`);
+  if (labels[fixtureLaunchLabel] !== info.launchId)
+    throw new Error(`fixture launch label mismatch for ${info.containerId}`);
+  const inspectedName = String(container.Name ?? "").replace(/^\/+/, "");
+  if (inspectedName !== info.containerName)
+    throw new Error(`fixture container name mismatch for ${info.containerId}`);
+  if (container.HostConfig?.NetworkMode !== "none")
+    throw new Error(`fixture container ${info.containerId} is not network isolated`);
+  const mounts = Array.isArray(container.Mounts) ? container.Mounts : [];
+  const writableBinds = mounts.filter((mount) => mount?.Type === "bind" && mount.RW === true);
+  const rootMounts = writableBinds.filter((mount) => {
+    try {
+      return (
+        mount.Source === info.dataRoot &&
+        mount.Destination === info.dataRoot &&
+        realpathSync(mount.Source) === info.dataRootReal
+      );
+    } catch {
+      return false;
+    }
+  });
+  if (writableBinds.length !== 1 || rootMounts.length !== 1)
+    throw new Error(`fixture dataRoot mount does not match readiness for ${info.containerId}`);
+  if (Object.keys(container.NetworkSettings?.Ports ?? {}).length !== 0)
+    throw new Error(`fixture container ${info.containerId} publishes an unexpected port`);
+  return { container, labels, mounts, rootMount: rootMounts[0] };
+};
+const listFixtureContainers = () => {
+  const result = spawnSync(
+    "docker",
+    ["ps", "-aq", "--no-trunc", "--filter", `label=${fixtureManagedLabel}=${fixtureManagedValue}`],
+    { encoding: "utf8" },
+  );
+  if (result.error) throw result.error;
+  if (result.status !== 0)
+    throw new Error(`cannot list fixture containers: ${String(result.stderr ?? "").trim()}`);
+  return String(result.stdout ?? "")
+    .split("\n")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((containerId) => inspectContainer(containerId))
+    .filter(Boolean);
+};
+const discoverFixtureContainer = (dataRoot) => {
+  const candidates = listFixtureContainers().filter((container) =>
+    (container.Mounts ?? []).some(
+      (mount) =>
+        mount?.Type === "bind" &&
+        mount.RW === true &&
+        mount.Source === dataRoot &&
+        mount.Destination === dataRoot,
+    ),
+  );
+  if (candidates.length > 1) throw new Error(`multiple fixture containers own ${dataRoot}`);
+  const container = candidates[0];
+  if (!container) return null;
+  const name = String(container.Name ?? "").replace(/^\/+/, "");
+  return { containerId: container.Id, containerName: name };
+};
+const ownsSupervisor = (info, command) =>
+  /(?:^|\s)(?:docker|docker\.exe)\s+run(?:\s|$)/.test(command.trim()) &&
+  command.includes(info.containerName);
+const signalSupervisor = (info, signal) => {
+  const processInfo = processAt(info.pid);
+  if (!processInfo.known)
+    throw new Error(`cannot inspect fixture supervisor: ${processInfo.error}`);
+  if (!processInfo.exists) return processInfo;
+  if (!ownsSupervisor(info, processInfo.command))
+    throw new Error(`fixture supervisor pid ${info.pid} is not owned by this launch`);
+  process.kill(info.pid, signal);
   return { ...processInfo, signal };
 };
-const daemonGone = async (info, limit) => {
+const supervisorGone = async (info, limit) => {
   const deadline = Date.now() + limit;
   while (Date.now() <= deadline) {
     const processInfo = processAt(info.pid);
-    if (!processInfo.known) throw new Error(`cannot inspect daemon: ${processInfo.error}`);
+    if (!processInfo.known)
+      throw new Error(`cannot inspect fixture supervisor: ${processInfo.error}`);
     if (!processInfo.exists) return true;
     await wait(100);
   }
@@ -284,44 +362,89 @@ const endpointUp = async (endpoint) => {
     clearTimeout(timer);
   }
 };
+const stopOwnedContainer = (info) => {
+  const before = inspectOwnedContainer(info);
+  if (!before) return { before: null, stopped: false, removed: true, after: null };
+  const stop = spawnSync("docker", ["stop", "--time", "5", info.containerId], {
+    encoding: "utf8",
+  });
+  if (stop.error) throw stop.error;
+  if (stop.status !== 0 && !/No such (object|container)/i.test(String(stop.stderr ?? "")))
+    throw new Error(`docker stop exited ${stop.status}: ${String(stop.stderr ?? "").trim()}`);
+  let after = inspectOwnedContainer(info);
+  if (after) {
+    const remove = spawnSync("docker", ["rm", "-f", info.containerId], {
+      encoding: "utf8",
+    });
+    if (remove.error) throw remove.error;
+    if (remove.status !== 0 && !/No such (object|container)/i.test(String(remove.stderr ?? "")))
+      throw new Error(`docker rm exited ${remove.status}: ${String(remove.stderr ?? "").trim()}`);
+    after = inspectOwnedContainer(info);
+  }
+  if (after) throw new Error(`owned fixture container ${info.containerId} survived removal`);
+  return { before, stopped: true, removed: true, after: null };
+};
+const removeOwnedDataRoot = (info) => {
+  const dataRootReal = realpathSync(info.dataRoot);
+  if (
+    dataRootReal !== info.dataRootReal ||
+    dirname(dataRootReal) !== fixtureTempRoot ||
+    !basename(dataRootReal).startsWith(fixtureNamePrefix)
+  )
+    throw new Error("refusing to remove an unowned fixture dataRoot");
+  const dataRootStat = lstatSync(info.dataRoot);
+  if (!dataRootStat.isDirectory() || dataRootStat.isSymbolicLink())
+    throw new Error("fixture dataRoot is not an owned directory");
+  rmSync(info.dataRoot, { recursive: true, force: false });
+  if (existsSync(info.dataRoot)) throw new Error("fixture dataRoot still exists");
+  return true;
+};
 const cleanupStartupFailure = async (inspection) => {
   for (const entry of readdirSync(tempParentReal, { withFileTypes: true })) {
     if (!entry.isDirectory() || !entry.name.startsWith("agentis-verify-")) continue;
     const rootPath = join(tempParent, entry.name);
     const root = realpathSync(join(tempParentReal, entry.name));
-    let daemons = startupDaemons(root, rootPath);
-    const record = { root, rootPath, before: daemons, terminated: [] };
+    const discovered = discoverFixtureContainer(root);
+    const record = { root, rootPath, container: discovered, terminated: [] };
     inspection.push(record);
-    if (daemons.unknown.length)
-      throw new Error(`cannot prove startup process ownership for ${root}`);
-    for (const candidate of daemons.owned) {
-      record.terminated.push({
-        pid: candidate.pid,
-        endpoint: candidate.endpoint,
-        signal: "SIGTERM",
-      });
-      const inspected = signalDaemon(candidate, "SIGTERM");
-      if (inspected.exists && !(await daemonGone(candidate, cleanupLimit))) {
-        record.terminated[record.terminated.length - 1].signal = "SIGKILL";
-        signalDaemon(candidate, "SIGKILL");
-        if (!(await daemonGone(candidate, 2_000)))
-          throw new Error(`startup daemon pid ${candidate.pid} did not disappear`);
+    if (!discovered) continue;
+    const profile = json(readFileSync(join(root, "profiles", "verify.json"), "utf8"));
+    const info = validateLaunch({
+      endpoint: profile.endpoint,
+      pid: Number(readFileSync(join(root, "pid"), "utf8")),
+      containerId: discovered.containerId,
+      containerName: discovered.containerName,
+      dataRoot: root,
+      workspace: join(root, "scratch"),
+      log: join(root, "daemon.log"),
+      boundary: profile.executionBoundary ?? profile.boundary,
+    });
+    record.before = inspectOwnedContainer(info);
+    record.terminated.push(stopOwnedContainer(info));
+    if (!(await supervisorGone(info, cleanupLimit))) {
+      record.supervisor = signalSupervisor(info, "SIGTERM");
+      if (!(await supervisorGone(info, 2_000))) {
+        record.supervisor.forced = signalSupervisor(info, "SIGKILL");
+        if (!(await supervisorGone(info, 2_000)))
+          throw new Error(`fixture supervisor pid ${info.pid} did not disappear`);
       }
-      if (await endpointUp(candidate.endpoint))
-        throw new Error(`startup daemon endpoint remained reachable: ${candidate.endpoint}`);
     }
-    daemons = startupDaemons(root, rootPath);
-    record.after = daemons;
-    if (daemons.unknown.length || daemons.owned.length)
-      throw new Error(`could not prove startup cleanup for ${root}`);
+    if (await endpointUp(info.endpoint))
+      throw new Error(`fixture relay endpoint remained reachable: ${info.endpoint}`);
+    record.after = {
+      container: inspectContainer(info.containerId),
+      supervisor: processAt(info.pid),
+    };
   }
 };
 const cleanup = async () => {
   const errors = [];
   let launcherStopped = !launcher;
-  let daemonStopped = launchInfo ? false : null;
+  let containerStopped = launchInfo ? false : null;
+  let supervisorStopped = launchInfo ? false : null;
   let endpointUnreachable = launchInfo ? false : null;
-  let daemonInspection;
+  let dataRootRemoved = launchInfo ? false : null;
+  let containerInspection;
   const startupInspection = [];
   if (launcher && launcher.exitCode === null && launcher.signalCode === null)
     launcher.kill("SIGTERM");
@@ -349,24 +472,34 @@ const cleanup = async () => {
   const info = launchInfo ?? discoverLaunch();
   if (info) {
     try {
-      daemonStopped = await daemonGone(info, cleanupLimit);
-      if (!daemonStopped) {
-        daemonInspection = signalDaemon(info, "SIGTERM");
-        daemonStopped = await daemonGone(info, cleanupLimit);
-        if (!daemonStopped) {
-          daemonInspection.forced = signalDaemon(info, "SIGKILL");
-          daemonStopped = await daemonGone(info, 2_000);
-          if (!daemonStopped) throw new Error(`daemon pid ${info.pid} did not disappear`);
+      containerInspection = stopOwnedContainer(info);
+      containerStopped = containerInspection.removed;
+      supervisorStopped = await supervisorGone(info, cleanupLimit);
+      if (!supervisorStopped) {
+        containerInspection.supervisor = signalSupervisor(info, "SIGTERM");
+        supervisorStopped = await supervisorGone(info, cleanupLimit);
+        if (!supervisorStopped) {
+          containerInspection.supervisor.forced = signalSupervisor(info, "SIGKILL");
+          supervisorStopped = await supervisorGone(info, 2_000);
+          if (!supervisorStopped)
+            throw new Error(`fixture supervisor pid ${info.pid} did not disappear`);
         }
       }
     } catch (error) {
-      errors.push(`daemon cleanup: ${text(error)}`);
+      errors.push(`fixture cleanup: ${text(error)}`);
     }
     try {
       endpointUnreachable = !(await endpointUp(info.endpoint));
       if (!endpointUnreachable) throw new Error(`endpoint remained reachable: ${info.endpoint}`);
     } catch (error) {
       errors.push(`endpoint cleanup: ${text(error)}`);
+    }
+    if (!errors.length && containerStopped && supervisorStopped && endpointUnreachable) {
+      try {
+        dataRootRemoved = removeOwnedDataRoot(info);
+      } catch (error) {
+        errors.push(`dataRoot cleanup: ${text(error)}`);
+      }
     }
   } else if (tempParent) {
     try {
@@ -391,18 +524,24 @@ const cleanup = async () => {
     finishedAt: stamp(),
     removed,
     launcherStopped,
-    daemonStopped,
-    daemonInspection,
+    containerStopped,
+    supervisorStopped,
+    dataRootRemoved,
+    dataRoot: info?.dataRoot ?? null,
+    containerInspection,
     endpointUnreachable,
     startupInspection,
     temporaryParent: tempParent,
     temporaryParentExists: Boolean(tempParent && existsSync(tempParent)),
     preservedTemporaryParent: Boolean(tempParent && existsSync(tempParent)),
+    dataRootExists: Boolean(info?.dataRoot && existsSync(info.dataRoot)),
+    preservedDataRoot: Boolean(info?.dataRoot && existsSync(info.dataRoot)),
     errors,
     ok:
       !errors.length &&
       launcherStopped &&
-      (!info || (daemonStopped && endpointUnreachable)) &&
+      (!info ||
+        (containerStopped && supervisorStopped && endpointUnreachable && dataRootRemoved)) &&
       (!tempParent || removed),
   };
   writeEvidence("cleanup.json", cleanupResult);
@@ -537,8 +676,12 @@ const artifactProof = (status, info) => {
   if (!isAbsolute(artifact.path)) throw new Error("artifact path is not absolute");
   const dataRoot = realpathSync(info.dataRoot);
   const workspace = realpathSync(info.workspace);
-  if (!within(tempParentReal, dataRoot) || !within(dataRoot, workspace))
-    throw new Error("workspace or dataRoot realpath is outside owned scratch");
+  if (
+    dirname(dataRoot) !== fixtureTempRoot ||
+    !basename(dataRoot).startsWith(fixtureNamePrefix) ||
+    !within(dataRoot, workspace)
+  )
+    throw new Error("workspace or dataRoot realpath is outside the owned fixture root");
   const path = realpathSync(artifact.path);
   if (!within(workspace, path))
     throw new Error("artifact realpath is outside owned scratch workspace");
@@ -687,7 +830,8 @@ const main = async () => {
         run: "selected run succeeds",
         task: "selected task completes",
         artifact: "matching artifact SHA and byte size inside scratch",
-        cleanup: "owned daemon disappears, endpoint is unreachable, and temp parent is removed",
+        cleanup:
+          "owned Docker fixture container and host supervisor disappear, endpoint is unreachable, and both data root and helper temp parent are removed",
       },
       observed: {
         launch: launchInfo,

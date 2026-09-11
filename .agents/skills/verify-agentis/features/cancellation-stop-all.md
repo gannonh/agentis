@@ -54,6 +54,6 @@ Preconditions:
 
 - `stop-all` is a persistent latch in the data root; there is no public unlatch command. Use a fresh launch for later work.
 - `run cancel` rejects a run already `succeeded`, `failed`, or `canceled`; record the original terminal result.
-- The command receipt's `interrupt_provider` effect records the requested provider interruption. Verify the public run state and daemon cleanup separately.
+- The command receipt's `interrupt_provider` effect records the requested provider interruption. Verify the public run state and Docker fixture container/supervisor cleanup separately.
 - Do not use a stale `RUN_ID` from another launch or infer ownership from a guessed port.
 - A fixture cancellation `PASS` remains separate from live-provider support. This feature has no live-provider evidence in the current map and remains UNVERIFIED until a public fixture run is retained.

@@ -31,6 +31,7 @@ export type PrincipalKind = typeof PrincipalKind.Type;
 
 export const ExecutionBoundary = Schema.Literal(
   "docker-desktop-run-container",
+  "docker-fixture-container",
   "unverified-host-scratch",
 );
 export type ExecutionBoundary = typeof ExecutionBoundary.Type;

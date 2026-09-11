@@ -4,8 +4,8 @@ import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 
-const [dataRoot] = process.argv.slice(2);
-if (!dataRoot) throw new Error("Pass the dedicated provider data root");
+const [dataRoot, evidenceFile] = process.argv.slice(2);
+if (!dataRoot || !evidenceFile) throw new Error("Pass the dedicated provider root and new evidence file");
 if (
   process.env.AGENTIS_CODEX_STUB ||
   process.env.AGENTIS_CLAUDE_STUB ||
@@ -127,5 +127,5 @@ try {
   for (const runId of createdRuns) await command({kind:"cancel_run",runId}).catch(()=>{});
   daemon.kill("SIGTERM");
   await exited;
-  writeFileSync("docs/verification/kat-3247/evidence/crash-containment.json",JSON.stringify({recordedAt:new Date().toISOString(),sourceCommit:spawnSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).stdout.trim(),productSourceDirty:spawnSync("git",["diff","--quiet","HEAD","--","packages/cli"]).status!==0,argv:process.argv.slice(2),results},null,2)+"\n");
+  writeFileSync(evidenceFile,JSON.stringify({recordedAt:new Date().toISOString(),sourceCommit:spawnSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).stdout.trim(),productSourceDirty:spawnSync("git",["diff","--quiet","HEAD","--","packages/cli"]).status!==0,argv:process.argv.slice(2),results},null,2)+"\n");
 }
