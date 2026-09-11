@@ -1,0 +1,13 @@
+{
+  "finishedAt": "2026-09-11T19:58:34.542Z",
+  "removed": true,
+  "launcherStopped": true,
+  "daemonStopped": true,
+  "endpointUnreachable": true,
+  "startupInspection": [],
+  "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-koLgXh",
+  "temporaryParentExists": false,
+  "preservedTemporaryParent": false,
+  "errors": [],
+  "ok": true
+}

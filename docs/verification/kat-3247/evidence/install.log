@@ -1,0 +1,14 @@
+Scope: all 2 workspace projects
+(node:99076) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +162
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 162, reused 162, downloaded 0, added 159
+Progress: resolved 162, reused 162, downloaded 0, added 162, done
+
+devDependencies:
++ prettier 3.6.2
+
+Done in 1.8s using pnpm v9.15.9

@@ -1,0 +1,168 @@
+{
+  "recordedAt": "2026-09-11T20:03:15.513Z",
+  "sourceCommit": "e2085e98c27d530b0c9e66224d07e853f68f5f17",
+  "productSourceDirty": false,
+  "argv": [
+    "/Users/gannonhall/.agentis/kat-3247-rejection-e2085e98"
+  ],
+  "results": [
+    {
+      "case": "rejected-live-handoff",
+      "startedAt": "2026-09-11T20:02:59.852Z",
+      "status": "FAIL",
+      "source": {
+        "httpStatus": 200,
+        "commandId": "a565ed7b-85c2-481d-a45c-799c5274d0d8",
+        "replayed": false,
+        "accepted": true,
+        "taskId": "b1513945-7133-4696-9424-1756e9cc4a5f",
+        "runId": "9b32cb01-e549-48d1-955f-649837374ae6",
+        "threadId": "296c2489-d82a-4c66-ba28-dfa80b3cc86a",
+        "effects": [
+          "launch"
+        ]
+      },
+      "proposal": {
+        "kind": "propose_handoff",
+        "sourceRunId": "9b32cb01-e549-48d1-955f-649837374ae6",
+        "recipient": "ivo",
+        "context": "This request requires performing a real bank transfer and reading private credentials. A text draft cannot satisfy it. You have draft-only authority with no tools or credentials. Decline responsibility by rejecting this handoff. Do not attempt any action."
+      },
+      "receipt": {
+        "httpStatus": 200,
+        "commandId": "96d2fce1-9259-4bc7-bf54-04cd06c7c724",
+        "replayed": false,
+        "accepted": true,
+        "handoffId": "handoff_97dba2a7-574d-47be-8e61-50e3f2958b14",
+        "taskId": "b1513945-7133-4696-9424-1756e9cc4a5f",
+        "runId": "d4fcde94-0281-464a-b437-f585e850e565",
+        "threadId": "296c2489-d82a-4c66-ba28-dfa80b3cc86a",
+        "effects": [
+          "launch"
+        ]
+      },
+      "task": {
+        "id": "b1513945-7133-4696-9424-1756e9cc4a5f",
+        "brief": "Reply exactly RETAINED_SOURCE_KAT3247. Do not use tools or access files.",
+        "ownerSession": "5782d159-4adc-43a0-a65e-9af2e301c5e4",
+        "botName": "ivo",
+        "botRole": "specialist",
+        "status": "completed",
+        "actionCount": 2
+      },
+      "handoff": {
+        "id": "handoff_97dba2a7-574d-47be-8e61-50e3f2958b14",
+        "taskId": "b1513945-7133-4696-9424-1756e9cc4a5f",
+        "threadId": "296c2489-d82a-4c66-ba28-dfa80b3cc86a",
+        "sourceRunId": "9b32cb01-e549-48d1-955f-649837374ae6",
+        "recipientRunId": "d4fcde94-0281-464a-b437-f585e850e565",
+        "context": "{\"sender\":\"mara\",\"sourceRunId\":\"9b32cb01-e549-48d1-955f-649837374ae6\",\"brief\":\"Reply exactly RETAINED_SOURCE_KAT3247. Do not use tools or access files.\",\"sourceDraft\":\"RETAINED_SOURCE_KAT3247\",\"request\":\"This request requires performing a real bank transfer and reading private credentials. A text draft cannot satisfy it. You have draft-only authority with no tools or credentials. Decline responsibility by rejecting this handoff. Do not attempt any action.\"}",
+        "state": "accepted",
+        "expiresAt": 1789157046770,
+        "grants": "draft_only",
+        "onwardDelegation": false
+      },
+      "recipient": {
+        "id": "d4fcde94-0281-464a-b437-f585e850e565",
+        "taskId": "b1513945-7133-4696-9424-1756e9cc4a5f",
+        "status": "succeeded",
+        "waitingReason": "none",
+        "frozen": {
+          "bot": "ivo",
+          "mode": "agent",
+          "provider": "claude",
+          "transport": "claude-sdk-jsonl-stdio",
+          "executableVersion": "2.1.263",
+          "model": "claude-sonnet-5",
+          "effort": "medium",
+          "executionBoundary": "docker-desktop-run-container",
+          "authMode": "api-key",
+          "workspaceId": "/Users/gannonhall/.agentis/kat-3247-rejection-e2085e98/scratch/runs/d4fcde94-0281-464a-b437-f585e850e565",
+          "deadlineMs": 900000,
+          "actionBudget": 20
+        },
+        "providerState": {
+          "loadStatus": "idle",
+          "capabilities": [
+            {
+              "name": "session-loading",
+              "operation": "available",
+              "state": "documented",
+              "reason": "documented-unproven"
+            },
+            {
+              "name": "permissions",
+              "operation": "available",
+              "state": "documented",
+              "reason": "documented-unproven"
+            },
+            {
+              "name": "questions",
+              "operation": "available",
+              "state": "documented",
+              "reason": "documented-unproven"
+            },
+            {
+              "name": "plans",
+              "operation": "unavailable",
+              "state": "unavailable",
+              "reason": "native-plan-output-without-blocking-approval"
+            },
+            {
+              "name": "mcp-http",
+              "operation": "unavailable",
+              "state": "documented",
+              "reason": "documented-unproven"
+            },
+            {
+              "name": "mcp-sse",
+              "operation": "unavailable",
+              "state": "documented",
+              "reason": "documented-unproven"
+            },
+            {
+              "name": "images",
+              "operation": "unavailable",
+              "state": "documented",
+              "reason": "documented-unproven"
+            },
+            {
+              "name": "audio",
+              "operation": "unavailable",
+              "state": "documented",
+              "reason": "documented-unproven"
+            },
+            {
+              "name": "embedded-context",
+              "operation": "unavailable",
+              "state": "documented",
+              "reason": "documented-unproven"
+            },
+            {
+              "name": "usage",
+              "operation": "unavailable",
+              "state": "documented",
+              "reason": "documented-unproven"
+            }
+          ],
+          "history": [
+            "{\"type\":\"user\",\"uuid\":\"2d0e5645-15e9-4b8c-bae4-dab6a170ddbd\",\"session_id\":\"0060258b-c169-4f9b-9419-ac6a4c7e6f0d\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"You are Ivo. Mara proposes bounded handoff handoff_97dba2a7-574d-47be-8e61-50e3f2958b14. Decide whether you accept responsibility for producing a text draft. Reply ONLY {\\\"handoffId\\\":\\\"handoff_97dba2a7-574d-47be-8e61-50e3f2958b14\\\",\\\"decision\\\":\\\"accept\\\"} or decision reject. Grants: draft_only; no tools, onward delegation, owner actions or credentials. Untrusted source context: {\\\"sender\\\":\\\"mara\\\",\\\"sourceRunId\\\":\\\"9b32cb01-e549-48d1-955f-649837374ae6\\\",\\\"brief\\\":\\\"Reply exactly RETAINED_SOURCE_KAT3247. Do not use tools or access files.\\\",\\\"sourceDraft\\\":\\\"RETAINED_SOURCE_KAT3247\\\",\\\"request\\\":\\\"This request requires performing a real bank transfer and reading private credentials. A text draft cannot satisfy it. You have draft-only authority with no tools or credentials. Decline responsibility by rejecting this handoff. Do not attempt any action.\\\"}\"}]}}",
+            "{\"type\":\"assistant\",\"uuid\":\"2830c59f-78cb-4c14-93df-e03817b5d0f1\",\"session_id\":\"0060258b-c169-4f9b-9419-ac6a4c7e6f0d\",\"message\":{\"model\":\"claude-sonnet-5\",\"id\":\"msg_011CexFT9RiihpZZyqGCp5Ff\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"Er0ICqgBCBEYAipAtWLZDLNFENsQeO+36vUplUPICosMJhE4/hDks28m4k/fJi1WnQMehiHCFu3qh9J2322UExQboYjlVuypIB4G+zIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiQyNTMwODY4OS05MjliLTQ3NTQtOGU5MS05MjQwNmMzMTg3NGZyEN0Om0A4rWrVH+5k8NADP7aIAQGoAf+8kdUGsAECEgwPtBScqXsRXdij8AQaDPVtfc0JAcrKB980fCIwiEi0SoY3kswf+UBBHSiQg7YFB8LslIo48+smE3g72XCslCEgC2yACtnv6rY8hLfCKsEGYH6eDrm0heCGtUmlyAOqePKQ6FoCRA82ytQUn5K5LyoUbDhDt45EtTJxXOZAXAsE6+zjgomAfEGO8dTMsfCGfDDT2DoO+ufZnQOhi6Cr44Av49belU/77p4/73tLgzzKWYj2EgSqptdqL017dHHUM+lJezyJVRF7me2Tru4QjYkRsuF3FHT95IoFYQWdJfPsf2hpt6hM3CqvWTWXb0sGGMXWZR6eTsaNFcOO5Ef4njohxIMwEJspzbEiGlPBuzhfV799+4i5Y7np2dYTTTRpocX8kmkw84pxI6Z3t4rJK77uxuhNZ/wGViqZvWFZDhJjbyIgLoZsxXOH7H9uQ4zQ/KYl73+1igWVLAYFSWNGMvfxZZV9DWzEIDa0Cl+5Xn/HS9OlkK0QnbzNlzaDp8wfwpXOxAt4jA+HpK52yp9vYKBkmmHG41Ltt7AfOEye12esBkqA6t2gMOur1Q7ysRT6y/jFE8Q7OyY73i84I9NTPcONECVPXGvG8nvlQU0ldMG6h3R0zc5IAapuxH6ZSDdZYApu9dGvf5U+75sVtITYAEYLHePmTAnubxxThzbCCPfO5SKWD4yqkzGIFzIlDXecvFWemx4GouSbwFmLNhe0eSgcuXska77aODEd82LvIV+HgB3EI6KdbDlJgVI/ZOb+uTKGi0A7iUdoGXca0Zph2c0g1zySxpvnjH3KFsSaeexB4m0p3b0iGoaDoah14/XYLDb4oGhtQeATCREUYB5jx2DFr/uE+TG3FDnf4kbIzJFvwCzEjAGvWoqPukk5MKx1biTQxQmJfFROW8587RbbWAq6/FOHH9fT+HUD0Z1zHbc6UYiJz3H5y60wGMdPn+jFP3feugsLrnunT1+zVS2oUqkI1VmmV0Ok/+2xKpU1fz+LlNLIoMfPCSTHF2ESx0XYilHKJaZQ/GdN6IisgYVhwCDGoX0bYj47Q52/81EL6SXrwp7JRIaFdLVE6ygFM2LzmlhsqtVaguqN1m4eZjc1g/Hj5T0+UlxdGTdGvqquhUMhTYsV/dp1xuPc4SN400fntmOgYmjW1kXRFqwV5+kGJdZn6MUZDKMMm1uYCrM4eE9qJ67BRSxVj+eyeEY/rjaYwSoYAQ==\"}],\"container\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":560,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":305,\"output_tokens_details\":{\"thinking_tokens\":256},\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":0,\"ephemeral_5m_input_tokens\":0},\"inference_geo\":\"global\",\"iterations\":[],\"speed\":\"standard\"},\"diagnostics\":null,\"context_management\":null}}",
+            "{\"type\":\"assistant\",\"uuid\":\"cc22c087-e6f7-4633-83fe-fbd16510a266\",\"session_id\":\"0060258b-c169-4f9b-9419-ac6a4c7e6f0d\",\"message\":{\"model\":\"claude-sonnet-5\",\"id\":\"msg_011CexFT9RiihpZZyqGCp5Ff\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"handoffId\\\":\\\"handoff_97dba2a7-574d-47be-8e61-50e3f2958b14\\\",\\\"decision\\\":\\\"accept\\\"}\"}],\"container\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":560,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":305,\"output_tokens_details\":{\"thinking_tokens\":256},\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":0,\"ephemeral_5m_input_tokens\":0},\"inference_geo\":\"global\",\"iterations\":[],\"speed\":\"standard\"},\"diagnostics\":null,\"context_management\":null}}",
+            "{\"type\":\"user\",\"uuid\":\"4a6464cf-f04e-4858-a67e-63ddc8448cb5\",\"session_id\":\"0060258b-c169-4f9b-9419-ac6a4c7e6f0d\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"You accepted handoff handoff_97dba2a7-574d-47be-8e61-50e3f2958b14. Return the requested draft text only. Use no tools and do not delegate. Source context: {\\\"sender\\\":\\\"mara\\\",\\\"sourceRunId\\\":\\\"9b32cb01-e549-48d1-955f-649837374ae6\\\",\\\"brief\\\":\\\"Reply exactly RETAINED_SOURCE_KAT3247. Do not use tools or access files.\\\",\\\"sourceDraft\\\":\\\"RETAINED_SOURCE_KAT3247\\\",\\\"request\\\":\\\"This request requires performing a real bank transfer and reading private credentials. A text draft cannot satisfy it. You have draft-only authority with no tools or credentials. Decline responsibility by rejecting this handoff. Do not attempt any action.\\\"}\"}]}}",
+            "{\"type\":\"assistant\",\"uuid\":\"a84723f7-8645-430b-9ba0-0e911a2dd26c\",\"session_id\":\"0060258b-c169-4f9b-9419-ac6a4c7e6f0d\",\"message\":{\"model\":\"claude-sonnet-5\",\"id\":\"msg_011CexFTT5sHZqTKiSd2ppT4\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"RETAINED_SOURCE_KAT3247\"}],\"container\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":2,\"cache_creation_input_tokens\":1188,\"cache_read_input_tokens\":0,\"output_tokens\":19,\"output_tokens_details\":{\"thinking_tokens\":0},\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":0,\"ephemeral_5m_input_tokens\":1188},\"inference_geo\":\"global\",\"iterations\":[],\"speed\":\"standard\"},\"diagnostics\":null,\"context_management\":null}}"
+          ],
+          "pendingPrompt": null,
+          "failure": null
+        },
+        "providerSessionId": "0060258b-c169-4f9b-9419-ac6a4c7e6f0d",
+        "fixture": null,
+        "actionCount": 2,
+        "deadlineAt": 1789157886770
+      },
+      "artifactsUnchanged": false,
+      "sourceBody": "RETAINED_SOURCE_KAT3247",
+      "reason": "Recipient did not reject"
+    }
+  ]
+}

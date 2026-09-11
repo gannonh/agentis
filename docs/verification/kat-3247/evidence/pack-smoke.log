@@ -1,0 +1,118 @@
+
+> agentis@2.0.0 pack:smoke /Users/gannonhall/.codex/worktrees/8921/agentis
+> pnpm --filter @agentis-labs/cli pack:smoke
+
+
+> @agentis-labs/cli@2.0.0 pack:smoke /Users/gannonhall/.codex/worktrees/8921/agentis/packages/cli
+> node ../../scripts/pack-smoke.mjs
+
+
+> @agentis-labs/cli@2.0.0 build /Users/gannonhall/.codex/worktrees/8921/agentis/packages/cli
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json
+
+Tarball Contents
+dist/auth.d.ts
+dist/auth.js
+dist/auth.js.map
+dist/bin.d.ts
+dist/bin.js
+dist/bin.js.map
+dist/boundary.d.ts
+dist/boundary.js
+dist/boundary.js.map
+dist/claude-bridge.d.ts
+dist/claude-bridge.js
+dist/claude-bridge.js.map
+dist/claude-container.d.ts
+dist/claude-container.js
+dist/claude-container.js.map
+dist/claude-result.d.ts
+dist/claude-result.js
+dist/claude-result.js.map
+dist/claude.d.ts
+dist/claude.js
+dist/claude.js.map
+dist/cli.d.ts
+dist/cli.js
+dist/cli.js.map
+dist/codex.d.ts
+dist/codex.js
+dist/codex.js.map
+dist/container.d.ts
+dist/container.js
+dist/container.js.map
+dist/engine.d.ts
+dist/engine.js
+dist/engine.js.map
+dist/handoff-store.d.ts
+dist/handoff-store.js
+dist/handoff-store.js.map
+dist/http.d.ts
+dist/http.js
+dist/http.js.map
+dist/ids.d.ts
+dist/ids.js
+dist/ids.js.map
+dist/profile.d.ts
+dist/profile.js
+dist/profile.js.map
+dist/provider-contract.d.ts
+dist/provider-contract.js
+dist/provider-contract.js.map
+dist/provider.d.ts
+dist/provider.js
+dist/provider.js.map
+dist/schema.d.ts
+dist/schema.js
+dist/schema.js.map
+dist/scratch-file.d.ts
+dist/scratch-file.js
+dist/scratch-file.js.map
+dist/store-db.d.ts
+dist/store-db.js
+dist/store-db.js.map
+dist/store.d.ts
+dist/store.js
+dist/store.js.map
+dist/verify.d.ts
+dist/verify.js
+dist/verify.js.map
+dist/versions.d.ts
+dist/versions.js
+dist/versions.js.map
+package.json
+
+Tarball Details
+/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-pack-uAjGlb/agentis-labs-cli-2.0.0.tgz
+npm warn Unknown env config "recursive". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn Unknown env config "approve-builds". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+added 5 packages in 1s
+{
+  "health": {
+    "ok": true,
+    "schemaId": "agentis.v2.gate0.5",
+    "apiFamily": "v1",
+    "node": "v24.20.0",
+    "packageVersion": "2.0.0"
+  },
+  "status": {
+    "schemaId": "agentis.v2.gate0.5",
+    "stopAll": false,
+    "handoffs": [],
+    "tasks": [],
+    "runs": [],
+    "pending": [],
+    "artifacts": [],
+    "messages": [],
+    "events": [
+      {
+        "seq": 1,
+        "id": "49a287d2-575c-4d32-9deb-bfc070217465",
+        "type": "daemon_restart",
+        "body": "{\"interrupted\":[]}"
+      }
+    ]
+  }
+}
+{"ok":true,"endpoint":"http://127.0.0.1:50348/","pid":2131,"log":"/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-verify-vyPoUh/daemon.log","tarball":"agentis-labs-cli-2.0.0.tgz","taskId":"92dcd006-5ff2-4a75-9677-6e73945e01af","runId":"7e302418-bf7e-4480-84c2-8ab6ad4a8f7c"}

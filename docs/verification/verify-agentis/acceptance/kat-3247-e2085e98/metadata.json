@@ -1,0 +1,18 @@
+{
+  "recordedAt": "2026-09-11T19:58:33.195Z",
+  "sourceSha": "e2085e98c27d530b0c9e66224d07e853f68f5f17",
+  "node": {
+    "executable": "/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin/node",
+    "version": "v24.20.0"
+  },
+  "pnpm": {
+    "version": "9.15.9",
+    "exitCode": 0
+  },
+  "platform": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "release": "25.5.0",
+    "machine": "arm64"
+  }
+}
