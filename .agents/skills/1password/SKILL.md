@@ -57,7 +57,7 @@ test -n "${OP_SERVICE_ACCOUNT_TOKEN:-}"
 `op --version` must be beta. `op whoami` must be a service account. To list **names only**:
 
 ```sh
-op environment read "${OP_ENVIRONMENT_ID:-sjeqjrunoqacvlom5cjq5kizxa}" | awk -F= 'NF{print $1}'
+op environment read "${OP_ENVIRONMENT_ID:-sjeqjrunoqacvlom5cjq5kizxa}" | awk -F= '/^[A-Za-z_][A-Za-z0-9_]*=/{print $1}'
 ```
 
 Never paste that command's unfiltered stdout into chat. If `loadRepoEnv` throws, report the error class and the first stderr line `op` already sanitized, not the Environment payload.

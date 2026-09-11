@@ -15,7 +15,7 @@ The service account token authenticates the CLI. Do not run `op signin` for sour
 ## Auth check
 
 ```sh
-export OP_SERVICE_ACCOUNT_TOKEN=ops_...   # never echo this
+export OP_SERVICE_ACCOUNT_TOKEN=ops_...
 op whoami
 ```
 
@@ -30,7 +30,7 @@ Expect a service account. Account or user sign-in is the wrong mode for headless
 | `op run --environment`            | injects the Environment then execs a child       | Do not wrap `pnpm` or `agentis`. The Node loader already reads. |
 | Destinations / local `.env` mount | FIFO file, desktop approval                      | Do not use.                                                     |
 
-`op environment list` confirms the service account can see Environments. Do not dump `op environment read` into a transcript.
+This CLI beta exposes `op environment read` only. A successful names-only read (see the skill) confirms the service account can read the Environment. Do not dump `op environment read` into a transcript.
 
 ## Persist the token
 

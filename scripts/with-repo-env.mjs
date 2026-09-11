@@ -13,6 +13,10 @@ child.on("error", (error) => {
   process.stderr.write(`${error.message}\n`);
   process.exit(1);
 });
-child.on("exit", (code) => {
+child.on("exit", (code, signal) => {
+  if (signal) {
+    process.kill(process.pid, signal);
+    return;
+  }
   process.exit(code ?? 1);
 });

@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import {
   DEFAULT_OP_ENVIRONMENT_ID,
@@ -59,6 +62,24 @@ test("OP_ENVIRONMENT_ID is passed through", () => {
     },
   });
   assert.equal(requestedId, "custom-environment-id");
+});
+
+test("does not load keys that exist only in a cwd .env file", () => {
+  const dir = mkdtempSync(join(tmpdir(), "agentis-env-"));
+  const previous = process.cwd();
+  try {
+    writeFileSync(join(dir, ".env"), "FROM_DOTENV=file-only\n");
+    process.chdir(dir);
+    const env = loadRepoEnv({
+      baseEnv: { OP_SERVICE_ACCOUNT_TOKEN: "ops_test" },
+      readOpEnvironment: () => ({ FROM_OP: "op" }),
+    });
+    assert.equal(env.FROM_DOTENV, undefined);
+    assert.equal(env.FROM_OP, "op");
+  } finally {
+    process.chdir(previous);
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("reader throw fails closed with OnePasswordEnvironmentReadError and the environment id", () => {
