@@ -1,0 +1,177 @@
+{
+  "schema": "kat-3315.verify-agentis.smoke.v1",
+  "recordedAt": "2026-09-11T21:07:07.560Z",
+  "sourceSha": "70e8b204de0737e1f5c7b1674eca499daa8122d3",
+  "expected": {
+    "launch": "verify launch reports owned endpoint/data root",
+    "doctor": "public doctor succeeds",
+    "submit": "public smoke fixture is accepted",
+    "run": "selected run succeeds",
+    "task": "selected task completes",
+    "artifact": "matching artifact SHA and byte size inside scratch",
+    "cleanup": "owned Docker fixture container and host supervisor disappear, endpoint is unreachable, and temp parent is removed"
+  },
+  "observed": {
+    "launch": {
+      "endpoint": "http://127.0.0.1:56094/",
+      "pid": 94065,
+      "containerId": "9e4efe5150c19dda710d3ebef8aa680df0262553db93ef15966ee08f1a39fee0",
+      "containerName": "agentis-verify-58bd745e-5517-435e-be83-298a35febda6",
+      "launchId": "58bd745e-5517-435e-be83-298a35febda6",
+      "boundary": "docker-fixture-container",
+      "dataRoot": "/private/tmp/agentis-verify-V6q5bi",
+      "dataRootReal": "/private/tmp/agentis-verify-V6q5bi",
+      "workspace": "/private/tmp/agentis-verify-V6q5bi/scratch",
+      "log": "/private/tmp/agentis-verify-V6q5bi/daemon.log"
+    },
+    "ownerCredential": {
+      "path": "/private/tmp/agentis-verify-V6q5bi/owner.token",
+      "exists": true,
+      "privateMode": true
+    },
+    "doctor": {
+      "exitCode": 0,
+      "parsed": {
+        "health": {
+          "ok": true,
+          "schemaId": "agentis.v2.gate0.5",
+          "apiFamily": "v1",
+          "node": "v24.20.0",
+          "packageVersion": "2.0.0"
+        },
+        "status": {
+          "schemaId": "agentis.v2.gate0.5",
+          "stopAll": false,
+          "handoffs": [],
+          "tasks": [],
+          "runs": [],
+          "pending": [],
+          "artifacts": [],
+          "messages": [],
+          "events": [
+            {
+              "seq": 1,
+              "id": "f39ec8e6-8f6d-4799-8242-5dcc68519307",
+              "type": "daemon_restart",
+              "body": "{\"interrupted\":[]}"
+            }
+          ]
+        }
+      }
+    },
+    "submit": {
+      "exitCode": 0,
+      "parsed": {
+        "commandId": "9810e442-10a9-4369-837f-df61f2b6b42b",
+        "replayed": false,
+        "accepted": true,
+        "taskId": "25ceed8d-3cfb-4e89-af76-ee76b388eae0",
+        "runId": "eb4938e8-006c-448f-939f-7a934ff7c421",
+        "threadId": "628b30f0-7fc6-42a0-b76a-bcdf783ef3cd",
+        "effects": [
+          "launch"
+        ]
+      }
+    },
+    "status": {
+      "selectedRun": {
+        "id": "eb4938e8-006c-448f-939f-7a934ff7c421",
+        "taskId": "25ceed8d-3cfb-4e89-af76-ee76b388eae0",
+        "status": "succeeded",
+        "waitingReason": "none",
+        "frozen": {
+          "bot": "mara",
+          "mode": "agent",
+          "provider": "fake",
+          "transport": "fake-in-process",
+          "executableVersion": "fake-1",
+          "model": "fake",
+          "executionBoundary": "docker-fixture-container",
+          "authMode": "none",
+          "workspaceId": "/private/tmp/agentis-verify-V6q5bi/scratch/runs/eb4938e8-006c-448f-939f-7a934ff7c421",
+          "deadlineMs": 900000,
+          "actionBudget": 20
+        },
+        "providerState": {
+          "loadStatus": "idle",
+          "capabilities": [],
+          "history": [],
+          "pendingPrompt": null,
+          "failure": null
+        },
+        "providerSessionId": "fake:eb4938e8-006c-448f-939f-7a934ff7c421",
+        "fixture": "smoke",
+        "actionCount": 0,
+        "deadlineAt": 1789161727111
+      },
+      "selectedTask": {
+        "id": "25ceed8d-3cfb-4e89-af76-ee76b388eae0",
+        "brief": "verification-smoke",
+        "ownerSession": "51309b85-35bd-4576-aa6d-1094fffc9824",
+        "botName": "mara",
+        "botRole": "coordinator",
+        "status": "completed",
+        "actionCount": 0
+      }
+    },
+    "artifact": {
+      "metadata": {
+        "id": "f20a31b9-8d18-4ef1-b856-eb2a8eb44e14",
+        "taskId": "25ceed8d-3cfb-4e89-af76-ee76b388eae0",
+        "runId": "eb4938e8-006c-448f-939f-7a934ff7c421",
+        "author": "mara",
+        "source": "fake",
+        "mediaType": "text/markdown",
+        "sha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+        "byteSize": 21,
+        "path": "/private/tmp/agentis-verify-V6q5bi/scratch/runs/eb4938e8-006c-448f-939f-7a934ff7c421/hello.md"
+      },
+      "realpath": "/private/tmp/agentis-verify-V6q5bi/scratch/runs/eb4938e8-006c-448f-939f-7a934ff7c421/hello.md",
+      "dataRoot": "/private/tmp/agentis-verify-V6q5bi",
+      "workspace": "/private/tmp/agentis-verify-V6q5bi/scratch",
+      "insideDataRoot": true,
+      "insideWorkspace": true,
+      "regularFile": true,
+      "expectedBody": "# verification-smoke\n",
+      "observedByteSize": 21,
+      "observedContentByteSize": 21,
+      "observedSha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+      "byteSizeMatches": true,
+      "sha256Matches": true,
+      "bodyMatches": true,
+      "sourceExpected": true,
+      "mediaTypeExpected": true,
+      "authorExpected": true,
+      "copyPath": "/Users/gannonhall/.codex/worktrees/8921/agentis/docs/verification/verify-agentis/acceptance/kat-3247-docker-initial/artifact/hello.md",
+      "copyByteSize": 21,
+      "copySha256": "ba0454eb7868f40fe200591a8af75b32c455aeca4dc7a481f527cd78bcd27da4",
+      "copyMatches": true
+    },
+    "failures": [],
+    "cleanup": {
+      "finishedAt": "2026-09-11T21:07:07.560Z",
+      "removed": true,
+      "launcherStopped": true,
+      "containerStopped": true,
+      "supervisorStopped": true,
+      "dataRootRemoved": true,
+      "dataRoot": "/private/tmp/agentis-verify-V6q5bi",
+      "containerInspection": {
+        "before": null,
+        "stopped": false,
+        "removed": true,
+        "after": null
+      },
+      "endpointUnreachable": true,
+      "startupInspection": [],
+      "temporaryParent": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/kat3315-smoke-Gyd2Jz",
+      "temporaryParentExists": false,
+      "preservedTemporaryParent": false,
+      "dataRootExists": false,
+      "preservedDataRoot": false,
+      "errors": [],
+      "ok": true
+    }
+  },
+  "verdict": "PASS"
+}

@@ -1,0 +1,47 @@
+{
+  "name": "doctor",
+  "command": [
+    "/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin/node",
+    "/Users/gannonhall/.codex/worktrees/8921/agentis/packages/cli/dist/bin.js",
+    "doctor",
+    "--endpoint",
+    "http://127.0.0.1:57398/",
+    "--data-root",
+    "/private/tmp/agentis-verify-IXDSHH"
+  ],
+  "cwd": "/Users/gannonhall/.codex/worktrees/8921/agentis",
+  "startedAt": "2026-09-11T21:13:47.098Z",
+  "finishedAt": "2026-09-11T21:13:48.041Z",
+  "stdout": "{\n  \"health\": {\n    \"ok\": true,\n    \"schemaId\": \"agentis.v2.gate0.5\",\n    \"apiFamily\": \"v1\",\n    \"node\": \"v24.20.0\",\n    \"packageVersion\": \"2.0.0\"\n  },\n  \"status\": {\n    \"schemaId\": \"agentis.v2.gate0.5\",\n    \"stopAll\": false,\n    \"handoffs\": [],\n    \"tasks\": [],\n    \"runs\": [],\n    \"pending\": [],\n    \"artifacts\": [],\n    \"messages\": [],\n    \"events\": [\n      {\n        \"seq\": 1,\n        \"id\": \"8809079e-9bc8-4231-9548-990c2f7c7e9f\",\n        \"type\": \"daemon_restart\",\n        \"body\": \"{\\\"interrupted\\\":[]}\"\n      }\n    ]\n  }\n}\n",
+  "stderr": "",
+  "exitCode": 0,
+  "signal": null,
+  "timedOut": false,
+  "parsed": {
+    "health": {
+      "ok": true,
+      "schemaId": "agentis.v2.gate0.5",
+      "apiFamily": "v1",
+      "node": "v24.20.0",
+      "packageVersion": "2.0.0"
+    },
+    "status": {
+      "schemaId": "agentis.v2.gate0.5",
+      "stopAll": false,
+      "handoffs": [],
+      "tasks": [],
+      "runs": [],
+      "pending": [],
+      "artifacts": [],
+      "messages": [],
+      "events": [
+        {
+          "seq": 1,
+          "id": "8809079e-9bc8-4231-9548-990c2f7c7e9f",
+          "type": "daemon_restart",
+          "body": "{\"interrupted\":[]}"
+        }
+      ]
+    }
+  }
+}

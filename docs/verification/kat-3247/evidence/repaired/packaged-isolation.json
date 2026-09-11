@@ -1,0 +1,110 @@
+{
+  "sourceCommit": "e2769a79f7e59d7c4d5c771a29a6874f2151df2b",
+  "ok": true,
+  "endpoint": "http://127.0.0.1:56519/",
+  "containerId": "d9bac40c956ac935848c10783f0d31f76b77ce70f6cc6ab137a6868629682900",
+  "tarball": "agentis-labs-cli-2.0.0.tgz",
+  "taskId": "e7a2b4ba-24d1-4467-9a93-dd3a342e0c83",
+  "runId": "bb33ff7e-5664-477e-b25e-beebebb4fdf1",
+  "artifact": {
+    "id": "c443266c-b5b2-4bb4-a446-77c9d5330cd2",
+    "taskId": "e7a2b4ba-24d1-4467-9a93-dd3a342e0c83",
+    "runId": "bb33ff7e-5664-477e-b25e-beebebb4fdf1",
+    "author": "mara",
+    "source": "fake",
+    "mediaType": "text/markdown",
+    "sha256": "fe7aad31b0771bd81b842a91c284649c2f389380135def0336a4ee260b619fa1",
+    "byteSize": 13,
+    "path": "/private/tmp/agentis-verify-v6UvhP/scratch/runs/bb33ff7e-5664-477e-b25e-beebebb4fdf1/hello.md"
+  },
+  "isolation": {
+    "status": "PASS",
+    "containerId": "d9bac40c956ac935848c10783f0d31f76b77ce70f6cc6ab137a6868629682900",
+    "image": "sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e",
+    "scope": "Child process in the actual launched fixture container; identical mounts, user, environment and network namespace. Host administration and kernel escape are outside this check.",
+    "network": "none",
+    "mounts": [
+      {
+        "Source": "/private/tmp/agentis-verify-v6UvhP",
+        "Destination": "/private/tmp/agentis-verify-v6UvhP",
+        "RW": true
+      },
+      {
+        "Source": "/private/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-install-yE1Pnw/node_modules/@agentis-labs/cli/dist/fixture-daemon.mjs",
+        "Destination": "/opt/agentis/fixture-daemon.mjs",
+        "RW": false
+      }
+    ],
+    "checks": [
+      {
+        "name": "host credential read",
+        "denied": true,
+        "code": "ENOENT"
+      },
+      {
+        "name": "host configuration read",
+        "denied": true,
+        "code": "ENOENT"
+      },
+      {
+        "name": "host absolute executable",
+        "denied": true,
+        "code": "ENOENT"
+      },
+      {
+        "name": "image shell cannot read host credential",
+        "denied": true
+      },
+      {
+        "name": "host write",
+        "denied": true,
+        "code": "ENOENT"
+      },
+      {
+        "name": "symlink escape",
+        "denied": true,
+        "code": "ENOENT"
+      },
+      {
+        "name": "Docker socket absent",
+        "denied": true,
+        "code": "ENOENT"
+      },
+      {
+        "name": "root filesystem write",
+        "denied": true,
+        "code": "EROFS"
+      },
+      {
+        "name": "inherited environment stripped",
+        "denied": true
+      },
+      {
+        "name": "network 127.0.0.1:56518",
+        "denied": true,
+        "code": "ECONNREFUSED"
+      },
+      {
+        "name": "network host.docker.internal:56518",
+        "denied": true,
+        "code": "EAI_AGAIN"
+      },
+      {
+        "name": "network 172.17.0.1:56518",
+        "denied": true,
+        "code": "ENETUNREACH"
+      },
+      {
+        "name": "network 1.1.1.1:443",
+        "denied": true,
+        "code": "ENETUNREACH"
+      },
+      {
+        "name": "network 2606:4700:4700::1111:443",
+        "denied": true,
+        "code": "ENETUNREACH"
+      }
+    ]
+  },
+  "cleanup": "launcher exited; container absent; endpoint closed"
+}

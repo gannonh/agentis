@@ -1,0 +1,29 @@
+{
+  "name": "verify launch",
+  "command": [
+    "/Users/gannonhall/.vite-plus/js_runtime/node/24.20.0/bin/node",
+    "/Users/gannonhall/.codex/worktrees/8921/agentis/packages/cli/dist/bin.js",
+    "verify",
+    "launch"
+  ],
+  "cwd": "/Users/gannonhall/.codex/worktrees/8921/agentis",
+  "startedAt": "2026-09-11T21:13:44.455Z",
+  "finishedAt": "2026-09-11T21:13:48.851Z",
+  "stdout": "{\n  \"endpoint\": \"http://127.0.0.1:57398/\",\n  \"pid\": 15407,\n  \"containerId\": \"3b07503817c4bf616825e990c6cd9b3540cc63530db770970a564513d7930825\",\n  \"containerName\": \"agentis-verify-4eea173a-8d9b-4984-97a8-42ec4138ed6d\",\n  \"dataRoot\": \"/private/tmp/agentis-verify-IXDSHH\",\n  \"log\": \"/private/tmp/agentis-verify-IXDSHH/daemon.log\",\n  \"workspace\": \"/private/tmp/agentis-verify-IXDSHH/scratch\"\n}\n",
+  "stderr": "",
+  "exitCode": 0,
+  "signal": null,
+  "timedOut": false,
+  "parsed": {
+    "endpoint": "http://127.0.0.1:57398/",
+    "pid": 15407,
+    "containerId": "3b07503817c4bf616825e990c6cd9b3540cc63530db770970a564513d7930825",
+    "containerName": "agentis-verify-4eea173a-8d9b-4984-97a8-42ec4138ed6d",
+    "launchId": "4eea173a-8d9b-4984-97a8-42ec4138ed6d",
+    "boundary": "docker-fixture-container",
+    "dataRoot": "/private/tmp/agentis-verify-IXDSHH",
+    "dataRootReal": "/private/tmp/agentis-verify-IXDSHH",
+    "workspace": "/private/tmp/agentis-verify-IXDSHH/scratch",
+    "log": "/private/tmp/agentis-verify-IXDSHH/daemon.log"
+  }
+}

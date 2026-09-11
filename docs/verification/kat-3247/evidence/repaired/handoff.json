@@ -1,0 +1,568 @@
+{
+  "recordedAt": "2026-09-11T21:12:51.278Z",
+  "sourceCommit": "e2769a79f7e59d7c4d5c771a29a6874f2151df2b",
+  "productSourceDirty": false,
+  "fixtureMode": false,
+  "dataRoot": "/Users/gannonhall/.agentis/kat-3247-completion-20260911",
+  "results": [
+    {
+      "case": "accepted-handoff",
+      "startedAt": "2026-09-11T21:12:13.011Z",
+      "status": "PASS",
+      "source": {
+        "httpStatus": 200,
+        "commandId": "fbd40e77-9214-42ad-b855-c6cb791c5ee1",
+        "replayed": false,
+        "accepted": true,
+        "taskId": "465e9622-d7dd-4995-b865-6e4204c65c8d",
+        "runId": "6c8e9213-2996-42e3-b56f-41457b94399c",
+        "threadId": "e729c5b3-f9f3-4a18-9655-5d03edb0a054",
+        "effects": [
+          "launch"
+        ]
+      },
+      "recipient": {
+        "httpStatus": 200,
+        "commandId": "5ac99a44-2139-408b-af99-790865f0a76a",
+        "replayed": false,
+        "accepted": true,
+        "handoffId": "handoff_edd71c71-4047-493c-ac2d-8de4ae37005a",
+        "taskId": "465e9622-d7dd-4995-b865-6e4204c65c8d",
+        "runId": "1b838a30-13af-4b46-a8d9-aef26be8ea1e",
+        "threadId": "e729c5b3-f9f3-4a18-9655-5d03edb0a054",
+        "effects": [
+          "launch"
+        ]
+      },
+      "sourceFrozen": {
+        "bot": "mara",
+        "mode": "agent",
+        "provider": "codex",
+        "transport": "app-server-v2-jsonl-stdio",
+        "executableVersion": "0.153.4",
+        "model": "gpt-5.6-sol",
+        "effort": "medium",
+        "executionBoundary": "docker-desktop-run-container",
+        "authMode": "chatgpt-login",
+        "workspaceId": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/6c8e9213-2996-42e3-b56f-41457b94399c",
+        "deadlineMs": 900000,
+        "actionBudget": 20
+      },
+      "recipientFrozen": {
+        "bot": "ivo",
+        "mode": "agent",
+        "provider": "claude",
+        "transport": "claude-sdk-jsonl-stdio",
+        "executableVersion": "2.1.263",
+        "model": "claude-sonnet-5",
+        "effort": "medium",
+        "executionBoundary": "docker-desktop-run-container",
+        "authMode": "api-key",
+        "workspaceId": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/1b838a30-13af-4b46-a8d9-aef26be8ea1e",
+        "deadlineMs": 900000,
+        "actionBudget": 20
+      },
+      "sourceProviderSessionId": "01a09250-5cdc-7c01-9950-01780d527c83",
+      "recipientProviderSessionId": "c3d9d2be-33a8-49d8-a097-64b1f68161c4",
+      "handoff": {
+        "id": "handoff_edd71c71-4047-493c-ac2d-8de4ae37005a",
+        "taskId": "465e9622-d7dd-4995-b865-6e4204c65c8d",
+        "threadId": "e729c5b3-f9f3-4a18-9655-5d03edb0a054",
+        "sourceRunId": "6c8e9213-2996-42e3-b56f-41457b94399c",
+        "recipientRunId": "1b838a30-13af-4b46-a8d9-aef26be8ea1e",
+        "context": "{\"sender\":\"mara\",\"sourceRunId\":\"6c8e9213-2996-42e3-b56f-41457b94399c\",\"brief\":\"Reply exactly SOURCE_CONTEXT_KAT3243. Do not use tools or access files.\",\"sourceDraft\":\"SOURCE_CONTEXT_KAT3243\",\"request\":\"Produce exactly SPECIALIST_DRAFT_KAT3243 as the complete draft text. This is a text-only draft with no tools, resource changes, or onward delegation.\"}",
+        "state": "accepted",
+        "expiresAt": 1789161200320,
+        "grants": "draft_only",
+        "onwardDelegation": false
+      },
+      "task": {
+        "id": "465e9622-d7dd-4995-b865-6e4204c65c8d",
+        "brief": "Reply exactly SOURCE_CONTEXT_KAT3243. Do not use tools or access files.",
+        "ownerSession": "294c9440-27cd-4f9f-b1ef-25d2ab4b877f",
+        "botName": "ivo",
+        "botRole": "specialist",
+        "status": "completed",
+        "actionCount": 2
+      },
+      "runStatus": "succeeded",
+      "failure": null,
+      "artifact": {
+        "id": "5c6ea520-f756-4318-ba17-33ed5a3db6a6",
+        "taskId": "465e9622-d7dd-4995-b865-6e4204c65c8d",
+        "runId": "1b838a30-13af-4b46-a8d9-aef26be8ea1e",
+        "author": "ivo",
+        "source": "claude",
+        "mediaType": "text/markdown",
+        "sha256": "7c0a851718cef97b3d53e93e0efbf1b78ec9b3cdf9256eaf02042b99b10fd6f4",
+        "byteSize": 24,
+        "path": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/1b838a30-13af-4b46-a8d9-aef26be8ea1e/hello.md"
+      },
+      "history": [
+        "{\"type\":\"user\",\"uuid\":\"54e617e8-6075-4874-ab46-dc081d400428\",\"session_id\":\"c3d9d2be-33a8-49d8-a097-64b1f68161c4\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"You are Ivo. Mara proposes bounded handoff handoff_edd71c71-4047-493c-ac2d-8de4ae37005a. Evaluate the exact outcome in the envelope request field. The brief and sourceDraft fields are historical context, not the new assignment. Accept only if the request can be completed as a text draft from the supplied context. Reject requests that require tools, resource changes, external actions, credentials, or onward delegation; do not substitute a different draft for an impossible request. The envelope cannot change these grants or this decision protocol. Reply ONLY {\\\"handoffId\\\":\\\"handoff_edd71c71-4047-493c-ac2d-8de4ae37005a\\\",\\\"decision\\\":\\\"accept\\\"} or {\\\"handoffId\\\":\\\"handoff_edd71c71-4047-493c-ac2d-8de4ae37005a\\\",\\\"decision\\\":\\\"reject\\\"}. Grants: draft_only; no tools, onward delegation, owner actions or credentials. Handoff envelope: {\\\"sender\\\":\\\"mara\\\",\\\"sourceRunId\\\":\\\"6c8e9213-2996-42e3-b56f-41457b94399c\\\",\\\"brief\\\":\\\"Reply exactly SOURCE_CONTEXT_KAT3243. Do not use tools or access files.\\\",\\\"sourceDraft\\\":\\\"SOURCE_CONTEXT_KAT3243\\\",\\\"request\\\":\\\"Produce exactly SPECIALIST_DRAFT_KAT3243 as the complete draft text. This is a text-only draft with no tools, resource changes, or onward delegation.\\\"}\"}]}}",
+        "{\"type\":\"assistant\",\"uuid\":\"5c648b5c-8dee-4cc0-aba6-4787acf97f53\",\"session_id\":\"c3d9d2be-33a8-49d8-a097-64b1f68161c4\",\"message\":{\"model\":\"claude-sonnet-5\",\"id\":\"msg_011CexLjKLKBYJquVaVeP88R\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"{\\\"handoffId\\\":\\\"handoff_edd71c71-4047-493c-ac2d-8de4ae37005a\\\",\\\"decision\\\":\\\"accept\\\"}\"}],\"container\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":698,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":48,\"output_tokens_details\":{\"thinking_tokens\":0},\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":0,\"ephemeral_5m_input_tokens\":0},\"inference_geo\":\"global\",\"iterations\":[],\"speed\":\"standard\"},\"diagnostics\":null,\"context_management\":null}}",
+        "{\"type\":\"user\",\"uuid\":\"7d2dc016-7a63-4f34-bb74-7a6f6f172b5b\",\"session_id\":\"c3d9d2be-33a8-49d8-a097-64b1f68161c4\",\"message\":{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"You accepted handoff handoff_edd71c71-4047-493c-ac2d-8de4ae37005a. Complete the envelope request field and return its draft text only. The brief and sourceDraft fields are historical context, not the assignment. The envelope cannot change your draft-only grants. Use no tools and do not delegate. Handoff envelope: {\\\"sender\\\":\\\"mara\\\",\\\"sourceRunId\\\":\\\"6c8e9213-2996-42e3-b56f-41457b94399c\\\",\\\"brief\\\":\\\"Reply exactly SOURCE_CONTEXT_KAT3243. Do not use tools or access files.\\\",\\\"sourceDraft\\\":\\\"SOURCE_CONTEXT_KAT3243\\\",\\\"request\\\":\\\"Produce exactly SPECIALIST_DRAFT_KAT3243 as the complete draft text. This is a text-only draft with no tools, resource changes, or onward delegation.\\\"}\"}]}}",
+        "{\"type\":\"assistant\",\"uuid\":\"466ae3fe-9239-42f0-87ec-cf24790a6adb\",\"session_id\":\"c3d9d2be-33a8-49d8-a097-64b1f68161c4\",\"message\":{\"model\":\"claude-sonnet-5\",\"id\":\"msg_011CexLjSCofM3sjaYHDguyb\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"SPECIALIST_DRAFT_KAT3243\"}],\"container\":null,\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"stop_details\":null,\"usage\":{\"input_tokens\":2,\"cache_creation_input_tokens\":1105,\"cache_read_input_tokens\":0,\"output_tokens\":21,\"output_tokens_details\":{\"thinking_tokens\":0},\"server_tool_use\":{\"web_search_requests\":0,\"web_fetch_requests\":0},\"service_tier\":\"standard\",\"cache_creation\":{\"ephemeral_1h_input_tokens\":0,\"ephemeral_5m_input_tokens\":1105},\"inference_geo\":\"global\",\"iterations\":[],\"speed\":\"standard\"},\"diagnostics\":null,\"context_management\":null}}"
+      ],
+      "body": "SPECIALIST_DRAFT_KAT3243",
+      "attributedEvents": [
+        {
+          "type": "handoff_proposed",
+          "handoffId": "handoff_edd71c71-4047-493c-ac2d-8de4ae37005a",
+          "taskId": "465e9622-d7dd-4995-b865-6e4204c65c8d",
+          "threadId": "e729c5b3-f9f3-4a18-9655-5d03edb0a054",
+          "runId": "1b838a30-13af-4b46-a8d9-aef26be8ea1e",
+          "author": "mara",
+          "reason": "Mara requests Ivo's explicit acceptance; draft only, no onward delegation"
+        },
+        {
+          "type": "handoff_accepted",
+          "handoffId": "handoff_edd71c71-4047-493c-ac2d-8de4ae37005a",
+          "taskId": "465e9622-d7dd-4995-b865-6e4204c65c8d",
+          "threadId": "e729c5b3-f9f3-4a18-9655-5d03edb0a054",
+          "runId": "1b838a30-13af-4b46-a8d9-aef26be8ea1e",
+          "author": "ivo",
+          "reason": "ownership transferred from Mara to Ivo"
+        },
+        {
+          "type": "peer_progress",
+          "taskId": "465e9622-d7dd-4995-b865-6e4204c65c8d",
+          "threadId": "e729c5b3-f9f3-4a18-9655-5d03edb0a054",
+          "runId": "1b838a30-13af-4b46-a8d9-aef26be8ea1e",
+          "author": "ivo",
+          "body": "SPECIALIST_DRAFT_KAT3243"
+        },
+        {
+          "type": "handoff_artifact",
+          "handoffId": "handoff_edd71c71-4047-493c-ac2d-8de4ae37005a",
+          "taskId": "465e9622-d7dd-4995-b865-6e4204c65c8d",
+          "threadId": "e729c5b3-f9f3-4a18-9655-5d03edb0a054",
+          "runId": "1b838a30-13af-4b46-a8d9-aef26be8ea1e",
+          "author": "ivo",
+          "artifactId": "5c6ea520-f756-4318-ba17-33ed5a3db6a6"
+        }
+      ],
+      "sameKeyReplay": {
+        "httpStatus": 200,
+        "commandId": "5ac99a44-2139-408b-af99-790865f0a76a",
+        "replayed": true,
+        "accepted": true,
+        "handoffId": "handoff_edd71c71-4047-493c-ac2d-8de4ae37005a",
+        "taskId": "465e9622-d7dd-4995-b865-6e4204c65c8d",
+        "runId": "1b838a30-13af-4b46-a8d9-aef26be8ea1e",
+        "threadId": "e729c5b3-f9f3-4a18-9655-5d03edb0a054",
+        "effects": []
+      },
+      "newKeyDuplicate": {
+        "httpStatus": 409,
+        "commandId": "06bbedfd-24eb-4620-8ab2-bad650d758c5",
+        "replayed": false,
+        "accepted": false,
+        "error": "handoff requires the owner's completed Mara source run",
+        "effects": []
+      },
+      "loadStatus": "succeeded",
+      "loadIdentityAndHistoryUnchanged": true,
+      "nativeTaskEnforcement": "Native delegation tools are structurally excluded from both handoff turns; native init inventory is validated by the bridge"
+    },
+    {
+      "case": "concurrency-and-stop-all",
+      "startedAt": "2026-09-11T21:12:30.193Z",
+      "status": "PASS",
+      "perBotRejection": {
+        "httpStatus": 409,
+        "commandId": "843d9daf-1432-445e-b54e-239ee0573ec0",
+        "replayed": false,
+        "accepted": false,
+        "error": "per-bot run concurrency exceeded",
+        "effects": []
+      },
+      "runs": [
+        {
+          "id": "04fbd996-e210-4c3a-aefc-395b8ac35820",
+          "taskId": "95c3fb6d-160e-4db1-8bec-13c7caeea97d",
+          "status": "waiting_approval",
+          "waitingReason": "approval",
+          "frozen": {
+            "bot": "mara",
+            "mode": "agent",
+            "provider": "codex",
+            "transport": "app-server-v2-jsonl-stdio",
+            "executableVersion": "0.153.4",
+            "model": "gpt-5.6-sol",
+            "effort": "medium",
+            "executionBoundary": "docker-desktop-run-container",
+            "authMode": "chatgpt-login",
+            "workspaceId": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/04fbd996-e210-4c3a-aefc-395b8ac35820",
+            "deadlineMs": 900000,
+            "actionBudget": 20
+          },
+          "providerState": {
+            "loadStatus": "idle",
+            "capabilities": [
+              {
+                "name": "session-loading",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "permissions",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "questions",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "plans",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "native-plan-output-without-blocking-approval"
+              },
+              {
+                "name": "mcp-http",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "mcp-sse",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "images",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "usage",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              }
+            ],
+            "history": [],
+            "pendingPrompt": "{\"kind\":\"command\",\"threadId\":\"01a09250-9e66-7850-8ab3-91c47d9dd1cd\",\"turnId\":\"01a09250-9e81-7611-8962-3c53cc266be8\",\"itemId\":\"exec-45c42b04-f998-40a3-9f97-fe4d99329252\",\"startedAtMs\":1789161157674,\"environmentId\":\"local\",\"reason\":\"May I run exactly `node -e \\\"console.log(3243)\\\"` once?\",\"command\":\"/usr/bin/bash -lc 'node -e \\\"console.log(3243)\\\"'\",\"cwd\":\"/workspace\",\"commandActions\":[{\"type\":\"unknown\",\"command\":\"node -e \\\"console.log(3243)\\\"\"}],\"proposedExecpolicyAmendment\":[\"node\",\"-e\",\"console.log(3243)\"],\"availableDecisions\":[\"accept\",{\"acceptWithExecpolicyAmendment\":{\"execpolicy_amendment\":[\"node\",\"-e\",\"console.log(3243)\"]}},\"cancel\"]}",
+            "failure": null
+          },
+          "providerSessionId": "01a09250-9e66-7850-8ab3-91c47d9dd1cd",
+          "fixture": null,
+          "actionCount": 1,
+          "deadlineAt": 1789162050195
+        },
+        {
+          "id": "d907ae19-5349-48b8-ade7-6720a89e8077",
+          "taskId": "269caf03-8417-4d16-aba1-4c659d19515b",
+          "status": "waiting_approval",
+          "waitingReason": "approval",
+          "frozen": {
+            "bot": "ivo",
+            "mode": "agent",
+            "provider": "claude",
+            "transport": "claude-sdk-jsonl-stdio",
+            "executableVersion": "2.1.263",
+            "model": "claude-sonnet-5",
+            "effort": "medium",
+            "executionBoundary": "docker-desktop-run-container",
+            "authMode": "api-key",
+            "workspaceId": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/d907ae19-5349-48b8-ade7-6720a89e8077",
+            "deadlineMs": 900000,
+            "actionBudget": 20
+          },
+          "providerState": {
+            "loadStatus": "idle",
+            "capabilities": [
+              {
+                "name": "session-loading",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "permissions",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "questions",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "plans",
+                "operation": "unavailable",
+                "state": "unavailable",
+                "reason": "native-plan-output-without-blocking-approval"
+              },
+              {
+                "name": "mcp-http",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "mcp-sse",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "images",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "audio",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "embedded-context",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "usage",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              }
+            ],
+            "history": [],
+            "pendingPrompt": "{\"toolCallId\":\"toolu_01AwTx1HNhF57nwRdVm9GbzK\",\"command\":\"node -e \\\"console.log(3243)\\\"\",\"description\":\"Run node command to print 3243\"}",
+            "failure": null
+          },
+          "providerSessionId": "acd25c7a-5822-4039-8a26-771d94055c89",
+          "fixture": null,
+          "actionCount": 1,
+          "deadlineAt": 1789162057872
+        }
+      ],
+      "globalRejection": {
+        "httpStatus": 409,
+        "commandId": "5db2d61f-6b20-4c01-913f-dc15f0e966b2",
+        "replayed": false,
+        "accepted": false,
+        "error": "global run concurrency exceeded",
+        "effects": []
+      },
+      "stopReceipt": {
+        "httpStatus": 200,
+        "commandId": "2b9fd4cd-b251-4df0-9d62-be11e99f0a24",
+        "replayed": false,
+        "accepted": true,
+        "effects": [
+          "interrupt_provider"
+        ]
+      },
+      "finalRuns": [
+        {
+          "id": "04fbd996-e210-4c3a-aefc-395b8ac35820",
+          "taskId": "95c3fb6d-160e-4db1-8bec-13c7caeea97d",
+          "status": "canceled",
+          "waitingReason": "none",
+          "frozen": {
+            "bot": "mara",
+            "mode": "agent",
+            "provider": "codex",
+            "transport": "app-server-v2-jsonl-stdio",
+            "executableVersion": "0.153.4",
+            "model": "gpt-5.6-sol",
+            "effort": "medium",
+            "executionBoundary": "docker-desktop-run-container",
+            "authMode": "chatgpt-login",
+            "workspaceId": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/04fbd996-e210-4c3a-aefc-395b8ac35820",
+            "deadlineMs": 900000,
+            "actionBudget": 20
+          },
+          "providerState": {
+            "loadStatus": "idle",
+            "capabilities": [
+              {
+                "name": "session-loading",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "permissions",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "questions",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "plans",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "native-plan-output-without-blocking-approval"
+              },
+              {
+                "name": "mcp-http",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "mcp-sse",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "images",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "usage",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              }
+            ],
+            "history": [],
+            "pendingPrompt": "{\"kind\":\"command\",\"threadId\":\"01a09250-9e66-7850-8ab3-91c47d9dd1cd\",\"turnId\":\"01a09250-9e81-7611-8962-3c53cc266be8\",\"itemId\":\"exec-45c42b04-f998-40a3-9f97-fe4d99329252\",\"startedAtMs\":1789161157674,\"environmentId\":\"local\",\"reason\":\"May I run exactly `node -e \\\"console.log(3243)\\\"` once?\",\"command\":\"/usr/bin/bash -lc 'node -e \\\"console.log(3243)\\\"'\",\"cwd\":\"/workspace\",\"commandActions\":[{\"type\":\"unknown\",\"command\":\"node -e \\\"console.log(3243)\\\"\"}],\"proposedExecpolicyAmendment\":[\"node\",\"-e\",\"console.log(3243)\"],\"availableDecisions\":[\"accept\",{\"acceptWithExecpolicyAmendment\":{\"execpolicy_amendment\":[\"node\",\"-e\",\"console.log(3243)\"]}},\"cancel\"]}",
+            "failure": null
+          },
+          "providerSessionId": "01a09250-9e66-7850-8ab3-91c47d9dd1cd",
+          "fixture": null,
+          "actionCount": 1,
+          "deadlineAt": 1789162050195
+        },
+        {
+          "id": "d907ae19-5349-48b8-ade7-6720a89e8077",
+          "taskId": "269caf03-8417-4d16-aba1-4c659d19515b",
+          "status": "canceled",
+          "waitingReason": "none",
+          "frozen": {
+            "bot": "ivo",
+            "mode": "agent",
+            "provider": "claude",
+            "transport": "claude-sdk-jsonl-stdio",
+            "executableVersion": "2.1.263",
+            "model": "claude-sonnet-5",
+            "effort": "medium",
+            "executionBoundary": "docker-desktop-run-container",
+            "authMode": "api-key",
+            "workspaceId": "/Users/gannonhall/.agentis/kat-3247-completion-20260911/scratch/runs/d907ae19-5349-48b8-ade7-6720a89e8077",
+            "deadlineMs": 900000,
+            "actionBudget": 20
+          },
+          "providerState": {
+            "loadStatus": "idle",
+            "capabilities": [
+              {
+                "name": "session-loading",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "permissions",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "questions",
+                "operation": "available",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "plans",
+                "operation": "unavailable",
+                "state": "unavailable",
+                "reason": "native-plan-output-without-blocking-approval"
+              },
+              {
+                "name": "mcp-http",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "mcp-sse",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "images",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "audio",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "embedded-context",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              },
+              {
+                "name": "usage",
+                "operation": "unavailable",
+                "state": "documented",
+                "reason": "documented-unproven"
+              }
+            ],
+            "history": [],
+            "pendingPrompt": "{\"toolCallId\":\"toolu_01AwTx1HNhF57nwRdVm9GbzK\",\"command\":\"node -e \\\"console.log(3243)\\\"\",\"description\":\"Run node command to print 3243\"}",
+            "failure": null
+          },
+          "providerSessionId": "acd25c7a-5822-4039-8a26-771d94055c89",
+          "fixture": null,
+          "actionCount": 1,
+          "deadlineAt": 1789162057872
+        }
+      ],
+      "lateApprovals": [
+        {
+          "httpStatus": 409,
+          "commandId": "e4df0884-0c81-4eb1-a029-be3bbc99404d",
+          "replayed": false,
+          "accepted": false,
+          "error": "approval already canceled",
+          "approvalId": "af1728c8-1aff-4937-8494-d9efa4333bc8",
+          "effects": []
+        },
+        {
+          "httpStatus": 409,
+          "commandId": "f0af93ff-8a07-40bf-8c6d-a60c0a4bb6a0",
+          "replayed": false,
+          "accepted": false,
+          "error": "approval already canceled",
+          "approvalId": "83d81132-e3da-41c4-9e61-d2a7b21da503",
+          "effects": []
+        }
+      ],
+      "cleaned": true
+    }
+  ]
+}

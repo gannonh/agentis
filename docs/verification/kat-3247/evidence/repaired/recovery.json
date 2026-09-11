@@ -1,0 +1,303 @@
+{
+  "recordedAt": "2026-09-11T21:13:25.360Z",
+  "sourceCommit": "e2769a79f7e59d7c4d5c771a29a6874f2151df2b",
+  "provider": "fake",
+  "boundary": "unverified-host-scratch",
+  "dataRoot": "/Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911",
+  "argv": [
+    "/Users/gannonhall/.codex/worktrees/8921/agentis/packages/cli/dist/bin.js",
+    "serve",
+    "--endpoint",
+    "http://127.0.0.1:57317",
+    "--data-root",
+    "/Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911",
+    "--provider",
+    "fake",
+    "--execution-boundary",
+    "unverified-host-scratch"
+  ],
+  "status": "PASS",
+  "initialStream": {
+    "text": "id: 1\ndata: {\"seq\":1,\"id\":\"0358eeb0-b607-4c00-90a1-433ccbfd9739\",\"type\":\"daemon_restart\",\"body\":\"{\\\"interrupted\\\":[]}\"}\n\nid: 2\ndata: {\"seq\":2,\"id\":\"90e78b89-ba1c-4701-9871-1f0b02ae4e48\",\"type\":\"task_submitted\",\"body\":\"{\\\"taskId\\\":\\\"7aafb258-77ea-43db-ba1c-0e988bcf03ed\\\",\\\"runId\\\":\\\"160d20e3-5fbd-40a5-80b6-e4fd3b4f966e\\\",\\\"threadId\\\":\\\"b22c74fe-c735-4185-aa47-096e7405182d\\\",\\\"owner\\\":\\\"b067bb4f-5048-441b-bfae-d69d49e83893\\\",\\\"bot\\\":\\\"mara\\\",\\\"commandId\\\":\\\"4cc51be8-1351-4d81-ab61-9dc667ba8686\\\"}\"}\n\nid: 3\ndata: {\"seq\":3,\"id\":\"996d037f-7b85-48ab-9556-135227af3ce7\",\"type\":\"run_running\",\"body\":\"{\\\"runId\\\":\\\"160d20e3-5fbd-40a5-80b6-e4fd3b4f966e\\\",\\\"providerSessionId\\\":\\\"fake:160d20e3-5fbd-40a5-80b6-e4fd3b4f966e\\\"}\"}\n\nid: 4\ndata: {\"seq\":4,\"id\":\"84b5e003-57a8-4467-969b-ccfe83f02a3e\",\"type\":\"run_succeeded\",\"body\":\"{\\\"runId\\\":\\\"160d20e3-5fbd-40a5-80b6-e4fd3b4f966e\\\",\\\"artifactId\\\":\\\"6f4628fb-603a-4346-8ae8-6f1e55398bcd\\\"}\"}\n\n",
+    "ids": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "reconnectedStream": {
+    "text": "id: 5\ndata: {\"seq\":5,\"id\":\"be711778-a59c-4d8b-af2c-305240b72f6c\",\"type\":\"task_submitted\",\"body\":\"{\\\"taskId\\\":\\\"69417364-bc7b-4649-a16f-49436485ec20\\\",\\\"runId\\\":\\\"9d8d8211-303e-4366-83ce-23cebd68af50\\\",\\\"threadId\\\":\\\"893015c5-b7e4-4b5d-85c8-749dee6fec92\\\",\\\"owner\\\":\\\"b067bb4f-5048-441b-bfae-d69d49e83893\\\",\\\"bot\\\":\\\"mara\\\",\\\"commandId\\\":\\\"c70b9bd0-f5d1-4b32-b997-7aa348325260\\\"}\"}\n\nid: 6\ndata: {\"seq\":6,\"id\":\"7c3bd084-3bc4-4c28-b4af-079ed2a5503e\",\"type\":\"run_running\",\"body\":\"{\\\"runId\\\":\\\"9d8d8211-303e-4366-83ce-23cebd68af50\\\",\\\"providerSessionId\\\":\\\"fake:9d8d8211-303e-4366-83ce-23cebd68af50\\\"}\"}\n\nid: 7\ndata: {\"seq\":7,\"id\":\"ebeb221d-4b4c-4e5e-b5bc-3d85b443061c\",\"type\":\"waiting_input\",\"body\":\"{\\\"runId\\\":\\\"9d8d8211-303e-4366-83ce-23cebd68af50\\\",\\\"prompt\\\":\\\"choose color\\\"}\"}\n\n",
+    "ids": [
+      5,
+      6,
+      7
+    ]
+  },
+  "beforeCrash": {
+    "completed": {
+      "commandId": "4cc51be8-1351-4d81-ab61-9dc667ba8686",
+      "replayed": false,
+      "accepted": true,
+      "taskId": "7aafb258-77ea-43db-ba1c-0e988bcf03ed",
+      "runId": "160d20e3-5fbd-40a5-80b6-e4fd3b4f966e",
+      "threadId": "b22c74fe-c735-4185-aa47-096e7405182d",
+      "effects": [
+        "launch"
+      ]
+    },
+    "waiting": {
+      "commandId": "c70b9bd0-f5d1-4b32-b997-7aa348325260",
+      "replayed": false,
+      "accepted": true,
+      "taskId": "69417364-bc7b-4649-a16f-49436485ec20",
+      "runId": "9d8d8211-303e-4366-83ce-23cebd68af50",
+      "threadId": "893015c5-b7e4-4b5d-85c8-749dee6fec92",
+      "effects": [
+        "launch"
+      ]
+    },
+    "messages": [
+      {
+        "id": "c7686599-5ec6-4dd8-acb0-6a0425815152",
+        "threadId": "b22c74fe-c735-4185-aa47-096e7405182d",
+        "taskId": "7aafb258-77ea-43db-ba1c-0e988bcf03ed",
+        "runId": "160d20e3-5fbd-40a5-80b6-e4fd3b4f966e",
+        "authorKind": "human",
+        "authorName": "owner",
+        "body": "kat3247 retained transcript"
+      },
+      {
+        "id": "a9143b43-891d-4cf9-b3a4-852c63d9f722",
+        "threadId": "893015c5-b7e4-4b5d-85c8-749dee6fec92",
+        "taskId": "69417364-bc7b-4649-a16f-49436485ec20",
+        "runId": "9d8d8211-303e-4366-83ce-23cebd68af50",
+        "authorKind": "human",
+        "authorName": "owner",
+        "body": "kat3247 interrupted input"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "6f4628fb-603a-4346-8ae8-6f1e55398bcd",
+        "taskId": "7aafb258-77ea-43db-ba1c-0e988bcf03ed",
+        "runId": "160d20e3-5fbd-40a5-80b6-e4fd3b4f966e",
+        "author": "mara",
+        "source": "fake",
+        "mediaType": "text/markdown",
+        "sha256": "239ea93f5b146fd73d59d219fab9a62ab2a773a6656d20797ca51dde3e3ece18",
+        "byteSize": 30,
+        "path": "/Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911/scratch/runs/160d20e3-5fbd-40a5-80b6-e4fd3b4f966e/hello.md"
+      }
+    ],
+    "runs": [
+      {
+        "id": "160d20e3-5fbd-40a5-80b6-e4fd3b4f966e",
+        "taskId": "7aafb258-77ea-43db-ba1c-0e988bcf03ed",
+        "status": "succeeded",
+        "waitingReason": "none",
+        "frozen": {
+          "bot": "mara",
+          "mode": "agent",
+          "provider": "fake",
+          "transport": "fake-in-process",
+          "executableVersion": "fake-1",
+          "model": "fake",
+          "executionBoundary": "unverified-host-scratch",
+          "authMode": "none",
+          "workspaceId": "/Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911/scratch/runs/160d20e3-5fbd-40a5-80b6-e4fd3b4f966e",
+          "deadlineMs": 900000,
+          "actionBudget": 20
+        },
+        "providerState": {
+          "loadStatus": "idle",
+          "capabilities": [],
+          "history": [],
+          "pendingPrompt": null,
+          "failure": null
+        },
+        "providerSessionId": "fake:160d20e3-5fbd-40a5-80b6-e4fd3b4f966e",
+        "fixture": "smoke",
+        "actionCount": 0,
+        "deadlineAt": 1789162105740
+      },
+      {
+        "id": "9d8d8211-303e-4366-83ce-23cebd68af50",
+        "taskId": "69417364-bc7b-4649-a16f-49436485ec20",
+        "status": "waiting_input",
+        "waitingReason": "input",
+        "frozen": {
+          "bot": "mara",
+          "mode": "agent",
+          "provider": "fake",
+          "transport": "fake-in-process",
+          "executableVersion": "fake-1",
+          "model": "fake",
+          "executionBoundary": "unverified-host-scratch",
+          "authMode": "none",
+          "workspaceId": "/Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911/scratch/runs/9d8d8211-303e-4366-83ce-23cebd68af50",
+          "deadlineMs": 900000,
+          "actionBudget": 20
+        },
+        "providerState": {
+          "loadStatus": "idle",
+          "capabilities": [],
+          "history": [],
+          "pendingPrompt": null,
+          "failure": null
+        },
+        "providerSessionId": "fake:9d8d8211-303e-4366-83ce-23cebd68af50",
+        "fixture": "input",
+        "actionCount": 0,
+        "deadlineAt": 1789162105753
+      }
+    ]
+  },
+  "afterRestart": {
+    "messages": [
+      {
+        "id": "c7686599-5ec6-4dd8-acb0-6a0425815152",
+        "threadId": "b22c74fe-c735-4185-aa47-096e7405182d",
+        "taskId": "7aafb258-77ea-43db-ba1c-0e988bcf03ed",
+        "runId": "160d20e3-5fbd-40a5-80b6-e4fd3b4f966e",
+        "authorKind": "human",
+        "authorName": "owner",
+        "body": "kat3247 retained transcript"
+      },
+      {
+        "id": "a9143b43-891d-4cf9-b3a4-852c63d9f722",
+        "threadId": "893015c5-b7e4-4b5d-85c8-749dee6fec92",
+        "taskId": "69417364-bc7b-4649-a16f-49436485ec20",
+        "runId": "9d8d8211-303e-4366-83ce-23cebd68af50",
+        "authorKind": "human",
+        "authorName": "owner",
+        "body": "kat3247 interrupted input"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "6f4628fb-603a-4346-8ae8-6f1e55398bcd",
+        "taskId": "7aafb258-77ea-43db-ba1c-0e988bcf03ed",
+        "runId": "160d20e3-5fbd-40a5-80b6-e4fd3b4f966e",
+        "author": "mara",
+        "source": "fake",
+        "mediaType": "text/markdown",
+        "sha256": "239ea93f5b146fd73d59d219fab9a62ab2a773a6656d20797ca51dde3e3ece18",
+        "byteSize": 30,
+        "path": "/Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911/scratch/runs/160d20e3-5fbd-40a5-80b6-e4fd3b4f966e/hello.md"
+      }
+    ],
+    "runs": [
+      {
+        "id": "160d20e3-5fbd-40a5-80b6-e4fd3b4f966e",
+        "taskId": "7aafb258-77ea-43db-ba1c-0e988bcf03ed",
+        "status": "succeeded",
+        "waitingReason": "none",
+        "frozen": {
+          "bot": "mara",
+          "mode": "agent",
+          "provider": "fake",
+          "transport": "fake-in-process",
+          "executableVersion": "fake-1",
+          "model": "fake",
+          "executionBoundary": "unverified-host-scratch",
+          "authMode": "none",
+          "workspaceId": "/Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911/scratch/runs/160d20e3-5fbd-40a5-80b6-e4fd3b4f966e",
+          "deadlineMs": 900000,
+          "actionBudget": 20
+        },
+        "providerState": {
+          "loadStatus": "idle",
+          "capabilities": [],
+          "history": [],
+          "pendingPrompt": null,
+          "failure": null
+        },
+        "providerSessionId": "fake:160d20e3-5fbd-40a5-80b6-e4fd3b4f966e",
+        "fixture": "smoke",
+        "actionCount": 0,
+        "deadlineAt": 1789162105740
+      },
+      {
+        "id": "9d8d8211-303e-4366-83ce-23cebd68af50",
+        "taskId": "69417364-bc7b-4649-a16f-49436485ec20",
+        "status": "interrupted",
+        "waitingReason": "interrupted",
+        "frozen": {
+          "bot": "mara",
+          "mode": "agent",
+          "provider": "fake",
+          "transport": "fake-in-process",
+          "executableVersion": "fake-1",
+          "model": "fake",
+          "executionBoundary": "unverified-host-scratch",
+          "authMode": "none",
+          "workspaceId": "/Users/gannonhall/.agentis/kat-3247-completion-recovery-20260911/scratch/runs/9d8d8211-303e-4366-83ce-23cebd68af50",
+          "deadlineMs": 900000,
+          "actionBudget": 20
+        },
+        "providerState": {
+          "loadStatus": "idle",
+          "capabilities": [],
+          "history": [],
+          "pendingPrompt": null,
+          "failure": null
+        },
+        "providerSessionId": "fake:9d8d8211-303e-4366-83ce-23cebd68af50",
+        "fixture": "input",
+        "actionCount": 0,
+        "deadlineAt": 1789162105753
+      }
+    ],
+    "events": [
+      {
+        "seq": 1,
+        "id": "0358eeb0-b607-4c00-90a1-433ccbfd9739",
+        "type": "daemon_restart",
+        "body": "{\"interrupted\":[]}"
+      },
+      {
+        "seq": 2,
+        "id": "90e78b89-ba1c-4701-9871-1f0b02ae4e48",
+        "type": "task_submitted",
+        "body": "{\"taskId\":\"7aafb258-77ea-43db-ba1c-0e988bcf03ed\",\"runId\":\"160d20e3-5fbd-40a5-80b6-e4fd3b4f966e\",\"threadId\":\"b22c74fe-c735-4185-aa47-096e7405182d\",\"owner\":\"b067bb4f-5048-441b-bfae-d69d49e83893\",\"bot\":\"mara\",\"commandId\":\"4cc51be8-1351-4d81-ab61-9dc667ba8686\"}"
+      },
+      {
+        "seq": 3,
+        "id": "996d037f-7b85-48ab-9556-135227af3ce7",
+        "type": "run_running",
+        "body": "{\"runId\":\"160d20e3-5fbd-40a5-80b6-e4fd3b4f966e\",\"providerSessionId\":\"fake:160d20e3-5fbd-40a5-80b6-e4fd3b4f966e\"}"
+      },
+      {
+        "seq": 4,
+        "id": "84b5e003-57a8-4467-969b-ccfe83f02a3e",
+        "type": "run_succeeded",
+        "body": "{\"runId\":\"160d20e3-5fbd-40a5-80b6-e4fd3b4f966e\",\"artifactId\":\"6f4628fb-603a-4346-8ae8-6f1e55398bcd\"}"
+      },
+      {
+        "seq": 5,
+        "id": "be711778-a59c-4d8b-af2c-305240b72f6c",
+        "type": "task_submitted",
+        "body": "{\"taskId\":\"69417364-bc7b-4649-a16f-49436485ec20\",\"runId\":\"9d8d8211-303e-4366-83ce-23cebd68af50\",\"threadId\":\"893015c5-b7e4-4b5d-85c8-749dee6fec92\",\"owner\":\"b067bb4f-5048-441b-bfae-d69d49e83893\",\"bot\":\"mara\",\"commandId\":\"c70b9bd0-f5d1-4b32-b997-7aa348325260\"}"
+      },
+      {
+        "seq": 6,
+        "id": "7c3bd084-3bc4-4c28-b4af-079ed2a5503e",
+        "type": "run_running",
+        "body": "{\"runId\":\"9d8d8211-303e-4366-83ce-23cebd68af50\",\"providerSessionId\":\"fake:9d8d8211-303e-4366-83ce-23cebd68af50\"}"
+      },
+      {
+        "seq": 7,
+        "id": "ebeb221d-4b4c-4e5e-b5bc-3d85b443061c",
+        "type": "waiting_input",
+        "body": "{\"runId\":\"9d8d8211-303e-4366-83ce-23cebd68af50\",\"prompt\":\"choose color\"}"
+      },
+      {
+        "seq": 8,
+        "id": "ad8953bd-25a3-4a4e-9313-c2530c1d4bb8",
+        "type": "daemon_restart",
+        "body": "{\"interrupted\":[\"9d8d8211-303e-4366-83ce-23cebd68af50\"]}"
+      }
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "recordedAt": "2026-09-11T21:10:57.665Z",
+  "sourceCommit": "e2769a79f7e59d7c4d5c771a29a6874f2151df2b",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.5.2\nBuildVersion:\t\t25F84",
+  "arch": "arm64",
+  "node": "v24.20.0",
+  "pnpm": "9.15.9",
+  "dockerContext": "desktop-linux",
+  "dockerServer": "29.3.1 linux/arm64",
+  "images": [
+    {
+      "Id": "sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e",
+      "RepoTags": [
+        "node:24-bookworm-slim"
+      ],
+      "RepoDigests": [
+        "node@sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e"
+      ],
+      "Os": "linux",
+      "Architecture": "arm64"
+    },
+    {
+      "Id": "sha256:3faa3d64ce3ffa7c3d5f1d62d5bd5cab1b1d5692247fbec207a1edec24e4d6a1",
+      "RepoTags": [
+        "agentis-codex:0.153.4"
+      ],
+      "RepoDigests": [
+        "agentis-codex@sha256:3faa3d64ce3ffa7c3d5f1d62d5bd5cab1b1d5692247fbec207a1edec24e4d6a1"
+      ],
+      "Os": "linux",
+      "Architecture": "arm64"
+    },
+    {
+      "Id": "sha256:2a091e1cc2804aebfeac6dce858338b86949917ad551f21e15fe53e06611906b",
+      "RepoTags": [
+        "agentis-claude:2.1.263"
+      ],
+      "RepoDigests": [
+        "agentis-claude@sha256:2a091e1cc2804aebfeac6dce858338b86949917ad551f21e15fe53e06611906b"
+      ],
+      "Os": "linux",
+      "Architecture": "arm64"
+    }
+  ],
+  "providerProvisioning": "provisioning.json",
+  "previousEnvironment": "../environment.json"
+}

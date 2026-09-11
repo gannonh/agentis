@@ -1,0 +1,16 @@
+{
+  "recordedAt": "2026-09-11T20:55:26.429Z",
+  "method": "Dedicated existing auth volumes copied with network none, read-only source, no secret output",
+  "roots": [
+    {
+      "root": "/Users/gannonhall/.agentis/kat-3247-completion-20260911",
+      "suffix": "79c4a58b8f05c340e69ee461",
+      "sourceSuffix": "785854262ba07bc8a1bd4575"
+    },
+    {
+      "root": "/Users/gannonhall/.agentis/kat-3247-completion-rejection-20260911",
+      "suffix": "9a476ec677b5f604f8907db2",
+      "sourceSuffix": "785854262ba07bc8a1bd4575"
+    }
+  ]
+}
