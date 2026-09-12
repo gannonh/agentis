@@ -16,15 +16,29 @@ export class OnePasswordEnvironmentReadError extends Error {
   }
 }
 
-export function readOpEnvironment({ environmentId, env }) {
+function parseEnvironmentStdout(stdout, environmentId) {
+  const text = stdout ?? "";
+  const parsed = parseEnv(text);
+  if (Object.keys(parsed).length === 0 && text.trim() !== "") {
+    throw new OnePasswordEnvironmentReadError(
+      environmentId,
+      "op environment read returned no KEY=value lines. Unset OP_FORMAT and do not pass --format json.",
+    );
+  }
+  return parsed;
+}
+
+export function readOpEnvironment({ environmentId, env, run = spawnSync } = {}) {
   const cached = opEnvironmentCache.get(environmentId);
   if (cached) {
     return cached;
   }
 
-  const result = spawnSync("op", ["environment", "read", environmentId], {
+  const childEnv = { ...env };
+  delete childEnv.OP_FORMAT;
+  const result = run("op", ["environment", "read", environmentId], {
     encoding: "utf8",
-    env,
+    env: childEnv,
   });
   if (result.error) {
     throw new OnePasswordEnvironmentReadError(environmentId, result.error.message);
@@ -35,7 +49,7 @@ export function readOpEnvironment({ environmentId, env }) {
     throw new OnePasswordEnvironmentReadError(environmentId, detail);
   }
 
-  const parsed = parseEnv(result.stdout ?? "");
+  const parsed = parseEnvironmentStdout(result.stdout, environmentId);
   opEnvironmentCache.set(environmentId, parsed);
   return parsed;
 }

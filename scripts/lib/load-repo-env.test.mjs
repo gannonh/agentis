@@ -7,6 +7,7 @@ import {
   DEFAULT_OP_ENVIRONMENT_ID,
   loadRepoEnv,
   OnePasswordEnvironmentReadError,
+  readOpEnvironment,
 } from "./load-repo-env.mjs";
 
 test("missing token does not call the reader", () => {
@@ -96,4 +97,49 @@ test("reader throw fails closed with OnePasswordEnvironmentReadError and the env
       error.environmentId === DEFAULT_OP_ENVIRONMENT_ID &&
       error.message.includes(DEFAULT_OP_ENVIRONMENT_ID),
   );
+});
+
+test("default reader drops OP_FORMAT and parses KEY=value stdout", () => {
+  let passedEnv;
+  const env = readOpEnvironment({
+    environmentId: "env-dotenv",
+    env: { OP_FORMAT: "json", OP_SERVICE_ACCOUNT_TOKEN: "ops_test" },
+    run: (_command, _args, options) => {
+      passedEnv = options.env;
+      return { status: 0, stdout: "ANTHROPIC_API_KEY=from-op\nCURSOR_API_KEY=cursor-op\n" };
+    },
+  });
+  assert.equal(passedEnv.OP_FORMAT, undefined);
+  assert.equal(passedEnv.OP_SERVICE_ACCOUNT_TOKEN, "ops_test");
+  assert.equal(env.ANTHROPIC_API_KEY, "from-op");
+  assert.equal(env.CURSOR_API_KEY, "cursor-op");
+});
+
+test("default reader fails closed on JSON stdout and omits the payload", () => {
+  assert.throws(
+    () =>
+      readOpEnvironment({
+        environmentId: "env-json",
+        env: { OP_FORMAT: "json" },
+        run: () => ({
+          status: 0,
+          stdout: '{"ANTHROPIC_API_KEY":"sk-secret-must-not-leak"}',
+        }),
+      }),
+    (error) =>
+      error instanceof OnePasswordEnvironmentReadError &&
+      error.environmentId === "env-json" &&
+      error.message.includes("KEY=value") &&
+      !error.message.includes("sk-secret-must-not-leak") &&
+      !error.detail.includes("sk-secret-must-not-leak"),
+  );
+});
+
+test("default reader treats empty stdout as an empty Environment", () => {
+  const env = readOpEnvironment({
+    environmentId: "env-empty",
+    env: {},
+    run: () => ({ status: 0, stdout: "" }),
+  });
+  assert.deepEqual(env, {});
 });

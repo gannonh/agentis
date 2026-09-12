@@ -9,11 +9,23 @@ if (!command) {
 
 const env = applyRepoEnv();
 const child = spawn(command, args, { stdio: "inherit", env });
+
+function forwardSignal(signal) {
+  if (child.exitCode === null && child.signalCode === null) {
+    child.kill(signal);
+  }
+}
+
+process.on("SIGTERM", forwardSignal);
+process.on("SIGINT", forwardSignal);
+
 child.on("error", (error) => {
   process.stderr.write(`${error.message}\n`);
   process.exit(1);
 });
 child.on("exit", (code, signal) => {
+  process.off("SIGTERM", forwardSignal);
+  process.off("SIGINT", forwardSignal);
   if (signal) {
     process.kill(process.pid, signal);
     return;
