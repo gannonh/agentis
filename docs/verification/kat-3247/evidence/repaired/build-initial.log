@@ -1,8 +1,0 @@
-
-> agentis@2.0.0 build /Users/gannonhall/.codex/worktrees/8921/agentis
-> pnpm --filter @agentis-labs/cli build
-
-
-> @agentis-labs/cli@2.0.0 build /Users/gannonhall/.codex/worktrees/8921/agentis/packages/cli
-> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json
-

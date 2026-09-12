@@ -2,18 +2,16 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
-  chmodSync,
   existsSync,
   lstatSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   realpathSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
-import { arch, machine, platform, release, tmpdir } from "node:os";
+import { arch, machine, platform, release } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 const repo = resolve(process.cwd());
@@ -32,8 +30,6 @@ const fixtureTempRoot = realpathSync("/tmp");
 const launchIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const containerIdPattern = /^[0-9a-f]{12,64}$/i;
 let evidence;
-let tempParent;
-let tempParentReal;
 let launcher;
 let launchHandle;
 let launchDone;
@@ -66,7 +62,6 @@ const fail = (stage, error) => {
     writeEvidence("failure.json", {
       recordedAt: stamp(),
       failures,
-      tempParent,
       cleanup: cleanupResult,
     });
   } catch (writeError) {
@@ -133,7 +128,6 @@ const validateLaunch = (raw) => {
     : "";
   if (!launchIdPattern.test(launchId) || containerName !== `${fixtureNamePrefix}${launchId}`)
     throw new Error("launch output has invalid containerName");
-  const boundary = raw.boundary ?? raw.executionBoundary ?? null;
   const endpoint = new URL(raw.endpoint);
   if (!endpoint.port || !["127.0.0.1", "localhost"].includes(endpoint.hostname))
     throw new Error("launch endpoint is not loopback");
@@ -154,7 +148,6 @@ const validateLaunch = (raw) => {
     containerId: raw.containerId,
     containerName,
     launchId,
-    boundary,
     dataRoot,
     dataRootReal,
     workspace,
@@ -171,12 +164,7 @@ const validateFixtureProfile = (info) => {
   return profile;
 };
 const launch = async () => {
-  const handle = capture(
-    "verify launch",
-    ["verify", "launch"],
-    { ...process.env, TMPDIR: tempParent, TMP: tempParent, TEMP: tempParent },
-    true,
-  );
+  const handle = capture("verify launch", ["verify", "launch"], process.env, true);
   launchHandle = handle;
   launcher = handle.child;
   launchDone = handle.done;
@@ -404,21 +392,8 @@ const cleanup = async () => {
       }
     }
   }
-  let removed = false;
-  if (!errors.length && tempParent) {
-    try {
-      if (realpathSync(tempParent) !== tempParentReal)
-        throw new Error("temporary parent realpath changed");
-      rmSync(tempParent, { recursive: true, force: false });
-      removed = !existsSync(tempParent);
-      if (!removed) throw new Error("temporary parent still exists");
-    } catch (error) {
-      errors.push(`temporary parent removal: ${text(error)}`);
-    }
-  }
   cleanupResult = {
     finishedAt: stamp(),
-    removed,
     launcherStopped,
     containerStopped,
     supervisorStopped,
@@ -430,18 +405,12 @@ const cleanup = async () => {
     cleanupScope: info
       ? "validated launch resources"
       : "owned launcher only; unidentified fixture roots are retained",
-    temporaryParent: tempParent,
-    temporaryParentExists: Boolean(tempParent && existsSync(tempParent)),
-    preservedTemporaryParent: Boolean(tempParent && existsSync(tempParent)),
     dataRootExists: Boolean(info?.dataRoot && existsSync(info.dataRoot)),
-    preservedDataRoot: Boolean(info?.dataRoot && existsSync(info.dataRoot)),
     errors,
     ok:
       !errors.length &&
       launcherStopped &&
-      (!info ||
-        (containerStopped && supervisorStopped && endpointUnreachable && dataRootRemoved)) &&
-      (!tempParent || removed),
+      (!info || (containerStopped && supervisorStopped && endpointUnreachable && dataRootRemoved)),
   };
   writeEvidence("cleanup.json", cleanupResult);
   for (const error of errors) fail("cleanup", error);
@@ -460,9 +429,6 @@ const preflight = () => {
   mkdirSync(target, { mode: 0o700 });
   evidence = target;
   if (!existsSync(cli)) throw new Error(`built CLI is missing: ${cli}`);
-  tempParent = mkdtempSync(join(tmpdir(), "kat3315-smoke-"));
-  chmodSync(tempParent, 0o700);
-  tempParentReal = realpathSync(tempParent);
 };
 const metadata = () => {
   const git = spawnSync("git", ["rev-parse", "HEAD"], { cwd: repo, encoding: "utf8" });
@@ -593,9 +559,6 @@ const artifactProof = (status, info) => {
     realpath: path,
     dataRoot,
     workspace,
-    insideDataRoot: true,
-    insideWorkspace: true,
-    regularFile: true,
     expectedBody: "# verification-smoke\n",
     observedByteSize: artifactStat.size,
     observedContentByteSize: content.byteLength,
@@ -730,7 +693,7 @@ const main = async () => {
         task: "selected task completes",
         artifact: "matching artifact SHA and byte size inside scratch",
         cleanup:
-          "owned Docker fixture container and host supervisor disappear, endpoint is unreachable, and both data root and helper temp parent are removed",
+          "owned Docker fixture container and host supervisor disappear, endpoint is unreachable, and the data root is removed",
       },
       observed: {
         launch: launchInfo,

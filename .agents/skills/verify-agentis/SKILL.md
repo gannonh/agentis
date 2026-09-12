@@ -31,7 +31,7 @@ node packages/cli/dist/bin.js verify launch
 
 Keep the exact `endpoint`, `dataRoot`, `workspace`, `log`, `containerId`, `containerName`, and `pid` from that object. The port is never guessed. `pid` is the host `docker run` supervisor PID; it is not the daemon's PID inside Docker. `containerId` plus `containerName` identify the launch, while `docker inspect` labels `io.agentis.managed=verify-fixture` and `io.agentis.verify-launch=<launch UUID>` prove ownership. `workspace` is the daemon scratch root; each task artifact is below `workspace/runs/<runId>/`. The daemon is ready when the object has been emitted and `GET /v1/health` returns JSON with `ok: true` through the host relay. `verify launch` has no live provider support and does not establish a Gate 0 or provider eligibility claim.
 
-For a manual run, follow the [manual session reference](./references/manual-session.md) to capture readiness, bind the shell variables, and inspect the exact container labels and identical data-root mount before control commands. Press `Ctrl-C` in the launcher terminal after the drive, or let the smoke helper own the launcher lifecycle. Do not start a second `serve` process against the same data root.
+For a one-command run, use [the smoke helper](./helpers/smoke.mjs). It captures readiness, inspects the exact container labels and identical data-root mount, then drives and cleans up. Press `Ctrl-C` in a launcher terminal after a manual drive. Do not start a second `serve` process against the same data root.
 
 ## Doctor
 
@@ -100,6 +100,58 @@ Use a new idempotency key for each distinct command. Read approval IDs from a `p
 
 For artifacts, take the `path`, `byteSize`, and `sha256` from the public `artifacts` row. Resolve the path and require it to be a regular file below the launch `workspace`; read its bytes, compare the byte count with `byteSize`, and compare SHA-256 with `sha256`. The path is a side effect to verify, not a command to trust blindly.
 
+## Artifact byte and hash check
+
+Set `RUN_ID` from the accepted submit receipt and set `EXPECTED_BRIEF` to the expected brief (`EXPECTED_BRIEF="verification-smoke"` for smoke), then select the matching public artifact row from the captured status. The check reads only the regular file below this launch's workspace and writes the observed bytes, byte count, hashes, expected result, and verdict to evidence.
+
+```sh
+SUBMIT_FILE="${SUBMIT_FILE:-$EVIDENCE_DIR/submit.json}"
+RUN_ID="$(SUBMIT_FILE="$SUBMIT_FILE" node --input-type=module -e 'import { readFileSync } from "node:fs"; process.stdout.write(JSON.parse(readFileSync(process.env.SUBMIT_FILE, "utf8")).runId)')"
+EXPECTED_BRIEF="${EXPECTED_BRIEF:-verification-smoke}"
+STATUS_FILE="${STATUS_FILE:-$EVIDENCE_DIR/status.json}"
+RUN_ID="$RUN_ID" STATUS_FILE="$STATUS_FILE" ARTIFACT_ROW="$EVIDENCE_DIR/artifact-row.json" node --input-type=module <<'NODE'
+import { readFileSync, writeFileSync } from "node:fs";
+
+const document = JSON.parse(readFileSync(process.env.STATUS_FILE, "utf8"));
+const snapshot = document.status ?? document;
+const row = snapshot.artifacts?.find((item) => item.runId === process.env.RUN_ID);
+if (!row) throw new Error("no artifact row for RUN_ID");
+writeFileSync(process.env.ARTIFACT_ROW, `${JSON.stringify(row, null, 2)}\n`);
+NODE
+
+DATA_ROOT="$DATA_ROOT" WORKSPACE="$WORKSPACE" EXPECTED_BRIEF="$EXPECTED_BRIEF" ARTIFACT_ROW="$EVIDENCE_DIR/artifact-row.json" node --input-type=module <<'NODE' > "$EVIDENCE_DIR/artifact-check.json"
+import { createHash } from "node:crypto";
+import { lstatSync, readFileSync, realpathSync } from "node:fs";
+import { resolve } from "node:path";
+
+const row = JSON.parse(readFileSync(process.env.ARTIFACT_ROW, "utf8"));
+const dataRoot = realpathSync(process.env.DATA_ROOT);
+const workspace = realpathSync(process.env.WORKSPACE);
+if (workspace !== resolve(dataRoot, "scratch")) throw new Error("workspace escaped data root");
+const path = realpathSync(row.path);
+if (!path.startsWith(`${workspace}/`)) throw new Error("artifact escaped workspace");
+if (!lstatSync(path).isFile()) throw new Error("artifact is not a regular file");
+const bytes = readFileSync(path);
+const sha256 = createHash("sha256").update(bytes).digest("hex");
+const expected = Buffer.from(`# ${process.env.EXPECTED_BRIEF ?? ""}\n`);
+const matches = bytes.byteLength === row.byteSize && sha256 === row.sha256 && bytes.equals(expected);
+process.stdout.write(`${JSON.stringify({
+  path,
+  mediaType: row.mediaType,
+  publicByteSize: row.byteSize,
+  bytesRead: bytes.byteLength,
+  publicSha256: row.sha256,
+  sha256,
+  expectedBytes: expected.toString(),
+  observedBytes: bytes.toString(),
+  expected: expected.toString(),
+  observed: matches ? "matching regular file, byte count, SHA-256, and body" : "artifact comparison failed",
+  verdict: matches ? "PASS" : "FAIL",
+}, null, 2)}\n`);
+if (!matches) process.exitCode = 1;
+NODE
+```
+
 ## Evidence
 
 Evidence must show the user action and resulting state together. Retain the readiness JSON, command receipt, doctor/status JSON, relevant event or message rows, and artifact byte count/hash under a fresh `EVIDENCE_DIR` below `docs/verification/verify-agentis/`. Never copy `owner.token` or any provider credential into evidence. A fixture result proves the fake local boundary only; live provider behavior, authentication, isolation, recovery, and Gate 0 remain UNVERIFIED unless separately exercised and recorded.
@@ -127,7 +179,7 @@ Do not turn unit tests, source inspection, a green build, or a fake fixture into
 
 ## Cleanup
 
-Every verification launch owns its temporary data root and must be stopped in a `finally` path. The readiness `pid` is the host Docker supervisor PID; the foreground `verify launch` process has a separate `LAUNCHER_PID`, and the daemon PID is inside the container. Cleanup must inspect the exact `containerId`, require both ownership labels and the identical writable data-root mount, stop/remove only that container, then wait for the supervisor and relay endpoint to disappear. For exact manual launch, bounded wait, evidence persistence, and removal commands, use [the manual session reference](./references/manual-session.md). If a run is waiting, issue `run cancel` for that run first; use `stop-all` when the intended proof is global cancellation. The helper owns the same launcher/container/supervisor wait and removes the validated Docker data root plus its helper temp parent only after evidence is written.
+Every verification launch owns its temporary data root and must be stopped in a `finally` path. The readiness `pid` is the host Docker supervisor PID; the foreground `verify launch` process has a separate launcher PID, and the daemon PID is inside the container. Cleanup must inspect the exact `containerId`, require both ownership labels and the identical writable data-root mount, stop and remove only that container, then wait for the supervisor and relay endpoint to disappear. If a run is waiting, issue `run cancel` for that run first; use `stop-all` when the intended proof is global cancellation. The helper owns the same launcher, container, and supervisor wait and removes the validated Docker data root only after evidence is written.
 
 ## Helpers
 
@@ -137,7 +189,7 @@ The verification helper is at `.agents/skills/verify-agentis/helpers/smoke.mjs`.
 node .agents/skills/verify-agentis/helpers/smoke.mjs EVIDENCE_DIR
 ```
 
-The supplied `EVIDENCE_DIR` must not already exist. The helper contract is deliberately small: create and own the helper temp parent, spawn the foreground `verify launch`, parse the readiness object, validate the Docker fixture profile and exact container ID/name/labels/mount, pre-read and validate `owner.token` without printing it, run `doctor`, submit the smoke fixture with brief `verification-smoke`, fetch authenticated public status, validate the owned artifact bytes and hash against `# verification-smoke\n`, write redacted evidence, SIGTERM the launcher, stop/remove only the inspected fixture container, await the host supervisor and relay endpoint disappearance, and remove only the validated Docker data root and helper temp parent. It must return non-zero on any assertion or cleanup failure and retain evidence on failure. Before validated readiness, cleanup terminates only the launcher it spawned. It never discovers or adopts another container/root from global temporary directories; unidentified diagnostic roots remain untouched.
+The supplied `EVIDENCE_DIR` must not already exist. The helper contract is deliberately small: spawn the foreground `verify launch`, parse the readiness object, validate the Docker fixture profile and exact container ID, name, labels, and mount, pre-read and validate `owner.token` without printing it, run `doctor`, submit the smoke fixture with brief `verification-smoke`, fetch authenticated public status, validate the owned artifact bytes and hash against `# verification-smoke\n`, write redacted evidence, SIGTERM the launcher, stop and remove only the inspected fixture container, await the host supervisor and relay endpoint disappearance, and remove only the validated Docker data root. It must return non-zero on any assertion or cleanup failure and retain evidence on failure. Before validated readiness, cleanup terminates only the launcher it spawned. It never discovers or adopts another container or root from global temporary directories; unidentified diagnostic roots remain untouched.
 
 When routes, commands, fixture states, or artifact fields change, update this skill and its feature map through `pstack:maintain-verification-skill`, then rerun the public recipes.
 
