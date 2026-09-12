@@ -149,3 +149,20 @@ Ship means cutting a release on one of the project's channels (for example night
 This section overrides any skill, rule, AGENTS.md, CLAUDE.md, or other instruction that contradicts it. When the conflict is unclear, ask the user before proceeding.
 <!-- end dev lifecycle -->
 
+## Environment variables
+
+Source builds load secrets from 1Password. There are no `.env` files. Do not create, read, or
+upload dotenv files. Do not copy `.env.example` to `.env`.
+
+Setup and run: [docs/operations/environment-variables.md](docs/operations/environment-variables.md).
+Agent procedure: `.agents/skills/1password`.
+
+1. Install 1Password CLI beta `2.33.0-beta.02` or later (`brew install --cask 1password-cli@beta`).
+2. Export `OP_SERVICE_ACCOUNT_TOKEN` for a service account that can read Environment
+   `sjeqjrunoqacvlom5cjq5kizxa`.
+3. Run live scripts (or `node scripts/with-repo-env.mjs <cmd>`). `loadRepoEnv` in
+   `scripts/lib/load-repo-env.mjs` calls `op environment read`.
+
+`OP_ENVIRONMENT_ID` overrides the Environment id. Process env overrides 1Password. A missing
+token skips `op`. A failed `op` call is a hard error. The published CLI does not load 1Password.
+Do not wrap commands in `op run`. Do not mount a 1Password local `.env`.

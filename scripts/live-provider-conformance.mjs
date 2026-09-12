@@ -3,6 +3,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
+import { applyRepoEnv } from "./lib/load-repo-env.mjs";
+
+applyRepoEnv();
 
 const [dataRoot, bot, ...cases] = process.argv.slice(2);
 if (!dataRoot || !["mara", "ivo"].includes(bot) || !cases.length)
