@@ -1,6 +1,0 @@
-v24.20.0
-9.15.9
-2.0.0
-Darwin 25.5.0 arm64
-provider=fake
-executionBoundary=unverified-host-scratch

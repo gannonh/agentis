@@ -19,13 +19,13 @@ The smoke task lets an owner submit a bounded fake task and confirm its persiste
 Preconditions:
 
 - **Automated:** run from the repository root after the build. Set `EVIDENCE_DIR="docs/verification/verify-agentis/acceptance/smoke-$(date +%s)-$$"`; it must not exist yet. The helper creates the Docker launch, owner token, relay endpoint, data root, doctor check, and cleanup itself.
-- **Manual:** start `node packages/cli/dist/bin.js verify launch`, copy its exact `ENDPOINT`, `DATA_ROOT`, `WORKSPACE`, `CONTAINER_ID`, and `CONTAINER_NAME`, and complete the owner token precheck before `doctor`. Confirm `profiles/verify.json` records `executionBoundary: "docker-fixture-container"`.
+- **Manual:** prefer `node .agents/skills/verify-agentis/helpers/smoke.mjs "$EVIDENCE_DIR"`. To drive commands yourself, start `node packages/cli/dist/bin.js verify launch`, copy its exact `ENDPOINT`, `DATA_ROOT`, `WORKSPACE`, `CONTAINER_ID`, and `CONTAINER_NAME`, and complete the owner token precheck before `doctor`. Confirm `profiles/verify.json` records `executionBoundary: "docker-fixture-container"`.
 - **Manual evidence:** set `EVIDENCE_DIR="docs/verification/verify-agentis/manual-$(date +%s)-$$"` and run `mkdir "$EVIDENCE_DIR"` before redirecting output.
 
 - **Automated public proof.** Run `node .agents/skills/verify-agentis/helpers/smoke.mjs "$EVIDENCE_DIR"`. The helper must retain readiness, receipt, status, artifact size/hash, and cleanup evidence in that directory.
 - **Submit manually.** Run `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "verification-smoke" --fixture smoke > "$EVIDENCE_DIR/submit.json"`. The JSON receipt has `accepted: true`, `taskId`, `runId`, `threadId`, and `effects: ["launch"]`.
 - **Read result metadata.** Run `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/doctor.json"`. In its `status`, find the run by the receipt's `runId`; require run `status: "succeeded"`, task `status: "completed"`, and an artifact whose `runId` and `taskId` match.
-- **Verify bytes.** Resolve the artifact `path` below `"$WORKSPACE"`, require a regular file, read its bytes, compare its byte count to `byteSize`, and compare SHA-256 to `sha256`. For this exact brief, the expected bytes are `# verification-smoke\n`; the [manual byte/hash check](../references/manual-session.md#artifact-byte-and-hash-check) provides the executable comparison.
+- **Verify bytes.** Resolve the artifact `path` below `"$WORKSPACE"`, require a regular file, read its bytes, compare its byte count to `byteSize`, and compare SHA-256 to `sha256`. For this exact brief, the expected bytes are `# verification-smoke\n`; the [artifact byte and hash check](../SKILL.md#artifact-byte-and-hash-check) provides the executable comparison.
 - **Retain proof.** Save the receipt, doctor/status output, and the computed artifact result below the fresh `EVIDENCE_DIR`; stop the launcher, remove its inspected fixture container and supervisor, and remove its exact temporary root only after those files are written.
 
 ## Gotchas
