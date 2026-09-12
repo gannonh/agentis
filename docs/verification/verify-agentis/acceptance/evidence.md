@@ -36,6 +36,8 @@ Independent spec and quality reviews pass with no remaining findings. [The revie
 
 ## Run it yourself
 
+This section is historical KAT-3315 evidence. The current one-command entry is `node .agents/skills/verify-agentis/helpers/smoke.mjs EVIDENCE_DIR`. Keep the commands and `examples/` files below as the recorded KAT-3315 run.
+
 From repository root, with the required Node and pnpm versions:
 
 ```sh
