@@ -1,7 +1,0 @@
-{
-  "endpoint": "http://127.0.0.1:56579/",
-  "pid": 63056,
-  "dataRoot": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.jWlnSZ/agentis-verify-F0bhCr",
-  "log": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.jWlnSZ/agentis-verify-F0bhCr/daemon.log",
-  "workspace": "/var/folders/d7/p8j2hgrd7b7c89fxsxlbwptm0000gn/T/agentis-manual.jWlnSZ/agentis-verify-F0bhCr/scratch"
-}
