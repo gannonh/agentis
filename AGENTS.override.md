@@ -149,20 +149,26 @@ Ship means cutting a release on one of the project's channels (for example night
 This section overrides any skill, rule, AGENTS.md, CLAUDE.md, or other instruction that contradicts it. When the conflict is unclear, ask the user before proceeding.
 <!-- end dev lifecycle -->
 
-## Environment variables
+<!-- pstack:models:begin -->
+# pstack model configuration
 
-Source builds load secrets from 1Password. There are no `.env` files. Do not create, read, or
-upload dotenv files. Do not copy `.env.example` to `.env`.
+Provider-qualified per-role choices. Read the installed pstack provider-dispatch reference before dispatching a configured role. Every documented role remains present. `inherit-parent` and `auto` use the parent model natively and still count as one panel lane.
 
-Setup and run: [docs/operations/environment-variables.md](docs/operations/environment-variables.md).
-Agent procedure: `.agents/skills/1password`.
-
-1. Install 1Password CLI beta `2.33.0-beta.02` or later (`brew install --cask 1password-cli@beta`).
-2. Export `OP_SERVICE_ACCOUNT_TOKEN` for a service account that can read Environment
-   `sjeqjrunoqacvlom5cjq5kizxa`.
-3. Run live scripts (or `node scripts/with-repo-env.mjs <cmd>`). `loadRepoEnv` in
-   `scripts/lib/load-repo-env.mjs` calls `op environment read`.
-
-`OP_ENVIRONMENT_ID` overrides the Environment id. Process env overrides 1Password. A missing
-token skips `op`. A failed `op` call is a hard error. The published CLI does not load 1Password.
-Do not wrap commands in `op run`. Do not mount a 1Password local `.env`.
+feature, refactoring: codex:gpt-6-astra@high
+bug-fix: codex:gpt-5.6-sol@max
+perf-issue: codex:gpt-5.6-sol@max
+hillclimb: codex:gpt-5.6-sol@xhigh
+judgment and prose: codex:gpt-6-astra@medium
+hardest tasks: codex:gpt-6-astra@max
+how explorer: codex:gpt-5.6-sol@high
+how explainer: codex:gpt-6-astra@high
+why investigators: inherit-parent
+why synthesizer: inherit-parent
+reflect tooling: inherit-parent
+reflect judgment, divergent, synthesizer: inherit-parent
+arena runners: codex:gpt-6-astra@xhigh, codex:gpt-5.6-sol@max, claude:fable@xhigh, cursor:cursor-grok-4.6@xhigh
+arena cross-judge pool: codex:gpt-6-astra@xhigh, codex:gpt-5.6-sol@max, claude:fable@xhigh, cursor:cursor-grok-4.6@xhigh
+swarm workers: codex:gpt-5.6-sol@high
+architect runners: codex:gpt-6-astra@xhigh, codex:gpt-5.6-sol@max, claude:fable@xhigh, cursor:cursor-grok-4.6@xhigh
+interrogate reviewers: codex:gpt-6-astra@xhigh, codex:gpt-5.6-sol@max, claude:fable@xhigh, cursor:cursor-grok-4.6@xhigh
+<!-- pstack:models:end -->

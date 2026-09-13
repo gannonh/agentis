@@ -154,40 +154,21 @@ This section overrides any skill, rule, AGENTS.md, CLAUDE.md, or other instructi
 
 Provider-qualified per-role choices. Read the installed pstack provider-dispatch reference before dispatching a configured role. Every documented role remains present. `inherit-parent` and `auto` use the parent model natively and still count as one panel lane.
 
-feature, refactoring: cursor:cursor-grok-4.6@xhigh
-bug-fix: codex:gpt-5.6-sol@max
-perf-issue: codex:gpt-5.6-sol@max
-hillclimb: codex:gpt-5.6-sol@max
-judgment and prose: codex:gpt-6-astra@high
-hardest tasks: codex:gpt-6-astra@max
-how explorer: cursor:cursor-grok-4.6@xhigh
-how explainer: cursor:claude-fable-5-1@high
-how critics: cursor:claude-fable-5-1@xhigh, codex:gpt-6-astra@xhigh, cursor:cursor-grok-4.6@xhigh, codex:gpt-5.6-sol@xhigh
+feature, refactoring: claude:fable@high
+bug-fix: claude:fable@high
+perf-issue: claude:fable@high
+hillclimb: claude:fable@low
+judgment and prose: claude:fable@medium
+hardest tasks: claude:fable@xhigh
+how explorer: claude:fable@low
+how explainer: claude:fable@high
 why investigators: inherit-parent
 why synthesizer: inherit-parent
 reflect tooling: inherit-parent
 reflect judgment, divergent, synthesizer: inherit-parent
-arena runners: cursor:claude-fable-5-1@xhigh, codex:gpt-6-astra@xhigh, cursor:cursor-grok-4.6@xhigh, codex:gpt-5.6-sol@xhigh
-arena cross-judge pool: cursor:claude-fable-5-1@xhigh, codex:gpt-6-astra@xhigh, cursor:cursor-grok-4.6@xhigh, codex:gpt-5.6-sol@xhigh
-swarm workers: cursor:cursor-grok-4.6@xhigh
-architect runners: cursor:claude-fable-5-1@xhigh, codex:gpt-6-astra@xhigh, cursor:cursor-grok-4.6@xhigh, codex:gpt-5.6-sol@xhigh
-interrogate reviewers: cursor:claude-fable-5-1@xhigh, codex:gpt-6-astra@xhigh, cursor:cursor-grok-4.6@xhigh, codex:gpt-5.6-sol@xhigh
+arena runners: claude:fable@xhigh, claude:opus@xhigh, codex:gpt-5.6-sol@max, cursor:cursor-grok-4.6@xhigh
+arena cross-judge pool: claude:fable@xhigh, claude:opus@xhigh, codex:gpt-5.6-sol@max, cursor:cursor-grok-4.6@xhigh
+swarm workers: claude:fable@low
+architect runners: claude:fable@xhigh, claude:opus@xhigh, codex:gpt-5.6-sol@max, cursor:cursor-grok-4.6@xhigh
+interrogate reviewers: claude:fable@xhigh, claude:opus@xhigh, codex:gpt-5.6-sol@max, cursor:cursor-grok-4.6@xhigh
 <!-- pstack:models:end -->
-
-## Environment variables
-
-Source builds load secrets from 1Password. There are no `.env` files. Do not create, read, or
-upload dotenv files. Do not copy `.env.example` to `.env`.
-
-Setup and run: [docs/operations/environment-variables.md](docs/operations/environment-variables.md).
-Agent procedure: `.agents/skills/1password`.
-
-1. Install 1Password CLI beta `2.33.0-beta.02` or later (`brew install --cask 1password-cli@beta`).
-2. Export `OP_SERVICE_ACCOUNT_TOKEN` for a service account that can read Environment
-   `sjeqjrunoqacvlom5cjq5kizxa`.
-3. Run live scripts (or `node scripts/with-repo-env.mjs <cmd>`). `loadRepoEnv` in
-   `scripts/lib/load-repo-env.mjs` calls `op environment read`.
-
-`OP_ENVIRONMENT_ID` overrides the Environment id. Process env overrides 1Password. A missing
-token skips `op`. A failed `op` call is a hard error. The published CLI does not load 1Password.
-Do not wrap commands in `op run`. Do not mount a 1Password local `.env`.
