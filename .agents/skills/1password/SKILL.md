@@ -12,7 +12,7 @@ Canonical runbook: [docs/operations/environment-variables.md](../../../docs/oper
 ## Hard rules
 
 - Do not create, read, symlink, or upload `.env` or `.env.local`.
-- Do not copy `.env.example` to `.env`. That file is a name template.
+- Do not copy `.env.example` to `.env`. That file contains variable names and the non-secret Environment id.
 - Do not wrap `pnpm`, `agentis`, or any repo command in `op run` or `op run --environment`.
 - Do not mount a 1Password local / FIFO `.env`. Desktop approval is the rejected path.
 - Do not write `op://vault/item/field` references into files. That is a different 1Password feature (vault items). This repo uses Environments.
@@ -30,7 +30,11 @@ If asked to "just make a .env" or copy dotenv onto a server, follow this skill i
 4. Delete leftover `.env` / `.env.local` if they exist. Do not upload them.
 5. Run repo commands as today. Live scripts call `applyRepoEnv`. Other commands: `node scripts/with-repo-env.mjs <cmd>`.
 
-`OP_ENVIRONMENT_ID` overrides the Environment id. Process env overrides 1Password for the same key. Keys that are not in the Environment belong in the process environment (shell export / unit / Sprite service env), never in a dotenv file.
+Workers and dispatch environments leave `OP_ENVIRONMENT_ID` unset for the repository Environment.
+`loadRepoEnv` uses the committed `DEFAULT_OP_ENVIRONMENT_ID`, `sjeqjrunoqacvlom5cjq5kizxa`.
+Set `OP_ENVIRONMENT_ID` only to select a different Environment. Process environment variables
+override 1Password values with the same key. Keep keys that are not in the Environment in a shell
+profile, systemd unit, or Sprite service environment. Never put them in a dotenv file.
 
 ## How load works
 
