@@ -14,11 +14,14 @@ import { existsSync, mkdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { Effect, Schema } from "effect";
+import { writeScratchFile } from "./scratch-file.js";
 import {
   newActionIntentId,
   newApprovalId,
   newArtifactId,
+  newBotConfigRevisionId,
   newCommandId,
+  newEvidenceId,
   newRunId,
   newTaskId,
   newThreadId,
@@ -26,23 +29,30 @@ import {
 import {
   ActionState,
   AnswerInput,
+  ArtifactId,
+  BotConfigRevisionId,
+  Citation,
   CancelRun,
   Command,
   CommandReceipt,
+  Cursor,
   ExecutionBoundary,
+  EvidenceId,
   FixtureKind,
   FrozenConfig,
   ProviderKind,
   ResolveApproval,
   RunStatus,
   SubmitTask,
+  SourceKind,
   type ActionIntentId,
   type ApprovalId,
   type CommandId,
   type HandoffRow,
   type IdempotencyKey,
   type PrincipalKind,
-  type RunId,
+  type SourcePacket,
+  RunId,
   TaskId,
 } from "./schema.js";
 import {
@@ -73,6 +83,8 @@ export class StoreError extends Error {
 export type Principal = {
   readonly kind: PrincipalKind;
   readonly sessionId: string;
+  readonly channel?: "cli" | "browser";
+  readonly browserSessionHash?: string;
 };
 
 export type ApplyInput = {
@@ -88,16 +100,30 @@ export type ApplyInput = {
 export type TaskRow = {
   readonly id: TaskId;
   readonly brief: string;
+  readonly threadId: string;
+  readonly outcome: string;
+  readonly requestedBy: "owner";
+  readonly currentOwner: "mara" | "ivo";
+  readonly ownerRole: "coordinator" | "specialist";
   readonly ownerSession: string;
   readonly botName: string;
   readonly botRole: string;
+  readonly workspaceRef: string;
+  readonly constraints: readonly string[];
+  readonly evidence: readonly EvidenceId[];
+  readonly currentRunId: RunId;
+  readonly latestArtifactId: ArtifactId | null;
   readonly status: string;
   readonly actionCount: number;
+  readonly createdAt: number;
+  readonly updatedAt: number;
 };
 
 export type RunRow = {
   readonly id: RunId;
   readonly taskId: TaskId;
+  readonly threadId: string;
+  readonly botConfigRevisionId: BotConfigRevisionId;
   readonly status: typeof RunStatus.Type;
   readonly waitingReason: string;
   readonly frozen: FrozenConfig;
@@ -106,6 +132,12 @@ export type RunRow = {
   readonly fixture: typeof FixtureKind.Type | null;
   readonly actionCount: number;
   readonly deadlineAt: number;
+  readonly queuedAt: number;
+  readonly startedAt: number | null;
+  readonly completedAt: number | null;
+  readonly providerLoadStatus: ProviderState["loadStatus"];
+  readonly pendingPrompt: string | null;
+  readonly failure: string | null;
 };
 
 export type PendingActionRow = {
@@ -114,11 +146,12 @@ export type PendingActionRow = {
   readonly kind: string;
   readonly state: typeof ActionState.Type;
   readonly payload: string;
+  readonly detail: string;
   readonly approvalId: ApprovalId | null;
 };
 
 export type ArtifactRow = {
-  readonly id: string;
+  readonly id: ArtifactId;
   readonly taskId: TaskId;
   readonly runId: RunId;
   readonly author: string;
@@ -127,6 +160,10 @@ export type ArtifactRow = {
   readonly sha256: string;
   readonly byteSize: number;
   readonly path: string;
+  readonly citations: readonly Citation[];
+  readonly createdAt: number;
+  readonly metadataUrl: string;
+  readonly contentUrl: string;
 };
 
 export type MessageRow = {
@@ -136,11 +173,49 @@ export type MessageRow = {
   readonly runId: string | null;
   readonly authorKind: string;
   readonly authorName: string;
+  readonly authorRole: string;
+  readonly kind: string;
+  readonly importance: string;
+  readonly dedupeKey: string;
   readonly body: string;
+  readonly createdAt: number;
+};
+
+export type EvidenceRow = {
+  readonly id: EvidenceId;
+  readonly taskId: TaskId;
+  readonly source: typeof SourceKind.Type;
+  readonly label: string;
+  readonly repository?: string;
+  readonly revision?: string;
+  readonly url?: string;
+  readonly contentDigest: string;
+  readonly byteSize: number;
+  readonly path: string;
+  readonly citations: readonly Citation[];
+  readonly createdAt: number;
+};
+
+export type BotConfigRevisionRow = {
+  readonly id: BotConfigRevisionId;
+  readonly frozen: FrozenConfig;
+  readonly createdAt: number;
+  readonly bot: "mara" | "ivo";
+  readonly role: "coordinator" | "specialist";
+  readonly provider: typeof ProviderKind.Type;
+  readonly model: string;
+  readonly effort?: string;
+  readonly skills: readonly string[];
+  readonly grants: readonly string[];
+  readonly publicConfig: Readonly<Record<string, string>>;
+  readonly executionBoundary: typeof ExecutionBoundary.Type;
+  readonly executionLocation: string;
+  readonly authMode: string;
 };
 
 export type Snapshot = {
   readonly schemaId: string;
+  readonly cursor: typeof Cursor.Type;
   readonly stopAll: boolean;
   readonly tasks: readonly TaskRow[];
   readonly handoffs: readonly HandoffRow[];
@@ -149,6 +224,8 @@ export type Snapshot = {
   readonly artifacts: readonly ArtifactRow[];
   readonly messages: readonly MessageRow[];
   readonly events: readonly EventRow[];
+  readonly evidence: readonly EvidenceRow[];
+  readonly botConfigRevisions: readonly BotConfigRevisionRow[];
 };
 
 export type EventRow = {
@@ -156,6 +233,7 @@ export type EventRow = {
   readonly id: string;
   readonly type: string;
   readonly body: string;
+  readonly createdAt: number;
 };
 
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -176,12 +254,20 @@ CREATE TABLE IF NOT EXISTS commands (
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   brief TEXT NOT NULL,
+  thread_id TEXT NOT NULL UNIQUE,
+  outcome TEXT NOT NULL,
   owner_session TEXT NOT NULL,
   bot_name TEXT NOT NULL,
   bot_role TEXT NOT NULL,
+  workspace_ref TEXT NOT NULL,
+  constraints_json TEXT NOT NULL,
+  evidence_json TEXT NOT NULL,
+  current_run_id TEXT NOT NULL,
+  latest_artifact_id TEXT,
   status TEXT NOT NULL,
   action_count INTEGER NOT NULL,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS threads (
   id TEXT PRIMARY KEY,
@@ -192,6 +278,7 @@ CREATE TABLE IF NOT EXISTS runs (
   id TEXT PRIMARY KEY,
   task_id TEXT NOT NULL,
   thread_id TEXT NOT NULL,
+  bot_config_revision_id TEXT NOT NULL,
   status TEXT NOT NULL,
   waiting_reason TEXT NOT NULL,
   frozen_json TEXT NOT NULL,
@@ -200,7 +287,9 @@ CREATE TABLE IF NOT EXISTS runs (
   fixture TEXT,
   action_count INTEGER NOT NULL,
   deadline_at INTEGER NOT NULL,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  started_at INTEGER,
+  completed_at INTEGER
 );
 CREATE TABLE IF NOT EXISTS messages (
   id TEXT PRIMARY KEY,
@@ -209,6 +298,10 @@ CREATE TABLE IF NOT EXISTS messages (
   run_id TEXT,
   author_kind TEXT NOT NULL,
   author_name TEXT NOT NULL,
+  author_role TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  importance TEXT NOT NULL,
+  dedupe_key TEXT NOT NULL UNIQUE,
   body TEXT NOT NULL,
   created_at INTEGER NOT NULL
 );
@@ -222,6 +315,37 @@ CREATE TABLE IF NOT EXISTS artifacts (
   sha256 TEXT NOT NULL,
   byte_size INTEGER NOT NULL,
   path TEXT NOT NULL,
+  citations_json TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS bot_config_revisions (
+  id TEXT PRIMARY KEY,
+  bot TEXT NOT NULL,
+  role TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  effort TEXT,
+  skills_json TEXT NOT NULL,
+  grants_json TEXT NOT NULL,
+  public_config_json TEXT NOT NULL,
+  execution_boundary TEXT NOT NULL,
+  execution_location TEXT NOT NULL,
+  auth_mode TEXT NOT NULL,
+  frozen_json TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS task_sources (
+  id TEXT PRIMARY KEY,
+  task_id TEXT NOT NULL,
+  source TEXT NOT NULL,
+  label TEXT NOT NULL,
+  repository TEXT,
+  revision TEXT,
+  url TEXT,
+  content_digest TEXT NOT NULL,
+  byte_size INTEGER NOT NULL,
+  path TEXT NOT NULL,
+  citations_json TEXT NOT NULL,
   created_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS approvals (
@@ -249,6 +373,22 @@ CREATE TABLE IF NOT EXISTS events (
   id TEXT NOT NULL,
   type TEXT NOT NULL,
   body TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS browser_bootstraps (
+  code_hash TEXT PRIMARY KEY,
+  owner_session TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
+  consumed_at INTEGER
+);
+CREATE TABLE IF NOT EXISTS browser_sessions (
+  token_hash TEXT PRIMARY KEY,
+  csrf_hash TEXT NOT NULL,
+  owner_session TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  provider_acknowledged_at INTEGER,
+  source_acknowledgements_json TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
   created_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS stop_all (
@@ -529,6 +669,41 @@ const submitTask = (
     });
   }
   const provider = input.provider === "fake" ? "fake" : bot === "ivo" ? "claude" : "codex";
+  if (input.principal.channel === "browser") {
+    const browser = input.principal.browserSessionHash
+      ? row<{
+          provider: string;
+          provider_acknowledged_at: number | null;
+          source_acknowledgements_json: string;
+          expires_at: number;
+        }>(db, "SELECT * FROM browser_sessions WHERE token_hash = ?", [
+          input.principal.browserSessionHash,
+        ])
+      : undefined;
+    const sourceKind = command.source?.kind;
+    const acknowledgedSources = browser
+      ? Schema.decodeUnknownSync(Schema.Array(SourceKind))(
+          JSON.parse(browser.source_acknowledgements_json),
+        )
+      : [];
+    if (
+      !browser ||
+      browser.expires_at <= input.nowMs ||
+      browser.provider !== input.provider ||
+      browser.provider_acknowledged_at === null ||
+      !sourceKind ||
+      !acknowledgedSources.includes(sourceKind) ||
+      bot !== "mara"
+    ) {
+      return receiptOf({
+        commandId,
+        replayed: false,
+        accepted: false,
+        error: "browser submission requires acknowledged eligible provider and source authority",
+        effects: [],
+      });
+    }
+  }
   if (provider === "claude" && command.mode === "plan")
     return receiptOf({
       commandId,
@@ -579,9 +754,22 @@ const submitTask = (
   const taskId = newTaskId();
   const threadId = newThreadId();
   const runId = newRunId();
+  const evidenceId = newEvidenceId();
+  const configRevisionId = newBotConfigRevisionId();
   const workspaceId = join(input.workspaceId, "runs", runId);
+  const source: SourcePacket = command.source ?? {
+    kind: "pasted",
+    label: "CLI brief",
+    text: command.brief,
+    citations: [],
+  };
+  const outcome = command.outcome ?? command.brief;
+  const providerBrief = command.source
+    ? `${outcome}\n\nRead-only ${source.label}:\n${source.text}`
+    : command.brief;
   const frozen: FrozenConfig = {
     bot,
+    role: bot === "mara" ? "coordinator" : "specialist",
     mode: command.mode ?? "agent",
     provider,
     transport:
@@ -595,22 +783,89 @@ const submitTask = (
     model:
       provider === "codex" ? "gpt-5.6-sol" : provider === "claude" ? "claude-sonnet-5" : "fake",
     ...(provider !== "fake" ? { effort: "medium" } : {}),
+    skills: bot === "mara" ? ["coordinate", "business-brief"] : ["specialist-draft"],
+    grants: ["read:provided-source", "write:task-artifact"],
+    publicConfig: { sourceMode: "materialized-read-only" },
     executionBoundary: input.executionBoundary,
+    executionLocation:
+      input.executionBoundary === "docker-fixture-container"
+        ? "isolated fixture container"
+        : input.executionBoundary === "docker-desktop-run-container"
+          ? "local provider container"
+          : "local daemon scratch",
     authMode: provider === "codex" ? CODEX_AUTH_MODE : provider === "claude" ? "api-key" : "none",
     workspaceId,
     deadlineMs: RUN_DEADLINE_MS,
     actionBudget: MAX_ACTIONS_PER_RUN,
   };
+  mkdirSync(join(workspaceId, "sources"), { recursive: true, mode: 0o700 });
+  const sourcePath = join(workspaceId, "sources", `${evidenceId}.txt`);
+  writeScratchFile(sourcePath, source.text);
+  const sourceDigest = createHash("sha256").update(source.text).digest("hex");
   run(
     db,
-    `INSERT INTO tasks (id, brief, owner_session, bot_name, bot_role, status, action_count, created_at)
-     VALUES (?, ?, ?, ?, ?, 'open', 0, ?)`,
+    `INSERT INTO bot_config_revisions
+       (id, bot, role, provider, model, effort, skills_json, grants_json, public_config_json,
+        execution_boundary, execution_location, auth_mode, frozen_json, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      configRevisionId,
+      frozen.bot,
+      frozen.role,
+      frozen.provider,
+      frozen.model,
+      frozen.effort ?? null,
+      JSON.stringify(frozen.skills),
+      JSON.stringify(frozen.grants),
+      JSON.stringify(frozen.publicConfig),
+      frozen.executionBoundary,
+      frozen.executionLocation,
+      frozen.authMode,
+      JSON.stringify(frozen),
+      input.nowMs,
+    ],
+  );
+  run(
+    db,
+    `INSERT INTO task_sources
+       (id, task_id, source, label, repository, revision, url, content_digest, byte_size, path,
+        citations_json, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      evidenceId,
+      taskId,
+      source.kind,
+      source.label,
+      source.kind === "github_briefing" ? source.repository : null,
+      source.kind === "github_briefing" ? source.revision : null,
+      source.kind === "github_briefing" ? (source.url ?? null) : null,
+      sourceDigest,
+      Buffer.byteLength(source.text),
+      sourcePath,
+      JSON.stringify(source.citations),
+      input.nowMs,
+    ],
+  );
+  run(
+    db,
+    `INSERT INTO tasks
+       (id, brief, thread_id, outcome, owner_session, bot_name, bot_role, workspace_ref,
+        constraints_json, evidence_json, current_run_id, latest_artifact_id, status, action_count,
+        created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 'open', 0, ?, ?)`,
     [
       taskId,
-      command.brief,
+      providerBrief,
+      threadId,
+      outcome,
       input.principal.sessionId,
       bot,
       bot === "mara" ? "coordinator" : "specialist",
+      `task:${taskId}`,
+      JSON.stringify(command.constraints ?? []),
+      JSON.stringify([evidenceId]),
+      runId,
+      input.nowMs,
       input.nowMs,
     ],
   );
@@ -621,12 +876,15 @@ const submitTask = (
   ]);
   run(
     db,
-    `INSERT INTO runs (id, task_id, thread_id, status, waiting_reason, frozen_json, provider_session_id, fixture, action_count, deadline_at, created_at)
-     VALUES (?, ?, ?, 'queued', 'none', ?, NULL, ?, 0, ?, ?)`,
+    `INSERT INTO runs
+       (id, task_id, thread_id, bot_config_revision_id, status, waiting_reason, frozen_json,
+        provider_session_id, fixture, action_count, deadline_at, created_at, started_at, completed_at)
+     VALUES (?, ?, ?, ?, 'queued', 'none', ?, NULL, ?, 0, ?, ?, NULL, NULL)`,
     [
       runId,
       taskId,
       threadId,
+      configRevisionId,
       JSON.stringify(frozen),
       command.fixture ?? null,
       input.nowMs + RUN_DEADLINE_MS,
@@ -639,7 +897,10 @@ const submitTask = (
     runId,
     authorKind: "human",
     authorName: "owner",
-    body: command.brief,
+    kind: "request",
+    importance: "decision",
+    dedupeKey: `request:${commandId}`,
+    body: outcome,
     nowMs: input.nowMs,
   });
   const intentId = newActionIntentId();
@@ -959,15 +1220,26 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
   const tasks = rows<{
     id: string;
     brief: string;
+    thread_id: string;
+    outcome: string;
     owner_session: string;
     bot_name: string;
     bot_role: string;
+    workspace_ref: string;
+    constraints_json: string;
+    evidence_json: string;
+    current_run_id: string;
+    latest_artifact_id: string | null;
     status: string;
     action_count: number;
+    created_at: number;
+    updated_at: number;
   }>(db, "SELECT * FROM tasks ORDER BY created_at");
   const runRows = rows<{
     id: string;
     task_id: string;
+    thread_id: string;
+    bot_config_revision_id: string;
     status: string;
     waiting_reason: string;
     frozen_json: string;
@@ -976,6 +1248,9 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
     fixture: string | null;
     action_count: number;
     deadline_at: number;
+    created_at: number;
+    started_at: number | null;
+    completed_at: number | null;
   }>(db, "SELECT * FROM runs ORDER BY created_at");
   const pending = rows<{
     id: string;
@@ -995,6 +1270,8 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
     sha256: string;
     byte_size: number;
     path: string;
+    citations_json: string;
+    created_at: number;
   }>(db, "SELECT * FROM artifacts ORDER BY created_at");
   const messages = rows<{
     id: string;
@@ -1003,28 +1280,87 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
     run_id: string | null;
     author_kind: string;
     author_name: string;
+    author_role: string;
+    kind: string;
+    importance: string;
+    dedupe_key: string;
     body: string;
+    created_at: number;
   }>(db, "SELECT * FROM messages ORDER BY created_at");
-  const events = rows<{ seq: number; id: string; type: string; body: string }>(
-    db,
-    "SELECT seq, id, type, body FROM events ORDER BY seq",
-  );
+  const events = rows<{
+    seq: number;
+    id: string;
+    type: string;
+    body: string;
+    created_at: number;
+  }>(db, "SELECT seq, id, type, body, created_at FROM events ORDER BY seq");
+  const evidence = rows<{
+    id: string;
+    task_id: string;
+    source: string;
+    label: string;
+    repository: string | null;
+    revision: string | null;
+    url: string | null;
+    content_digest: string;
+    byte_size: number;
+    path: string;
+    citations_json: string;
+    created_at: number;
+  }>(db, "SELECT * FROM task_sources ORDER BY created_at");
+  const revisions = rows<{
+    id: string;
+    bot: string;
+    role: string;
+    provider: string;
+    model: string;
+    effort: string | null;
+    skills_json: string;
+    grants_json: string;
+    public_config_json: string;
+    execution_boundary: string;
+    execution_location: string;
+    auth_mode: string;
+    frozen_json: string;
+    created_at: number;
+  }>(db, "SELECT * FROM bot_config_revisions ORDER BY created_at");
   return {
     schemaId: schema?.value ?? "",
+    cursor: Schema.decodeUnknownSync(Cursor)(String(events.at(-1)?.seq ?? 0)),
     stopAll: stop?.latched === 1,
     handoffs: handoffs(db),
     tasks: tasks.map((item) => ({
       id: item.id as TaskId,
       brief: item.brief,
+      threadId: item.thread_id,
+      outcome: item.outcome,
+      requestedBy: "owner",
+      currentOwner: item.bot_name === "ivo" ? "ivo" : "mara",
+      ownerRole: item.bot_role === "specialist" ? "specialist" : "coordinator",
       ownerSession: item.owner_session,
       botName: item.bot_name,
       botRole: item.bot_role,
+      workspaceRef: item.workspace_ref,
+      constraints: Schema.decodeUnknownSync(Schema.Array(Schema.String))(
+        JSON.parse(item.constraints_json),
+      ),
+      evidence: Schema.decodeUnknownSync(Schema.Array(EvidenceId))(JSON.parse(item.evidence_json)),
+      currentRunId: Schema.decodeUnknownSync(RunId)(item.current_run_id),
+      latestArtifactId: Schema.decodeUnknownSync(Schema.NullOr(ArtifactId))(
+        item.latest_artifact_id,
+      ),
       status: item.status,
       actionCount: item.action_count,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
     })),
     runs: runRows.map((item) => ({
       id: item.id as RunId,
       taskId: item.task_id as TaskId,
+      threadId: item.thread_id,
+      botConfigRevisionId: Schema.decodeUnknownSync(BotConfigRevisionId)(
+        item.bot_config_revision_id,
+      ),
       status: Schema.decodeUnknownSync(RunStatus)(item.status),
       waitingReason: item.waiting_reason,
       frozen: Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(item.frozen_json)),
@@ -1033,6 +1369,16 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
       fixture: Schema.decodeUnknownSync(Schema.NullOr(FixtureKind))(item.fixture),
       actionCount: item.action_count,
       deadlineAt: item.deadline_at,
+      queuedAt: item.created_at,
+      startedAt: item.started_at,
+      completedAt: item.completed_at,
+      providerLoadStatus: Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state))
+        .loadStatus,
+      pendingPrompt: Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state))
+        .pendingPrompt,
+      failure:
+        Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state)).failureDetail ??
+        Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state)).failure,
     })),
     pending: pending.map((item) => ({
       id: item.id as ActionIntentId,
@@ -1040,10 +1386,11 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
       kind: item.kind,
       state: Schema.decodeUnknownSync(ActionState)(item.state),
       payload: item.payload,
+      detail: item.payload,
       approvalId: (item.approval_id as ApprovalId | null) ?? null,
     })),
     artifacts: artifacts.map((item) => ({
-      id: item.id,
+      id: Schema.decodeUnknownSync(ArtifactId)(item.id),
       taskId: item.task_id as TaskId,
       runId: item.run_id as RunId,
       author: item.author,
@@ -1052,6 +1399,10 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
       sha256: item.sha256,
       byteSize: item.byte_size,
       path: item.path,
+      citations: Schema.decodeUnknownSync(Schema.Array(Citation))(JSON.parse(item.citations_json)),
+      createdAt: item.created_at,
+      metadataUrl: `/v1/artifacts/${item.id}`,
+      contentUrl: `/v1/artifacts/${item.id}/content`,
     })),
     messages: messages.map((item) => ({
       id: item.id,
@@ -1060,9 +1411,52 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
       runId: item.run_id,
       authorKind: item.author_kind,
       authorName: item.author_name,
+      authorRole: item.author_role,
+      kind: item.kind,
+      importance: item.importance,
+      dedupeKey: item.dedupe_key,
       body: item.body,
+      createdAt: item.created_at,
     })),
-    events,
+    events: events.map((item) => ({
+      seq: item.seq,
+      id: item.id,
+      type: item.type,
+      body: item.body,
+      createdAt: item.created_at,
+    })),
+    evidence: evidence.map((item) => ({
+      id: Schema.decodeUnknownSync(EvidenceId)(item.id),
+      taskId: Schema.decodeUnknownSync(TaskId)(item.task_id),
+      source: Schema.decodeUnknownSync(SourceKind)(item.source),
+      label: item.label,
+      ...(item.repository === null ? {} : { repository: item.repository }),
+      ...(item.revision === null ? {} : { revision: item.revision }),
+      ...(item.url === null ? {} : { url: item.url }),
+      contentDigest: item.content_digest,
+      byteSize: item.byte_size,
+      path: item.path,
+      citations: Schema.decodeUnknownSync(Schema.Array(Citation))(JSON.parse(item.citations_json)),
+      createdAt: item.created_at,
+    })),
+    botConfigRevisions: revisions.map((item) => ({
+      id: Schema.decodeUnknownSync(BotConfigRevisionId)(item.id),
+      frozen: Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(item.frozen_json)),
+      bot: Schema.decodeUnknownSync(Schema.Literal("mara", "ivo"))(item.bot),
+      role: Schema.decodeUnknownSync(Schema.Literal("coordinator", "specialist"))(item.role),
+      provider: Schema.decodeUnknownSync(ProviderKind)(item.provider),
+      model: item.model,
+      ...(item.effort === null ? {} : { effort: item.effort }),
+      skills: Schema.decodeUnknownSync(Schema.Array(Schema.String))(JSON.parse(item.skills_json)),
+      grants: Schema.decodeUnknownSync(Schema.Array(Schema.String))(JSON.parse(item.grants_json)),
+      publicConfig: Schema.decodeUnknownSync(
+        Schema.Record({ key: Schema.String, value: Schema.String }),
+      )(JSON.parse(item.public_config_json)),
+      executionBoundary: Schema.decodeUnknownSync(ExecutionBoundary)(item.execution_boundary),
+      executionLocation: item.execution_location,
+      authMode: item.auth_mode,
+      createdAt: item.created_at,
+    })),
   };
 };
 
@@ -1127,6 +1521,18 @@ export const mutateForEngine = (storePath: string) => {
       withTxn(db, () => {
         const h = handoffForRun(db, runId);
         if (!h || h.state !== "accepted" || !active(runId)) return;
+        message(db, {
+          threadId: h.threadId,
+          taskId: h.taskId,
+          runId,
+          authorKind: "bot",
+          authorName: "ivo",
+          kind: "progress",
+          importance: "routine",
+          dedupeKey: `peer:${runId}:${digest(body)}`,
+          body,
+          nowMs,
+        });
         emit(
           db,
           "peer_progress",
@@ -1161,9 +1567,13 @@ export const mutateForEngine = (storePath: string) => {
         if (!active(runId)) return false;
         run(
           db,
-          "UPDATE runs SET status = 'running', waiting_reason = 'none', provider_session_id = ? WHERE id = ?",
-          [providerSessionId, runId],
+          "UPDATE runs SET status = 'running', waiting_reason = 'none', provider_session_id = ?, started_at=COALESCE(started_at,?) WHERE id = ?",
+          [providerSessionId, nowMs, runId],
         );
+        run(db, "UPDATE tasks SET status='running',updated_at=? WHERE current_run_id=?", [
+          nowMs,
+          runId,
+        ]);
         run(
           db,
           "UPDATE pending_actions SET state = 'claimed' WHERE run_id = ? AND kind = 'launch' AND state = 'pending'",
@@ -1208,6 +1618,21 @@ export const mutateForEngine = (storePath: string) => {
           "UPDATE runs SET status = 'waiting_approval', waiting_reason = 'approval' WHERE id = ?",
           [input.runId],
         );
+        const current = row<{ thread_id: string }>(db, "SELECT thread_id FROM runs WHERE id=?", [
+          input.runId,
+        ]);
+        message(db, {
+          threadId: current?.thread_id ?? "",
+          taskId: input.taskId,
+          runId: input.runId,
+          authorKind: "bot",
+          authorName: "mara",
+          kind: "approval",
+          importance: "blocking",
+          dedupeKey: `approval:${approvalId}`,
+          body: `Approval required for ${input.tool}`,
+          nowMs: input.nowMs,
+        });
         emit(
           db,
           "waiting_approval",
@@ -1222,6 +1647,26 @@ export const mutateForEngine = (storePath: string) => {
         run(db, "UPDATE runs SET status = 'waiting_input', waiting_reason = 'input' WHERE id = ?", [
           runId,
         ]);
+        const current = row<{ thread_id: string; task_id: string; frozen_json: string }>(
+          db,
+          "SELECT thread_id,task_id,frozen_json FROM runs WHERE id=?",
+          [runId],
+        );
+        if (current) {
+          const frozen = Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(current.frozen_json));
+          message(db, {
+            threadId: current.thread_id,
+            taskId: current.task_id,
+            runId,
+            authorKind: "bot",
+            authorName: frozen.bot,
+            kind: "question",
+            importance: "blocking",
+            dedupeKey: `question:${runId}:${digest(prompt)}`,
+            body: prompt,
+            nowMs,
+          });
+        }
         emit(db, "waiting_input", { runId, prompt }, nowMs);
       }),
     complete: (input: {
@@ -1245,10 +1690,18 @@ export const mutateForEngine = (storePath: string) => {
         const handoff = handoffForRun(db, input.runId);
         if (handoff && handoff.state !== "accepted") return null;
         const artifactId = newArtifactId();
+        const source = row<{ citations_json: string }>(
+          db,
+          "SELECT citations_json FROM task_sources WHERE task_id=? ORDER BY created_at LIMIT 1",
+          [input.taskId],
+        );
+        const citations = source?.citations_json ?? "[]";
         run(
           db,
-          `INSERT INTO artifacts (id, task_id, run_id, author, source, media_type, sha256, byte_size, path, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO artifacts
+             (id, task_id, run_id, author, source, media_type, sha256, byte_size, path,
+              citations_json, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             artifactId,
             input.taskId,
@@ -1259,24 +1712,37 @@ export const mutateForEngine = (storePath: string) => {
             input.sha256,
             input.byteSize,
             input.path,
+            citations,
             input.nowMs,
           ],
         );
-        run(db, "UPDATE runs SET status = 'succeeded', waiting_reason = 'none' WHERE id = ?", [
-          input.runId,
-        ]);
-        run(db, "UPDATE tasks SET status = 'completed' WHERE id = ?", [input.taskId]);
+        run(
+          db,
+          "UPDATE runs SET status='succeeded',waiting_reason='none',completed_at=? WHERE id=?",
+          [input.nowMs, input.runId],
+        );
+        run(
+          db,
+          "UPDATE tasks SET status='completed',latest_artifact_id=?,updated_at=? WHERE id=?",
+          [artifactId, input.nowMs, input.taskId],
+        );
         emit(db, "run_succeeded", { runId: input.runId, artifactId }, input.nowMs);
+        const task = row<{ thread_id: string }>(db, "SELECT thread_id FROM tasks WHERE id=?", [
+          input.taskId,
+        ]);
+        message(db, {
+          threadId: task?.thread_id ?? handoff?.threadId ?? "",
+          taskId: input.taskId,
+          runId: input.runId,
+          authorKind: "bot",
+          authorName: input.author === "ivo" ? "ivo" : "mara",
+          kind: "result",
+          importance: "result",
+          dedupeKey: `result:${input.runId}`,
+          body: `Result ready: ${artifactId}`,
+          nowMs: input.nowMs,
+        });
         if (handoff) {
-          message(db, {
-            threadId: handoff.threadId,
-            taskId: handoff.taskId,
-            runId: input.runId,
-            authorKind: "bot",
-            authorName: "ivo",
-            body: `Draft returned: ${artifactId}`,
-            nowMs: input.nowMs,
-          });
           emit(
             db,
             "handoff_artifact",
@@ -1302,8 +1768,28 @@ export const mutateForEngine = (storePath: string) => {
           return;
         }
         if (rejectHandoff(db, runId, "rejected", "failed", error, nowMs)) return;
-        run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [runId]);
-        run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [taskId]);
+        const currentTask = row<{ thread_id: string; bot_name: string }>(
+          db,
+          "SELECT thread_id,bot_name FROM tasks WHERE id=?",
+          [taskId],
+        );
+        run(db, "UPDATE runs SET status='failed',waiting_reason='none',completed_at=? WHERE id=?", [
+          nowMs,
+          runId,
+        ]);
+        run(db, "UPDATE tasks SET status='failed',updated_at=? WHERE id=?", [nowMs, taskId]);
+        message(db, {
+          threadId: currentTask?.thread_id ?? "",
+          taskId,
+          runId,
+          authorKind: "bot",
+          authorName: currentTask?.bot_name === "ivo" ? "ivo" : "mara",
+          kind: "failure",
+          importance: "blocking",
+          dedupeKey: `failure:${runId}:${digest(error)}`,
+          body: error,
+          nowMs,
+        });
         emit(db, "run_failed", { runId, error }, nowMs);
       }),
     bumpAction: (runId: RunId, taskId: TaskId) =>

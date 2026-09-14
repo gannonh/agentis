@@ -1,4 +1,5 @@
-import { mkdtempSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Effect } from "effect";
@@ -6,11 +7,41 @@ import { describe, expect, it } from "vitest";
 import { newApprovalId, newIdempotencyKey, newRunId, newSessionId } from "../src/ids.js";
 import { mutateForEngine, openStore, type ApplyInput, type Principal } from "../src/store.js";
 import { SCHEMA_ID } from "../src/versions.js";
-import type { Command } from "../src/schema.js";
+import type { Command, SourcePacket } from "../src/schema.js";
 
 const owner = (): Principal => ({ kind: "owner", sessionId: newSessionId() });
 const bot = (): Principal => ({ kind: "bot", sessionId: "bot-token" });
 const tempRoot = () => mkdtempSync(join(tmpdir(), "agentis-store-"));
+
+const sourceCases: readonly { readonly name: string; readonly source: SourcePacket }[] = [
+  {
+    name: "pasted business input",
+    source: {
+      kind: "pasted",
+      label: "Campaign notes",
+      text: "Launch in Portland with a $4,000 ceiling.",
+      citations: [{ label: "Operator note", excerpt: "$4,000 ceiling" }],
+    },
+  },
+  {
+    name: "GitHub briefing packet",
+    source: {
+      kind: "github_briefing",
+      label: "Release briefing",
+      repository: "agentis-labs/example",
+      revision: "0123456789abcdef",
+      url: "https://github.com/agentis-labs/example/tree/0123456789abcdef",
+      text: "Summarize the retained workflow changes.",
+      citations: [
+        {
+          label: "README.md:12",
+          excerpt: "Retain task results across refresh.",
+          url: "https://github.com/agentis-labs/example/blob/0123456789abcdef/README.md#L12",
+        },
+      ],
+    },
+  },
+];
 
 const apply = async (root: string, command: Command, principal: Principal = owner()) => {
   const store = await Effect.runPromise(openStore(root));
@@ -31,6 +62,70 @@ const apply = async (root: string, command: Command, principal: Principal = owne
 };
 
 describe("store", () => {
+  it.each(sourceCases)(
+    "persists $name as a referenced source with an exercised config revision",
+    async ({ source }) => {
+      const root = tempRoot();
+      const store = await Effect.runPromise(openStore(root));
+      const principal = owner();
+      const receipt = await Effect.runPromise(
+        store.applyCommand({
+          principal,
+          idempotencyKey: newIdempotencyKey(),
+          command: {
+            kind: "submit_task",
+            brief: "Prepare the launch brief",
+            outcome: "A cited launch brief",
+            constraints: ["Read-only source", "No external writes"],
+            coordinator: "mara",
+            source,
+            fixture: "cancel",
+          },
+          nowMs: 1_000,
+          provider: "fake",
+          executionBoundary: "unverified-host-scratch",
+          workspaceId: join(root, "scratch"),
+        }),
+      );
+      const snapshot = await Effect.runPromise(store.snapshot());
+      await Effect.runPromise(store.close());
+
+      expect(receipt.accepted).toBe(true);
+      expect(snapshot.tasks[0]).toMatchObject({
+        outcome: "A cited launch brief",
+        currentOwner: "mara",
+        ownerRole: "coordinator",
+        constraints: ["Read-only source", "No external writes"],
+        currentRunId: receipt.runId,
+      });
+      expect(snapshot.tasks[0]?.evidence).toEqual([snapshot.evidence[0]?.id]);
+      expect(snapshot.evidence[0]).toMatchObject({
+        source: source.kind,
+        label: source.label,
+        citations: source.citations,
+        byteSize: Buffer.byteLength(source.text),
+        contentDigest: createHash("sha256").update(source.text).digest("hex"),
+      });
+      expect(readFileSync(snapshot.evidence[0]?.path ?? "", "utf8")).toBe(source.text);
+      expect(snapshot.botConfigRevisions).toHaveLength(1);
+      expect(snapshot.botConfigRevisions[0]).toMatchObject({
+        bot: "mara",
+        role: "coordinator",
+        provider: "fake",
+        skills: ["coordinate", "business-brief"],
+        grants: ["read:provided-source", "write:task-artifact"],
+      });
+      expect(snapshot.runs[0]?.botConfigRevisionId).toBe(snapshot.botConfigRevisions[0]?.id);
+      expect(snapshot.messages).toHaveLength(1);
+      expect(snapshot.messages[0]).toMatchObject({
+        threadId: receipt.threadId,
+        kind: "request",
+        importance: "decision",
+        body: "A cited launch brief",
+      });
+    },
+  );
+
   it("admits two distinct bots and freezes the selected provider", async () => {
     const root = tempRoot();
     const store = await Effect.runPromise(openStore(root));
@@ -148,6 +243,7 @@ describe("store", () => {
     );
     expect(replay.commandId).toBe(first.commandId);
     expect(replay.taskId).toBe(first.taskId);
+    expect(replay.effects).toEqual([]);
     await expect(
       Effect.runPromise(
         store.applyCommand({
@@ -156,6 +252,13 @@ describe("store", () => {
         }),
       ),
     ).rejects.toThrow(/different payload/);
+    const snapshot = await Effect.runPromise(store.snapshot());
+    expect(snapshot.tasks).toHaveLength(1);
+    expect(snapshot.runs).toHaveLength(1);
+    expect(snapshot.evidence).toHaveLength(1);
+    expect(snapshot.botConfigRevisions).toHaveLength(1);
+    expect(snapshot.messages).toHaveLength(1);
+    expect(snapshot.events.filter((event) => event.type === "task_submitted")).toHaveLength(1);
     await Effect.runPromise(store.close());
   });
 
