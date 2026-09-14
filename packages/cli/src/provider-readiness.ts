@@ -36,17 +36,13 @@ export const providerReadiness = (input: {
   const volume = providerVolume(input.dataRoot);
   const inspected = spawnSync(
     "docker",
-    [
-      "volume",
-      "inspect",
-      "--format",
-      '{{index .Labels "io.agentis.managed"}}',
-      volume,
-    ],
+    ["volume", "inspect", "--format", '{{index .Labels "io.agentis.managed"}}', volume],
     { encoding: "utf8", timeout: 5_000 },
   );
   if (inspected.status !== 0 || inspected.stdout.trim() !== "provider-auth") {
-    return unavailable("Codex authentication is unavailable. Run agentis provider provision first.");
+    return unavailable(
+      "Codex authentication is unavailable. Run agentis provider provision first.",
+    );
   }
   const checked = spawnSync(
     "docker",

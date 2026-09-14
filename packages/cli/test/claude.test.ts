@@ -207,13 +207,11 @@ describe("Claude SDK bridge", () => {
         const publicInput = await publicStatusOf(endpoint, owner.token);
         expect(publicInput.runs[0]?.pendingPrompt).toEqual({
           kind: "questions",
-          questions: [
-            { key: "Pick color", prompt: "Pick color", options: ["BLUE", "RED"] },
-          ],
+          questions: [{ key: "Pick color", prompt: "Pick color", options: ["BLUE", "RED"] }],
         });
-        expect(
-          publicInput.messages.find((message) => message.kind === "question")?.body,
-        ).toBe("Pick color");
+        expect(publicInput.messages.find((message) => message.kind === "question")?.body).toBe(
+          "Pick color",
+        );
         await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
           command: {

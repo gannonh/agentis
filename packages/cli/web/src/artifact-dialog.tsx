@@ -23,9 +23,11 @@ const SourceUrl = ({ value }: { readonly value: string }) => {
 };
 
 const focusable = (container: HTMLElement) =>
-  [...container.querySelectorAll<HTMLElement>(
-    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-  )].filter((element) => !element.hasAttribute("hidden"));
+  [
+    ...container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ].filter((element) => !element.hasAttribute("hidden"));
 
 export const ArtifactDialog = ({
   preview,
@@ -109,14 +111,25 @@ export const ArtifactDialog = ({
         <section aria-labelledby="artifact-provenance">
           <h3 id="artifact-provenance">Provenance</h3>
           <dl className="artifact-provenance">
-            <div><dt>Author</dt><dd>{preview.artifact.author}</dd></div>
-            <div><dt>Provider</dt><dd>{preview.artifact.source}</dd></div>
-            <div><dt>SHA-256</dt><dd>{preview.artifact.sha256}</dd></div>
+            <div>
+              <dt>Author</dt>
+              <dd>{preview.artifact.author}</dd>
+            </div>
+            <div>
+              <dt>Provider</dt>
+              <dd>{preview.artifact.source}</dd>
+            </div>
+            <div>
+              <dt>SHA-256</dt>
+              <dd>{preview.artifact.sha256}</dd>
+            </div>
           </dl>
           {evidence.map((item) => (
             <article className="evidence-card" key={item.id}>
               <strong>{item.label}</strong>
-              <span>{item.source === "github_briefing" ? "GitHub briefing packet" : "Pasted input"}</span>
+              <span>
+                {item.source === "github_briefing" ? "GitHub briefing packet" : "Pasted input"}
+              </span>
               {item.repository ? <span>Repository: {item.repository}</span> : null}
               {item.revision ? <span>Revision: {item.revision}</span> : null}
               {item.url ? <SourceUrl value={item.url} /> : null}
