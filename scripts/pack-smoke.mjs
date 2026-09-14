@@ -192,7 +192,10 @@ try {
   });
   assert.equal(content.status, 200);
   const bytes = Buffer.from(await content.arrayBuffer());
-  assert.equal(bytes.toString(), "# pack-smoke\n");
+  assert.equal(
+    bytes.toString(),
+    "# pack-smoke\n\nRead-only Pack smoke input:\nMaterialized read-only pack smoke input.\n",
+  );
   assert.equal(bytes.length, artifact.byteSize);
   assert.equal(createHash("sha256").update(bytes).digest("hex"), artifact.sha256);
   assert.deepEqual(artifact.citations, [
