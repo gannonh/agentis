@@ -7,10 +7,11 @@ import {
 } from "./claude.js";
 import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { Effect } from "effect";
 import { writeScratchFile } from "./scratch-file.js";
-import { mutateForEngine, type Store } from "./store.js";
+import { readVerifiedFile } from "./verified-file.js";
+import { mutateForEngine, type Snapshot, type Store } from "./store.js";
 import type {
   Command,
   CommandReceipt,
@@ -38,6 +39,28 @@ export type DriveInput = {
   readonly nowMs: number;
   readonly brief: string;
   readonly loadSession?: boolean;
+};
+
+const providerBrief = (snapshot: Snapshot, runId: RunId) => {
+  const run = snapshot.runs.find((item) => item.id === runId);
+  const task = run ? snapshot.tasks.find((item) => item.id === run.taskId) : undefined;
+  const evidenceId = task?.evidence[0];
+  const evidence = evidenceId
+    ? snapshot.evidence.find((item) => item.id === evidenceId)
+    : undefined;
+  if (!run || !task || !evidence) return task?.brief ?? "";
+  const bytes = readVerifiedFile({
+    path: evidence.path,
+    root: dirname(dirname(run.frozen.workspaceId)),
+    byteSize: evidence.byteSize,
+    sha256: evidence.contentDigest,
+    maximumBytes: evidence.byteSize,
+  });
+  if (!bytes) throw new Error("materialized source is missing or changed");
+  const text = bytes.toString("utf8");
+  return evidence.label === "CLI brief" && text === task.brief
+    ? task.brief
+    : `${task.outcome}\n\nRead-only ${evidence.label}:\n${text}`;
 };
 
 export const driveAfterCommit = (input: DriveInput): Effect.Effect<void, Error> => {
@@ -76,7 +99,7 @@ export const applyReceiptEffects = async (input: {
         executionBoundary: selected.frozen.executionBoundary,
         workspace: selected.frozen.workspaceId,
         nowMs,
-        brief: initial.tasks.find((task) => task.id === selected.taskId)?.brief ?? "",
+        brief: providerBrief(initial, selected.id),
         loadSession: true,
       }),
     ).catch(() => undefined);
@@ -103,11 +126,22 @@ export const applyReceiptEffects = async (input: {
             executionBoundary: run.frozen.executionBoundary,
             workspace: run.frozen.workspaceId,
             nowMs,
-            brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
+            brief: providerBrief(snapshot, run.id),
           }),
         );
       }
-    } catch {
+    } catch (error) {
+      const engine = mutateForEngine(store.path);
+      try {
+        engine.fail(
+          receipt.runId,
+          receipt.taskId,
+          error instanceof Error ? error.message : String(error),
+          Date.now(),
+        );
+      } finally {
+        engine.close();
+      }
       return;
     }
   }
@@ -137,7 +171,7 @@ export const applyReceiptEffects = async (input: {
           executionBoundary: "unverified-host-scratch",
           workspace: run.frozen.workspaceId,
           nowMs,
-          brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
+          brief: providerBrief(snapshot, run.id),
         }),
       );
     }
@@ -172,7 +206,7 @@ export const applyReceiptEffects = async (input: {
           executionBoundary: "unverified-host-scratch",
           workspace: run.frozen.workspaceId,
           nowMs,
-          brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
+          brief: providerBrief(snapshot, run.id),
         }),
       );
     }

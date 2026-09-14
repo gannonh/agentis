@@ -350,10 +350,18 @@ export const MessageRow = Schema.Struct({
 });
 export type MessageRow = typeof MessageRow.Type;
 
+export const ThreadRow = Schema.Struct({
+  id: ThreadId,
+  taskId: TaskId,
+  createdAt: Schema.Number,
+});
+export type ThreadRow = typeof ThreadRow.Type;
+
 export const SourceAcknowledgement = Schema.Struct({
   source: SourceKind,
   acknowledgedAt: Schema.Number,
 });
+export type SourceAcknowledgement = typeof SourceAcknowledgement.Type;
 export const OwnerSession = Schema.Struct({
   expiresAt: Schema.Number,
   provider: Schema.Struct({
@@ -376,6 +384,97 @@ export const EventRow = Schema.Struct({
   createdAt: Schema.Number,
 });
 export type EventRow = typeof EventRow.Type;
+
+export const PublicTask = TaskRow.pipe(
+  Schema.pick(
+    "id",
+    "threadId",
+    "outcome",
+    "requestedBy",
+    "currentOwner",
+    "ownerRole",
+    "workspaceRef",
+    "constraints",
+    "evidence",
+    "currentRunId",
+    "latestArtifactId",
+    "status",
+    "actionCount",
+    "createdAt",
+    "updatedAt",
+  ),
+);
+export type PublicTask = typeof PublicTask.Type;
+export const PublicRun = RunRow.pipe(
+  Schema.pick(
+    "id",
+    "taskId",
+    "threadId",
+    "botConfigRevisionId",
+    "status",
+    "waitingReason",
+    "providerLoadStatus",
+    "pendingPrompt",
+    "failure",
+    "actionCount",
+    "queuedAt",
+    "startedAt",
+    "deadlineAt",
+    "completedAt",
+  ),
+);
+export type PublicRun = typeof PublicRun.Type;
+export const PublicArtifact = ArtifactRow.pipe(
+  Schema.pick(
+    "id",
+    "taskId",
+    "runId",
+    "author",
+    "source",
+    "mediaType",
+    "sha256",
+    "byteSize",
+    "citations",
+    "createdAt",
+    "metadataUrl",
+    "contentUrl",
+  ),
+);
+export type PublicArtifact = typeof PublicArtifact.Type;
+export const PublicHandoff = HandoffRow.pipe(
+  Schema.pick(
+    "id",
+    "taskId",
+    "threadId",
+    "sourceRunId",
+    "recipientRunId",
+    "sender",
+    "recipient",
+    "context",
+    "state",
+    "expiresAt",
+    "grants",
+    "onwardDelegation",
+  ),
+);
+export type PublicHandoff = typeof PublicHandoff.Type;
+
+export const WorkspaceSnapshot = Schema.Struct({
+  schemaId: Schema.String,
+  cursor: Cursor,
+  stopAll: Schema.Boolean,
+  session: OwnerSession,
+  tasks: Schema.Array(PublicTask),
+  threads: Schema.Array(ThreadRow),
+  handoffs: Schema.Array(PublicHandoff),
+  runs: Schema.Array(PublicRun),
+  botConfigRevisions: Schema.Array(BotConfigRevision),
+  evidence: Schema.Array(Evidence),
+  pending: Schema.Array(PendingActionRow),
+  artifacts: Schema.Array(PublicArtifact),
+  messages: Schema.Array(MessageRow),
+});
+export type WorkspaceSnapshot = typeof WorkspaceSnapshot.Type;
 
 export const Snapshot = Schema.Struct({
   schemaId: Schema.String,
@@ -435,16 +534,22 @@ export const SetupAcknowledgement = Schema.Struct({
 });
 export const ArtifactPath = Schema.Struct({ id: ArtifactId });
 export const EventsQuery = Schema.Struct({ cursor: Cursor });
-export const ApiError = Schema.Struct({
-  code: Schema.Literal(
-    "bad_request",
-    "unauthorized",
-    "forbidden",
-    "not_found",
-    "conflict",
-    "cursor_expired",
-    "resync_required",
-  ),
-  message: Schema.String,
-});
+const apiError = <Code extends string>(code: Code) =>
+  Schema.Struct({ code: Schema.Literal(code), message: Schema.String });
+export const BadRequestApiError = apiError("bad_request");
+export const UnauthorizedApiError = apiError("unauthorized");
+export const ForbiddenApiError = apiError("forbidden");
+export const NotFoundApiError = apiError("not_found");
+export const ConflictApiError = apiError("conflict");
+export const CursorExpiredApiError = apiError("cursor_expired");
+export const ResyncRequiredApiError = apiError("resync_required");
+export const ApiError = Schema.Union(
+  BadRequestApiError,
+  UnauthorizedApiError,
+  ForbiddenApiError,
+  NotFoundApiError,
+  ConflictApiError,
+  CursorExpiredApiError,
+  ResyncRequiredApiError,
+);
 export type ApiError = typeof ApiError.Type;

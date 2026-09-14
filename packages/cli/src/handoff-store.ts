@@ -1,5 +1,4 @@
-import { randomUUID, createHash } from "node:crypto";
-import { openSync, closeSync, fstatSync, readSync, constants } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { Schema } from "effect";
@@ -14,6 +13,7 @@ import {
 } from "./schema.js";
 import type { ApplyInput } from "./store.js";
 import { row, rows, run, emit, message } from "./store-db.js";
+import { readVerifiedFile } from "./verified-file.js";
 import {
   CLAUDE_CLI_PIN,
   MAX_ACTIVE_RUNS,
@@ -103,32 +103,14 @@ const readVerifiedSource = (artifact: {
   path: string;
   byte_size: number;
   sha256: string;
-}): string | null => {
-  let descriptor: number | undefined;
-  try {
-    descriptor = openSync(
-      artifact.path,
-      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
-    );
-    const info = fstatSync(descriptor);
-    if (!info.isFile() || info.size > 65536 || info.size !== artifact.byte_size) return null;
-    const buffer = Buffer.alloc(65537);
-    let size = 0;
-    while (size < buffer.length) {
-      const count = readSync(descriptor, buffer, size, buffer.length - size, null);
-      if (count === 0) break;
-      size += count;
-    }
-    if (size > 65536 || size !== artifact.byte_size) return null;
-    const bytes = buffer.subarray(0, size);
-    if (createHash("sha256").update(bytes).digest("hex") !== artifact.sha256) return null;
-    return bytes.toString("utf8");
-  } catch {
-    return null;
-  } finally {
-    if (descriptor !== undefined) closeSync(descriptor);
-  }
-};
+}, root: string): string | null =>
+  readVerifiedFile({
+    path: artifact.path,
+    root,
+    byteSize: artifact.byte_size,
+    sha256: artifact.sha256,
+    maximumBytes: 65_536,
+  })?.toString("utf8") ?? null;
 
 export const proposeHandoff = (
   db: DatabaseSync,
@@ -178,7 +160,7 @@ export const proposeHandoff = (
   );
   if (!artifact || artifact.byte_size > 65536)
     return denied("handoff requires a source draft of at most 65536 bytes");
-  const sourceDraft = readVerifiedSource(artifact);
+  const sourceDraft = readVerifiedSource(artifact, original.workspaceId);
   if (sourceDraft === null)
     return denied("source draft is missing, changed, oversized, or not a regular file");
   const context = JSON.stringify({

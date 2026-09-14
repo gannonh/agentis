@@ -10,7 +10,7 @@ import {
 import { row, rows, run, withTxn, emit, message } from "./store-db.js";
 import { ProviderState } from "./provider-contract.js";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { Effect, Schema } from "effect";
@@ -43,8 +43,12 @@ import {
   ProviderKind,
   ResolveApproval,
   RunStatus,
+  SourceAcknowledgement,
   SubmitTask,
   SourceKind,
+  Transition,
+  TransitionReason,
+  WorkspaceSnapshot,
   type ActionIntentId,
   type ApprovalId,
   type CommandId,
@@ -52,6 +56,13 @@ import {
   type IdempotencyKey,
   type PrincipalKind,
   type SourcePacket,
+  type ArtifactId as ArtifactIdType,
+  type Cursor as CursorType,
+  type ProviderKind as ProviderKindType,
+  type SourceKind as SourceKindType,
+  type SourceAcknowledgement as SourceAcknowledgementType,
+  type Transition as TransitionType,
+  type WorkspaceSnapshot as WorkspaceSnapshotType,
   RunId,
   TaskId,
 } from "./schema.js";
@@ -61,6 +72,7 @@ import {
   CODEX_AUTH_MODE,
   CODEX_CLI_PIN,
   CODEX_TRANSPORT,
+  EVENT_REPLAY_LIMIT,
   MAX_ACTIONS_PER_RUN,
   MAX_ACTIONS_PER_TASK,
   MAX_ACTIVE_RUNS,
@@ -78,6 +90,15 @@ export class UnsupportedSchemaError extends Error {
 
 export class StoreError extends Error {
   readonly _tag = "StoreError";
+}
+
+export class ReplayCursorError extends StoreError {
+  constructor(
+    readonly code: "cursor_expired" | "resync_required",
+    message: string,
+  ) {
+    super(message);
+  }
 }
 
 export type Principal = {
@@ -218,6 +239,7 @@ export type Snapshot = {
   readonly cursor: typeof Cursor.Type;
   readonly stopAll: boolean;
   readonly tasks: readonly TaskRow[];
+  readonly threads: readonly ThreadRow[];
   readonly handoffs: readonly HandoffRow[];
   readonly runs: readonly RunRow[];
   readonly pending: readonly PendingActionRow[];
@@ -226,6 +248,12 @@ export type Snapshot = {
   readonly events: readonly EventRow[];
   readonly evidence: readonly EvidenceRow[];
   readonly botConfigRevisions: readonly BotConfigRevisionRow[];
+};
+
+export type ThreadRow = {
+  readonly id: string;
+  readonly taskId: TaskId;
+  readonly createdAt: number;
 };
 
 export type EventRow = {
@@ -402,8 +430,69 @@ export type Store = {
   readonly path: string;
   readonly applyCommand: (input: ApplyInput) => Effect.Effect<CommandReceipt, StoreError>;
   readonly snapshot: () => Effect.Effect<Snapshot, StoreError>;
+  readonly issueBrowserBootstrap: (input: {
+    readonly codeHash: string;
+    readonly ownerSession: string;
+    readonly nowMs: number;
+    readonly expiresAt: number;
+  }) => Effect.Effect<void, StoreError>;
+  readonly exchangeBrowserBootstrap: (input: {
+    readonly codeHash: string;
+    readonly tokenHash: string;
+    readonly csrfHash: string;
+    readonly provider: ProviderKindType;
+    readonly nowMs: number;
+    readonly expiresAt: number;
+  }) => Effect.Effect<boolean, StoreError>;
+  readonly authenticateBrowser: (input: {
+    readonly tokenHash: string;
+    readonly csrfHash?: string;
+    readonly nowMs: number;
+  }) => Effect.Effect<BrowserSessionRecord | null, StoreError>;
+  readonly acknowledgeBrowserSetup: (input: {
+    readonly tokenHash: string;
+    readonly provider: ProviderKindType;
+    readonly sources: readonly SourceKindType[];
+    readonly nowMs: number;
+  }) => Effect.Effect<boolean, StoreError>;
+  readonly workspaceSnapshot: (input: {
+    readonly tokenHash?: string;
+    readonly ownerSession?: string;
+    readonly nowMs: number;
+    readonly runtime: BrowserRuntime;
+  }) => Effect.Effect<WorkspaceSnapshotType, StoreError>;
+  readonly transitionsAfter: (
+    cursor: CursorType,
+  ) => Effect.Effect<TransitionWindow, StoreError>;
+  readonly artifact: (
+    id: ArtifactIdType,
+  ) => Effect.Effect<ArtifactRow | null, StoreError>;
   readonly interruptActiveRuns: (nowMs: number) => Effect.Effect<readonly RunId[], StoreError>;
   readonly close: () => Effect.Effect<void>;
+};
+
+export type BrowserRuntime = {
+  readonly provider: ProviderKindType;
+  readonly model: string;
+  readonly authMode: string;
+  readonly executionLocation: string;
+  readonly eligible: boolean;
+};
+
+export type BrowserSessionRecord = {
+  readonly tokenHash: string;
+  readonly csrfHash: string;
+  readonly ownerSession: string;
+  readonly provider: ProviderKindType;
+  readonly providerAcknowledgedAt: number | null;
+  readonly sources: readonly SourceAcknowledgementType[];
+  readonly expiresAt: number;
+};
+
+export type TransitionWindow = {
+  readonly cursor: CursorType;
+  readonly replayFloor: CursorType;
+  readonly events: readonly TransitionType[];
 };
 
 const assertSchemaBeforeOpen = (db: DatabaseSync, path: string) => {
@@ -477,8 +566,9 @@ export const openStore = (
           });
         }
         db.exec("BEGIN IMMEDIATE");
+        const stagedPaths: string[] = [];
         try {
-          const result = dispatch(db, input);
+          const result = dispatch(db, input, stagedPaths);
           const commandId = result.commandId;
           run(
             db,
@@ -497,6 +587,7 @@ export const openStore = (
           return result;
         } catch (error) {
           db.exec("ROLLBACK");
+          for (const path of stagedPaths) rmSync(path, { force: true });
           throw error;
         }
       };
@@ -510,6 +601,41 @@ export const openStore = (
         snapshot: () =>
           Effect.try({
             try: () => readSnapshot(db),
+            catch: (error) => new StoreError(String(error)),
+          }),
+        issueBrowserBootstrap: (input) =>
+          Effect.try({
+            try: () => issueBrowserBootstrap(db, input),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+          }),
+        exchangeBrowserBootstrap: (input) =>
+          Effect.try({
+            try: () => exchangeBrowserBootstrap(db, input),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+          }),
+        authenticateBrowser: (input) =>
+          Effect.try({
+            try: () => authenticateBrowser(db, input),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+          }),
+        acknowledgeBrowserSetup: (input) =>
+          Effect.try({
+            try: () => acknowledgeBrowserSetup(db, input),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+          }),
+        workspaceSnapshot: (input) =>
+          Effect.try({
+            try: () => workspaceSnapshot(db, input),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+          }),
+        transitionsAfter: (cursor) =>
+          Effect.try({
+            try: () => transitionsAfter(db, cursor),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+          }),
+        artifact: (id) =>
+          Effect.try({
+            try: () => readSnapshot(db).artifacts.find((artifact) => artifact.id === id) ?? null,
             catch: (error) => new StoreError(String(error)),
           }),
         interruptActiveRuns: (nowMs) =>
@@ -527,6 +653,394 @@ export const openStore = (
       error instanceof UnsupportedSchemaError ? error : new StoreError(String(error)),
   });
 
+const issueBrowserBootstrap = (
+  db: DatabaseSync,
+  input: { codeHash: string; ownerSession: string; nowMs: number; expiresAt: number },
+) =>
+  withTxn(db, () => {
+    run(db, "DELETE FROM browser_bootstraps WHERE expires_at <= ? OR consumed_at IS NOT NULL", [
+      input.nowMs,
+    ]);
+    run(
+      db,
+      `INSERT INTO browser_bootstraps (code_hash, owner_session, expires_at, consumed_at)
+       VALUES (?, ?, ?, NULL)`,
+      [input.codeHash, input.ownerSession, input.expiresAt],
+    );
+  });
+
+const exchangeBrowserBootstrap = (
+  db: DatabaseSync,
+  input: {
+    codeHash: string;
+    tokenHash: string;
+    csrfHash: string;
+    provider: ProviderKindType;
+    nowMs: number;
+    expiresAt: number;
+  },
+) =>
+  withTxn(db, () => {
+    const bootstrap = row<{ owner_session: string }>(
+      db,
+      `SELECT owner_session FROM browser_bootstraps
+       WHERE code_hash = ? AND consumed_at IS NULL AND expires_at > ?`,
+      [input.codeHash, input.nowMs],
+    );
+    if (!bootstrap) return false;
+    const consumed = db
+      .prepare(
+        `UPDATE browser_bootstraps SET consumed_at = ?
+         WHERE code_hash = ? AND consumed_at IS NULL AND expires_at > ?`,
+      )
+      .run(input.nowMs, input.codeHash, input.nowMs);
+    if (consumed.changes !== 1) return false;
+    run(
+      db,
+      `INSERT INTO browser_sessions
+         (token_hash, csrf_hash, owner_session, provider, provider_acknowledged_at,
+          source_acknowledgements_json, expires_at, created_at)
+       VALUES (?, ?, ?, ?, NULL, '[]', ?, ?)`,
+      [
+        input.tokenHash,
+        input.csrfHash,
+        bootstrap.owner_session,
+        input.provider,
+        input.expiresAt,
+        input.nowMs,
+      ],
+    );
+    return true;
+  });
+
+const browserSession = (
+  db: DatabaseSync,
+  input: { tokenHash: string; csrfHash?: string; nowMs: number },
+): BrowserSessionRecord | null => {
+  const session = row<{
+    token_hash: string;
+    csrf_hash: string;
+    owner_session: string;
+    provider: string;
+    provider_acknowledged_at: number | null;
+    source_acknowledgements_json: string;
+    expires_at: number;
+  }>(
+    db,
+    `SELECT token_hash, csrf_hash, owner_session, provider, provider_acknowledged_at,
+            source_acknowledgements_json, expires_at
+     FROM browser_sessions WHERE token_hash = ? AND expires_at > ?`,
+    [input.tokenHash, input.nowMs],
+  );
+  if (!session || (input.csrfHash !== undefined && session.csrf_hash !== input.csrfHash)) {
+    return null;
+  }
+  return {
+    tokenHash: session.token_hash,
+    csrfHash: session.csrf_hash,
+    ownerSession: session.owner_session,
+    provider: Schema.decodeUnknownSync(ProviderKind)(session.provider),
+    providerAcknowledgedAt: session.provider_acknowledged_at,
+    sources: Schema.decodeUnknownSync(Schema.Array(SourceAcknowledgement))(
+      JSON.parse(session.source_acknowledgements_json),
+    ),
+    expiresAt: session.expires_at,
+  };
+};
+
+const authenticateBrowser = (
+  db: DatabaseSync,
+  input: { tokenHash: string; csrfHash?: string; nowMs: number },
+) => browserSession(db, input);
+
+const acknowledgeBrowserSetup = (
+  db: DatabaseSync,
+  input: {
+    tokenHash: string;
+    provider: ProviderKindType;
+    sources: readonly SourceKindType[];
+    nowMs: number;
+  },
+) =>
+  withTxn(db, () => {
+    const session = browserSession(db, {
+      tokenHash: input.tokenHash,
+      nowMs: input.nowMs,
+    });
+    if (!session || session.provider !== input.provider || input.sources.length === 0) return false;
+    const acknowledged = new Map(
+      session.sources.map((item) => [item.source, item.acknowledgedAt] as const),
+    );
+    const changed =
+      session.providerAcknowledgedAt === null ||
+      input.sources.some((source) => !acknowledged.has(source));
+    if (!changed) return true;
+    for (const source of input.sources) {
+      if (!acknowledged.has(source)) acknowledged.set(source, input.nowMs);
+    }
+    run(
+      db,
+      `UPDATE browser_sessions
+       SET provider_acknowledged_at = COALESCE(provider_acknowledged_at, ?),
+           source_acknowledgements_json = ?
+       WHERE token_hash = ? AND expires_at > ?`,
+      [
+        input.nowMs,
+        JSON.stringify(
+          [...acknowledged].map(([source, acknowledgedAt]) => ({ source, acknowledgedAt })),
+        ),
+        input.tokenHash,
+        input.nowMs,
+      ],
+    );
+    emit(
+      db,
+      "setup_acknowledged",
+      { provider: input.provider, sources: [...acknowledged.keys()] },
+      input.nowMs,
+    );
+    return true;
+  });
+
+const publicHandoffContext = (context: string) => {
+  try {
+    const decoded = JSON.parse(context) as { request?: unknown };
+    return typeof decoded.request === "string" ? decoded.request : "Handoff context unavailable.";
+  } catch {
+    return "Handoff context unavailable.";
+  }
+};
+
+const pendingDetail = (kind: string) => {
+  switch (kind) {
+    case "launch":
+      return "Run queued for launch.";
+    case "tool":
+      return "Approval is required for a proposed action.";
+    case "handoff_draft":
+      return "Ivo may create one bounded draft.";
+    default:
+      return "Pending action.";
+  }
+};
+
+const workspaceSnapshot = (
+  db: DatabaseSync,
+  input: {
+    tokenHash?: string;
+    ownerSession?: string;
+    nowMs: number;
+    runtime: BrowserRuntime;
+  },
+): WorkspaceSnapshotType => {
+  db.exec("BEGIN DEFERRED");
+  try {
+    const session = input.tokenHash
+      ? browserSession(db, { tokenHash: input.tokenHash, nowMs: input.nowMs })
+      : input.ownerSession
+        ? {
+            tokenHash: "",
+            csrfHash: "",
+            ownerSession: input.ownerSession,
+            provider: input.runtime.provider,
+            providerAcknowledgedAt: null,
+            sources: [],
+            expiresAt: Number.MAX_SAFE_INTEGER,
+          }
+        : null;
+    if (!session) throw new StoreError("authentication required");
+    const snapshot = readSnapshotUnlocked(db);
+    const providerMatches = session.provider === input.runtime.provider;
+    const result = Schema.decodeUnknownSync(WorkspaceSnapshot)({
+      schemaId: snapshot.schemaId,
+      cursor: snapshot.cursor,
+      stopAll: snapshot.stopAll,
+      session: {
+        expiresAt: session.expiresAt,
+        provider: {
+          kind: input.runtime.provider,
+          model: input.runtime.model,
+          authMode: input.runtime.authMode,
+          executionLocation: input.runtime.executionLocation,
+          eligible: input.runtime.eligible,
+          acknowledgedAt: providerMatches ? session.providerAcknowledgedAt : null,
+        },
+        sources: session.sources,
+      },
+      tasks: snapshot.tasks.map((task) => ({
+        id: task.id,
+        threadId: task.threadId,
+        outcome: task.outcome,
+        requestedBy: task.requestedBy,
+        currentOwner: task.currentOwner,
+        ownerRole: task.ownerRole,
+        workspaceRef: task.workspaceRef,
+        constraints: task.constraints,
+        evidence: task.evidence,
+        currentRunId: task.currentRunId,
+        latestArtifactId: task.latestArtifactId,
+        status: task.status,
+        actionCount: task.actionCount,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+      })),
+      threads: snapshot.threads,
+      handoffs: snapshot.handoffs.map((handoff) => ({
+        id: handoff.id,
+        taskId: handoff.taskId,
+        threadId: handoff.threadId,
+        sourceRunId: handoff.sourceRunId,
+        recipientRunId: handoff.recipientRunId,
+        sender: handoff.sender,
+        recipient: handoff.recipient,
+        context: publicHandoffContext(handoff.context),
+        state: handoff.state,
+        expiresAt: handoff.expiresAt,
+        grants: handoff.grants,
+        onwardDelegation: handoff.onwardDelegation,
+      })),
+      runs: snapshot.runs.map((item) => ({
+        id: item.id,
+        taskId: item.taskId,
+        threadId: item.threadId,
+        botConfigRevisionId: item.botConfigRevisionId,
+        status: item.status,
+        waitingReason: item.waitingReason,
+        providerLoadStatus: item.providerLoadStatus,
+        pendingPrompt: item.pendingPrompt,
+        failure: item.failure,
+        actionCount: item.actionCount,
+        queuedAt: item.queuedAt,
+        startedAt: item.startedAt,
+        deadlineAt: item.deadlineAt,
+        completedAt: item.completedAt,
+      })),
+      botConfigRevisions: snapshot.botConfigRevisions.map((item) => ({
+        id: item.id,
+        bot: item.bot,
+        role: item.role,
+        provider: item.provider,
+        model: item.model,
+        ...(item.effort === undefined ? {} : { effort: item.effort }),
+        skills: item.skills,
+        grants: item.grants,
+        publicConfig: item.publicConfig,
+        executionBoundary: item.executionBoundary,
+        executionLocation: item.executionLocation,
+        authMode: item.authMode,
+        createdAt: item.createdAt,
+      })),
+      evidence: snapshot.evidence.map((item) => ({
+        id: item.id,
+        source: item.source,
+        label: item.label,
+        ...(item.repository === undefined ? {} : { repository: item.repository }),
+        ...(item.revision === undefined ? {} : { revision: item.revision }),
+        ...(item.url === undefined ? {} : { url: item.url }),
+        contentDigest: item.contentDigest,
+        byteSize: item.byteSize,
+        citations: item.citations,
+        createdAt: item.createdAt,
+      })),
+      pending: snapshot.pending.map((item) => ({
+        id: item.id,
+        runId: item.runId,
+        kind: item.kind,
+        state: item.state,
+        detail: pendingDetail(item.kind),
+        approvalId: item.approvalId,
+      })),
+      artifacts: snapshot.artifacts.map((item) => ({
+        id: item.id,
+        taskId: item.taskId,
+        runId: item.runId,
+        author: item.author,
+        source: item.source,
+        mediaType: item.mediaType,
+        sha256: item.sha256,
+        byteSize: item.byteSize,
+        citations: item.citations,
+        createdAt: item.createdAt,
+        metadataUrl: item.metadataUrl,
+        contentUrl: item.contentUrl,
+      })),
+      messages: snapshot.messages.map((item) => ({
+        id: item.id,
+        threadId: item.threadId,
+        taskId: item.taskId,
+        runId: item.runId,
+        authorKind: item.authorKind,
+        authorName: item.authorName,
+        authorRole: item.authorRole,
+        kind: item.kind,
+        importance: item.importance,
+        body: item.body,
+        createdAt: item.createdAt,
+      })),
+    });
+    db.exec("COMMIT");
+    return result;
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+};
+
+const transitionsAfter = (db: DatabaseSync, cursor: CursorType): TransitionWindow => {
+  db.exec("BEGIN DEFERRED");
+  try {
+    const requested = Number(cursor);
+    const highWater = row<{ cursor: number }>(
+      db,
+      "SELECT COALESCE(MAX(seq), 0) AS cursor FROM events",
+    )?.cursor ?? 0;
+    const replayFloor = Math.max(0, highWater - EVENT_REPLAY_LIMIT);
+    if (requested < replayFloor) {
+      throw new ReplayCursorError(
+        "cursor_expired",
+        `cursor ${cursor} is older than replay floor ${replayFloor}`,
+      );
+    }
+    if (requested > highWater) {
+      throw new ReplayCursorError(
+        "resync_required",
+        `cursor ${cursor} is newer than high-water ${highWater}`,
+      );
+    }
+    const retained = rows<{
+      seq: number;
+      id: string;
+      type: string;
+      created_at: number;
+    }>(
+      db,
+      `SELECT seq, id, type, created_at FROM events
+       WHERE seq > ? AND seq <= ? ORDER BY seq`,
+      [requested, highWater],
+    );
+    const result = {
+      cursor: Schema.decodeUnknownSync(Cursor)(String(highWater)),
+      replayFloor: Schema.decodeUnknownSync(Cursor)(String(replayFloor)),
+      events: retained.map((item) =>
+        Schema.decodeUnknownSync(Transition)({
+          cursor: String(item.seq),
+          id: item.id,
+          event: {
+            kind: "workspace_changed",
+            reason: Schema.decodeUnknownSync(TransitionReason)(item.type),
+          },
+          createdAt: item.created_at,
+        }),
+      ),
+    };
+    db.exec("COMMIT");
+    return result;
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+};
+
 const expireApprovalAndRun = (
   db: DatabaseSync,
   approval: { id: string; run_id: string; task_id: string },
@@ -543,10 +1057,29 @@ const expireApprovalAndRun = (
     approval.run_id,
   ]);
   run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [approval.task_id]);
+  const current = row<{ thread_id: string }>(db, "SELECT thread_id FROM runs WHERE id=?", [
+    approval.run_id,
+  ]);
+  message(db, {
+    threadId: current?.thread_id ?? "",
+    taskId: approval.task_id,
+    runId: approval.run_id,
+    authorKind: "system",
+    authorName: "agentis",
+    kind: "failure",
+    importance: "blocking",
+    dedupeKey: `approval-expired:${approval.id}`,
+    body: "Approval expired before a decision was recorded.",
+    nowMs,
+  });
   emit(db, "run_failed", { runId: approval.run_id, error: "approval expired", commandId }, nowMs);
 };
 
-const dispatch = (db: DatabaseSync, input: ApplyInput): CommandReceipt => {
+const dispatch = (
+  db: DatabaseSync,
+  input: ApplyInput,
+  stagedPaths: string[],
+): CommandReceipt => {
   const commandId = newCommandId();
   const command = input.command;
   switch (command.kind) {
@@ -554,7 +1087,7 @@ const dispatch = (db: DatabaseSync, input: ApplyInput): CommandReceipt => {
       ownerOnly(input.principal, "propose_handoff");
       return proposeHandoff(db, commandId, input, command);
     case "submit_task":
-      return submitTask(db, commandId, input, command);
+      return submitTask(db, commandId, input, command, stagedPaths);
     case "resolve_approval":
       return resolveApproval(db, commandId, input, command);
     case "answer_input":
@@ -646,6 +1179,7 @@ const submitTask = (
   commandId: CommandId,
   input: ApplyInput,
   command: typeof SubmitTask.Type,
+  stagedPaths: string[],
 ): CommandReceipt => {
   ownerOnly(input.principal, "submit_task");
   if (command.attachments || command.mcpServers)
@@ -682,9 +1216,9 @@ const submitTask = (
       : undefined;
     const sourceKind = command.source?.kind;
     const acknowledgedSources = browser
-      ? Schema.decodeUnknownSync(Schema.Array(SourceKind))(
+      ? Schema.decodeUnknownSync(Schema.Array(SourceAcknowledgement))(
           JSON.parse(browser.source_acknowledgements_json),
-        )
+        ).map((item) => item.source)
       : [];
     if (
       !browser ||
@@ -764,9 +1298,6 @@ const submitTask = (
     citations: [],
   };
   const outcome = command.outcome ?? command.brief;
-  const providerBrief = command.source
-    ? `${outcome}\n\nRead-only ${source.label}:\n${source.text}`
-    : command.brief;
   const frozen: FrozenConfig = {
     bot,
     role: bot === "mara" ? "coordinator" : "specialist",
@@ -801,6 +1332,7 @@ const submitTask = (
   mkdirSync(join(workspaceId, "sources"), { recursive: true, mode: 0o700 });
   const sourcePath = join(workspaceId, "sources", `${evidenceId}.txt`);
   writeScratchFile(sourcePath, source.text);
+  stagedPaths.push(sourcePath);
   const sourceDigest = createHash("sha256").update(source.text).digest("hex");
   run(
     db,
@@ -855,7 +1387,7 @@ const submitTask = (
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 'open', 0, ?, ?)`,
     [
       taskId,
-      providerBrief,
+      outcome,
       threadId,
       outcome,
       input.principal.sessionId,
@@ -1011,6 +1543,9 @@ const resolveApproval = (
     runId: approval.run_id,
     authorKind: "human",
     authorName: "owner",
+    kind: "approval",
+    importance: "decision",
+    dedupeKey: `approval-decision:${approval.id}`,
     body: `approval ${next}`,
     nowMs: input.nowMs,
   });
@@ -1087,6 +1622,9 @@ const answerInput = (
     runId: current.id,
     authorKind: "human",
     authorName: "owner",
+    kind: "answer",
+    importance: "decision",
+    dedupeKey: `input-answer:${commandId}`,
     body: JSON.stringify(command.answers),
     nowMs: input.nowMs,
   });
@@ -1113,9 +1651,9 @@ const cancelRun = (
   command: typeof CancelRun.Type,
 ): CommandReceipt => {
   ownerOnly(input.principal, "cancel_run");
-  const current = row<{ id: string; status: string; task_id: string }>(
+  const current = row<{ id: string; status: string; task_id: string; thread_id: string }>(
     db,
-    "SELECT id, status, task_id FROM runs WHERE id = ?",
+    "SELECT id, status, task_id, thread_id FROM runs WHERE id = ?",
     [command.runId],
   );
   if (!current) {
@@ -1162,6 +1700,18 @@ const cancelRun = (
     [current.id],
   );
   run(db, "UPDATE approvals SET state='canceled' WHERE run_id=? AND state='pending'", [current.id]);
+  message(db, {
+    threadId: current.thread_id,
+    taskId: current.task_id,
+    runId: current.id,
+    authorKind: "system",
+    authorName: "agentis",
+    kind: "system",
+    importance: "blocking",
+    dedupeKey: `run-canceled:${current.id}`,
+    body: "The owner canceled this run.",
+    nowMs: input.nowMs,
+  });
   emit(db, "run_canceled", { runId: current.id, commandId }, input.nowMs);
   return receiptOf({
     commandId,
@@ -1176,9 +1726,9 @@ const cancelRun = (
 const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): CommandReceipt => {
   ownerOnly(input.principal, "stop_all");
   run(db, "UPDATE stop_all SET latched = 1, updated_at = ? WHERE id = 1", [input.nowMs]);
-  const active = rows<{ id: string; task_id: string }>(
+  const active = rows<{ id: string; task_id: string; thread_id: string }>(
     db,
-    "SELECT id, task_id FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')",
+    "SELECT id, task_id, thread_id FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')",
   );
   for (const item of active) {
     run(db, "UPDATE runs SET status = 'canceled', waiting_reason = 'none' WHERE id = ?", [item.id]);
@@ -1198,6 +1748,18 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
       "UPDATE pending_actions SET state = 'canceled' WHERE run_id = ? AND state IN ('pending','allowed')",
       [item.id],
     );
+    message(db, {
+      threadId: item.thread_id,
+      taskId: item.task_id,
+      runId: item.id,
+      authorKind: "system",
+      authorName: "agentis",
+      kind: "system",
+      importance: "blocking",
+      dedupeKey: `stop-all:${item.id}`,
+      body: "Stop all canceled this run.",
+      nowMs: input.nowMs,
+    });
   }
   run(db, "UPDATE approvals SET state='canceled' WHERE state='pending'", []);
   run(
@@ -1215,6 +1777,18 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
 };
 
 const readSnapshot = (db: DatabaseSync): Snapshot => {
+  db.exec("BEGIN DEFERRED");
+  try {
+    const snapshot = readSnapshotUnlocked(db);
+    db.exec("COMMIT");
+    return snapshot;
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+};
+
+const readSnapshotUnlocked = (db: DatabaseSync): Snapshot => {
   const schema = row<{ value: string }>(db, "SELECT value FROM meta WHERE key = 'schema_id'", []);
   const stop = row<{ latched: number }>(db, "SELECT latched FROM stop_all WHERE id = 1", []);
   const tasks = rows<{
@@ -1235,6 +1809,10 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
     created_at: number;
     updated_at: number;
   }>(db, "SELECT * FROM tasks ORDER BY created_at");
+  const threadRows = rows<{ id: string; task_id: string; created_at: number }>(
+    db,
+    "SELECT id, task_id, created_at FROM threads ORDER BY created_at",
+  );
   const runRows = rows<{
     id: string;
     task_id: string;
@@ -1329,6 +1907,11 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
     cursor: Schema.decodeUnknownSync(Cursor)(String(events.at(-1)?.seq ?? 0)),
     stopAll: stop?.latched === 1,
     handoffs: handoffs(db),
+    threads: threadRows.map((item) => ({
+      id: item.id,
+      taskId: Schema.decodeUnknownSync(TaskId)(item.task_id),
+      createdAt: item.created_at,
+    })),
     tasks: tasks.map((item) => ({
       id: item.id as TaskId,
       brief: item.brief,
@@ -1354,32 +1937,31 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
       createdAt: item.created_at,
       updatedAt: item.updated_at,
     })),
-    runs: runRows.map((item) => ({
-      id: item.id as RunId,
-      taskId: item.task_id as TaskId,
-      threadId: item.thread_id,
-      botConfigRevisionId: Schema.decodeUnknownSync(BotConfigRevisionId)(
-        item.bot_config_revision_id,
-      ),
-      status: Schema.decodeUnknownSync(RunStatus)(item.status),
-      waitingReason: item.waiting_reason,
-      frozen: Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(item.frozen_json)),
-      providerState: Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state)),
-      providerSessionId: item.provider_session_id,
-      fixture: Schema.decodeUnknownSync(Schema.NullOr(FixtureKind))(item.fixture),
-      actionCount: item.action_count,
-      deadlineAt: item.deadline_at,
-      queuedAt: item.created_at,
-      startedAt: item.started_at,
-      completedAt: item.completed_at,
-      providerLoadStatus: Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state))
-        .loadStatus,
-      pendingPrompt: Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state))
-        .pendingPrompt,
-      failure:
-        Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state)).failureDetail ??
-        Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state)).failure,
-    })),
+    runs: runRows.map((item) => {
+      const providerState = Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state));
+      return {
+        id: item.id as RunId,
+        taskId: item.task_id as TaskId,
+        threadId: item.thread_id,
+        botConfigRevisionId: Schema.decodeUnknownSync(BotConfigRevisionId)(
+          item.bot_config_revision_id,
+        ),
+        status: Schema.decodeUnknownSync(RunStatus)(item.status),
+        waitingReason: item.waiting_reason,
+        frozen: Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(item.frozen_json)),
+        providerState,
+        providerSessionId: item.provider_session_id,
+        fixture: Schema.decodeUnknownSync(Schema.NullOr(FixtureKind))(item.fixture),
+        actionCount: item.action_count,
+        deadlineAt: item.deadline_at,
+        queuedAt: item.created_at,
+        startedAt: item.started_at,
+        completedAt: item.completed_at,
+        providerLoadStatus: providerState.loadStatus,
+        pendingPrompt: providerState.pendingPrompt,
+        failure: providerState.failureDetail ?? providerState.failure,
+      };
+    }),
     pending: pending.map((item) => ({
       id: item.id as ActionIntentId,
       runId: item.run_id as RunId,
@@ -1467,9 +2049,9 @@ const isTerminal = (status: string) =>
   status === "interrupted";
 
 const interruptActive = (db: DatabaseSync, nowMs: number): RunId[] => {
-  const active = rows<{ id: string }>(
+  const active = rows<{ id: string; task_id: string; thread_id: string }>(
     db,
-    "SELECT id FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')",
+    "SELECT id,task_id,thread_id FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')",
   );
   db.exec("BEGIN IMMEDIATE");
   try {
@@ -1479,13 +2061,27 @@ const interruptActive = (db: DatabaseSync, nowMs: number): RunId[] => {
         "UPDATE runs SET status = 'interrupted', waiting_reason = 'interrupted' WHERE id = ?",
         [item.id],
       );
+      message(db, {
+        threadId: item.thread_id,
+        taskId: item.task_id,
+        runId: item.id,
+        authorKind: "system",
+        authorName: "agentis",
+        kind: "system",
+        importance: "blocking",
+        dedupeKey: `daemon-restart:${item.id}:${nowMs}`,
+        body: "The daemon restarted while this run was active.",
+        nowMs,
+      });
     }
     run(
       db,
       "UPDATE runs SET provider_state=json_set(provider_state,'$.loadStatus','failed') WHERE json_extract(provider_state,'$.loadStatus')='loading'",
       [],
     );
-    emit(db, "daemon_restart", { interrupted: active.map((item) => item.id) }, nowMs);
+    if (active.length > 0) {
+      emit(db, "daemon_restart", { interrupted: active.map((item) => item.id) }, nowMs);
+    }
     db.exec("COMMIT");
   } catch (error) {
     db.exec("ROLLBACK");
@@ -1521,7 +2117,7 @@ export const mutateForEngine = (storePath: string) => {
       withTxn(db, () => {
         const h = handoffForRun(db, runId);
         if (!h || h.state !== "accepted" || !active(runId)) return;
-        message(db, {
+        const inserted = message(db, {
           threadId: h.threadId,
           taskId: h.taskId,
           runId,
@@ -1533,6 +2129,7 @@ export const mutateForEngine = (storePath: string) => {
           body,
           nowMs,
         });
+        if (!inserted) return;
         emit(
           db,
           "peer_progress",

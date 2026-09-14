@@ -63,12 +63,11 @@ export const message = (
         : input.authorName === "owner"
           ? "operator"
           : "system");
-  run(
-    db,
+  const result = db.prepare(
     `INSERT OR IGNORE INTO messages
        (id, thread_id, task_id, run_id, author_kind, author_name, author_role, kind, importance, dedupe_key, body, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
+  ).run(
       id,
       input.threadId,
       input.taskId,
@@ -81,7 +80,6 @@ export const message = (
       input.dedupeKey ?? id,
       input.body,
       input.nowMs,
-    ],
   );
-  return id;
+  return result.changes === 1;
 };

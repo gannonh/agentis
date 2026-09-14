@@ -6,13 +6,14 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { Effect, Schema } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Snapshot } from "../src/schema.js";
-import { sweepRunTimeouts, openStore } from "../src/store.js";
+import { WorkspaceSnapshot } from "../src/schema.js";
+import { sweepRunTimeouts, openStore, type Store } from "../src/store.js";
 import { loadOrCreateOwner } from "../src/auth.js";
 import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
 
 const stub = fileURLToPath(new URL("./codex-stub.mjs", import.meta.url));
+const stores = new Map<string, Store>();
 
 const port = () =>
   new Promise<number>((resolve, reject) => {
@@ -43,6 +44,7 @@ const boot = async () => {
     }),
   );
   const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
+  stores.set(endpoint.origin, server.store);
   return { endpoint, server, owner, dataRoot };
 };
 
@@ -59,7 +61,10 @@ const statusOf = async (endpoint: URL, token: string) => {
   const response = await fetch(new URL("/v1/status", endpoint), {
     headers: { authorization: `Bearer ${token}` },
   });
-  return Schema.decodeUnknownSync(Snapshot)(await response.json());
+  Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
+  const store = stores.get(endpoint.origin);
+  if (!store) throw new Error("missing test store");
+  return Effect.runPromise(store.snapshot());
 };
 
 const waitFor = async (
