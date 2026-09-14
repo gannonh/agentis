@@ -237,7 +237,8 @@ const inspectOwnedContainer = (info) => {
   if (container.HostConfig?.NetworkMode !== "none")
     throw new Error(`fixture container ${info.containerId} is not network isolated`);
   const mounts = Array.isArray(container.Mounts) ? container.Mounts : [];
-  const writableBinds = mounts.filter((mount) => mount?.Type === "bind" && mount.RW === true);
+  const bindMounts = mounts.filter((mount) => mount?.Type === "bind");
+  const writableBinds = bindMounts.filter((mount) => mount.RW === true);
   const rootMounts = writableBinds.filter((mount) => {
     try {
       return (
@@ -251,6 +252,25 @@ const inspectOwnedContainer = (info) => {
   });
   if (writableBinds.length !== 1 || rootMounts.length !== 1)
     throw new Error(`fixture dataRoot mount does not match readiness for ${info.containerId}`);
+  const runtimeRoot = dirname(cli);
+  const expectedBinds = [
+    { Source: info.dataRoot, Destination: info.dataRoot, RW: true },
+    {
+      Source: realpathSync(join(runtimeRoot, "fixture-daemon.mjs")),
+      Destination: "/opt/agentis/fixture-daemon.mjs",
+      RW: false,
+    },
+    {
+      Source: realpathSync(join(runtimeRoot, "web")),
+      Destination: "/opt/agentis/web",
+      RW: false,
+    },
+  ].sort((left, right) => left.Destination.localeCompare(right.Destination));
+  const observedBinds = bindMounts
+    .map(({ Source, Destination, RW }) => ({ Source, Destination, RW }))
+    .sort((left, right) => left.Destination.localeCompare(right.Destination));
+  if (!isDeepStrictEqual(observedBinds, expectedBinds))
+    throw new Error(`fixture bind mounts do not match packaged runtime for ${info.containerId}`);
   if (Object.keys(container.NetworkSettings?.Ports ?? {}).length !== 0)
     throw new Error(`fixture container ${info.containerId} publishes an unexpected port`);
   return { container, labels, mounts, rootMount: rootMounts[0] };

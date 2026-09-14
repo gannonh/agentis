@@ -47,7 +47,8 @@ try {
   assert.ok(tarball, "pack produced no tarball");
   await run("npm", ["install", "--prefix", installDir, join(packDir, tarball)]);
   const installedPackage = join(installDir, "node_modules/@agentis-labs/cli");
-  const webFiles = readdirSync(join(installedPackage, "dist/web"), { recursive: true }).map(String);
+  const installedWeb = realpathSync(join(installedPackage, "dist/web"));
+  const webFiles = readdirSync(installedWeb, { recursive: true }).map(String);
   assert.ok(webFiles.includes("index.html"), "pack omitted the browser shell");
   assert.ok(
     webFiles.some((path) => path.endsWith(".js")),
@@ -93,6 +94,7 @@ try {
     report,
     canaries,
     realpathSync(join(installDir, "node_modules/@agentis-labs/cli/dist/fixture-daemon.mjs")),
+    installedWeb,
   );
   const endpoint = new URL(report.endpoint);
   const shell = await fetch(endpoint);
