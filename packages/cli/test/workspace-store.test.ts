@@ -3,9 +3,9 @@
 import { Schema } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  CommandReceipt,
   PublicArtifact,
   WorkspaceSnapshot,
-  type CommandReceipt,
   type Transition,
 } from "../src/schema.js";
 import {
@@ -14,6 +14,16 @@ import {
   type BrowserBindings,
   type WorkspaceApi,
 } from "../web/src/workspace-store.js";
+
+const deferred = <Value>() => {
+  let resolve!: (value: Value) => void;
+  let reject!: (error: unknown) => void;
+  const promise = new Promise<Value>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+};
 
 const snapshot = (cursor: string) =>
   Schema.decodeUnknownSync(WorkspaceSnapshot)({
@@ -50,9 +60,7 @@ class FakeEventSource extends EventTarget {
   readonly close = vi.fn();
 
   transition(value: Transition) {
-    this.dispatchEvent(
-      new MessageEvent("transition", { data: JSON.stringify(value) }),
-    );
+    this.dispatchEvent(new MessageEvent("transition", { data: JSON.stringify(value) }));
   }
 
   fail() {
@@ -98,6 +106,22 @@ const harness = (status: ReturnType<typeof snapshot>[]) => {
   return { api, browser, command, order, replaced, streams };
 };
 
+const artifact = (id: string, byteSize = 1) =>
+  Schema.decodeUnknownSync(PublicArtifact)({
+    id,
+    taskId: "task_one",
+    runId: "run_one",
+    author: "mara",
+    source: "fake",
+    mediaType: "text/markdown",
+    sha256: `digest-${id}`,
+    byteSize,
+    citations: [],
+    createdAt: 1,
+    metadataUrl: `/v1/artifacts/${id}`,
+    contentUrl: `/v1/artifacts/${id}/content`,
+  });
+
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -122,32 +146,13 @@ describe("WorkspaceStore", () => {
     store.dispose();
   });
 
-  it("deduplicates transition cursors and retains one command key and body across retry", async () => {
+  it("deduplicates transition cursors", async () => {
     const initial = snapshot("1");
     const changed = snapshot("2");
-    const afterCommand = snapshot("3");
-    const test = harness([initial, changed, afterCommand]);
-    const accepted = Schema.decodeUnknownSync(
-      Schema.Struct({
-        commandId: Schema.String,
-        replayed: Schema.Boolean,
-        accepted: Schema.Boolean,
-        taskId: Schema.String,
-        effects: Schema.Array(Schema.String),
-      }),
-    )({
-      commandId: "command_one",
-      replayed: false,
-      accepted: true,
-      taskId: "task_one",
-      effects: ["launch"],
-    }) as unknown as CommandReceipt;
-    test.command.mockRejectedValueOnce(new Error("network interrupted")).mockResolvedValueOnce(accepted);
+    const test = harness([initial, changed]);
     const store = new WorkspaceStore(test.api, test.browser);
     await store.start();
-    const event = Schema.decodeUnknownSync(
-      (await import("../src/schema.js")).Transition,
-    )({
+    const event = Schema.decodeUnknownSync((await import("../src/schema.js")).Transition)({
       cursor: "2",
       id: "event_two",
       event: { kind: "workspace_changed", reason: "task_submitted" },
@@ -157,16 +162,107 @@ describe("WorkspaceStore", () => {
     test.streams[0]?.source.transition(event);
     await vi.waitFor(() => expect(test.api.status).toHaveBeenCalledTimes(2));
 
-    await store.sendCommand("Submit request", {
-      kind: "submit_task",
-      brief: "One task",
-      source: { kind: "pasted", label: "Notes", text: "Source", citations: [] },
+    store.dispose();
+  });
+
+  it("returns an accepted receipt and completes the form when its refresh fails", async () => {
+    const test = harness([snapshot("1")]);
+    const accepted = Schema.decodeUnknownSync(CommandReceipt)({
+      commandId: "command_one",
+      replayed: false,
+      accepted: true,
+      taskId: "task_one",
+      effects: ["launch"],
     });
+    test.command.mockResolvedValueOnce(accepted);
+    const store = new WorkspaceStore(test.api, test.browser);
+    await store.start();
+    vi.mocked(test.api.status).mockRejectedValueOnce(new Error("snapshot temporarily unavailable"));
+    const completed = vi.fn();
+
+    const receipt = await store.sendCommand(
+      "Submit request",
+      {
+        kind: "submit_task",
+        brief: "One task",
+        source: { kind: "pasted", label: "Notes", text: "Source", citations: [] },
+      },
+      completed,
+    );
+
+    expect(receipt).toEqual(accepted);
+    expect(completed).toHaveBeenCalledWith(accepted);
+    expect(store.getState()).toMatchObject({
+      error: "snapshot temporarily unavailable",
+      retryLabel: null,
+    });
+    store.dispose();
+  });
+
+  it("records a failed connection check without rejecting the click action", async () => {
+    const test = harness([snapshot("1")]);
+    const store = new WorkspaceStore(test.api, test.browser);
+    await store.start();
+    vi.mocked(test.api.status).mockRejectedValueOnce(new Error("connection probe failed"));
+
+    await expect(store.checkConnection()).resolves.toBeUndefined();
+    expect(store.getState().error).toBe("connection probe failed");
+    store.dispose();
+  });
+
+  it("does not retain a command retry when the CSRF cookie is unavailable", async () => {
+    const test = harness([snapshot("1")]);
+    const store = new WorkspaceStore(test.api, {
+      ...test.browser,
+      location: { ...test.browser.location, hash: "" },
+      cookie: () => "",
+    });
+    await store.start();
+
+    await store.sendCommand("Submit request", { kind: "stop_all" });
+    expect(test.command).not.toHaveBeenCalled();
+    expect(store.getState()).toMatchObject({
+      error: "This owner session is missing its CSRF token. Open a new agentis web URL.",
+      retryLabel: null,
+    });
+    store.dispose();
+  });
+
+  it("retains one command key, body, and completion across a transient retry", async () => {
+    const test = harness([snapshot("1"), snapshot("2")]);
+    const accepted = Schema.decodeUnknownSync(CommandReceipt)({
+      commandId: "command_one",
+      replayed: false,
+      accepted: true,
+      taskId: "task_one",
+      effects: ["launch"],
+    });
+    test.command
+      .mockRejectedValueOnce(new Error("network interrupted"))
+      .mockResolvedValueOnce(accepted);
+    const store = new WorkspaceStore(test.api, test.browser);
+    await store.start();
+    const completed = vi.fn();
+
+    await store.sendCommand(
+      "Submit request",
+      {
+        kind: "submit_task",
+        brief: "One task",
+        source: { kind: "pasted", label: "Notes", text: "Source", citations: [] },
+      },
+      completed,
+    );
     expect(store.getState().retryLabel).toBe("Submit request");
-    await store.retryCommand();
+    await store.sendCommand("Different command", { kind: "stop_all" });
+    expect(test.command).toHaveBeenCalledTimes(1);
+    const retried = await store.retryCommand();
+    expect(retried).toEqual(accepted);
     expect(test.command).toHaveBeenCalledTimes(2);
     expect(test.command.mock.calls[1]?.[1]).toEqual(test.command.mock.calls[0]?.[1]);
     expect(test.command.mock.calls[0]?.[1].idempotencyKey).toBe("web_stable-command-key");
+    expect(completed).toHaveBeenCalledOnce();
+    expect(completed).toHaveBeenCalledWith(accepted);
 
     const callsBeforeRefresh = test.command.mock.calls.length;
     await store.refresh();
@@ -178,23 +274,50 @@ describe("WorkspaceStore", () => {
     const test = harness([snapshot("1")]);
     const store = new WorkspaceStore(test.api, test.browser);
     await store.start();
-    const artifact = Schema.decodeUnknownSync(PublicArtifact)({
-      id: "artifact_large",
-      taskId: "task_one",
-      runId: "run_one",
-      author: "mara",
-      source: "fake",
-      mediaType: "text/markdown",
-      sha256: "digest",
-      byteSize: MAX_TEXT_PREVIEW_BYTES + 1,
-      citations: [],
-      createdAt: 1,
-      metadataUrl: "/v1/artifacts/artifact_large",
-      contentUrl: "/v1/artifacts/artifact_large/content",
-    });
-    await store.openArtifact(artifact);
+    await store.openArtifact(artifact("artifact_large", MAX_TEXT_PREVIEW_BYTES + 1));
     expect(store.getState().artifactPreview?.status).toBe("download_only");
     expect(test.api.artifactBytes).not.toHaveBeenCalled();
+    store.dispose();
+  });
+
+  it("does not reopen an artifact closed while its bytes are loading", async () => {
+    const test = harness([snapshot("1")]);
+    const loading = deferred<ArrayBuffer>();
+    vi.mocked(test.api.artifactBytes).mockReturnValueOnce(loading.promise);
+    const store = new WorkspaceStore(test.api, test.browser);
+    await store.start();
+
+    const opened = store.openArtifact(artifact("artifact_a"));
+    store.closeArtifact();
+    loading.resolve(new TextEncoder().encode("A").buffer);
+    await opened;
+
+    expect(store.getState().artifactPreview).toBeNull();
+    store.dispose();
+  });
+
+  it("ignores an older artifact response after a newer artifact opens", async () => {
+    const test = harness([snapshot("1")]);
+    const first = deferred<ArrayBuffer>();
+    const second = deferred<ArrayBuffer>();
+    vi.mocked(test.api.artifactBytes)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    const store = new WorkspaceStore(test.api, test.browser);
+    await store.start();
+
+    const openingFirst = store.openArtifact(artifact("artifact_a"));
+    const openingSecond = store.openArtifact(artifact("artifact_b"));
+    second.resolve(new TextEncoder().encode("B").buffer);
+    await openingSecond;
+    first.reject(new Error("older preview failed"));
+    await openingFirst;
+
+    expect(store.getState().artifactPreview).toMatchObject({
+      artifact: { id: "artifact_b" },
+      status: "ready",
+      text: "B",
+    });
     store.dispose();
   });
 });

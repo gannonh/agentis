@@ -7,7 +7,7 @@ import { RequestHeaders } from "./api.js";
 import { loadOrCreateOwner } from "./auth.js";
 import {
   authorizeRead,
-  browserRuntime,
+  browserRuntimeResolver,
   makeHttpApiHandler,
   type HttpApiDependencies,
 } from "./http-api.js";
@@ -31,10 +31,7 @@ export type RunningServer = {
   readonly store: Store;
 };
 
-export const RAW_HANDLER_ROUTE_KEYS = [
-  "GET /v1/events",
-  "GET /v1/artifacts/:id/content",
-] as const;
+export const RAW_HANDLER_ROUTE_KEYS = ["GET /v1/events", "GET /v1/artifacts/:id/content"] as const;
 
 const MAX_JSON_BODY_BYTES = 2 * 1024 * 1024;
 
@@ -158,12 +155,7 @@ const cleanupPersistedRunContainers = (runs: Snapshot["runs"]) => {
 const isJsonRoute = (method: string, pathname: string) => {
   if (
     (method === "GET" &&
-      [
-        "/v1/health",
-        "/v1/browser/session",
-        "/v1/status",
-        "/v1/openapi.json",
-      ].includes(pathname)) ||
+      ["/v1/health", "/v1/browser/session", "/v1/status", "/v1/openapi.json"].includes(pathname)) ||
     (method === "POST" &&
       [
         "/v1/browser/bootstrap",
@@ -332,11 +324,17 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
     yield* store.interruptActiveRuns(Date.now());
     const recovered = yield* store.snapshot();
     cleanupPersistedRunContainers(recovered.runs);
+    const runtime = browserRuntimeResolver(
+      options.provider,
+      options.executionBoundary,
+      options.dataRoot,
+    );
+    runtime();
     const dependencies: HttpApiDependencies = {
       ...options,
       owner,
       store,
-      runtime: browserRuntime(options.provider, options.executionBoundary, options.dataRoot),
+      runtime,
     };
     const api = makeHttpApiHandler(dependencies);
     const hub = new TransitionHub(store);

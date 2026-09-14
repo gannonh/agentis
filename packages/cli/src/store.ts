@@ -462,12 +462,8 @@ export type Store = {
     readonly nowMs: number;
     readonly runtime: BrowserRuntime;
   }) => Effect.Effect<WorkspaceSnapshotType, StoreError>;
-  readonly transitionsAfter: (
-    cursor: CursorType,
-  ) => Effect.Effect<TransitionWindow, StoreError>;
-  readonly artifact: (
-    id: ArtifactIdType,
-  ) => Effect.Effect<ArtifactRow | null, StoreError>;
+  readonly transitionsAfter: (cursor: CursorType) => Effect.Effect<TransitionWindow, StoreError>;
+  readonly artifact: (id: ArtifactIdType) => Effect.Effect<ArtifactRow | null, StoreError>;
   readonly interruptActiveRuns: (nowMs: number) => Effect.Effect<readonly RunId[], StoreError>;
   readonly close: () => Effect.Effect<void>;
 };
@@ -865,9 +861,7 @@ const publicPendingPrompt = (status: string, value: string | null) => {
       });
       return Schema.decodeUnknownSync(PendingPrompt)({ kind: "questions", questions });
     }
-  } catch {
-    // A plain provider prompt remains answerable through the stable fallback key.
-  }
+  } catch {}
   return Schema.decodeUnknownSync(PendingPrompt)({
     kind: "questions",
     questions: [{ key: "response", prompt: value, options: [] }],
@@ -1041,10 +1035,9 @@ const transitionsAfter = (db: DatabaseSync, cursor: CursorType): TransitionWindo
   db.exec("BEGIN DEFERRED");
   try {
     const requested = Number(cursor);
-    const highWater = row<{ cursor: number }>(
-      db,
-      "SELECT COALESCE(MAX(seq), 0) AS cursor FROM events",
-    )?.cursor ?? 0;
+    const highWater =
+      row<{ cursor: number }>(db, "SELECT COALESCE(MAX(seq), 0) AS cursor FROM events")?.cursor ??
+      0;
     const replayFloor = Math.max(0, highWater - EVENT_REPLAY_LIMIT);
     if (requested < replayFloor) {
       throw new ReplayCursorError(
@@ -1126,11 +1119,7 @@ const expireApprovalAndRun = (
   emit(db, "run_failed", { runId: approval.run_id, error: "approval expired", commandId }, nowMs);
 };
 
-const dispatch = (
-  db: DatabaseSync,
-  input: ApplyInput,
-  stagedPaths: string[],
-): CommandReceipt => {
+const dispatch = (db: DatabaseSync, input: ApplyInput, stagedPaths: string[]): CommandReceipt => {
   const commandId = newCommandId();
   const command = input.command;
   switch (command.kind) {
@@ -2020,7 +2009,9 @@ const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = true): Snapshot 
       updatedAt: item.updated_at,
     })),
     runs: runRows.map((item) => {
-      const providerState = Schema.decodeUnknownSync(ProviderState)(JSON.parse(item.provider_state));
+      const providerState = Schema.decodeUnknownSync(ProviderState)(
+        JSON.parse(item.provider_state),
+      );
       return {
         id: item.id as RunId,
         taskId: item.task_id as TaskId,
@@ -2325,15 +2316,15 @@ export const mutateForEngine = (storePath: string) => {
             runId,
             authorKind: "bot",
             authorName: frozen.bot,
-          kind: "question",
-          importance: "blocking",
-          dedupeKey: `question:${runId}:${digest(prompt)}`,
-          body:
-            publicPendingPrompt("waiting_input", prompt)?.questions
-              .map((question) => question.prompt)
-              .join("\n") ?? prompt,
-          nowMs,
-        });
+            kind: "question",
+            importance: "blocking",
+            dedupeKey: `question:${runId}:${digest(prompt)}`,
+            body:
+              publicPendingPrompt("waiting_input", prompt)
+                ?.questions.map((question) => question.prompt)
+                .join("\n") ?? prompt,
+            nowMs,
+          });
         }
         emit(db, "waiting_input", { runId, prompt }, nowMs);
       }),

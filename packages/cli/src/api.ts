@@ -1,9 +1,4 @@
-import {
-  HttpApi,
-  HttpApiEndpoint,
-  HttpApiGroup,
-  HttpApiSchema,
-} from "@effect/platform";
+import { HttpApi, HttpApiEndpoint, HttpApiGroup, HttpApiSchema } from "@effect/platform";
 import { Schema } from "effect";
 import {
   ArtifactId,
@@ -25,6 +20,7 @@ import {
   PublicArtifact,
   ResyncRequiredApiError,
   SetupAcknowledgement,
+  StatusQuery,
   UnauthorizedApiError,
   WorkspaceSnapshot,
 } from "./schema.js";
@@ -66,6 +62,7 @@ export const JsonApiGroup = HttpApiGroup.make("json")
   .add(
     HttpApiEndpoint.get("status", "/v1/status")
       .setHeaders(RequestHeaders)
+      .setUrlParams(StatusQuery)
       .addSuccess(WorkspaceSnapshot),
   )
   .add(
@@ -111,7 +108,4 @@ const ApiWithErrors = HttpApi.make("agentis")
 export const AgentisJsonApi = ApiWithErrors.add(JsonApiGroup);
 export const AgentisApi = ApiWithErrors.add(JsonApiGroup).add(RawApiGroup);
 
-export const RAW_ROUTE_KEYS = [
-  "GET /v1/events",
-  "GET /v1/artifacts/:id/content",
-] as const;
+export const RAW_ROUTE_KEYS = ["GET /v1/events", "GET /v1/artifacts/:id/content"] as const;

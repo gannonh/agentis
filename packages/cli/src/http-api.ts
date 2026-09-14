@@ -1,9 +1,4 @@
-import {
-  HttpApiBuilder,
-  HttpServer,
-  HttpServerResponse,
-  OpenApi,
-} from "@effect/platform";
+import { HttpApiBuilder, HttpServer, HttpServerResponse, OpenApi } from "@effect/platform";
 import { createHash, randomBytes } from "node:crypto";
 import { Effect, Layer, Schema } from "effect";
 import { AgentisApi, AgentisJsonApi, type RequestHeaders } from "./api.js";
@@ -38,8 +33,10 @@ export type HttpApiDependencies = {
   readonly executionBoundary: ExecutionBoundary;
   readonly owner: OwnerCredential;
   readonly store: Store;
-  readonly runtime: BrowserRuntime;
+  readonly runtime: BrowserRuntimeResolver;
 };
+
+export type BrowserRuntimeResolver = (force?: boolean) => BrowserRuntime;
 
 export type RequestAuthority =
   | { readonly channel: "cli"; readonly principal: Principal }
@@ -87,8 +84,7 @@ export const browserRuntime = (
     provider,
     model:
       provider === "codex" ? "gpt-5.6-sol" : provider === "claude" ? "claude-sonnet-5" : "fake",
-    authMode:
-      provider === "codex" ? CODEX_AUTH_MODE : provider === "claude" ? "api-key" : "none",
+    authMode: provider === "codex" ? CODEX_AUTH_MODE : provider === "claude" ? "api-key" : "none",
     executionLocation:
       executionBoundary === "docker-fixture-container"
         ? "isolated fixture container"
@@ -97,6 +93,23 @@ export const browserRuntime = (
           : "local daemon scratch",
     eligible: readiness.eligible,
     ineligibleReason: readiness.reason,
+  };
+};
+
+export const browserRuntimeResolver = (
+  provider: ProviderKind,
+  executionBoundary: ExecutionBoundary,
+  dataRoot: string,
+): BrowserRuntimeResolver => {
+  let current: BrowserRuntime | null = null;
+  let checkedAt = 0;
+  return (force = false) => {
+    const now = Date.now();
+    if (force || current === null || now - checkedAt >= 1_000) {
+      current = browserRuntime(provider, executionBoundary, dataRoot);
+      checkedAt = now;
+    }
+    return current;
   };
 };
 
@@ -132,10 +145,7 @@ export const authorizeRead = (
     } satisfies RequestAuthority;
   });
 
-const authorizeBrowserMutation = (
-  dependencies: HttpApiDependencies,
-  headers: HeaderValues,
-) =>
+const authorizeBrowserMutation = (dependencies: HttpApiDependencies, headers: HeaderValues) =>
   Effect.gen(function* () {
     const authority = yield* authorizeRead(dependencies, headers);
     if (authority.channel !== "browser") {
@@ -160,24 +170,25 @@ const authorizeBrowserMutation = (
     return authority;
   });
 
-export const authorizeMutation = (
-  dependencies: HttpApiDependencies,
-  headers: HeaderValues,
-) =>
+export const authorizeMutation = (dependencies: HttpApiDependencies, headers: HeaderValues) =>
   Effect.gen(function* () {
     const authority = yield* authorizeRead(dependencies, headers);
     if (authority.channel === "cli") return authority;
     return yield* authorizeBrowserMutation(dependencies, headers);
   });
 
-const statusFor = (dependencies: HttpApiDependencies, authority: RequestAuthority) =>
+const statusFor = (
+  dependencies: HttpApiDependencies,
+  authority: RequestAuthority,
+  forceConnectionCheck = false,
+) =>
   dependencies.store
     .workspaceSnapshot({
       ...(authority.channel === "browser"
         ? { tokenHash: authority.tokenHash }
         : { ownerSession: authority.principal.sessionId }),
       nowMs: Date.now(),
-      runtime: dependencies.runtime,
+      runtime: dependencies.runtime(forceConnectionCheck),
     })
     .pipe(Effect.mapError((error) => conflict(error.message)));
 
@@ -282,10 +293,13 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
       .handle("acknowledgeSetup", ({ headers, payload }) =>
         Effect.gen(function* () {
           const authority = yield* authorizeBrowserMutation(dependencies, headers);
-          const runtime = dependencies.runtime;
+          const runtime = dependencies.runtime(true);
           if (!runtime.eligible || payload.provider !== runtime.provider) {
             return yield* Effect.fail(
-              forbidden("configured provider is not eligible for Mara coordination"),
+              forbidden(
+                runtime.ineligibleReason ??
+                  "configured provider is not eligible for Mara coordination",
+              ),
             );
           }
           const acknowledged = yield* dependencies.store
@@ -300,26 +314,24 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
           return (yield* statusFor(dependencies, authority)).session;
         }),
       )
-      .handle("status", ({ headers }) =>
+      .handle("status", ({ headers, urlParams }) =>
         Effect.gen(function* () {
           const authority = yield* authorizeRead(dependencies, headers);
-          return yield* statusFor(dependencies, authority);
+          return yield* statusFor(dependencies, authority, urlParams.checkConnection === "true");
         }),
       )
       .handle("command", ({ headers, payload }) =>
         Effect.gen(function* () {
           const authority = yield* authorizeMutation(dependencies, headers);
-          if (
-            authority.channel === "browser" &&
-            payload.command.kind === "submit_task" &&
-            !dependencies.runtime.eligible
-          ) {
-            return yield* Effect.fail(
-              forbidden(
-                dependencies.runtime.ineligibleReason ??
-                  "configured provider connection is not ready",
-              ),
-            );
+          if (authority.channel === "browser" && payload.command.kind === "submit_task") {
+            const runtime = dependencies.runtime(true);
+            if (!runtime.eligible) {
+              return yield* Effect.fail(
+                forbidden(
+                  runtime.ineligibleReason ?? "configured provider connection is not ready",
+                ),
+              );
+            }
           }
           const nowMs = Date.now();
           const receipt = yield* dependencies.store

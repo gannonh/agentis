@@ -295,6 +295,7 @@ class ViewStore {
   start = vi.fn(async () => undefined);
   dispose = vi.fn();
   acknowledgeSetup = vi.fn(async () => undefined);
+  checkConnection = vi.fn(async () => undefined);
   retryCommand = vi.fn(async () => undefined);
   clearError = vi.fn();
   sendCommand = vi.fn(async (label: string, command: Command) => {
@@ -340,6 +341,46 @@ afterEach(async () => {
 });
 
 describe("browser shared room", () => {
+  it("states the setup boundary and lets the owner recheck the provider connection", async () => {
+    const current = readySnapshot();
+    const store = new ViewStore(current);
+    store.state = {
+      ...store.state,
+      phase: "setup",
+      session: {
+        ...current.session,
+        provider: {
+          ...current.session.provider,
+          eligible: false,
+          ineligibleReason: "The configured provider connection is unavailable.",
+          acknowledgedAt: null,
+        },
+        sources: [],
+      },
+      snapshot: {
+        ...current,
+        session: {
+          ...current.session,
+          provider: {
+            ...current.session.provider,
+            eligible: false,
+            ineligibleReason: "The configured provider connection is unavailable.",
+            acknowledgedAt: null,
+          },
+          sources: [],
+        },
+      },
+    };
+    const rendered = await render(store);
+    mounted = rendered.root;
+
+    expect(rendered.container.textContent).toContain(
+      "Computer control, scheduling, remote execution, and source writes are unavailable",
+    );
+    await act(async () => button("Check connection").click());
+    expect(store.checkConnection).toHaveBeenCalledOnce();
+  });
+
   it("renders retained text safely and restores exact focus after the artifact dialog closes", async () => {
     const store = new ViewStore();
     const rendered = await render(store);
@@ -374,8 +415,8 @@ describe("browser shared room", () => {
     const store = new ViewStore(readySnapshot({ waiting: true }));
     const rendered = await render(store);
     mounted = rendered.root;
-    const answer = [...rendered.container.querySelectorAll("select")].find(
-      (candidate) => candidate.parentElement?.textContent?.includes("Pick a color"),
+    const answer = [...rendered.container.querySelectorAll("select")].find((candidate) =>
+      candidate.parentElement?.textContent?.includes("Pick a color"),
     );
     if (!(answer instanceof HTMLSelectElement)) throw new Error("missing structured question");
     await act(async () => {

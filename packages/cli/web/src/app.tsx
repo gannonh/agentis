@@ -98,13 +98,26 @@ const Setup = ({ store, snapshot }: { store: WorkspaceStore; snapshot: Workspace
           Briefing packets are materialized read-only input. Agentis does not connect to or write to
           GitHub.
         </p>
+        <p className="field-help">
+          Computer control, scheduling, remote execution, and source writes are unavailable in this
+          slice.
+        </p>
       </fieldset>
-      <button
-        disabled={!provider.eligible || sources.length === 0 || store.getState().busy}
-        onClick={() => void store.acknowledgeSetup(provider.kind, sources)}
-      >
-        Acknowledge and enter workspace
-      </button>
+      <div className="button-row">
+        <button
+          disabled={!provider.eligible || sources.length === 0 || store.getState().busy}
+          onClick={() => void store.acknowledgeSetup(provider.kind, sources)}
+        >
+          Acknowledge and enter workspace
+        </button>
+        <button
+          className="secondary-button"
+          disabled={store.getState().busy}
+          onClick={() => void store.checkConnection()}
+        >
+          Check connection
+        </button>
+      </div>
     </section>
   );
 };
@@ -156,8 +169,9 @@ const RequestForm = ({
             text: normalizedText,
             citations,
           };
-    void store
-      .sendCommand("Submit request", {
+    void store.sendCommand(
+      "Submit request",
+      {
         kind: "submit_task",
         coordinator: "mara",
         brief: normalizedOutcome,
@@ -167,9 +181,8 @@ const RequestForm = ({
           .map((item) => item.trim())
           .filter(Boolean),
         source,
-      })
-      .then((receipt) => {
-        if (!receipt?.accepted) return;
+      },
+      (receipt) => {
         if (receipt.taskId) onCreated(receipt.taskId);
         setOutcome("");
         setConstraints("");
@@ -177,7 +190,8 @@ const RequestForm = ({
         setCitationLabel("");
         setCitationExcerpt("");
         setCitationUrl("");
-      });
+      },
+    );
   };
 
   const githubInvalid =
@@ -257,7 +271,11 @@ const RequestForm = ({
         {sourceKind === "github_briefing" ? (
           <label>
             Source URL <span className="optional">optional</span>
-            <input onChange={(event) => setSourceUrl(event.target.value)} type="url" value={sourceUrl} />
+            <input
+              onChange={(event) => setSourceUrl(event.target.value)}
+              type="url"
+              value={sourceUrl}
+            />
           </label>
         ) : null}
         <label>
@@ -275,7 +293,10 @@ const RequestForm = ({
           <div className="citation-inputs">
             <label>
               Citation label
-              <input onChange={(event) => setCitationLabel(event.target.value)} value={citationLabel} />
+              <input
+                onChange={(event) => setCitationLabel(event.target.value)}
+                value={citationLabel}
+              />
             </label>
             <label>
               Exact excerpt
@@ -287,7 +308,11 @@ const RequestForm = ({
             </label>
             <label>
               Citation URL <span className="optional">optional</span>
-              <input onChange={(event) => setCitationUrl(event.target.value)} type="url" value={citationUrl} />
+              <input
+                onChange={(event) => setCitationUrl(event.target.value)}
+                type="url"
+                value={citationUrl}
+              />
             </label>
           </div>
         </details>
@@ -411,7 +436,9 @@ const WaitingActions = ({
                   value={answers[question.key] ?? ""}
                 >
                   <option value="">Select an answer</option>
-                  {question.options.map((option) => <option key={option}>{option}</option>)}
+                  {question.options.map((option) => (
+                    <option key={option}>{option}</option>
+                  ))}
                 </select>
               ) : (
                 <textarea
@@ -472,7 +499,9 @@ const HandoffAction = ({
   snapshot: WorkspaceSnapshot;
   task: PublicTask;
 }) => {
-  const [context, setContext] = useState("Review Mara’s result and return one concise specialist draft.");
+  const [context, setContext] = useState(
+    "Review Mara’s result and return one concise specialist draft.",
+  );
   const handoff = snapshot.handoffs.find((item) => item.taskId === task.id);
   const maraRun = snapshot.runs.find((run) => {
     const config = configFor(snapshot, run);
@@ -558,7 +587,9 @@ const Conversation = ({ snapshot, task }: { snapshot: WorkspaceSnapshot; task: P
               <div className="message-meta">
                 <strong>{message.authorName === "owner" ? "You" : message.authorName}</strong>
                 <span>{message.authorRole}</span>
-                <time dateTime={new Date(message.createdAt).toISOString()}>{time(message.createdAt)}</time>
+                <time dateTime={new Date(message.createdAt).toISOString()}>
+                  {time(message.createdAt)}
+                </time>
               </div>
               <p>{message.body}</p>
             </>
@@ -632,7 +663,12 @@ export const App = ({ store }: { readonly store: WorkspaceStore }) => {
     );
   }
 
-  if (state.phase === "setup") return <main className="centered-shell"><Setup snapshot={state.snapshot} store={store} /></main>;
+  if (state.phase === "setup")
+    return (
+      <main className="centered-shell">
+        <Setup snapshot={state.snapshot} store={store} />
+      </main>
+    );
 
   const snapshot = state.snapshot;
   const artifacts = selectedTask
@@ -717,7 +753,9 @@ export const App = ({ store }: { readonly store: WorkspaceStore }) => {
           <section className="empty-room">
             <p className="eyebrow">Shared room</p>
             <h2>Your first request will appear here</h2>
-            <p>Mara’s questions, decisions, handoffs, progress, and retained results stay together.</p>
+            <p>
+              Mara’s questions, decisions, handoffs, progress, and retained results stay together.
+            </p>
           </section>
         )}
       </main>

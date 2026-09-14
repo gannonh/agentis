@@ -2,15 +2,10 @@ import { DatabaseSync } from "node:sqlite";
 import { createHash } from "node:crypto";
 import { request as httpRequest } from "node:http";
 import { createServer } from "node:net";
-import {
-  mkdtempSync,
-  readFileSync,
-  symlinkSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, readFileSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
 import { describe, expect, it, vi } from "vitest";
 import { RAW_ROUTE_KEYS } from "../src/api.js";
@@ -19,6 +14,8 @@ import { runCli } from "../src/cli.js";
 import { RAW_HANDLER_ROUTE_KEYS, startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
 import { WorkspaceSnapshot } from "../src/schema.js";
+
+const codexStub = fileURLToPath(new URL("./codex-stub.mjs", import.meta.url));
 
 const port = () =>
   new Promise<number>((resolve, reject) => {
@@ -226,9 +223,7 @@ describe("browser HTTP boundary", () => {
       expect(content.status).toBe(200);
       expect(content.headers.get("content-disposition")).toMatch(/^inline/);
       expect(await content.text()).toContain("A cited business recommendation");
-      expect(artifact.citations).toEqual([
-        { label: "Owner note", excerpt: "supplied context" },
-      ]);
+      expect(artifact.citations).toEqual([{ label: "Owner note", excerpt: "supplied context" }]);
 
       const github = await browserPost(endpoint, session, "/v1/commands", {
         idempotencyKey: newIdempotencyKey(),
@@ -294,7 +289,11 @@ describe("browser HTTP boundary", () => {
 
   it("exposes and enforces configured provider connection readiness", async () => {
     const originalStub = process.env.AGENTIS_CODEX_STUB;
-    delete process.env.AGENTIS_CODEX_STUB;
+    const unavailableStub = join(
+      mkdtempSync(join(tmpdir(), "agentis-browser-readiness-")),
+      "missing-codex-stub.mjs",
+    );
+    process.env.AGENTIS_CODEX_STUB = unavailableStub;
     const { endpoint, owner, server } = await boot("codex");
     try {
       const session = await browserSession(endpoint, owner.token);
@@ -304,7 +303,7 @@ describe("browser HTTP boundary", () => {
         eligible: false,
         acknowledgedAt: null,
       });
-      expect(status.session.provider.ineligibleReason).toMatch(/requires.*provider container/i);
+      expect(status.session.provider.ineligibleReason).toMatch(/test connection is unavailable/i);
       const setup = await browserPost(endpoint, session, "/v1/browser/setup", {
         provider: "codex",
         sources: ["pasted"],
@@ -326,8 +325,23 @@ describe("browser HTTP boundary", () => {
       expect(staleAcknowledgement.status).toBe(403);
       expect(await staleAcknowledgement.json()).toMatchObject({
         code: "forbidden",
-        message: expect.stringMatching(/requires.*provider container/i),
+        message: expect.stringMatching(/test connection is unavailable/i),
       });
+
+      process.env.AGENTIS_CODEX_STUB = codexStub;
+      expect((await browserStatus(endpoint, session)).session.provider.eligible).toBe(false);
+      const checked = await fetch(new URL("/v1/status?checkConnection=true", endpoint), {
+        headers: { cookie: session.cookie },
+      });
+      expect(checked.status).toBe(200);
+      expect(
+        Schema.decodeUnknownSync(WorkspaceSnapshot)(await checked.json()).session.provider,
+      ).toMatchObject({ eligible: true, ineligibleReason: null });
+      const connectedSetup = await browserPost(endpoint, session, "/v1/browser/setup", {
+        provider: "codex",
+        sources: ["pasted"],
+      });
+      expect(connectedSetup.status).toBe(200);
     } finally {
       if (originalStub === undefined) delete process.env.AGENTIS_CODEX_STUB;
       else process.env.AGENTIS_CODEX_STUB = originalStub;
@@ -351,9 +365,9 @@ describe("browser HTTP boundary", () => {
         body: JSON.stringify({ code }),
       });
       expect(wrongOrigin.status).toBe(403);
-      const document = (await (
-        await fetch(new URL("/v1/openapi.json", endpoint))
-      ).json()) as { paths: Record<string, unknown> };
+      const document = (await (await fetch(new URL("/v1/openapi.json", endpoint))).json()) as {
+        paths: Record<string, unknown>;
+      };
       expect(Object.keys(document.paths)).toEqual(
         expect.arrayContaining([
           "/v1/health",
@@ -415,9 +429,11 @@ describe("browser HTTP boundary", () => {
       expect(unauthenticated.status).toBe(401);
       writeFileSync(artifact.path, "changed");
       expect(
-        (await fetch(new URL(artifact.contentUrl, endpoint), {
-          headers: { cookie: session.cookie },
-        })).status,
+        (
+          await fetch(new URL(artifact.contentUrl, endpoint), {
+            headers: { cookie: session.cookie },
+          })
+        ).status,
       ).toBe(409);
 
       const outsideRoot = mkdtempSync(join(tmpdir(), "agentis-artifact-outside-"));
@@ -426,18 +442,22 @@ describe("browser HTTP boundary", () => {
       unlinkSync(artifact.path);
       symlinkSync(outside, artifact.path);
       expect(
-        (await fetch(new URL(artifact.contentUrl, endpoint), {
-          headers: { cookie: session.cookie },
-        })).status,
+        (
+          await fetch(new URL(artifact.contentUrl, endpoint), {
+            headers: { cookie: session.cookie },
+          })
+        ).status,
       ).toBe(409);
 
       const db = new DatabaseSync(server.store.path);
       db.prepare("UPDATE artifacts SET path=? WHERE id=?").run(outside, artifact.id);
       db.close();
       expect(
-        (await fetch(new URL(artifact.contentUrl, endpoint), {
-          headers: { cookie: session.cookie },
-        })).status,
+        (
+          await fetch(new URL(artifact.contentUrl, endpoint), {
+            headers: { cookie: session.cookie },
+          })
+        ).status,
       ).toBe(409);
 
       const large = Buffer.alloc(16 * 1024 * 1024 + 1, 0x61);

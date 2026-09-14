@@ -64,9 +64,14 @@ export const apiClient = {
       }),
     );
   },
-  status: async () => {
+  status: async (checkConnection = false) => {
     const current = await client();
-    return result(current.json.status({ headers: {} }));
+    return result(
+      current.json.status({
+        headers: {},
+        urlParams: checkConnection ? { checkConnection: "true" } : {},
+      }),
+    );
   },
   command: async (csrfToken: string, request: CommandRequest) => {
     const current = await client();

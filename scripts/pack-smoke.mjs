@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, realpathSync, lstatSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync, realpathSync } from "node:fs";
 import { spawn, execFile } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -46,6 +46,18 @@ try {
   const tarball = readdirSync(packDir).find((name) => name.endsWith(".tgz"));
   assert.ok(tarball, "pack produced no tarball");
   await run("npm", ["install", "--prefix", installDir, join(packDir, tarball)]);
+  const installedPackage = join(installDir, "node_modules/@agentis-labs/cli");
+  const webFiles = readdirSync(join(installedPackage, "dist/web"), { recursive: true }).map(String);
+  assert.ok(webFiles.includes("index.html"), "pack omitted the browser shell");
+  assert.ok(
+    webFiles.some((path) => path.endsWith(".js")),
+    "pack omitted browser JavaScript",
+  );
+  assert.ok(
+    webFiles.some((path) => path.endsWith(".css")),
+    "pack omitted browser CSS",
+  );
+  assert.ok(!webFiles.some((path) => path.endsWith(".map")), "pack exposed browser source maps");
   const bin = join(installDir, "node_modules/.bin/agentis");
   launch = spawn(bin, ["verify", "launch"], {
     env: { ...process.env, ...canaries.env },
@@ -82,27 +94,83 @@ try {
     canaries,
     realpathSync(join(installDir, "node_modules/@agentis-labs/cli/dist/fixture-daemon.mjs")),
   );
-  const { stdout } = await exec(bin, [
-    "task",
-    "submit",
+  const endpoint = new URL(report.endpoint);
+  const shell = await fetch(endpoint);
+  assert.equal(shell.status, 200);
+  assert.match(await shell.text(), /<div id="root"><\/div>/);
+
+  const { stdout: webOutput } = await exec(bin, [
+    "web",
     "--endpoint",
     report.endpoint,
     "--data-root",
     report.dataRoot,
-    "--brief",
-    "pack-smoke",
-    "--fixture",
-    "smoke",
   ]);
-  const receipt = JSON.parse(stdout);
+  const browserUrl = new URL(webOutput.trim());
+  assert.equal(browserUrl.origin, endpoint.origin);
+  const bootstrap = new URLSearchParams(browserUrl.hash.slice(1)).get("bootstrap");
+  assert.ok(bootstrap, "web command omitted its fragment bootstrap");
+  const exchanged = await fetch(new URL("/v1/browser/session", endpoint), {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: endpoint.origin },
+    body: JSON.stringify({ code: bootstrap }),
+  });
+  assert.equal(exchanged.status, 200);
+  const exchange = await exchanged.json();
+  const cookie = exchanged.headers
+    .getSetCookie()
+    .map((value) => value.split(";", 1)[0])
+    .join("; ");
+  assert.ok(cookie.includes("agentis_session="), "session exchange omitted its cookie");
+  const mutationHeaders = {
+    "content-type": "application/json",
+    cookie,
+    origin: endpoint.origin,
+    "x-agentis-csrf": exchange.csrfToken,
+  };
+  const setup = await fetch(new URL("/v1/browser/setup", endpoint), {
+    method: "POST",
+    headers: mutationHeaders,
+    body: JSON.stringify({ provider: "fake", sources: ["pasted"] }),
+  });
+  assert.equal(setup.status, 200);
+
+  const command = {
+    idempotencyKey: `pack_smoke_${Date.now()}`,
+    command: {
+      kind: "submit_task",
+      coordinator: "mara",
+      brief: "pack-smoke",
+      outcome: "pack-smoke",
+      fixture: "smoke",
+      source: {
+        kind: "pasted",
+        label: "Pack smoke input",
+        text: "Materialized read-only pack smoke input.",
+        citations: [{ label: "Pack smoke", excerpt: "read-only pack smoke input" }],
+      },
+    },
+  };
+  const submitted = await fetch(new URL("/v1/commands", endpoint), {
+    method: "POST",
+    headers: mutationHeaders,
+    body: JSON.stringify(command),
+  });
+  assert.equal(submitted.status, 200);
+  const receipt = await submitted.json();
   assert.ok(receipt.accepted && receipt.taskId && receipt.runId, "fake task was not accepted");
-  const token = JSON.parse(readFileSync(join(report.dataRoot, "owner.token"), "utf8")).token;
+  const retried = await fetch(new URL("/v1/commands", endpoint), {
+    method: "POST",
+    headers: mutationHeaders,
+    body: JSON.stringify(command),
+  });
+  assert.equal(retried.status, 200);
+  assert.deepEqual(await retried.json(), { ...receipt, replayed: true, effects: [] });
+
   let snapshot;
   const deadline = Date.now() + 10000;
   for (;;) {
-    const response = await fetch(new URL("/v1/status", report.endpoint), {
-      headers: { authorization: `Bearer ${token}` },
-    });
+    const response = await fetch(new URL("/v1/status", endpoint), { headers: { cookie } });
     assert.equal(response.status, 200);
     snapshot = await response.json();
     if (snapshot.runs.find((item) => item.id === receipt.runId)?.status === "succeeded") break;
@@ -110,19 +178,34 @@ try {
     await delay(100);
   }
   const artifact = snapshot.artifacts.find((item) => item.runId === receipt.runId);
-  assert.ok(
-    artifact && artifact.path.startsWith(report.workspace + "/"),
-    "artifact outside scratch",
-  );
-  assert.ok(lstatSync(artifact.path).isFile(), "artifact must be a regular file");
-  assert.ok(
-    realpathSync(artifact.path).startsWith(realpathSync(report.workspace) + "/"),
-    "artifact resolves outside scratch",
-  );
-  const bytes = readFileSync(artifact.path);
+  assert.ok(artifact, "packaged task omitted its artifact");
+  assert.equal(Object.hasOwn(artifact, "path"), false, "public artifact exposed a private path");
+  const metadata = await fetch(new URL(artifact.metadataUrl, endpoint), {
+    headers: { cookie },
+  });
+  assert.equal(metadata.status, 200);
+  assert.deepEqual(await metadata.json(), artifact);
+  const content = await fetch(new URL(artifact.contentUrl, endpoint), {
+    headers: { cookie },
+  });
+  assert.equal(content.status, 200);
+  const bytes = Buffer.from(await content.arrayBuffer());
   assert.equal(bytes.toString(), "# pack-smoke\n");
   assert.equal(bytes.length, artifact.byteSize);
   assert.equal(createHash("sha256").update(bytes).digest("hex"), artifact.sha256);
+  assert.deepEqual(artifact.citations, [
+    { label: "Pack smoke", excerpt: "read-only pack smoke input" },
+  ]);
+  const refreshed = await (
+    await fetch(new URL("/v1/status", endpoint), { headers: { cookie } })
+  ).json();
+  assert.equal(refreshed.tasks.filter((item) => item.id === receipt.taskId).length, 1);
+  assert.equal(refreshed.artifacts.filter((item) => item.id === artifact.id).length, 1);
+  assert.equal(
+    refreshed.messages.filter((item) => item.taskId === receipt.taskId && item.kind === "request")
+      .length,
+    1,
+  );
   launch.kill("SIGTERM");
   const stopped = await withTimeout(exit, 15000, "launcher did not stop");
   assert.ok(stopped.code === 0 || stopped.signal === "SIGTERM", "launcher failed during cleanup");

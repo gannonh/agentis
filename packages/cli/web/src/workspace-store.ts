@@ -4,6 +4,7 @@ import {
   IdempotencyKey,
   Transition,
   type Command,
+  type CommandReceipt,
   type OwnerSession,
   type ProviderKind,
   type PublicArtifact,
@@ -87,7 +88,9 @@ export const consumeBootstrapFragment = (
   if (code === null) return null;
   parameters.delete("bootstrap");
   const remaining = parameters.toString();
-  replaceUrl(`${location.pathname}${location.search}${remaining.length > 0 ? `#${remaining}` : ""}`);
+  replaceUrl(
+    `${location.pathname}${location.search}${remaining.length > 0 ? `#${remaining}` : ""}`,
+  );
   return code;
 };
 
@@ -118,8 +121,12 @@ export class WorkspaceStore {
   #reconnectDelayMs = 500;
   #refreshFlight: Promise<void> | null = null;
   #pendingCursor = 0;
-  #retryRequest: { readonly label: string; readonly request: typeof CommandRequest.Type } | null =
-    null;
+  #retryRequest: {
+    readonly label: string;
+    readonly request: typeof CommandRequest.Type;
+    readonly onAccepted?: (receipt: CommandReceipt) => void;
+  } | null = null;
+  #artifactGeneration = 0;
   #disposed = false;
 
   constructor(api: WorkspaceApi = apiClient, browser: BrowserBindings = browserBindings()) {
@@ -143,10 +150,7 @@ export class WorkspaceStore {
   async start() {
     this.#update({ phase: "starting", error: null });
     try {
-      const bootstrap = consumeBootstrapFragment(
-        this.#browser.location,
-        this.#browser.replaceUrl,
-      );
+      const bootstrap = consumeBootstrapFragment(this.#browser.location, this.#browser.replaceUrl);
       if (bootstrap !== null) {
         const exchanged = await this.#api.exchangeBootstrap(bootstrap);
         this.#csrfToken = exchanged.csrfToken;
@@ -168,7 +172,9 @@ export class WorkspaceStore {
 
   async acknowledgeSetup(provider: ProviderKind, sources: readonly SourceKind[]) {
     if (!this.#csrfToken) {
-      this.#update({ error: "This owner session is missing its CSRF token. Open a new agentis web URL." });
+      this.#update({
+        error: "This owner session is missing its CSRF token. Open a new agentis web URL.",
+      });
       return;
     }
     this.#update({ busy: true, error: null });
@@ -184,13 +190,28 @@ export class WorkspaceStore {
     }
   }
 
-  async refresh(reconnect = false) {
+  async checkConnection() {
+    if (this.#state.busy) return;
+    this.#update({ busy: true, error: null });
+    try {
+      if (this.#refreshFlight) await this.#refreshFlight.catch(() => undefined);
+      if (this.#state.phase !== "signed_out") await this.refresh(false, true);
+    } catch {
+      // refresh records the readable error or signed-out state.
+    } finally {
+      this.#update({ busy: false });
+    }
+  }
+
+  async refresh(reconnect = false, checkConnection = false) {
     if (this.#refreshFlight) return this.#refreshFlight;
     this.#refreshFlight = (async () => {
       try {
         let snapshot: WorkspaceSnapshot;
+        let forceConnectionCheck = checkConnection;
         do {
-          snapshot = await this.#api.status();
+          snapshot = await this.#api.status(forceConnectionCheck);
+          forceConnectionCheck = false;
           this.#pendingCursor = Math.max(this.#pendingCursor, Number(snapshot.cursor));
           this.#update({
             phase: sessionReady(snapshot.session) ? "ready" : "setup",
@@ -214,14 +235,30 @@ export class WorkspaceStore {
     return this.#refreshFlight;
   }
 
-  async sendCommand(label: string, command: Command) {
+  async sendCommand(
+    label: string,
+    command: Command,
+    onAccepted?: (receipt: CommandReceipt) => void,
+  ) {
+    if (!this.#csrfToken) {
+      this.#update({
+        error: "This owner session is missing its CSRF token. Open a new agentis web URL.",
+        retryLabel: null,
+      });
+      return;
+    }
+    if (this.#retryRequest !== null) {
+      this.#update({
+        error: `Retry ${this.#retryRequest.label.toLowerCase()} before starting another command.`,
+        retryLabel: this.#retryRequest.label,
+      });
+      return;
+    }
     const request = Schema.decodeUnknownSync(CommandRequest)({
-      idempotencyKey: Schema.decodeUnknownSync(IdempotencyKey)(
-        `web_${this.#browser.randomUuid()}`,
-      ),
+      idempotencyKey: Schema.decodeUnknownSync(IdempotencyKey)(`web_${this.#browser.randomUuid()}`),
       command,
     });
-    this.#retryRequest = { label, request };
+    this.#retryRequest = { label, request, ...(onAccepted ? { onAccepted } : {}) };
     return this.#dispatchCommand();
   }
 
@@ -235,29 +272,34 @@ export class WorkspaceStore {
     if (!pending || !this.#csrfToken || this.#state.busy) return;
     this.#update({ busy: true, error: null, retryLabel: null });
     try {
-      const receipt = await this.#api.command(this.#csrfToken, pending.request);
+      let receipt: CommandReceipt;
+      try {
+        receipt = await this.#api.command(this.#csrfToken, pending.request);
+      } catch (error) {
+        if (authenticationFailed(error)) {
+          this.#retryRequest = null;
+          this.#signedOut(messageOf(error));
+        } else {
+          this.#update({ error: messageOf(error), retryLabel: pending.label });
+        }
+        return undefined;
+      }
       if (!receipt.accepted) {
         this.#retryRequest = null;
         this.#update({ error: receipt.error ?? `${pending.label} was not accepted.` });
         return receipt;
       }
       this.#retryRequest = null;
-      await this.refresh();
+      pending.onAccepted?.(receipt);
+      await this.refresh().catch(() => undefined);
       return receipt;
-    } catch (error) {
-      if (authenticationFailed(error)) {
-        this.#retryRequest = null;
-        this.#signedOut(messageOf(error));
-      } else {
-        this.#update({ error: messageOf(error), retryLabel: pending.label });
-      }
-      return undefined;
     } finally {
       this.#update({ busy: false });
     }
   }
 
   async openArtifact(artifact: PublicArtifact) {
+    const generation = ++this.#artifactGeneration;
     const previewable = ["text/plain", "text/markdown", "application/json"].includes(
       artifact.mediaType,
     );
@@ -270,8 +312,10 @@ export class WorkspaceStore {
       let bytes = this.#artifactBytes.get(artifact.id);
       if (!bytes) {
         bytes = await this.#api.artifactBytes(artifact.contentUrl);
+        if (generation !== this.#artifactGeneration) return;
         this.#artifactBytes.set(artifact.id, bytes);
       }
+      if (generation !== this.#artifactGeneration) return;
       this.#update({
         artifactPreview: {
           artifact,
@@ -280,6 +324,7 @@ export class WorkspaceStore {
         },
       });
     } catch (error) {
+      if (generation !== this.#artifactGeneration) return;
       this.#update({
         artifactPreview: { artifact, status: "error", error: messageOf(error) },
       });
@@ -287,6 +332,7 @@ export class WorkspaceStore {
   }
 
   closeArtifact() {
+    this.#artifactGeneration += 1;
     this.#update({ artifactPreview: null });
   }
 
@@ -327,11 +373,7 @@ export class WorkspaceStore {
   }
 
   #scheduleResync(generation: number) {
-    if (
-      generation !== this.#eventGeneration ||
-      this.#disposed ||
-      this.#reconnectTimer !== null
-    ) {
+    if (generation !== this.#eventGeneration || this.#disposed || this.#reconnectTimer !== null) {
       return;
     }
     this.#closeEvents();

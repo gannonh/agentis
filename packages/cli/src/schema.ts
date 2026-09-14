@@ -445,6 +445,9 @@ export const BootstrapExchangeResult = Schema.Struct({
   csrfToken: nonEmpty,
   expiresAt: Schema.Number,
 });
+export const StatusQuery = Schema.Struct({
+  checkConnection: Schema.optional(Schema.Literal("true")),
+});
 export const SetupAcknowledgement = Schema.Struct({
   provider: ProviderKind,
   sources: Schema.Array(SourceKind),
