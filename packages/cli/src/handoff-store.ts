@@ -99,11 +99,14 @@ export const rejectHandoff = (
   note(db, handoff, state, reason, nowMs);
   return true;
 };
-const readVerifiedSource = (artifact: {
-  path: string;
-  byte_size: number;
-  sha256: string;
-}, root: string): string | null =>
+const readVerifiedSource = (
+  artifact: {
+    path: string;
+    byte_size: number;
+    sha256: string;
+  },
+  root: string,
+): string | null =>
   readVerifiedFile({
     path: artifact.path,
     root,
@@ -130,11 +133,12 @@ export const proposeHandoff = (
     thread_id: string;
     frozen_json: string;
     brief: string;
+    constraints_json: string;
     action_count: number;
     owner_session: string;
   }>(
     db,
-    `SELECT r.task_id,r.thread_id,r.frozen_json,t.brief,t.action_count,t.owner_session FROM runs r JOIN tasks t ON t.id=r.task_id WHERE r.id=? AND r.status='succeeded' AND t.bot_name='mara' AND json_extract(r.frozen_json,'$.bot')='mara'`,
+    `SELECT r.task_id,r.thread_id,r.frozen_json,t.brief,t.constraints_json,t.action_count,t.owner_session FROM runs r JOIN tasks t ON t.id=r.task_id WHERE r.id=? AND r.status='succeeded' AND t.bot_name='mara' AND json_extract(r.frozen_json,'$.bot')='mara'`,
     [command.sourceRunId],
   );
   if (!source || source.owner_session !== input.principal.sessionId)
@@ -163,10 +167,14 @@ export const proposeHandoff = (
   const sourceDraft = readVerifiedSource(artifact, original.workspaceId);
   if (sourceDraft === null)
     return denied("source draft is missing, changed, oversized, or not a regular file");
+  const constraints = Schema.decodeUnknownSync(Schema.Array(Schema.String))(
+    JSON.parse(source.constraints_json),
+  );
   const context = JSON.stringify({
     sender: "mara",
     sourceRunId: command.sourceRunId,
     brief: source.brief,
+    constraints,
     sourceDraft,
     request: command.context,
   });

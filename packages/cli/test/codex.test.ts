@@ -96,12 +96,17 @@ afterEach(() => {
 });
 
 describe("codex stub protocol", () => {
-  it("completes a smoke turn with an artifact and frozen config", async () => {
+  it("includes retained constraints in the coordinator prompt", async () => {
     const { endpoint, server, owner, dataRoot } = await boot();
     try {
+      const retainedConstraint = "COORDINATOR_CONSTRAINT_731: use only supplied evidence";
       const submitted = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
-        command: { kind: "submit_task", brief: "Reply exactly PROMPT_ONLY_MARKER." },
+        command: {
+          kind: "submit_task",
+          brief: "Reply exactly PROMPT_ONLY_MARKER.",
+          constraints: [retainedConstraint],
+        },
       });
       expect(submitted.json.accepted).toBe(true);
       const snap = await waitFor(
@@ -121,6 +126,17 @@ describe("codex stub protocol", () => {
         provider: "codex",
         executionBoundary: "unverified-host-scratch",
       });
+      const prompt = Schema.decodeUnknownSync(Schema.Struct({ text: Schema.String }))(
+        JSON.parse(
+          readFileSync(
+            join(dataRoot, "scratch", "runs", String(submitted.json.runId), "prompts.jsonl"),
+            "utf8",
+          ).trim(),
+        ),
+      );
+      expect(prompt.text).toBe(
+        `Reply exactly PROMPT_ONLY_MARKER.\n\nOperator constraints:\n- ${retainedConstraint}`,
+      );
     } finally {
       await server.close();
     }

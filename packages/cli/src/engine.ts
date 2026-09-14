@@ -41,6 +41,11 @@ export type DriveInput = {
   readonly loadSession?: boolean;
 };
 
+const constraintBlock = (constraints: readonly string[]) =>
+  constraints.length === 0
+    ? ""
+    : `\n\nOperator constraints:\n${constraints.map((constraint) => `- ${constraint}`).join("\n")}`;
+
 const providerBrief = (snapshot: Snapshot, runId: RunId) => {
   const run = snapshot.runs.find((item) => item.id === runId);
   const task = run ? snapshot.tasks.find((item) => item.id === run.taskId) : undefined;
@@ -58,9 +63,10 @@ const providerBrief = (snapshot: Snapshot, runId: RunId) => {
   });
   if (!bytes) throw new Error("materialized source is missing or changed");
   const text = bytes.toString("utf8");
+  const constraints = constraintBlock(task.constraints);
   return evidence.label === "CLI brief" && text === task.brief
-    ? task.brief
-    : `${task.outcome}\n\nRead-only ${evidence.label}:\n${text}`;
+    ? `${task.brief}${constraints}`
+    : `${task.outcome}${constraints}\n\nRead-only ${evidence.label}:\n${text}`;
 };
 
 export const driveAfterCommit = (input: DriveInput): Effect.Effect<void, Error> => {

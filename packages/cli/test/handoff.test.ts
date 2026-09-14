@@ -95,9 +95,10 @@ describe("bounded handoff", () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
+      const retainedConstraint = "SPECIALIST_CONSTRAINT_947: return one paragraph";
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
-        command: { kind: "submit_task", brief: "smoke" },
+        command: { kind: "submit_task", brief: "smoke", constraints: [retainedConstraint] },
       });
       await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const proposal = {
@@ -145,7 +146,13 @@ describe("bounded handoff", () => {
         .trim()
         .split("\n");
       expect(prompts).toHaveLength(2);
-      expect(JSON.parse(prompts[1] ?? "{}").text).toContain("KAT3242_OK");
+      const providerPrompts = prompts.map((prompt) =>
+        Schema.decodeUnknownSync(Schema.Struct({ text: Schema.String }))(JSON.parse(prompt)),
+      );
+      expect(providerPrompts[1]?.text).toContain("KAT3242_OK");
+      expect(providerPrompts.every((prompt) => prompt.text.includes(retainedConstraint))).toBe(
+        true,
+      );
       expect(done.artifacts[1]?.taskId).toBe(source.json.taskId);
       expect(readFileSync(done.artifacts[1]?.path ?? "", "utf8")).toBe("SPECIALIST_DRAFT");
       expect((await command(endpoint, owner.token, proposal)).json.replayed).toBe(true);
