@@ -1,9 +1,9 @@
 ---
 name: verify-agentis
-description: "Verify Agentis 2.0 through its public CLI and loopback HTTP daemon, especially fake-engine task fixtures and persisted scratch artifacts."
+description: "Verify Agentis 2.0 through its public CLI, browser room, and loopback HTTP daemon."
 ---
 
-Use this skill when an agent needs evidence from the running Agentis CLI/daemon. Work from the repository root. The recipes use the public CLI and `/v1/*` API; they do not open `state.sqlite` or call engine internals. The source contracts are [cli.ts](../../../packages/cli/src/cli.ts), [verify.ts](../../../packages/cli/src/verify.ts), [fixture-runtime.ts](../../../packages/cli/src/fixture-runtime.ts), [fixture-daemon.ts](../../../packages/cli/src/fixture-daemon.ts), [http.ts](../../../packages/cli/src/http.ts), and [schema.ts](../../../packages/cli/src/schema.ts). Read the [feature map](./features/README.md) before selecting a recipe.
+Use this skill when an agent needs evidence from the running Agentis CLI, browser room, or daemon. Work from the repository root. The recipes use only public browser, CLI, and `/v1/*` surfaces; they do not open `state.sqlite` or call engine internals. The source contracts are [cli.ts](../../../packages/cli/src/cli.ts), [verify.ts](../../../packages/cli/src/verify.ts), [fixture-runtime.ts](../../../packages/cli/src/fixture-runtime.ts), [fixture-daemon.ts](../../../packages/cli/src/fixture-daemon.ts), [http.ts](../../../packages/cli/src/http.ts), and [schema.ts](../../../packages/cli/src/schema.ts). Read the [feature map](./features/README.md) before selecting a recipe.
 
 ## Launch
 
@@ -15,7 +15,7 @@ pnpm build
 node packages/cli/dist/bin.js verify launch
 ```
 
-`verify launch` stays in the foreground. It creates a fresh host data root named `agentis-verify-*`, starts the entire fake daemon in a Docker container with `--network none`, and exposes the existing host loopback API through a TCP relay whose connections use `docker exec`. The host root is bind-mounted at the identical absolute path inside the container. The launch writes `executionBoundary: "docker-fixture-container"` to `profiles/verify.json` and prints one JSON readiness object:
+`verify launch` stays in the foreground. It creates a fresh host data root named `agentis-verify-*`, starts the fake daemon in a Docker container with `--network none`, and exposes the host loopback API through a TCP relay that uses `docker exec`. The host root is bind-mounted at the identical absolute path inside the container. The launch writes `executionBoundary: "docker-fixture-container"` to `profiles/verify.json` and prints one JSON readiness object:
 
 ```json
 {
@@ -29,7 +29,7 @@ node packages/cli/dist/bin.js verify launch
 }
 ```
 
-Keep the exact `endpoint`, `dataRoot`, `workspace`, `log`, `containerId`, `containerName`, and `pid` from that object. The port is never guessed. `pid` is the host `docker run` supervisor PID; it is not the daemon's PID inside Docker. `containerId` plus `containerName` identify the launch, while `docker inspect` labels `io.agentis.managed=verify-fixture` and `io.agentis.verify-launch=<launch UUID>` prove ownership. `workspace` is the daemon scratch root; each task artifact is below `workspace/runs/<runId>/`. The daemon is ready when the object has been emitted and `GET /v1/health` returns JSON with `ok: true` through the host relay. `verify launch` has no live provider support and does not establish a Gate 0 or provider eligibility claim.
+Keep the exact `endpoint`, `dataRoot`, `workspace`, `log`, `containerId`, `containerName`, and `pid` from that object. Never guess the port. `pid` is the host `docker run` supervisor PID, not the daemon PID inside Docker. `docker inspect` labels `io.agentis.managed=verify-fixture` and `io.agentis.verify-launch=<launch UUID>` prove container ownership. The identical writable data-root mount proves fixture containment. The daemon is ready after the object appears and `GET /v1/health` returns `ok: true` through the host relay. `verify launch` does not prove a live provider or provider eligibility.
 
 For a one-command run, use [the smoke helper](./helpers/smoke.mjs). It captures readiness, inspects the exact container labels and identical data-root mount, then drives and cleans up. Press `Ctrl-C` in a launcher terminal after a manual drive. Do not start a second `serve` process against the same data root.
 
@@ -58,7 +58,7 @@ node packages/cli/dist/bin.js doctor \
   --data-root "$DATA_ROOT"
 ```
 
-`doctor` performs unauthenticated `GET /v1/health` and owner-authenticated `GET /v1/status`. Require exit code `0`, health `ok: true`, `schemaId: "agentis.v2.gate0.5"`, `apiFamily: "v1"`, `node: "v24.20.0"`, `packageVersion: "2.0.0"`, and status `schemaId: "agentis.v2.gate0.5"`. The status object contains `tasks`, `runs`, `pending`, `artifacts`, `messages`, `events`, `handoffs`, and `stopAll`.
+`doctor` performs unauthenticated `GET /v1/health` and owner-authenticated `GET /v1/status`. Require exit code `0`, health `ok: true`, `schemaId: "agentis.v2.gate1.0"`, `apiFamily: "v1"`, `node: "v24.20.0"`, `packageVersion: "2.0.0"`, and status `schemaId: "agentis.v2.gate1.0"`. The status object contains the current session, cursor, tasks, threads, handoffs, runs, bot configuration revisions, evidence, pending actions, artifacts, messages, and `stopAll`. It does not contain events. Read transitions from the SSE route.
 
 If the precheck fails, stop and clean up that launch. Do not run `doctor` to repair the credential. The profile at `$DATA_ROOT/profiles/verify.json` records provider `fake` and boundary `docker-fixture-container`; explicit `--endpoint` and `--data-root` keep the instance under review visible and avoid selecting an unrelated default root.
 
@@ -78,12 +78,14 @@ The smoke command submits the public `submit_task` command and prints a receipt.
 
 The public HTTP surface used by the CLI is:
 
-| Route                     | Auth and result                                                                                                                                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GET /v1/health`          | No auth. Returns the health/schema/version object.                                                                                                                                                     |
-| `GET /v1/status`          | `Authorization: Bearer <owner token>`. Returns the complete public snapshot.                                                                                                                           |
-| `GET /v1/events?cursor=0` | Owner Bearer token. Returns an SSE stream of public event rows. Close the stream after collecting the needed events.                                                                                   |
-| `POST /v1/commands`       | Owner Bearer token and `content-type: application/json`; body is `{ "idempotencyKey": "<unique key>", "command": <Command> }`. Returns a command receipt, `200` when accepted and `409` when rejected. |
+| Route                            | Auth and result                                                                                                                             |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/health`                 | No auth. Returns the health, schema, and version object.                                                                                    |
+| `GET /v1/status`                 | Owner Bearer token or owner browser session. Returns the public current-state snapshot and cursor.                                          |
+| `GET /v1/events?cursor=<cursor>` | Owner Bearer token or owner browser session. Returns typed SSE transitions after the required cursor.                                       |
+| `POST /v1/commands`              | Owner Bearer token or browser session with CSRF and exact Origin. The body is `{ "idempotencyKey": "<unique key>", "command": <Command> }`. |
+| `GET /v1/artifacts/:id`          | Owner authentication. Returns the public artifact metadata row.                                                                             |
+| `GET /v1/artifacts/:id/content`  | Owner authentication. Streams integrity-checked artifact bytes.                                                                             |
 
 `Command` is one of `submit_task`, `resolve_approval`, `answer_input`, `cancel_run`, `stop_all`, `load_session`, or `propose_handoff`. The CLI wrappers use these exact public commands:
 
@@ -98,15 +100,18 @@ node packages/cli/dist/bin.js task handoff --endpoint "$ENDPOINT" --data-root "$
 
 Use a new idempotency key for each distinct command. Read approval IDs from a `pending` status row with `state: "pending"` and a non-null `approvalId`; read run IDs from the submit receipt or status. `answer_input` requires a run whose status is `waiting_input`. `stop-all` is owner-only, cancels active runs, and latches the data root, so use a fresh launch for any later fixture that needs to submit work.
 
-For artifacts, take the `path`, `byteSize`, and `sha256` from the public `artifacts` row. Resolve the path and require it to be a regular file below the launch `workspace`; read its bytes, compare the byte count with `byteSize`, and compare SHA-256 with `sha256`. The path is a side effect to verify, not a command to trust blindly.
+For artifacts, take `metadataUrl`, `contentUrl`, `byteSize`, and `sha256` from the public row. The row never exposes a filesystem path. Authenticate both URLs. Require the metadata response to match the row, then compare the streamed content byte count and SHA-256 with the public fields.
 
 ## Artifact byte and hash check
 
-Set `RUN_ID` from the accepted submit receipt and set `EXPECTED_BRIEF` to the expected brief (`EXPECTED_BRIEF="verification-smoke"` for smoke), then select the matching public artifact row from the captured status. The check reads only the regular file below this launch's workspace and writes the observed bytes, byte count, hashes, expected result, and verdict to evidence.
+Set `RUN_ID` directly or let the snippet read it from an accepted submit receipt. For fake artifacts, set `EXPECTED_BRIEF` to the brief. For provider results, write the exact expected bytes to `EXPECTED_BODY_FILE`. The check selects the matching public artifact row from captured status, authenticates its metadata and content URLs, and writes the byte count, hashes, expected result, and verdict without recording the owner token.
 
 ```sh
-SUBMIT_FILE="${SUBMIT_FILE:-$EVIDENCE_DIR/submit.json}"
-RUN_ID="$(SUBMIT_FILE="$SUBMIT_FILE" node --input-type=module -e 'import { readFileSync } from "node:fs"; process.stdout.write(JSON.parse(readFileSync(process.env.SUBMIT_FILE, "utf8")).runId)')"
+if [ -z "${RUN_ID:-}" ]; then
+  SUBMIT_FILE="${SUBMIT_FILE:-$EVIDENCE_DIR/submit.json}"
+  RUN_ID="$(SUBMIT_FILE="$SUBMIT_FILE" node --input-type=module -e 'import { readFileSync } from "node:fs"; process.stdout.write(JSON.parse(readFileSync(process.env.SUBMIT_FILE, "utf8")).runId)')"
+fi
+test -n "$RUN_ID"
 EXPECTED_BRIEF="${EXPECTED_BRIEF:-verification-smoke}"
 STATUS_FILE="${STATUS_FILE:-$EVIDENCE_DIR/status.json}"
 RUN_ID="$RUN_ID" STATUS_FILE="$STATUS_FILE" ARTIFACT_ROW="$EVIDENCE_DIR/artifact-row.json" node --input-type=module <<'NODE'
@@ -119,44 +124,67 @@ if (!row) throw new Error("no artifact row for RUN_ID");
 writeFileSync(process.env.ARTIFACT_ROW, `${JSON.stringify(row, null, 2)}\n`);
 NODE
 
-DATA_ROOT="$DATA_ROOT" WORKSPACE="$WORKSPACE" EXPECTED_BRIEF="$EXPECTED_BRIEF" ARTIFACT_ROW="$EVIDENCE_DIR/artifact-row.json" node --input-type=module <<'NODE' > "$EVIDENCE_DIR/artifact-check.json"
+ENDPOINT="$ENDPOINT" DATA_ROOT="$DATA_ROOT" EXPECTED_BRIEF="$EXPECTED_BRIEF" EXPECTED_BODY_FILE="${EXPECTED_BODY_FILE:-}" ARTIFACT_ROW="$EVIDENCE_DIR/artifact-row.json" node --input-type=module <<'NODE' > "$EVIDENCE_DIR/artifact-check.json"
 import { createHash } from "node:crypto";
-import { lstatSync, readFileSync, realpathSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, statSync } from "node:fs";
+import { isDeepStrictEqual } from "node:util";
 
 const row = JSON.parse(readFileSync(process.env.ARTIFACT_ROW, "utf8"));
-const dataRoot = realpathSync(process.env.DATA_ROOT);
-const workspace = realpathSync(process.env.WORKSPACE);
-if (workspace !== resolve(dataRoot, "scratch")) throw new Error("workspace escaped data root");
-const path = realpathSync(row.path);
-if (!path.startsWith(`${workspace}/`)) throw new Error("artifact escaped workspace");
-if (!lstatSync(path).isFile()) throw new Error("artifact is not a regular file");
-const bytes = readFileSync(path);
+if (Object.hasOwn(row, "path")) throw new Error("public artifact exposed a filesystem path");
+if (typeof row.metadataUrl !== "string" || typeof row.contentUrl !== "string") {
+  throw new Error("public artifact URLs are missing");
+}
+const endpoint = new URL(process.env.ENDPOINT);
+const metadataUrl = new URL(row.metadataUrl, endpoint);
+const contentUrl = new URL(row.contentUrl, endpoint);
+if (metadataUrl.origin !== endpoint.origin || contentUrl.origin !== endpoint.origin) {
+  throw new Error("artifact URL is outside the selected endpoint");
+}
+const ownerPath = `${process.env.DATA_ROOT}/owner.token`;
+if ((statSync(ownerPath).mode & 0o777) !== 0o600) throw new Error("owner.token is not 0600");
+const owner = JSON.parse(readFileSync(ownerPath, "utf8"));
+if (typeof owner.token !== "string" || owner.token.length === 0) throw new Error("owner token is missing");
+const authorization = { authorization: `Bearer ${owner.token}` };
+const metadataResponse = await fetch(metadataUrl, { headers: authorization });
+const metadata = await metadataResponse.json();
+const contentResponse = await fetch(contentUrl, { headers: authorization });
+const bytes = Buffer.from(await contentResponse.arrayBuffer());
 const sha256 = createHash("sha256").update(bytes).digest("hex");
-const expected = Buffer.from(`# ${process.env.EXPECTED_BRIEF ?? ""}\n`);
-const matches = bytes.byteLength === row.byteSize && sha256 === row.sha256 && bytes.equals(expected);
+const expected = process.env.EXPECTED_BODY_FILE
+  ? readFileSync(process.env.EXPECTED_BODY_FILE)
+  : Buffer.from(`# ${process.env.EXPECTED_BRIEF ?? ""}\n`);
+const metadataMatches = metadataResponse.status === 200 && isDeepStrictEqual(metadata, row);
+const contentMatches =
+  contentResponse.status === 200 &&
+  bytes.byteLength === row.byteSize &&
+  sha256 === row.sha256 &&
+  bytes.equals(expected);
 process.stdout.write(`${JSON.stringify({
-  path,
+  metadataUrl: metadataUrl.toString(),
+  contentUrl: contentUrl.toString(),
   mediaType: row.mediaType,
+  metadataStatus: metadataResponse.status,
+  contentStatus: contentResponse.status,
   publicByteSize: row.byteSize,
   bytesRead: bytes.byteLength,
   publicSha256: row.sha256,
   sha256,
+  metadataMatches,
   expectedBytes: expected.toString(),
   observedBytes: bytes.toString(),
   expected: expected.toString(),
-  observed: matches ? "matching regular file, byte count, SHA-256, and body" : "artifact comparison failed",
-  verdict: matches ? "PASS" : "FAIL",
+  observed: metadataMatches && contentMatches ? "matching metadata, byte count, SHA-256, and body" : "artifact comparison failed",
+  verdict: metadataMatches && contentMatches ? "PASS" : "FAIL",
 }, null, 2)}\n`);
-if (!matches) process.exitCode = 1;
+if (!metadataMatches || !contentMatches) process.exitCode = 1;
 NODE
 ```
 
 ## Evidence
 
-Evidence must show the user action and resulting state together. Retain the readiness JSON, command receipt, doctor/status JSON, relevant event or message rows, and artifact byte count/hash under a fresh `EVIDENCE_DIR` below `docs/verification/verify-agentis/`. Never copy `owner.token` or any provider credential into evidence. A fixture result proves the fake local boundary only; live provider behavior, authentication, isolation, recovery, and Gate 0 remain UNVERIFIED unless separately exercised and recorded.
+Evidence must show the user action and resulting state together. Retain the readiness JSON, command receipt, doctor/status JSON, relevant SSE transition or message rows, and artifact byte count/hash under a fresh `EVIDENCE_DIR` below `docs/verification/verify-agentis/`. Never copy `owner.token` or any provider credential into evidence. A fixture result proves only its recorded local boundary. Record live provider behavior, authentication, isolation, and recovery separately.
 
-For each recorded case, include the exact source SHA (`git rev-parse HEAD`), runtime and environment versions (at least Node, pnpm, package version, OS, and provider/boundary), exact commands and payloads, expected result, observed result, and a verdict of `PASS`, `FAIL`, or `UNVERIFIED`. An artifact observation must include its public path, media type, `byteSize`, `sha256`, bytes actually read, and the comparison result. Keep fixture verdicts separate from live-provider verdicts: a fixture `PASS` leaves live-provider support `UNVERIFIED`.
+For each recorded case, include the exact source SHA (`git rev-parse HEAD`), runtime and environment versions, exact commands and payloads, expected result, observed result, and a verdict of `PASS`, `FAIL`, or `UNVERIFIED`. Include Node, pnpm, package, operating system, provider, and boundary versions. An artifact observation includes its public metadata and content URLs, media type, `byteSize`, `sha256`, bytes read, computed SHA-256, and comparison result. Keep fixture verdicts separate from live-provider verdicts. A fixture `PASS` leaves live-provider support `UNVERIFIED`.
 
 For manual recipes, create a fresh evidence directory before redirecting command output:
 
@@ -173,9 +201,9 @@ EVIDENCE_DIR="docs/verification/verify-agentis/acceptance/smoke-$(date +%s)-$$"
 node .agents/skills/verify-agentis/helpers/smoke.mjs "$EVIDENCE_DIR"
 ```
 
-For the helper, `EVIDENCE_DIR` must be a fresh nonexistent path; the helper creates it. It starts `verify launch`, prechecks the owner token before `doctor`, drives `task submit --fixture smoke` with brief `verification-smoke`, uses `/v1/status` for result and metadata, reads `hello.md` only inside the owned scratch root, compares bytes and SHA-256, writes redacted proof artifacts into the supplied evidence directory, and proves cleanup before returning success.
+For the helper, `EVIDENCE_DIR` must be a fresh nonexistent path. The helper starts `verify launch`, prechecks the owner token before `doctor`, and submits `verification-smoke`. It uses `/v1/status` for current state, then fetches the artifact metadata and content URLs with owner authentication. It records no credential. The helper compares the bytes and SHA-256, writes redacted proof into the supplied evidence directory, and proves cleanup before returning success.
 
-Do not turn unit tests, source inspection, a green build, or a fake fixture into a live-provider or Gate 0 claim. Record an unrun feature as `UNVERIFIED` with its unmet precondition and attempted entry point.
+Do not turn unit tests, source inspection, a green build, or a fake fixture into a live-provider or project-gate claim. Record an unrun feature as `UNVERIFIED` with its unmet precondition and attempted entry point.
 
 ## Cleanup
 
@@ -183,13 +211,13 @@ Every verification launch owns its temporary data root and must be stopped in a 
 
 ## Helpers
 
-The verification helper is at `.agents/skills/verify-agentis/helpers/smoke.mjs`. Its invocation from the repository root is:
+The verification helper is at `.agents/skills/verify-agentis/helpers/smoke.mjs`. Run it from the repository root:
 
 ```sh
 node .agents/skills/verify-agentis/helpers/smoke.mjs EVIDENCE_DIR
 ```
 
-The supplied `EVIDENCE_DIR` must not already exist. The helper contract is deliberately small: spawn the foreground `verify launch`, parse the readiness object, validate the Docker fixture profile and exact container ID, name, labels, and mount, pre-read and validate `owner.token` without printing it, run `doctor`, submit the smoke fixture with brief `verification-smoke`, fetch authenticated public status, validate the owned artifact bytes and hash against `# verification-smoke\n`, write redacted evidence, SIGTERM the launcher, stop and remove only the inspected fixture container, await the host supervisor and relay endpoint disappearance, and remove only the validated Docker data root. It must return non-zero on any assertion or cleanup failure and retain evidence on failure. Before validated readiness, cleanup terminates only the launcher it spawned. It never discovers or adopts another container or root from global temporary directories; unidentified diagnostic roots remain untouched.
+The supplied `EVIDENCE_DIR` must not exist. The helper starts the foreground `verify launch` and validates the Docker fixture profile, container identity, labels, and mount. It checks `owner.token` without printing or recording it, runs `doctor`, and submits brief `verification-smoke`. It fetches authenticated public status, metadata, and content. It compares the content with `# verification-smoke\n`, records redacted evidence, and proves cleanup. Before validated readiness, cleanup terminates only the launcher it spawned. The helper never adopts a container or data root discovered elsewhere.
 
 When routes, commands, fixture states, or artifact fields change, update this skill and its feature map through `pstack:maintain-verification-skill`, then rerun the public recipes.
 

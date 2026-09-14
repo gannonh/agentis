@@ -13,6 +13,7 @@ import {
 } from "node:fs";
 import { arch, machine, platform, release } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 
 const repo = resolve(process.cwd());
 const cli = resolve(repo, "packages/cli/dist/bin.js");
@@ -473,7 +474,14 @@ const readStatus = async (endpoint) => {
       headers: { authorization: `Bearer ${ownerToken}` },
       signal: controller.signal,
     });
-    return { status: response.status, payload: json(await response.text()) };
+    const payload = json(await response.text());
+    if (
+      response.status === 200 &&
+      (payload.schemaId !== "agentis.v2.gate1.0" || Object.hasOwn(payload, "events"))
+    ) {
+      throw new Error("status did not match the documented current-state schema");
+    }
+    return { status: response.status, payload };
   } finally {
     clearTimeout(timer);
   }
@@ -531,14 +539,13 @@ const poll = async (info) => {
   writeEvidence("status.json", { finishedAt: stamp(), attempts, last });
   throw new Error("smoke run/task did not reach succeeded/completed before deadline");
 };
-const artifactProof = (status, info) => {
+const artifactProof = async (status, info) => {
   const matches = status.final.artifacts.filter(
     (item) => item.runId === runId && item.taskId === taskId,
   );
   if (matches.length !== 1)
     throw new Error(`expected one matching artifact, found ${matches.length}`);
   const artifact = matches[0];
-  if (!isAbsolute(artifact.path)) throw new Error("artifact path is not absolute");
   const dataRoot = realpathSync(info.dataRoot);
   const workspace = realpathSync(info.workspace);
   if (
@@ -547,30 +554,59 @@ const artifactProof = (status, info) => {
     !within(dataRoot, workspace)
   )
     throw new Error("workspace or dataRoot realpath is outside the owned fixture root");
-  const path = realpathSync(artifact.path);
-  if (!within(workspace, path))
-    throw new Error("artifact realpath is outside owned scratch workspace");
-  const artifactStat = statSync(path);
-  if (!artifactStat.isFile()) throw new Error("artifact realpath is not a regular file");
-  const content = readFileSync(path);
+  if (
+    Object.hasOwn(artifact, "path") ||
+    typeof artifact.metadataUrl !== "string" ||
+    typeof artifact.contentUrl !== "string"
+  )
+    throw new Error("artifact does not expose the documented public URLs");
+  const endpoint = new URL(info.endpoint);
+  const metadataUrl = new URL(artifact.metadataUrl, endpoint);
+  const contentUrl = new URL(artifact.contentUrl, endpoint);
+  if (metadataUrl.origin !== endpoint.origin || contentUrl.origin !== endpoint.origin)
+    throw new Error("artifact URL is outside the owned endpoint");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), commandLimit);
+  let metadataResponse;
+  let contentResponse;
+  let content;
+  try {
+    metadataResponse = await fetch(metadataUrl, {
+      headers: { authorization: `Bearer ${ownerToken}` },
+      signal: controller.signal,
+    });
+    const metadata = json(await metadataResponse.text());
+    if (metadataResponse.status !== 200 || !isDeepStrictEqual(metadata, artifact))
+      throw new Error("artifact metadata URL did not return the public artifact row");
+    contentResponse = await fetch(contentUrl, {
+      headers: { authorization: `Bearer ${ownerToken}` },
+      signal: controller.signal,
+    });
+    content = Buffer.from(await contentResponse.arrayBuffer());
+  } finally {
+    clearTimeout(timer);
+  }
+  if (contentResponse.status !== 200)
+    throw new Error(`artifact content URL returned ${contentResponse.status}`);
   const sha256 = createHash("sha256").update(content).digest("hex");
   const proof = {
     metadata: artifact,
-    realpath: path,
     dataRoot,
     workspace,
+    metadataUrl: metadataUrl.toString(),
+    contentUrl: contentUrl.toString(),
+    metadataStatus: metadataResponse.status,
+    contentStatus: contentResponse.status,
     expectedBody: "# verification-smoke\n",
-    observedByteSize: artifactStat.size,
-    observedContentByteSize: content.byteLength,
+    observedByteSize: content.byteLength,
     observedSha256: sha256,
-    byteSizeMatches:
-      artifact.byteSize === artifactStat.size && artifactStat.size === content.byteLength,
+    byteSizeMatches: artifact.byteSize === content.byteLength,
     sha256Matches: artifact.sha256 === sha256,
     bodyMatches: content.toString("utf8") === "# verification-smoke\n",
     sourceExpected: artifact.source === "fake",
     mediaTypeExpected: artifact.mediaType === "text/markdown",
     authorExpected: artifact.author === "mara",
-    copyPath: join(evidence, "artifact", "hello.md"),
+    evidenceCopy: "artifact/hello.md",
   };
   if (
     !proof.byteSizeMatches ||
@@ -581,10 +617,11 @@ const artifactProof = (status, info) => {
     !proof.authorExpected
   )
     throw new Error("artifact metadata, SHA, byte size, or body did not match smoke output");
-  mkdirSync(dirname(proof.copyPath), { recursive: true, mode: 0o700 });
-  writeFileSync(proof.copyPath, content, { mode: 0o600 });
-  proof.copyByteSize = statSync(proof.copyPath).size;
-  proof.copySha256 = createHash("sha256").update(readFileSync(proof.copyPath)).digest("hex");
+  const copyPath = join(evidence, proof.evidenceCopy);
+  mkdirSync(dirname(copyPath), { recursive: true, mode: 0o700 });
+  writeFileSync(copyPath, content, { mode: 0o600 });
+  proof.copyByteSize = statSync(copyPath).size;
+  proof.copySha256 = createHash("sha256").update(readFileSync(copyPath)).digest("hex");
   proof.copyMatches = proof.copyByteSize === content.byteLength && proof.copySha256 === sha256;
   writeEvidence("artifact.json", proof);
   if (!proof.copyMatches) throw new Error("saved artifact proof does not match source");
@@ -618,7 +655,7 @@ const main = async () => {
     )
       throw new Error("owner.token has no token or session ID");
     ownerToken = owner.token;
-    observed.ownerCredential = { path: ownerPath, exists: true, privateMode: true };
+    observed.ownerCredential = { exists: true, privateMode: true };
     observed.doctor = await publicCli("doctor", [
       "doctor",
       "--endpoint",
@@ -630,11 +667,12 @@ const main = async () => {
     const status = observed.doctor.parsed.status;
     if (
       health?.ok !== true ||
-      health.schemaId !== "agentis.v2.gate0.5" ||
+      health.schemaId !== "agentis.v2.gate1.0" ||
       health.apiFamily !== "v1" ||
       health.node !== process.version ||
       health.packageVersion !== "2.0.0" ||
-      status?.schemaId !== "agentis.v2.gate0.5"
+      status?.schemaId !== "agentis.v2.gate1.0" ||
+      Object.hasOwn(status ?? {}, "events")
     )
       throw new Error("doctor health or status schema did not match the documented API");
     observed.submit = await publicCli("submit", [
@@ -665,7 +703,7 @@ const main = async () => {
     runId = observed.submit.parsed.runId;
     taskId = observed.submit.parsed.taskId;
     observed.status = await poll(info);
-    observed.artifact = artifactProof(observed.status, info);
+    observed.artifact = await artifactProof(observed.status, info);
   } catch (error) {
     fail("smoke", error);
   } finally {
@@ -682,7 +720,7 @@ const main = async () => {
       observed.artifact &&
       cleanupResult?.ok;
     writeEvidence("result.json", {
-      schema: "kat-3315.verify-agentis.smoke.v1",
+      schema: "agentis.verify.smoke.v2",
       recordedAt: stamp(),
       sourceSha: observed.metadata?.sourceSha ?? null,
       expected: {
@@ -691,7 +729,7 @@ const main = async () => {
         submit: "public smoke fixture is accepted",
         run: "selected run succeeds",
         task: "selected task completes",
-        artifact: "matching artifact SHA and byte size inside scratch",
+        artifact: "authenticated metadata and content URLs return matching bytes and SHA-256",
         cleanup:
           "owned Docker fixture container and host supervisor disappear, endpoint is unreachable, and the data root is removed",
       },
@@ -723,7 +761,7 @@ try {
   if (evidence) {
     fail("preflight", error);
     writeEvidence("result.json", {
-      schema: "kat-3315.verify-agentis.smoke.v1",
+      schema: "agentis.verify.smoke.v2",
       recordedAt: stamp(),
       failures,
       verdict: "FAIL",
