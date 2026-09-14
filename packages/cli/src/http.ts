@@ -7,6 +7,7 @@ import { RequestHeaders } from "./api.js";
 import { loadOrCreateOwner } from "./auth.js";
 import {
   authorizeRead,
+  browserRuntime,
   makeHttpApiHandler,
   type HttpApiDependencies,
 } from "./http-api.js";
@@ -15,7 +16,7 @@ import { interruptCodex } from "./codex.js";
 import { ArtifactId, Cursor, type ExecutionBoundary, type ProviderKind } from "./schema.js";
 import { TransitionHub } from "./sse.js";
 import { openStore, sweepRunTimeouts, type Snapshot, type Store } from "./store.js";
-import { readVerifiedFile } from "./verified-file.js";
+import { openVerifiedFile } from "./verified-file.js";
 
 export type ServeOptions = {
   readonly endpoint: URL;
@@ -36,7 +37,8 @@ export const RAW_HANDLER_ROUTE_KEYS = [
 ] as const;
 
 const MAX_JSON_BODY_BYTES = 2 * 1024 * 1024;
-const MAX_ARTIFACT_BYTES = 16 * 1024 * 1024;
+
+class RequestBodyTooLargeError extends Error {}
 
 const apiErrorStatus = (code: string) => {
   switch (code) {
@@ -70,17 +72,21 @@ const body = (request: IncomingMessage) =>
   new Promise<Buffer>((resolve, reject) => {
     const chunks: Buffer[] = [];
     let size = 0;
+    let tooLarge = false;
     request.on("data", (chunk: Buffer | string) => {
       const bytes = Buffer.from(chunk);
       size += bytes.byteLength;
       if (size > MAX_JSON_BODY_BYTES) {
-        reject(new Error("request body exceeds 2 MiB"));
-        request.destroy();
+        tooLarge = true;
+        chunks.length = 0;
         return;
       }
-      chunks.push(bytes);
+      if (!tooLarge) chunks.push(bytes);
     });
-    request.on("end", () => resolve(Buffer.concat(chunks)));
+    request.on("end", () => {
+      if (tooLarge) reject(new RequestBodyTooLargeError("request body exceeds 2 MiB"));
+      else resolve(Buffer.concat(chunks));
+    });
     request.on("error", reject);
   });
 
@@ -222,14 +228,13 @@ const serveArtifact = async (
     json(response, 404, { code: "not_found", message: "artifact not found" });
     return;
   }
-  const bytes = readVerifiedFile({
+  const verified = await openVerifiedFile({
     path: artifact.path,
     root: dependencies.workspace,
     byteSize: artifact.byteSize,
     sha256: artifact.sha256,
-    maximumBytes: MAX_ARTIFACT_BYTES,
   });
-  if (!bytes) {
+  if (!verified) {
     json(response, 409, {
       code: "conflict",
       message: "artifact content is missing or failed integrity verification",
@@ -244,11 +249,14 @@ const serveArtifact = async (
     "content-disposition": previewable
       ? `inline; filename="${artifact.id}.txt"`
       : `attachment; filename="${artifact.id}"`,
-    "content-length": String(bytes.byteLength),
+    "content-length": String(verified.byteSize),
     "content-type": artifact.mediaType,
     "x-content-type-options": "nosniff",
   });
-  response.end(bytes);
+  const stream = verified.handle.createReadStream({ autoClose: true, start: 0 });
+  stream.once("error", () => response.destroy());
+  response.once("close", () => stream.destroy());
+  stream.pipe(response);
 };
 
 const webRoot = () => {
@@ -296,10 +304,11 @@ const serveStatic = (response: ServerResponse, pathname: string) => {
   const candidate = join(root, requested);
   const relation = relative(root, candidate);
   const safe = relation !== ".." && !relation.startsWith(`..${sep}`) && !isAbsolute(relation);
-  const selected =
-    safe && existsSync(candidate) && statSync(candidate).isFile()
-      ? candidate
-      : join(root, "index.html");
+  if (!safe || !existsSync(candidate) || !statSync(candidate).isFile()) {
+    json(response, 404, { code: "not_found", message: "browser asset not found" });
+    return;
+  }
+  const selected = candidate;
   response.writeHead(200, {
     ...staticHeaders,
     "cache-control": selected.endsWith("index.html")
@@ -323,7 +332,12 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
     yield* store.interruptActiveRuns(Date.now());
     const recovered = yield* store.snapshot();
     cleanupPersistedRunContainers(recovered.runs);
-    const dependencies: HttpApiDependencies = { ...options, owner, store };
+    const dependencies: HttpApiDependencies = {
+      ...options,
+      owner,
+      store,
+      runtime: browserRuntime(options.provider, options.executionBoundary, options.dataRoot),
+    };
     const api = makeHttpApiHandler(dependencies);
     const hub = new TransitionHub(store);
     const sweepTimer = setInterval(() => {
@@ -363,9 +377,17 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
         }
         json(response, 404, { code: "not_found", message: "not found" });
       })().catch((error: unknown) => {
+        if (error instanceof RequestBodyTooLargeError) {
+          json(response, 413, {
+            code: "payload_too_large",
+            message: "JSON request bodies are limited to 2 MiB.",
+          });
+          return;
+        }
+        process.stderr.write("HTTP request failed\n");
         json(response, 500, {
-          code: "conflict",
-          message: error instanceof Error ? error.message : String(error),
+          code: "internal_error",
+          message: "The daemon could not complete the request.",
         });
       });
     });

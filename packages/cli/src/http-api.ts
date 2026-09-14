@@ -9,6 +9,7 @@ import { Effect, Layer, Schema } from "effect";
 import { AgentisApi, AgentisJsonApi, type RequestHeaders } from "./api.js";
 import { parseAuthorization, type OwnerSession as OwnerCredential } from "./auth.js";
 import { applyReceiptEffects } from "./engine.js";
+import { providerReadiness } from "./provider-readiness.js";
 import {
   CommandReceipt,
   PublicArtifact,
@@ -37,6 +38,7 @@ export type HttpApiDependencies = {
   readonly executionBoundary: ExecutionBoundary;
   readonly owner: OwnerCredential;
   readonly store: Store;
+  readonly runtime: BrowserRuntime;
 };
 
 export type RequestAuthority =
@@ -78,18 +80,25 @@ const cookies = (header: string | undefined) => {
 export const browserRuntime = (
   provider: ProviderKind,
   executionBoundary: ExecutionBoundary,
-): BrowserRuntime => ({
-  provider,
-  model: provider === "codex" ? "gpt-5.6-sol" : provider === "claude" ? "claude-sonnet-5" : "fake",
-  authMode: provider === "codex" ? CODEX_AUTH_MODE : provider === "claude" ? "api-key" : "none",
-  executionLocation:
-    executionBoundary === "docker-fixture-container"
-      ? "isolated fixture container"
-      : executionBoundary === "docker-desktop-run-container"
-        ? "local provider container"
-        : "local daemon scratch",
-  eligible: provider === "codex" || provider === "fake",
-});
+  dataRoot: string,
+): BrowserRuntime => {
+  const readiness = providerReadiness({ provider, executionBoundary, dataRoot });
+  return {
+    provider,
+    model:
+      provider === "codex" ? "gpt-5.6-sol" : provider === "claude" ? "claude-sonnet-5" : "fake",
+    authMode:
+      provider === "codex" ? CODEX_AUTH_MODE : provider === "claude" ? "api-key" : "none",
+    executionLocation:
+      executionBoundary === "docker-fixture-container"
+        ? "isolated fixture container"
+        : executionBoundary === "docker-desktop-run-container"
+          ? "local provider container"
+          : "local daemon scratch",
+    eligible: readiness.eligible,
+    ineligibleReason: readiness.reason,
+  };
+};
 
 export const authorizeRead = (
   dependencies: HttpApiDependencies,
@@ -168,7 +177,7 @@ const statusFor = (dependencies: HttpApiDependencies, authority: RequestAuthorit
         ? { tokenHash: authority.tokenHash }
         : { ownerSession: authority.principal.sessionId }),
       nowMs: Date.now(),
-      runtime: browserRuntime(dependencies.provider, dependencies.executionBoundary),
+      runtime: dependencies.runtime,
     })
     .pipe(Effect.mapError((error) => conflict(error.message)));
 
@@ -273,7 +282,7 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
       .handle("acknowledgeSetup", ({ headers, payload }) =>
         Effect.gen(function* () {
           const authority = yield* authorizeBrowserMutation(dependencies, headers);
-          const runtime = browserRuntime(dependencies.provider, dependencies.executionBoundary);
+          const runtime = dependencies.runtime;
           if (!runtime.eligible || payload.provider !== runtime.provider) {
             return yield* Effect.fail(
               forbidden("configured provider is not eligible for Mara coordination"),
@@ -300,6 +309,18 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
       .handle("command", ({ headers, payload }) =>
         Effect.gen(function* () {
           const authority = yield* authorizeMutation(dependencies, headers);
+          if (
+            authority.channel === "browser" &&
+            payload.command.kind === "submit_task" &&
+            !dependencies.runtime.eligible
+          ) {
+            return yield* Effect.fail(
+              forbidden(
+                dependencies.runtime.ineligibleReason ??
+                  "configured provider connection is not ready",
+              ),
+            );
+          }
           const nowMs = Date.now();
           const receipt = yield* dependencies.store
             .applyCommand({

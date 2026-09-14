@@ -40,6 +40,7 @@ import {
   EvidenceId,
   FixtureKind,
   FrozenConfig,
+  PendingPrompt,
   ProviderKind,
   ResolveApproval,
   RunStatus,
@@ -477,6 +478,7 @@ export type BrowserRuntime = {
   readonly authMode: string;
   readonly executionLocation: string;
   readonly eligible: boolean;
+  readonly ineligibleReason: string | null;
 };
 
 export type BrowserSessionRecord = {
@@ -635,7 +637,7 @@ export const openStore = (
           }),
         artifact: (id) =>
           Effect.try({
-            try: () => readSnapshot(db).artifacts.find((artifact) => artifact.id === id) ?? null,
+            try: () => readArtifact(db, id),
             catch: (error) => new StoreError(String(error)),
           }),
         interruptActiveRuns: (nowMs) =>
@@ -824,6 +826,54 @@ const pendingDetail = (kind: string) => {
   }
 };
 
+const publicPendingPrompt = (status: string, value: string | null) => {
+  if (status !== "waiting_input" || !value) return null;
+  try {
+    const decoded = JSON.parse(value) as { questions?: unknown };
+    if (Array.isArray(decoded.questions) && decoded.questions.length > 0) {
+      const questions = decoded.questions.map((item) => {
+        const question = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+        const key =
+          typeof question.id === "string"
+            ? question.id
+            : typeof question.question === "string"
+              ? question.question
+              : null;
+        if (!key) throw new StoreError("provider question is missing its response key");
+        const prompt =
+          typeof question.question === "string"
+            ? question.question
+            : typeof question.prompt === "string"
+              ? question.prompt
+              : typeof question.header === "string"
+                ? question.header
+                : key;
+        const options = Array.isArray(question.options)
+          ? question.options.flatMap((option) => {
+              if (typeof option === "string") return [option];
+              if (
+                option &&
+                typeof option === "object" &&
+                typeof (option as Record<string, unknown>).label === "string"
+              ) {
+                return [(option as Record<string, unknown>).label as string];
+              }
+              return [];
+            })
+          : [];
+        return { key, prompt, options };
+      });
+      return Schema.decodeUnknownSync(PendingPrompt)({ kind: "questions", questions });
+    }
+  } catch {
+    // A plain provider prompt remains answerable through the stable fallback key.
+  }
+  return Schema.decodeUnknownSync(PendingPrompt)({
+    kind: "questions",
+    questions: [{ key: "response", prompt: value, options: [] }],
+  });
+};
+
 const workspaceSnapshot = (
   db: DatabaseSync,
   input: {
@@ -849,7 +899,7 @@ const workspaceSnapshot = (
           }
         : null;
     if (!session) throw new StoreError("authentication required");
-    const snapshot = readSnapshotUnlocked(db);
+    const snapshot = readSnapshotUnlocked(db, false);
     const providerMatches = session.provider === input.runtime.provider;
     const result = Schema.decodeUnknownSync(WorkspaceSnapshot)({
       schemaId: snapshot.schemaId,
@@ -863,6 +913,7 @@ const workspaceSnapshot = (
           authMode: input.runtime.authMode,
           executionLocation: input.runtime.executionLocation,
           eligible: input.runtime.eligible,
+          ineligibleReason: input.runtime.ineligibleReason,
           acknowledgedAt: providerMatches ? session.providerAcknowledgedAt : null,
         },
         sources: session.sources,
@@ -907,7 +958,7 @@ const workspaceSnapshot = (
         status: item.status,
         waitingReason: item.waitingReason,
         providerLoadStatus: item.providerLoadStatus,
-        pendingPrompt: item.pendingPrompt,
+        pendingPrompt: publicPendingPrompt(item.status, item.pendingPrompt),
         failure: item.failure,
         actionCount: item.actionCount,
         queuedAt: item.queuedAt,
@@ -1788,7 +1839,47 @@ const readSnapshot = (db: DatabaseSync): Snapshot => {
   }
 };
 
-const readSnapshotUnlocked = (db: DatabaseSync): Snapshot => {
+type ArtifactDatabaseRow = {
+  id: string;
+  task_id: string;
+  run_id: string;
+  author: string;
+  source: string;
+  media_type: string;
+  sha256: string;
+  byte_size: number;
+  path: string;
+  citations_json: string;
+  created_at: number;
+};
+
+const decodeArtifact = (item: ArtifactDatabaseRow): ArtifactRow => ({
+  id: Schema.decodeUnknownSync(ArtifactId)(item.id),
+  taskId: item.task_id as TaskId,
+  runId: item.run_id as RunId,
+  author: item.author,
+  source: item.source,
+  mediaType: item.media_type,
+  sha256: item.sha256,
+  byteSize: item.byte_size,
+  path: item.path,
+  citations: Schema.decodeUnknownSync(Schema.Array(Citation))(JSON.parse(item.citations_json)),
+  createdAt: item.created_at,
+  metadataUrl: `/v1/artifacts/${item.id}`,
+  contentUrl: `/v1/artifacts/${item.id}/content`,
+});
+
+const readArtifact = (db: DatabaseSync, id: ArtifactIdType) => {
+  const artifact = row<ArtifactDatabaseRow>(
+    db,
+    `SELECT id,task_id,run_id,author,source,media_type,sha256,byte_size,path,citations_json,created_at
+     FROM artifacts WHERE id=?`,
+    [id],
+  );
+  return artifact ? decodeArtifact(artifact) : null;
+};
+
+const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = true): Snapshot => {
   const schema = row<{ value: string }>(db, "SELECT value FROM meta WHERE key = 'schema_id'", []);
   const stop = row<{ latched: number }>(db, "SELECT latched FROM stop_all WHERE id = 1", []);
   const tasks = rows<{
@@ -1838,19 +1929,7 @@ const readSnapshotUnlocked = (db: DatabaseSync): Snapshot => {
     payload: string;
     approval_id: string | null;
   }>(db, "SELECT * FROM pending_actions ORDER BY created_at");
-  const artifacts = rows<{
-    id: string;
-    task_id: string;
-    run_id: string;
-    author: string;
-    source: string;
-    media_type: string;
-    sha256: string;
-    byte_size: number;
-    path: string;
-    citations_json: string;
-    created_at: number;
-  }>(db, "SELECT * FROM artifacts ORDER BY created_at");
+  const artifacts = rows<ArtifactDatabaseRow>(db, "SELECT * FROM artifacts ORDER BY created_at");
   const messages = rows<{
     id: string;
     thread_id: string;
@@ -1865,13 +1944,16 @@ const readSnapshotUnlocked = (db: DatabaseSync): Snapshot => {
     body: string;
     created_at: number;
   }>(db, "SELECT * FROM messages ORDER BY created_at");
-  const events = rows<{
-    seq: number;
-    id: string;
-    type: string;
-    body: string;
-    created_at: number;
-  }>(db, "SELECT seq, id, type, body, created_at FROM events ORDER BY seq");
+  const cursorRow = row<{ seq: number | null }>(db, "SELECT MAX(seq) AS seq FROM events", []);
+  const events = includeEvents
+    ? rows<{
+        seq: number;
+        id: string;
+        type: string;
+        body: string;
+        created_at: number;
+      }>(db, "SELECT seq, id, type, body, created_at FROM events ORDER BY seq")
+    : [];
   const evidence = rows<{
     id: string;
     task_id: string;
@@ -1904,7 +1986,7 @@ const readSnapshotUnlocked = (db: DatabaseSync): Snapshot => {
   }>(db, "SELECT * FROM bot_config_revisions ORDER BY created_at");
   return {
     schemaId: schema?.value ?? "",
-    cursor: Schema.decodeUnknownSync(Cursor)(String(events.at(-1)?.seq ?? 0)),
+    cursor: Schema.decodeUnknownSync(Cursor)(String(cursorRow?.seq ?? 0)),
     stopAll: stop?.latched === 1,
     handoffs: handoffs(db),
     threads: threadRows.map((item) => ({
@@ -1971,21 +2053,7 @@ const readSnapshotUnlocked = (db: DatabaseSync): Snapshot => {
       detail: item.payload,
       approvalId: (item.approval_id as ApprovalId | null) ?? null,
     })),
-    artifacts: artifacts.map((item) => ({
-      id: Schema.decodeUnknownSync(ArtifactId)(item.id),
-      taskId: item.task_id as TaskId,
-      runId: item.run_id as RunId,
-      author: item.author,
-      source: item.source,
-      mediaType: item.media_type,
-      sha256: item.sha256,
-      byteSize: item.byte_size,
-      path: item.path,
-      citations: Schema.decodeUnknownSync(Schema.Array(Citation))(JSON.parse(item.citations_json)),
-      createdAt: item.created_at,
-      metadataUrl: `/v1/artifacts/${item.id}`,
-      contentUrl: `/v1/artifacts/${item.id}/content`,
-    })),
+    artifacts: artifacts.map(decodeArtifact),
     messages: messages.map((item) => ({
       id: item.id,
       threadId: item.thread_id,
@@ -2257,12 +2325,15 @@ export const mutateForEngine = (storePath: string) => {
             runId,
             authorKind: "bot",
             authorName: frozen.bot,
-            kind: "question",
-            importance: "blocking",
-            dedupeKey: `question:${runId}:${digest(prompt)}`,
-            body: prompt,
-            nowMs,
-          });
+          kind: "question",
+          importance: "blocking",
+          dedupeKey: `question:${runId}:${digest(prompt)}`,
+          body:
+            publicPendingPrompt("waiting_input", prompt)?.questions
+              .map((question) => question.prompt)
+              .join("\n") ?? prompt,
+          nowMs,
+        });
         }
         emit(db, "waiting_input", { runId, prompt }, nowMs);
       }),

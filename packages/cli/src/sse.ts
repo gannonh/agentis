@@ -1,6 +1,6 @@
 import type { ServerResponse } from "node:http";
-import { Effect, Either } from "effect";
-import type { Cursor, Transition } from "./schema.js";
+import { Effect, Either, Schema } from "effect";
+import { Cursor, type Transition } from "./schema.js";
 import { ReplayCursorError, type Store } from "./store.js";
 import { EVENT_SUBSCRIBER_LIMIT } from "./versions.js";
 
@@ -86,7 +86,9 @@ export class TransitionHub {
     try {
       const minimum = Math.min(...subscribers.map((subscriber) => subscriber.acceptedCursor));
       const replay = await Effect.runPromise(
-        Effect.either(this.store.transitionsAfter(String(minimum) as Cursor)),
+        Effect.either(
+          this.store.transitionsAfter(Schema.decodeUnknownSync(Cursor)(String(minimum))),
+        ),
       );
       if (Either.isLeft(replay)) {
         for (const subscriber of subscribers) this.#overflow(subscriber, replay.left.message);

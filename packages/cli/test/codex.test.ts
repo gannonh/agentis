@@ -66,6 +66,13 @@ const statusOf = async (endpoint: URL, token: string) => {
   return Effect.runPromise(store.snapshot());
 };
 
+const publicStatusOf = async (endpoint: URL, token: string) => {
+  const response = await fetch(new URL("/v1/status", endpoint), {
+    headers: { authorization: `Bearer ${token}` },
+  });
+  return Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
+};
+
 const waitFor = async (
   endpoint: URL,
   token: string,
@@ -180,6 +187,16 @@ describe("codex stub protocol", () => {
       await waitFor(endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === input.json.runId && item.status === "waiting_input"),
       );
+      const publicInput = await publicStatusOf(endpoint, owner.token);
+      expect(publicInput.runs.find((run) => run.id === input.json.runId)?.pendingPrompt).toEqual({
+        kind: "questions",
+        questions: [{ key: "color", prompt: "color", options: [] }],
+      });
+      expect(
+        publicInput.messages.find(
+          (message) => message.runId === input.json.runId && message.kind === "question",
+        )?.body,
+      ).toBe("color");
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "answer_input", runId: input.json.runId, answers: { color: "Blue" } },

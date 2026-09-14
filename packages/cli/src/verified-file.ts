@@ -7,6 +7,7 @@ import {
   readSync,
   realpathSync,
 } from "node:fs";
+import { open, realpath, type FileHandle } from "node:fs/promises";
 import { dirname, isAbsolute, relative, sep } from "node:path";
 
 export type VerifiedFile = {
@@ -15,6 +16,11 @@ export type VerifiedFile = {
   readonly byteSize: number;
   readonly sha256: string;
   readonly maximumBytes: number;
+};
+
+export type VerifiedFileHandle = {
+  readonly handle: FileHandle;
+  readonly byteSize: number;
 };
 
 const within = (root: string, path: string) => {
@@ -49,5 +55,31 @@ export const readVerifiedFile = (input: VerifiedFile): Buffer | null => {
     return null;
   } finally {
     if (descriptor !== undefined) closeSync(descriptor);
+  }
+};
+
+export const openVerifiedFile = async (
+  input: Omit<VerifiedFile, "maximumBytes">,
+): Promise<VerifiedFileHandle | null> => {
+  let handle: FileHandle | undefined;
+  try {
+    if (!Number.isSafeInteger(input.byteSize) || input.byteSize < 0) return null;
+    const root = await realpath(input.root);
+    const parent = await realpath(dirname(input.path));
+    if (!within(root, parent) && parent !== root) return null;
+    handle = await open(input.path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    const info = await handle.stat();
+    if (!info.isFile() || info.size !== input.byteSize) return null;
+    const digest = createHash("sha256");
+    const verification = handle.createReadStream({ autoClose: false, start: 0 });
+    for await (const chunk of verification) digest.update(chunk);
+    if (digest.digest("hex") !== input.sha256) return null;
+    const verified = { handle, byteSize: info.size };
+    handle = undefined;
+    return verified;
+  } catch {
+    return null;
+  } finally {
+    await handle?.close().catch(() => undefined);
   }
 };

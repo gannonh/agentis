@@ -1,5 +1,4 @@
 import { Schema } from "effect";
-import { ProviderState } from "./provider-contract.js";
 
 const brand = <Name extends string>(name: Name) => Schema.String.pipe(Schema.brand(name));
 const nonEmpty = Schema.String.pipe(Schema.minLength(1));
@@ -251,51 +250,6 @@ export const BotConfigRevision = Schema.Struct({
 });
 export type BotConfigRevision = typeof BotConfigRevision.Type;
 
-export const TaskRow = Schema.Struct({
-  id: TaskId,
-  brief: Schema.String,
-  threadId: ThreadId,
-  outcome: Schema.String,
-  requestedBy: Schema.Literal("owner"),
-  currentOwner: Schema.Literal("mara", "ivo"),
-  ownerRole: Schema.Literal("coordinator", "specialist"),
-  ownerSession: Schema.String,
-  botName: Schema.Literal("mara", "ivo"),
-  botRole: Schema.Literal("coordinator", "specialist"),
-  workspaceRef: Schema.String,
-  constraints: Schema.Array(Schema.String),
-  evidence: Schema.Array(EvidenceId),
-  currentRunId: RunId,
-  latestArtifactId: Schema.NullOr(ArtifactId),
-  status: Schema.Literal("open", "running", "completed", "failed", "canceled"),
-  actionCount: Schema.Number,
-  createdAt: Schema.Number,
-  updatedAt: Schema.Number,
-});
-export type TaskRow = typeof TaskRow.Type;
-
-export const RunRow = Schema.Struct({
-  id: RunId,
-  taskId: TaskId,
-  threadId: ThreadId,
-  botConfigRevisionId: BotConfigRevisionId,
-  status: RunStatus,
-  waitingReason: WaitingReason,
-  providerLoadStatus: Schema.Literal("idle", "loading", "succeeded", "failed"),
-  pendingPrompt: Schema.NullOr(Schema.String),
-  failure: Schema.NullOr(Schema.String),
-  actionCount: Schema.Number,
-  queuedAt: Schema.Number,
-  startedAt: Schema.NullOr(Schema.Number),
-  deadlineAt: Schema.Number,
-  completedAt: Schema.NullOr(Schema.Number),
-  frozen: FrozenConfig,
-  providerState: ProviderState,
-  providerSessionId: Schema.NullOr(Schema.String),
-  fixture: Schema.NullOr(FixtureKind),
-});
-export type RunRow = typeof RunRow.Type;
-
 export const PendingActionRow = Schema.Struct({
   id: ActionIntentId,
   runId: RunId,
@@ -305,23 +259,6 @@ export const PendingActionRow = Schema.Struct({
   approvalId: Schema.NullOr(ApprovalId),
 });
 export type PendingActionRow = typeof PendingActionRow.Type;
-
-export const ArtifactRow = Schema.Struct({
-  id: ArtifactId,
-  taskId: TaskId,
-  runId: RunId,
-  author: Schema.Literal("mara", "ivo"),
-  source: ProviderKind,
-  mediaType: Schema.String,
-  sha256: Schema.String,
-  byteSize: Schema.Number,
-  citations: Schema.Array(Citation),
-  createdAt: Schema.Number,
-  metadataUrl: Schema.String,
-  contentUrl: Schema.String,
-  path: Schema.String,
-});
-export type ArtifactRow = typeof ArtifactRow.Type;
 
 export const MessageKind = Schema.Literal(
   "request",
@@ -370,76 +307,73 @@ export const OwnerSession = Schema.Struct({
     authMode: Schema.String,
     executionLocation: Schema.String,
     eligible: Schema.Boolean,
+    ineligibleReason: Schema.NullOr(Schema.String),
     acknowledgedAt: Schema.NullOr(Schema.Number),
   }),
   sources: Schema.Array(SourceAcknowledgement),
 });
 export type OwnerSession = typeof OwnerSession.Type;
 
-export const EventRow = Schema.Struct({
-  seq: Schema.Number,
-  id: Schema.String,
-  type: Schema.String,
-  body: Schema.String,
+export const PublicTask = Schema.Struct({
+  id: TaskId,
+  threadId: ThreadId,
+  outcome: Schema.String,
+  requestedBy: Schema.Literal("owner"),
+  currentOwner: Schema.Literal("mara", "ivo"),
+  ownerRole: Schema.Literal("coordinator", "specialist"),
+  workspaceRef: Schema.String,
+  constraints: Schema.Array(Schema.String),
+  evidence: Schema.Array(EvidenceId),
+  currentRunId: RunId,
+  latestArtifactId: Schema.NullOr(ArtifactId),
+  status: Schema.Literal("open", "running", "completed", "failed", "canceled"),
+  actionCount: Schema.Number,
   createdAt: Schema.Number,
+  updatedAt: Schema.Number,
 });
-export type EventRow = typeof EventRow.Type;
-
-export const PublicTask = TaskRow.pipe(
-  Schema.pick(
-    "id",
-    "threadId",
-    "outcome",
-    "requestedBy",
-    "currentOwner",
-    "ownerRole",
-    "workspaceRef",
-    "constraints",
-    "evidence",
-    "currentRunId",
-    "latestArtifactId",
-    "status",
-    "actionCount",
-    "createdAt",
-    "updatedAt",
-  ),
-);
 export type PublicTask = typeof PublicTask.Type;
-export const PublicRun = RunRow.pipe(
-  Schema.pick(
-    "id",
-    "taskId",
-    "threadId",
-    "botConfigRevisionId",
-    "status",
-    "waitingReason",
-    "providerLoadStatus",
-    "pendingPrompt",
-    "failure",
-    "actionCount",
-    "queuedAt",
-    "startedAt",
-    "deadlineAt",
-    "completedAt",
-  ),
-);
+export const PendingQuestion = Schema.Struct({
+  key: nonEmpty,
+  prompt: nonEmpty,
+  options: Schema.Array(nonEmpty),
+});
+export type PendingQuestion = typeof PendingQuestion.Type;
+export const PendingPrompt = Schema.Struct({
+  kind: Schema.Literal("questions"),
+  questions: Schema.Array(PendingQuestion).pipe(Schema.minItems(1)),
+});
+export type PendingPrompt = typeof PendingPrompt.Type;
+export const PublicRun = Schema.Struct({
+  id: RunId,
+  taskId: TaskId,
+  threadId: ThreadId,
+  botConfigRevisionId: BotConfigRevisionId,
+  status: RunStatus,
+  waitingReason: WaitingReason,
+  providerLoadStatus: Schema.Literal("idle", "loading", "succeeded", "failed"),
+  pendingPrompt: Schema.NullOr(PendingPrompt),
+  failure: Schema.NullOr(Schema.String),
+  actionCount: Schema.Number,
+  queuedAt: Schema.Number,
+  startedAt: Schema.NullOr(Schema.Number),
+  deadlineAt: Schema.Number,
+  completedAt: Schema.NullOr(Schema.Number),
+});
 export type PublicRun = typeof PublicRun.Type;
-export const PublicArtifact = ArtifactRow.pipe(
-  Schema.pick(
-    "id",
-    "taskId",
-    "runId",
-    "author",
-    "source",
-    "mediaType",
-    "sha256",
-    "byteSize",
-    "citations",
-    "createdAt",
-    "metadataUrl",
-    "contentUrl",
-  ),
-);
+export const PublicArtifact = Schema.Struct({
+  id: ArtifactId,
+  taskId: TaskId,
+  runId: RunId,
+  author: Schema.Literal("mara", "ivo"),
+  source: ProviderKind,
+  mediaType: Schema.String,
+  sha256: Schema.String,
+  byteSize: Schema.Number,
+  citations: Schema.Array(Citation),
+  createdAt: Schema.Number,
+  metadataUrl: Schema.String,
+  contentUrl: Schema.String,
+});
 export type PublicArtifact = typeof PublicArtifact.Type;
 export const PublicHandoff = HandoffRow.pipe(
   Schema.pick(
@@ -475,23 +409,6 @@ export const WorkspaceSnapshot = Schema.Struct({
   messages: Schema.Array(MessageRow),
 });
 export type WorkspaceSnapshot = typeof WorkspaceSnapshot.Type;
-
-export const Snapshot = Schema.Struct({
-  schemaId: Schema.String,
-  cursor: Cursor,
-  stopAll: Schema.Boolean,
-  session: Schema.optional(OwnerSession),
-  tasks: Schema.Array(TaskRow),
-  handoffs: Schema.Array(HandoffRow),
-  runs: Schema.Array(RunRow),
-  botConfigRevisions: Schema.Array(BotConfigRevision),
-  evidence: Schema.Array(Evidence),
-  pending: Schema.Array(PendingActionRow),
-  artifacts: Schema.Array(ArtifactRow),
-  messages: Schema.Array(MessageRow),
-  events: Schema.Array(EventRow),
-});
-export type Snapshot = typeof Snapshot.Type;
 
 export const TransitionReason = Schema.Literal(
   "task_submitted",
@@ -543,6 +460,8 @@ export const NotFoundApiError = apiError("not_found");
 export const ConflictApiError = apiError("conflict");
 export const CursorExpiredApiError = apiError("cursor_expired");
 export const ResyncRequiredApiError = apiError("resync_required");
+export const PayloadTooLargeApiError = apiError("payload_too_large");
+export const InternalApiError = apiError("internal_error");
 export const ApiError = Schema.Union(
   BadRequestApiError,
   UnauthorizedApiError,
@@ -551,5 +470,7 @@ export const ApiError = Schema.Union(
   ConflictApiError,
   CursorExpiredApiError,
   ResyncRequiredApiError,
+  PayloadTooLargeApiError,
+  InternalApiError,
 );
 export type ApiError = typeof ApiError.Type;

@@ -13,9 +13,9 @@
     "node": "24.20.0"
   },
   "scripts": {
-    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json && esbuild src/fixture-daemon.ts --bundle --platform=node --format=esm --outfile=dist/fixture-daemon.mjs",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json && esbuild src/fixture-daemon.ts --bundle --platform=node --format=esm --outfile=dist/fixture-daemon.mjs && vite build --config vite.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "oxlint --deny-warnings src test",
+    "lint": "oxlint --deny-warnings src test web vite.config.ts",
     "test": "vitest run",
     "pack:smoke": "node ../../scripts/pack-smoke.mjs"
   },

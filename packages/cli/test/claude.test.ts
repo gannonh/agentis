@@ -68,6 +68,13 @@ const statusOf = async (endpoint: URL, token: string) => {
   return Effect.runPromise(store.snapshot());
 };
 
+const publicStatusOf = async (endpoint: URL, token: string) => {
+  const response = await fetch(new URL("/v1/status", endpoint), {
+    headers: { authorization: `Bearer ${token}` },
+  });
+  return Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
+};
+
 const waitFor = async (
   endpoint: URL,
   token: string,
@@ -197,6 +204,16 @@ describe("Claude SDK bridge", () => {
         expect(JSON.parse(waiting.runs[0]?.providerState.pendingPrompt ?? "{}")).toMatchObject({
           questions: [{ question: "Pick color" }],
         });
+        const publicInput = await publicStatusOf(endpoint, owner.token);
+        expect(publicInput.runs[0]?.pendingPrompt).toEqual({
+          kind: "questions",
+          questions: [
+            { key: "Pick color", prompt: "Pick color", options: ["BLUE", "RED"] },
+          ],
+        });
+        expect(
+          publicInput.messages.find((message) => message.kind === "question")?.body,
+        ).toBe("Pick color");
         await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
           command: {

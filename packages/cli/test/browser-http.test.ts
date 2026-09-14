@@ -1,13 +1,21 @@
 import { DatabaseSync } from "node:sqlite";
+import { createHash } from "node:crypto";
 import { request as httpRequest } from "node:http";
 import { createServer } from "node:net";
-import { mkdtempSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Effect, Schema } from "effect";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { RAW_ROUTE_KEYS } from "../src/api.js";
 import { loadOrCreateOwner } from "../src/auth.js";
+import { runCli } from "../src/cli.js";
 import { RAW_HANDLER_ROUTE_KEYS, startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
 import { WorkspaceSnapshot } from "../src/schema.js";
@@ -25,7 +33,13 @@ const port = () =>
     });
   });
 
-const boot = async () => {
+const boot = async (
+  provider: "fake" | "codex" | "claude" = "fake",
+  executionBoundary:
+    | "unverified-host-scratch"
+    | "docker-desktop-run-container"
+    | "docker-fixture-container" = "unverified-host-scratch",
+) => {
   const dataRoot = mkdtempSync(join(tmpdir(), "agentis-browser-http-"));
   const endpoint = new URL(`http://127.0.0.1:${await port()}`);
   const server = await Effect.runPromise(
@@ -33,8 +47,8 @@ const boot = async () => {
       endpoint,
       dataRoot,
       workspace: join(dataRoot, "scratch"),
-      provider: "fake",
-      executionBoundary: "unverified-host-scratch",
+      provider,
+      executionBoundary,
     }),
   );
   const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
@@ -215,7 +229,108 @@ describe("browser HTTP boundary", () => {
       expect(artifact.citations).toEqual([
         { label: "Owner note", excerpt: "supplied context" },
       ]);
+
+      const github = await browserPost(endpoint, session, "/v1/commands", {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "submit_task",
+          coordinator: "mara",
+          brief: "Assess the supplied release packet",
+          outcome: "A revision-specific release assessment",
+          source: {
+            kind: "github_briefing",
+            label: "Release packet",
+            repository: "agentis/example",
+            revision: "abc123",
+            url: "https://github.com/agentis/example/tree/abc123",
+            text: "The supplied packet is read-only and cites revision abc123.",
+            citations: [{ label: "Packet", excerpt: "revision abc123" }],
+          },
+        },
+      });
+      expect(github.status).toBe(200);
+      const bothSources = await browserStatus(endpoint, session);
+      expect(bothSources.evidence.map((item) => item.source).sort()).toEqual([
+        "github_briefing",
+        "pasted",
+      ]);
+      expect(bothSources.evidence.find((item) => item.source === "github_briefing")).toMatchObject({
+        repository: "agentis/example",
+        revision: "abc123",
+      });
+      const githubArtifact = bothSources.artifacts.at(-1);
+      if (!githubArtifact) throw new Error("missing GitHub briefing artifact");
+      const githubContent = await fetch(new URL(githubArtifact.contentUrl, endpoint), {
+        headers: { cookie: session.cookie },
+      });
+      expect(await githubContent.text()).toContain("revision abc123");
     } finally {
+      await server.close();
+    }
+  });
+
+  it("prints a one-use fragment URL from the CLI without opening a browser", async () => {
+    const { dataRoot, endpoint, server } = await boot();
+    const output: string[] = [];
+    const write = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        output.push(String(chunk));
+        return true;
+      });
+    try {
+      await expect(
+        runCli(["web", "--endpoint", endpoint.origin, "--data-root", dataRoot]),
+      ).resolves.toBe(0);
+      const url = new URL(output.join("").trim());
+      expect(url.origin).toBe(endpoint.origin);
+      expect(url.searchParams.has("bootstrap")).toBe(false);
+      expect(new URLSearchParams(url.hash.slice(1)).get("bootstrap")).toBeTruthy();
+    } finally {
+      write.mockRestore();
+      await server.close();
+    }
+  });
+
+  it("exposes and enforces configured provider connection readiness", async () => {
+    const originalStub = process.env.AGENTIS_CODEX_STUB;
+    delete process.env.AGENTIS_CODEX_STUB;
+    const { endpoint, owner, server } = await boot("codex");
+    try {
+      const session = await browserSession(endpoint, owner.token);
+      const status = await browserStatus(endpoint, session);
+      expect(status.session.provider).toMatchObject({
+        kind: "codex",
+        eligible: false,
+        acknowledgedAt: null,
+      });
+      expect(status.session.provider.ineligibleReason).toMatch(/requires.*provider container/i);
+      const setup = await browserPost(endpoint, session, "/v1/browser/setup", {
+        provider: "codex",
+        sources: ["pasted"],
+      });
+      expect(setup.status).toBe(403);
+      const db = new DatabaseSync(server.store.path);
+      db.prepare(
+        "UPDATE browser_sessions SET provider_acknowledged_at=1,source_acknowledgements_json=?",
+      ).run(JSON.stringify([{ source: "pasted", acknowledgedAt: 1 }]));
+      db.close();
+      const staleAcknowledgement = await browserPost(endpoint, session, "/v1/commands", {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "submit_task",
+          brief: "Must remain gated",
+          source: { kind: "pasted", label: "Notes", text: "Source", citations: [] },
+        },
+      });
+      expect(staleAcknowledgement.status).toBe(403);
+      expect(await staleAcknowledgement.json()).toMatchObject({
+        code: "forbidden",
+        message: expect.stringMatching(/requires.*provider container/i),
+      });
+    } finally {
+      if (originalStub === undefined) delete process.env.AGENTIS_CODEX_STUB;
+      else process.env.AGENTIS_CODEX_STUB = originalStub;
       await server.close();
     }
   });
@@ -252,6 +367,120 @@ describe("browser HTTP boundary", () => {
         ]),
       );
       expect(RAW_HANDLER_ROUTE_KEYS).toEqual(RAW_ROUTE_KEYS);
+      expect(JSON.stringify(document)).toContain("payload_too_large");
+      expect(JSON.stringify(document)).toContain("internal_error");
+
+      const oversized = await fetch(new URL("/v1/commands", endpoint), {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${owner.token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ oversized: "x".repeat(2 * 1024 * 1024) }),
+      });
+      expect(oversized.status).toBe(413);
+      expect(await oversized.json()).toEqual({
+        code: "payload_too_large",
+        message: "JSON request bodies are limited to 2 MiB.",
+      });
+      const missingAsset = await fetch(new URL("/assets/missing.js", endpoint));
+      expect(missingAsset.status).toBe(404);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("authenticates and streams large verified artifacts while rejecting changed paths", async () => {
+    const { dataRoot, endpoint, owner, server } = await boot();
+    try {
+      const session = await browserSession(endpoint, owner.token);
+      await browserPost(endpoint, session, "/v1/browser/setup", {
+        provider: "fake",
+        sources: ["pasted"],
+      });
+      await browserPost(endpoint, session, "/v1/commands", {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "submit_task",
+          brief: "Integrity proof",
+          source: { kind: "pasted", label: "Notes", text: "Proof", citations: [] },
+        },
+      });
+      const internal = await Effect.runPromise(server.store.snapshot());
+      const artifact = internal.artifacts[0];
+      if (!artifact) throw new Error("missing test artifact");
+      const original = readFileSync(artifact.path);
+
+      const unauthenticated = await fetch(new URL(artifact.contentUrl, endpoint));
+      expect(unauthenticated.status).toBe(401);
+      writeFileSync(artifact.path, "changed");
+      expect(
+        (await fetch(new URL(artifact.contentUrl, endpoint), {
+          headers: { cookie: session.cookie },
+        })).status,
+      ).toBe(409);
+
+      const outsideRoot = mkdtempSync(join(tmpdir(), "agentis-artifact-outside-"));
+      const outside = join(outsideRoot, "matching.md");
+      writeFileSync(outside, original);
+      unlinkSync(artifact.path);
+      symlinkSync(outside, artifact.path);
+      expect(
+        (await fetch(new URL(artifact.contentUrl, endpoint), {
+          headers: { cookie: session.cookie },
+        })).status,
+      ).toBe(409);
+
+      const db = new DatabaseSync(server.store.path);
+      db.prepare("UPDATE artifacts SET path=? WHERE id=?").run(outside, artifact.id);
+      db.close();
+      expect(
+        (await fetch(new URL(artifact.contentUrl, endpoint), {
+          headers: { cookie: session.cookie },
+        })).status,
+      ).toBe(409);
+
+      const large = Buffer.alloc(16 * 1024 * 1024 + 1, 0x61);
+      const largePath = join(dataRoot, "scratch", "large-result.bin");
+      const largeDigest = createHash("sha256").update(large).digest("hex");
+      writeFileSync(largePath, large);
+      const insert = new DatabaseSync(server.store.path);
+      insert
+        .prepare(
+          `INSERT INTO artifacts
+             (id,task_id,run_id,author,source,media_type,sha256,byte_size,path,citations_json,created_at)
+           VALUES ('artifact_large',?,?,?,?,?,?,?,?,?,?)`,
+        )
+        .run(
+          artifact.taskId,
+          artifact.runId,
+          "mara",
+          "fake",
+          "application/octet-stream",
+          largeDigest,
+          large.byteLength,
+          largePath,
+          "[]",
+          Date.now(),
+        );
+      insert.close();
+      const streamed = await fetch(new URL("/v1/artifacts/artifact_large/content", endpoint), {
+        headers: { cookie: session.cookie },
+      });
+      expect(streamed.status).toBe(200);
+      expect(streamed.headers.get("content-disposition")).toMatch(/^attachment/);
+      const digest = createHash("sha256");
+      let bytes = 0;
+      const reader = streamed.body?.getReader();
+      if (!reader) throw new Error("missing artifact stream");
+      for (;;) {
+        const next = await reader.read();
+        if (next.done) break;
+        bytes += next.value.byteLength;
+        digest.update(next.value);
+      }
+      expect(bytes).toBe(large.byteLength);
+      expect(digest.digest("hex")).toBe(largeDigest);
     } finally {
       await server.close();
     }

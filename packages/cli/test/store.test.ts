@@ -449,6 +449,7 @@ describe("store", () => {
           authMode: "none",
           executionLocation: "local daemon scratch",
           eligible: true,
+          ineligibleReason: null,
         },
       }),
     );

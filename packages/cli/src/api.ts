@@ -20,6 +20,8 @@ import {
   Health,
   NotFoundApiError,
   OwnerSession,
+  InternalApiError,
+  PayloadTooLargeApiError,
   PublicArtifact,
   ResyncRequiredApiError,
   SetupAcknowledgement,
@@ -102,7 +104,9 @@ const ApiWithErrors = HttpApi.make("agentis")
   .addError(NotFoundApiError, { status: 404 })
   .addError(ConflictApiError, { status: 409 })
   .addError(CursorExpiredApiError, { status: 410 })
-  .addError(ResyncRequiredApiError, { status: 409 });
+  .addError(ResyncRequiredApiError, { status: 409 })
+  .addError(PayloadTooLargeApiError, { status: 413 })
+  .addError(InternalApiError, { status: 500 });
 
 export const AgentisJsonApi = ApiWithErrors.add(JsonApiGroup);
 export const AgentisApi = ApiWithErrors.add(JsonApiGroup).add(RawApiGroup);
