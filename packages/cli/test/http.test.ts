@@ -1,4 +1,4 @@
-import { Snapshot } from "../src/schema.js";
+import { WorkspaceSnapshot } from "../src/schema.js";
 import { mkdtempSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -64,7 +64,7 @@ describe("http", () => {
         "Bot not-an-owner",
       );
       expect(botSubmit.status).toBe(403);
-      expect(String(botSubmit.json.error)).toMatch(/bot cannot/);
+      expect(String(botSubmit.json.message)).toMatch(/owner session required/);
       const ownerSubmit = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "allow for bot deny", fixture: "allow" },
@@ -219,7 +219,7 @@ describe("http", () => {
     async (kind, expired) => {
       const { endpoint, server, owner } = await boot();
       const snapshot = async () =>
-        Schema.decodeUnknownSync(Snapshot)(
+        Schema.decodeUnknownSync(WorkspaceSnapshot)(
           await (
             await fetch(new URL("/v1/status", endpoint), {
               headers: { authorization: `Bearer ${owner.token}` },
@@ -266,7 +266,7 @@ describe("http", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "approve once", fixture: "allow" },
       });
-      const snapshot = Schema.decodeUnknownSync(Snapshot)(
+      const snapshot = Schema.decodeUnknownSync(WorkspaceSnapshot)(
         await (
           await fetch(new URL("/v1/status", endpoint), {
             headers: { authorization: `Bearer ${owner.token}` },

@@ -1,5 +1,6 @@
 import { type DatabaseSync, type SQLInputValue } from "node:sqlite";
 import { newEventId, newMessageId } from "./ids.js";
+import type { MessageImportance, MessageKind } from "./schema.js";
 export const row = <T>(db: DatabaseSync, sql: string, params: SQLInputValue[] = []) =>
   db.prepare(sql).get(...params) as T | undefined;
 
@@ -44,25 +45,43 @@ export const message = (
     runId: string | null;
     authorKind: string;
     authorName: string;
+    authorRole?: "operator" | "coordinator" | "specialist" | "system";
+    kind?: typeof MessageKind.Type;
+    importance?: typeof MessageImportance.Type;
+    dedupeKey?: string;
     body: string;
     nowMs: number;
   },
 ) => {
   const id = newMessageId();
-  run(
-    db,
-    `INSERT INTO messages (id, thread_id, task_id, run_id, author_kind, author_name, body, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
+  const authorRole =
+    input.authorRole ??
+    (input.authorName === "mara"
+      ? "coordinator"
+      : input.authorName === "ivo"
+        ? "specialist"
+        : input.authorName === "owner"
+          ? "operator"
+          : "system");
+  const result = db
+    .prepare(
+      `INSERT OR IGNORE INTO messages
+       (id, thread_id, task_id, run_id, author_kind, author_name, author_role, kind, importance, dedupe_key, body, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
       id,
       input.threadId,
       input.taskId,
       input.runId,
       input.authorKind,
       input.authorName,
+      authorRole,
+      input.kind ?? "progress",
+      input.importance ?? "routine",
+      input.dedupeKey ?? id,
       input.body,
       input.nowMs,
-    ],
-  );
-  return id;
+    );
+  return result.changes === 1;
 };

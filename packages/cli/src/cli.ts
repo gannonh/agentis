@@ -12,6 +12,7 @@ import { loginProvider, provisionProvider } from "./provider.js";
 import { loadProfile, saveProfile } from "./profile.js";
 import {
   ApprovalId,
+  BootstrapIssue,
   ExecutionBoundary,
   FixtureKind,
   ProviderKind,
@@ -26,6 +27,7 @@ const defaultDataRoot = () => join(homedir(), ...DEFAULT_DATA_ROOT_SEGMENTS);
 const usage = `Usage:
   agentis provider provision|login|import-key [--provider codex|claude] [--data-root DIR]
   agentis serve --endpoint URL [--data-root DIR] [--profile NAME] [--provider fake|codex] [--execution-boundary docker-desktop-run-container|unverified-host-scratch]
+  agentis web --endpoint URL | --profile NAME [--data-root DIR]
   agentis doctor --endpoint URL | --profile NAME [--data-root DIR]
   agentis task submit --endpoint URL --brief TEXT [--fixture smoke|allow|deny|input|cancel]
   agentis task handoff --endpoint URL --run SOURCE_RUN --brief CONTEXT
@@ -202,6 +204,19 @@ export const runCli = async (argv: string[]): Promise<number> => {
     return 0;
   }
   const control = requireControl(values, dataRoot);
+  if (verb === "web") {
+    const owner = await Effect.runPromise(loadOrCreateOwner(control.dataRoot));
+    const response = await fetch(new URL("/v1/browser/bootstrap", control.endpoint), {
+      method: "POST",
+      headers: { authorization: `Bearer ${owner.token}` },
+    });
+    if (!response.ok) {
+      throw new Error(`browser bootstrap failed (${response.status})`);
+    }
+    const issued = Schema.decodeUnknownSync(BootstrapIssue)(await response.json());
+    process.stdout.write(`${issued.url}\n`);
+    return 0;
+  }
   if (verb === "doctor") {
     const owner = await Effect.runPromise(loadOrCreateOwner(control.dataRoot));
     const health = await fetch(new URL("/v1/health", control.endpoint));

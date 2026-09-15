@@ -1,6 +1,6 @@
 # Cancellation and stop-all
 
-The owner can cancel one active run or latch the whole local instance with `stop-all`; public status exposes canceled runs, canceled pending actions, and the latch state.
+Use this CLI-only Docker fixture recipe to cancel one active run or latch the local instance with `stop-all`. Public status exposes canceled runs, canceled pending actions, and the latch state.
 
 ## Sub-features
 
@@ -10,8 +10,8 @@ The owner can cancel one active run or latch the whole local instance with `stop
 
 ## How to get to it (user POV)
 
-- Submit `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "KAT-3315 cancel" --fixture cancel` and run `node packages/cli/dist/bin.js run cancel --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --run "$RUN_ID"`.
-- In a separate fresh launch, submit `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "KAT-3315 stop all" --fixture input` and run `node packages/cli/dist/bin.js stop-all --endpoint "$ENDPOINT" --data-root "$DATA_ROOT"`.
+- Submit `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "verification-cancel" --fixture cancel` and run `node packages/cli/dist/bin.js run cancel --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --run "$RUN_ID"`.
+- In a separate fresh launch, submit `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "verification-stop-all" --fixture input` and run `node packages/cli/dist/bin.js stop-all --endpoint "$ENDPOINT" --data-root "$DATA_ROOT"`.
 - Inspect `/v1/status` through `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT"` after every action.
 
 ## Driving it with the Agentis CLI and status API
@@ -24,8 +24,8 @@ Preconditions:
 - The stop-all case uses a separate fresh data root because the latch is persistent.
 - Evidence for this recipe is currently `UNVERIFIED` until the public cancellation commands are driven and retained.
 
-- **Cancel one run.** Run `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "KAT-3315 cancel" --fixture cancel > "$EVIDENCE_DIR/cancel-submit.json"`; require the submit receipt to have `accepted: true`, then read `RUN_ID`. Capture the before snapshot with `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/cancel-before.json"` before canceling. Run `node packages/cli/dist/bin.js run cancel --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --run "$RUN_ID" > "$EVIDENCE_DIR/cancel-resolution.json"`, then capture `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/cancel-after.json"`. Require accepted cancellation, run `status: "canceled"`, task `status: "canceled"`, and no still-pending or allowed action for that run. The launch action may remain `claimed` after the provider starts.
-- **Latch all work.** On a new launch, submit `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "KAT-3315 stop all" --fixture input > "$EVIDENCE_DIR/stop-submit.json"`; require the submit receipt to have `accepted: true`, then capture `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/stop-before.json"`. Run `node packages/cli/dist/bin.js stop-all --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/stop-all.json"`. Require an accepted receipt and `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/stop-after.json"` status `stopAll: true`, with the active run canceled.
+- **Cancel one run.** Run `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "verification-cancel" --fixture cancel > "$EVIDENCE_DIR/cancel-submit.json"`; require the submit receipt to have `accepted: true`, then read `RUN_ID`. Capture the before snapshot with `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/cancel-before.json"` before canceling. Run `node packages/cli/dist/bin.js run cancel --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --run "$RUN_ID" > "$EVIDENCE_DIR/cancel-resolution.json"`, then capture `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/cancel-after.json"`. Require accepted cancellation, run `status: "canceled"`, task `status: "canceled"`, and no still-pending or allowed action for that run. The launch action may remain `claimed` after the provider starts.
+- **Latch all work.** On a new launch, submit `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "verification-stop-all" --fixture input > "$EVIDENCE_DIR/stop-submit.json"`; require the submit receipt to have `accepted: true`, then capture `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/stop-before.json"`. Run `node packages/cli/dist/bin.js stop-all --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/stop-all.json"`. Require an accepted receipt and `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/stop-after.json"` status `stopAll: true`, with the active run canceled.
 - **Prove the latch.** The rejected submission intentionally exits `1`, so temporarily disable `errexit` while capturing it. Restore `set -e` after the check below.
 
   ```sh
@@ -33,7 +33,7 @@ Preconditions:
   node packages/cli/dist/bin.js task submit \
     --endpoint "$ENDPOINT" \
     --data-root "$DATA_ROOT" \
-    --brief "KAT-3315 after stop all" \
+    --brief "verification-after-stop-all" \
     --fixture smoke \
     > "$EVIDENCE_DIR/after-stop-submit.json" \
     2> "$EVIDENCE_DIR/after-stop-submit.stderr"
@@ -56,4 +56,4 @@ Preconditions:
 - `run cancel` rejects a run already `succeeded`, `failed`, or `canceled`; record the original terminal result.
 - The command receipt's `interrupt_provider` effect records the requested provider interruption. Verify the public run state and Docker fixture container/supervisor cleanup separately.
 - Do not use a stale `RUN_ID` from another launch or infer ownership from a guessed port.
-- A fixture cancellation `PASS` remains separate from live-provider support. This feature has no live-provider evidence in the current map and remains UNVERIFIED until a public fixture run is retained.
+- Record the Docker fixture verdict from this CLI recipe. Live-provider cancellation remains `UNVERIFIED` until a separately authorized run retains public evidence.

@@ -1,4 +1,5 @@
 import { createInterface } from "node:readline";
+import { appendFileSync } from "node:fs";
 
 const send = (value) => {
   process.stdout.write(`${JSON.stringify(value)}\n`);
@@ -47,6 +48,7 @@ createInterface({ input: process.stdin }).on("line", (line) => {
   }
   if (message.method === "turn/start") {
     const text = message.params?.input?.[0]?.text ?? "";
+    appendFileSync("prompts.jsonl", `${JSON.stringify({ text })}\n`);
     turnId = `turn-${Date.now()}`;
     if (text === "QUOTA") {
       send({ id: message.id, result: { turn: { id: turnId } } });

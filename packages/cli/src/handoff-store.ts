@@ -1,9 +1,8 @@
-import { randomUUID, createHash } from "node:crypto";
-import { openSync, closeSync, fstatSync, readSync, constants } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 import { Schema } from "effect";
-import { newActionIntentId, newRunId } from "./ids.js";
+import { newActionIntentId, newBotConfigRevisionId, newRunId } from "./ids.js";
 import {
   CommandReceipt,
   FrozenConfig,
@@ -14,6 +13,7 @@ import {
 } from "./schema.js";
 import type { ApplyInput } from "./store.js";
 import { row, rows, run, emit, message } from "./store-db.js";
+import { readVerifiedFile } from "./verified-file.js";
 import {
   CLAUDE_CLI_PIN,
   MAX_ACTIVE_RUNS,
@@ -31,6 +31,8 @@ export const HANDOFF_DDL = `CREATE TABLE IF NOT EXISTS handoffs (
 const decodeHandoff = (value: Record<string, unknown>) =>
   Schema.decodeUnknownSync(HandoffRow)({
     ...value,
+    sender: "mara",
+    recipient: "ivo",
     onwardDelegation: value.onwardDelegation === 0 ? false : value.onwardDelegation,
   });
 export const handoffs = (db: DatabaseSync): HandoffRow[] =>
@@ -55,6 +57,9 @@ const note = (
     runId: handoff.recipientRunId,
     authorKind: "bot",
     authorName: author,
+    kind: "handoff",
+    importance: "decision",
+    dedupeKey: `handoff:${handoff.id}:${state}`,
     body: `Handoff ${state}: ${reason}`,
     nowMs,
   });
@@ -83,43 +88,32 @@ export const rejectHandoff = (
   const handoff = handoffForRun(db, runId);
   if (!handoff || handoff.state !== "proposed") return false;
   run(db, "UPDATE handoffs SET state=? WHERE id=? AND state='proposed'", [state, handoff.id]);
-  run(db, "UPDATE runs SET status=?,waiting_reason='none' WHERE id=?", [runStatus, runId]);
+  run(db, "UPDATE runs SET status=?,waiting_reason='none',completed_at=? WHERE id=?", [
+    runStatus,
+    nowMs,
+    runId,
+  ]);
   run(db, "UPDATE pending_actions SET state='canceled' WHERE run_id=? AND state='pending'", [
     runId,
   ]);
   note(db, handoff, state, reason, nowMs);
   return true;
 };
-const readVerifiedSource = (artifact: {
-  path: string;
-  byte_size: number;
-  sha256: string;
-}): string | null => {
-  let descriptor: number | undefined;
-  try {
-    descriptor = openSync(
-      artifact.path,
-      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
-    );
-    const info = fstatSync(descriptor);
-    if (!info.isFile() || info.size > 65536 || info.size !== artifact.byte_size) return null;
-    const buffer = Buffer.alloc(65537);
-    let size = 0;
-    while (size < buffer.length) {
-      const count = readSync(descriptor, buffer, size, buffer.length - size, null);
-      if (count === 0) break;
-      size += count;
-    }
-    if (size > 65536 || size !== artifact.byte_size) return null;
-    const bytes = buffer.subarray(0, size);
-    if (createHash("sha256").update(bytes).digest("hex") !== artifact.sha256) return null;
-    return bytes.toString("utf8");
-  } catch {
-    return null;
-  } finally {
-    if (descriptor !== undefined) closeSync(descriptor);
-  }
-};
+const readVerifiedSource = (
+  artifact: {
+    path: string;
+    byte_size: number;
+    sha256: string;
+  },
+  root: string,
+): string | null =>
+  readVerifiedFile({
+    path: artifact.path,
+    root,
+    byteSize: artifact.byte_size,
+    sha256: artifact.sha256,
+    maximumBytes: 65_536,
+  })?.toString("utf8") ?? null;
 
 export const proposeHandoff = (
   db: DatabaseSync,
@@ -139,11 +133,12 @@ export const proposeHandoff = (
     thread_id: string;
     frozen_json: string;
     brief: string;
+    constraints_json: string;
     action_count: number;
     owner_session: string;
   }>(
     db,
-    `SELECT r.task_id,r.thread_id,r.frozen_json,t.brief,t.action_count,t.owner_session FROM runs r JOIN tasks t ON t.id=r.task_id WHERE r.id=? AND r.status='succeeded' AND t.bot_name='mara' AND json_extract(r.frozen_json,'$.bot')='mara'`,
+    `SELECT r.task_id,r.thread_id,r.frozen_json,t.brief,t.constraints_json,t.action_count,t.owner_session FROM runs r JOIN tasks t ON t.id=r.task_id WHERE r.id=? AND r.status='succeeded' AND t.bot_name='mara' AND json_extract(r.frozen_json,'$.bot')='mara'`,
     [command.sourceRunId],
   );
   if (!source || source.owner_session !== input.principal.sessionId)
@@ -169,13 +164,17 @@ export const proposeHandoff = (
   );
   if (!artifact || artifact.byte_size > 65536)
     return denied("handoff requires a source draft of at most 65536 bytes");
-  const sourceDraft = readVerifiedSource(artifact);
+  const sourceDraft = readVerifiedSource(artifact, original.workspaceId);
   if (sourceDraft === null)
     return denied("source draft is missing, changed, oversized, or not a regular file");
+  const constraints = Schema.decodeUnknownSync(Schema.Array(Schema.String))(
+    JSON.parse(source.constraints_json),
+  );
   const context = JSON.stringify({
     sender: "mara",
     sourceRunId: command.sourceRunId,
     brief: source.brief,
+    constraints,
     sourceDraft,
     request: command.context,
   });
@@ -185,12 +184,22 @@ export const proposeHandoff = (
     deadlineMs: original.deadlineMs,
     actionBudget: original.actionBudget,
     bot: "ivo",
+    role: "specialist",
     provider: "claude",
     transport: "claude-sdk-jsonl-stdio",
     executableVersion: CLAUDE_CLI_PIN,
     model: "claude-sonnet-5",
     effort: "medium",
+    skills: ["specialist-draft"],
+    grants: ["read:provided-source", "write:task-artifact"],
+    publicConfig: { sourceMode: "materialized-read-only" },
     authMode: "api-key",
+    executionLocation:
+      original.executionBoundary === "docker-fixture-container"
+        ? "isolated fixture container"
+        : original.executionBoundary === "docker-desktop-run-container"
+          ? "local provider container"
+          : "local daemon scratch",
     workspaceId: join(input.workspaceId, "runs", recipientRunId),
     mode: "agent",
   };
@@ -200,12 +209,38 @@ export const proposeHandoff = (
     threadId: source.thread_id,
     sourceRunId: command.sourceRunId,
     recipientRunId,
+    sender: "mara",
+    recipient: "ivo",
     context,
     state: "proposed",
     expiresAt: input.nowMs + 60000,
     grants: "draft_only",
     onwardDelegation: false,
   });
+  const configRevisionId = newBotConfigRevisionId();
+  run(
+    db,
+    `INSERT INTO bot_config_revisions
+       (id,bot,role,provider,model,effort,skills_json,grants_json,public_config_json,
+        execution_boundary,execution_location,auth_mode,frozen_json,created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [
+      configRevisionId,
+      frozen.bot,
+      frozen.role,
+      frozen.provider,
+      frozen.model,
+      frozen.effort ?? null,
+      JSON.stringify(frozen.skills),
+      JSON.stringify(frozen.grants),
+      JSON.stringify(frozen.publicConfig),
+      frozen.executionBoundary,
+      frozen.executionLocation,
+      frozen.authMode,
+      JSON.stringify(frozen),
+      input.nowMs,
+    ],
+  );
   run(
     db,
     "INSERT INTO handoffs (id,taskId,threadId,sourceRunId,recipientRunId,context,state,expiresAt) VALUES (?,?,?,?,?,?,?,?)",
@@ -222,11 +257,15 @@ export const proposeHandoff = (
   );
   run(
     db,
-    `INSERT INTO runs (id,task_id,thread_id,status,waiting_reason,frozen_json,fixture,action_count,deadline_at,created_at) VALUES (?,?,?,'queued','none',?,NULL,0,?,?)`,
+    `INSERT INTO runs
+       (id,task_id,thread_id,bot_config_revision_id,status,waiting_reason,frozen_json,fixture,
+        action_count,deadline_at,created_at,started_at,completed_at)
+     VALUES (?,?,?,?,'queued','none',?,NULL,0,?,?,NULL,NULL)`,
     [
       recipientRunId,
       handoff.taskId,
       handoff.threadId,
+      configRevisionId,
       JSON.stringify(frozen),
       input.nowMs + RUN_DEADLINE_MS,
       input.nowMs,
@@ -319,8 +358,8 @@ export const decideHandoff = (
   run(db, "UPDATE handoffs SET state='accepted' WHERE id=? AND state='proposed'", [h.id]);
   run(
     db,
-    "UPDATE tasks SET bot_name='ivo',bot_role='specialist',status='running' WHERE id=? AND bot_name='mara'",
-    [h.taskId],
+    "UPDATE tasks SET bot_name='ivo',bot_role='specialist',status='running',current_run_id=?,updated_at=? WHERE id=? AND bot_name='mara'",
+    [runId, nowMs, h.taskId],
   );
   run(
     db,

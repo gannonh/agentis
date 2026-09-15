@@ -57,7 +57,7 @@ export const prepareIsolationCanaries = async () => {
   };
 };
 
-export const verifyFixtureIsolation = async (report, canaries, daemonEntry) => {
+export const verifyFixtureIsolation = async (report, canaries, daemonEntry, webRoot) => {
   const { stdout } = await exec("docker", ["inspect", report.containerId]);
   const [container] = JSON.parse(stdout);
   assert.equal(container.Id, report.containerId);
@@ -83,6 +83,8 @@ export const verifyFixtureIsolation = async (report, canaries, daemonEntry) => {
   assert.equal(realpathSync(report.dataRoot), report.dataRoot);
   assert.equal(report.workspace, join(report.dataRoot, "scratch"));
   assert.ok(lstatSync(daemonEntry).isFile());
+  assert.ok(lstatSync(webRoot).isDirectory());
+  assert.ok(lstatSync(join(webRoot, "index.html")).isFile());
   const mounts = container.Mounts.filter((mount) => mount.Type === "bind");
   assert.ok(
     container.Mounts.every(
@@ -98,6 +100,7 @@ export const verifyFixtureIsolation = async (report, canaries, daemonEntry) => {
     [
       { Source: report.dataRoot, Destination: report.dataRoot, RW: true },
       { Source: daemonEntry, Destination: "/opt/agentis/fixture-daemon.mjs", RW: false },
+      { Source: webRoot, Destination: "/opt/agentis/web", RW: false },
     ].sort((a, b) => a.Destination.localeCompare(b.Destination)),
   );
   const expectedEnv = {

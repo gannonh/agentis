@@ -6,13 +6,14 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { Effect, Schema } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Snapshot } from "../src/schema.js";
-import { sweepRunTimeouts, openStore } from "../src/store.js";
+import { WorkspaceSnapshot } from "../src/schema.js";
+import { sweepRunTimeouts, openStore, type Store } from "../src/store.js";
 import { loadOrCreateOwner } from "../src/auth.js";
 import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
 
 const stub = fileURLToPath(new URL("./codex-stub.mjs", import.meta.url));
+const stores = new Map<string, Store>();
 
 const port = () =>
   new Promise<number>((resolve, reject) => {
@@ -43,6 +44,7 @@ const boot = async () => {
     }),
   );
   const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
+  stores.set(endpoint.origin, server.store);
   return { endpoint, server, owner, dataRoot };
 };
 
@@ -59,7 +61,10 @@ const statusOf = async (endpoint: URL, token: string) => {
   const response = await fetch(new URL("/v1/status", endpoint), {
     headers: { authorization: `Bearer ${token}` },
   });
-  return Schema.decodeUnknownSync(Snapshot)(await response.json());
+  Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
+  const store = stores.get(endpoint.origin);
+  if (!store) throw new Error("missing test store");
+  return Effect.runPromise(store.snapshot());
 };
 
 const waitFor = async (
@@ -90,9 +95,10 @@ describe("bounded handoff", () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
     const { endpoint, server, owner } = await boot();
     try {
+      const retainedConstraint = "SPECIALIST_CONSTRAINT_947: return one paragraph";
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
-        command: { kind: "submit_task", brief: "smoke" },
+        command: { kind: "submit_task", brief: "smoke", constraints: [retainedConstraint] },
       });
       await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const proposal = {
@@ -140,7 +146,13 @@ describe("bounded handoff", () => {
         .trim()
         .split("\n");
       expect(prompts).toHaveLength(2);
-      expect(JSON.parse(prompts[1] ?? "{}").text).toContain("KAT3242_OK");
+      const providerPrompts = prompts.map((prompt) =>
+        Schema.decodeUnknownSync(Schema.Struct({ text: Schema.String }))(JSON.parse(prompt)),
+      );
+      expect(providerPrompts[1]?.text).toContain("KAT3242_OK");
+      expect(providerPrompts.every((prompt) => prompt.text.includes(retainedConstraint))).toBe(
+        true,
+      );
       expect(done.artifacts[1]?.taskId).toBe(source.json.taskId);
       expect(readFileSync(done.artifacts[1]?.path ?? "", "utf8")).toBe("SPECIALIST_DRAFT");
       expect((await command(endpoint, owner.token, proposal)).json.replayed).toBe(true);

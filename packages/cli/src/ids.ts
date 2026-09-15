@@ -4,8 +4,10 @@ import {
   ActionIntentId,
   ApprovalId,
   ArtifactId,
+  BotConfigRevisionId,
   CommandId,
   EventId,
+  EvidenceId,
   IdempotencyKey,
   MessageId,
   RunId,
@@ -21,6 +23,8 @@ export const newRunId = () => mint(RunId);
 export const newThreadId = () => mint(ThreadId);
 export const newMessageId = () => mint(MessageId);
 export const newArtifactId = () => mint(ArtifactId);
+export const newEvidenceId = () => mint(EvidenceId);
+export const newBotConfigRevisionId = () => mint(BotConfigRevisionId);
 export const newCommandId = () => mint(CommandId);
 export const newApprovalId = () => mint(ApprovalId);
 export const newActionIntentId = () => mint(ActionIntentId);
