@@ -1,0 +1,565 @@
+{
+  "schema": "kat-3240-live-provider-retention-v1",
+  "recordedAt": "2026-09-15T19:39:54.560Z",
+  "sourceCommit": "b1f36df5ad8f0ca08fa964da6ad021aad236255e",
+  "productSourceDirty": false,
+  "harnessSourceDirty": false,
+  "dataRoot": "/tmp/agentis-kat-3240-live-PQPR59",
+  "environment": {
+    "node": "v24.20.0",
+    "pnpm": "9.15.9",
+    "packageVersion": "2.0.0",
+    "os": "Linux 7.2.3-arch1-3 x86_64",
+    "docker": "29.7.2",
+    "images": {
+      "codex": "sha256:f95b19bb709947c6d515164730ac2737a683edbbd386178aaf9a6a74437df4cd amd64 linux",
+      "claude": "sha256:5d8f7896b7a5a82caf00564518feab247fd1c3a8554eb8defaeb4ac83fbec1ae arm64 linux"
+    },
+    "providerBoundary": "docker-desktop-run-container",
+    "host": "sartre"
+  },
+  "provider": "claude",
+  "bot": "ivo",
+  "input": {
+    "kind": "submit_task",
+    "bot": "ivo",
+    "brief": "Return exactly KAT3240_CLAUDE_RETAINED and no other text.",
+    "outcome": "Return exactly KAT3240_CLAUDE_RETAINED and no other text.",
+    "constraints": [
+      "Use only the supplied materialized read-only GitHub briefing packet.",
+      "Do not call tools, access other files, or mutate any resource."
+    ],
+    "source": {
+      "kind": "github_briefing",
+      "label": "KAT-3240 read-only release packet",
+      "repository": "gannonh/agentis",
+      "revision": "KAT-3240-live-retention",
+      "url": "https://github.com/gannonh/agentis/pull/468",
+      "text": "The release packet is read-only. The retained proof marker is KAT3240_CLAUDE_RETAINED.",
+      "citations": [
+        {
+          "label": "Read-only release packet",
+          "excerpt": "The release packet is read-only.",
+          "url": "https://github.com/gannonh/agentis/pull/468"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "terminalStatus": "succeeded",
+    "body": "KAT3240_CLAUDE_RETAINED",
+    "publicResourceMutations": 0,
+    "sessionLoad": "succeeded",
+    "retainedIdentityAfterLoad": true,
+    "retainedIdentityAfterRestart": true,
+    "sseReplayDuplicateFree": true,
+    "sseReconnectAccepted": true,
+    "artifactAccessAfterRestart": "PASS"
+  },
+  "status": "PASS",
+  "secretValuesRecorded": false,
+  "dotenvUsed": false,
+  "initialDaemon": {
+    "pid": 367124,
+    "endpoint": "http://127.0.0.1:39517",
+    "health": {
+      "ok": true,
+      "schemaId": "agentis.v2.gate1.0",
+      "apiFamily": "v1",
+      "node": "v24.20.0",
+      "packageVersion": "2.0.0"
+    },
+    "cleanup": {
+      "code": 0,
+      "signal": null,
+      "forced": false,
+      "endpointGone": true
+    }
+  },
+  "ownerCredentialPrecheck": {
+    "mode": "0600",
+    "tokenPresent": true,
+    "tokenRecorded": false
+  },
+  "before": {
+    "cursor": "2"
+  },
+  "submission": {
+    "commandId": "5b66aba9-42cd-4ae7-8f89-c762338970bc",
+    "replayed": false,
+    "accepted": true,
+    "taskId": "b12162d7-b404-4dab-8426-91b4662664b7",
+    "runId": "009d9a8b-d550-436c-bef0-3401917c0262",
+    "threadId": "d0eb0719-7d2a-4f4c-930d-f235ea1a5004",
+    "effects": [
+      "launch"
+    ]
+  },
+  "persistedResult": {
+    "task": {
+      "id": "b12162d7-b404-4dab-8426-91b4662664b7",
+      "threadId": "d0eb0719-7d2a-4f4c-930d-f235ea1a5004",
+      "outcome": "Return exactly KAT3240_CLAUDE_RETAINED and no other text.",
+      "requestedBy": "owner",
+      "currentOwner": "ivo",
+      "ownerRole": "specialist",
+      "workspaceRef": "task:b12162d7-b404-4dab-8426-91b4662664b7",
+      "constraints": [
+        "Use only the supplied materialized read-only GitHub briefing packet.",
+        "Do not call tools, access other files, or mutate any resource."
+      ],
+      "evidence": [
+        "3f06142e-6d04-44af-ba5b-9b21b8ddd0b1"
+      ],
+      "currentRunId": "009d9a8b-d550-436c-bef0-3401917c0262",
+      "latestArtifactId": "9fcceda0-673d-4552-b606-f7eda199b6d3",
+      "status": "completed",
+      "actionCount": 0,
+      "createdAt": 1789501195468,
+      "updatedAt": 1789501202997
+    },
+    "run": {
+      "id": "009d9a8b-d550-436c-bef0-3401917c0262",
+      "taskId": "b12162d7-b404-4dab-8426-91b4662664b7",
+      "threadId": "d0eb0719-7d2a-4f4c-930d-f235ea1a5004",
+      "botConfigRevisionId": "3ccf35ad-84b1-468f-b8c2-e1a82e1d88ce",
+      "status": "succeeded",
+      "waitingReason": "none",
+      "providerLoadStatus": "idle",
+      "pendingPrompt": null,
+      "failure": null,
+      "actionCount": 0,
+      "queuedAt": 1789501195468,
+      "startedAt": 1789501201157,
+      "deadlineAt": 1789502095468,
+      "completedAt": 1789501202997
+    },
+    "botConfigRevision": {
+      "id": "3ccf35ad-84b1-468f-b8c2-e1a82e1d88ce",
+      "bot": "ivo",
+      "role": "specialist",
+      "provider": "claude",
+      "model": "claude-sonnet-5",
+      "effort": "medium",
+      "skills": [
+        "specialist-draft"
+      ],
+      "grants": [
+        "read:provided-source",
+        "write:task-artifact"
+      ],
+      "publicConfig": {
+        "sourceMode": "materialized-read-only"
+      },
+      "executionBoundary": "docker-desktop-run-container",
+      "executionLocation": "local provider container",
+      "authMode": "api-key",
+      "createdAt": 1789501195468
+    },
+    "source": {
+      "id": "3f06142e-6d04-44af-ba5b-9b21b8ddd0b1",
+      "source": "github_briefing",
+      "label": "KAT-3240 read-only release packet",
+      "repository": "gannonh/agentis",
+      "revision": "KAT-3240-live-retention",
+      "url": "https://github.com/gannonh/agentis/pull/468",
+      "contentDigest": "61c7f9f9a7a541efe1f781a89edc243caad07b1e1e021bcb4709b78af086aa06",
+      "byteSize": 86,
+      "citations": [
+        {
+          "label": "Read-only release packet",
+          "excerpt": "The release packet is read-only.",
+          "url": "https://github.com/gannonh/agentis/pull/468"
+        }
+      ],
+      "createdAt": 1789501195468
+    },
+    "artifact": {
+      "id": "9fcceda0-673d-4552-b606-f7eda199b6d3",
+      "taskId": "b12162d7-b404-4dab-8426-91b4662664b7",
+      "runId": "009d9a8b-d550-436c-bef0-3401917c0262",
+      "author": "ivo",
+      "source": "claude",
+      "mediaType": "text/markdown",
+      "sha256": "61f9814b641895b41f5e3a642ccf3abb5e853f767a74481d7ce2c17a14b22604",
+      "byteSize": 23,
+      "citations": [
+        {
+          "label": "Read-only release packet",
+          "excerpt": "The release packet is read-only.",
+          "url": "https://github.com/gannonh/agentis/pull/468"
+        }
+      ],
+      "createdAt": 1789501202997,
+      "metadataUrl": "/v1/artifacts/9fcceda0-673d-4552-b606-f7eda199b6d3",
+      "contentUrl": "/v1/artifacts/9fcceda0-673d-4552-b606-f7eda199b6d3/content"
+    },
+    "messages": [
+      {
+        "id": "7ba22df2-bad4-47d8-ae3b-6e1c72dfaf4b",
+        "threadId": "d0eb0719-7d2a-4f4c-930d-f235ea1a5004",
+        "taskId": "b12162d7-b404-4dab-8426-91b4662664b7",
+        "runId": "009d9a8b-d550-436c-bef0-3401917c0262",
+        "authorKind": "human",
+        "authorName": "owner",
+        "authorRole": "operator",
+        "kind": "request",
+        "importance": "decision",
+        "body": "Return exactly KAT3240_CLAUDE_RETAINED and no other text.",
+        "createdAt": 1789501195468
+      },
+      {
+        "id": "6e7c1e93-12ef-4e65-9ab2-81f096dcad90",
+        "threadId": "d0eb0719-7d2a-4f4c-930d-f235ea1a5004",
+        "taskId": "b12162d7-b404-4dab-8426-91b4662664b7",
+        "runId": "009d9a8b-d550-436c-bef0-3401917c0262",
+        "authorKind": "bot",
+        "authorName": "ivo",
+        "authorRole": "specialist",
+        "kind": "result",
+        "importance": "result",
+        "body": "Result ready: 9fcceda0-673d-4552-b606-f7eda199b6d3",
+        "createdAt": 1789501202997
+      }
+    ],
+    "cursor": "5"
+  },
+  "sseReplay": {
+    "httpStatus": 200,
+    "connected": true,
+    "transitions": [
+      {
+        "cursor": "3",
+        "id": "7c5e4e65-4856-4f66-9659-5278f5364717",
+        "event": {
+          "kind": "workspace_changed",
+          "reason": "task_submitted"
+        },
+        "createdAt": 1789501195468
+      },
+      {
+        "cursor": "4",
+        "id": "88aea6cf-b4be-4449-9c87-97190f8442ec",
+        "event": {
+          "kind": "workspace_changed",
+          "reason": "run_running"
+        },
+        "createdAt": 1789501201157
+      },
+      {
+        "cursor": "5",
+        "id": "10b7d09c-caf9-4dfd-8d4b-e76971b12105",
+        "event": {
+          "kind": "workspace_changed",
+          "reason": "run_succeeded"
+        },
+        "createdAt": 1789501202997
+      }
+    ],
+    "cursors": [
+      "3",
+      "4",
+      "5"
+    ],
+    "reasons": [
+      "task_submitted",
+      "run_running",
+      "run_succeeded"
+    ],
+    "duplicateFree": true
+  },
+  "providerReconnect": {
+    "command": [
+      "node",
+      "packages/cli/dist/bin.js",
+      "session",
+      "load",
+      "--endpoint",
+      "http://127.0.0.1:39517",
+      "--data-root",
+      "/tmp/agentis-kat-3240-live-PQPR59",
+      "--run",
+      "009d9a8b-d550-436c-bef0-3401917c0262"
+    ],
+    "exitCode": 0,
+    "receipt": {
+      "commandId": "edac78da-0631-4de3-a735-89cef01549c6",
+      "replayed": false,
+      "accepted": true,
+      "taskId": "b12162d7-b404-4dab-8426-91b4662664b7",
+      "runId": "009d9a8b-d550-436c-bef0-3401917c0262",
+      "effects": [
+        "load_session"
+      ]
+    },
+    "loadStatus": "succeeded",
+    "retainedIdentity": {
+      "stable": true,
+      "collections": {
+        "tasks": {
+          "before": [
+            "102a0017-6eb4-4283-9be4-bf9e54c5c393",
+            "b12162d7-b404-4dab-8426-91b4662664b7"
+          ],
+          "after": [
+            "102a0017-6eb4-4283-9be4-bf9e54c5c393",
+            "b12162d7-b404-4dab-8426-91b4662664b7"
+          ],
+          "stable": true
+        },
+        "threads": {
+          "before": [
+            "d0eb0719-7d2a-4f4c-930d-f235ea1a5004",
+            "faef9eab-2d6b-441b-a1bf-c28a2bbd49cb"
+          ],
+          "after": [
+            "d0eb0719-7d2a-4f4c-930d-f235ea1a5004",
+            "faef9eab-2d6b-441b-a1bf-c28a2bbd49cb"
+          ],
+          "stable": true
+        },
+        "runs": {
+          "before": [
+            "009d9a8b-d550-436c-bef0-3401917c0262",
+            "be2a1965-2ea9-465b-a7ff-de8037410170"
+          ],
+          "after": [
+            "009d9a8b-d550-436c-bef0-3401917c0262",
+            "be2a1965-2ea9-465b-a7ff-de8037410170"
+          ],
+          "stable": true
+        },
+        "botConfigRevisions": {
+          "before": [
+            "0ee8d4df-b87d-4afd-8473-6059385f38fc",
+            "3ccf35ad-84b1-468f-b8c2-e1a82e1d88ce"
+          ],
+          "after": [
+            "0ee8d4df-b87d-4afd-8473-6059385f38fc",
+            "3ccf35ad-84b1-468f-b8c2-e1a82e1d88ce"
+          ],
+          "stable": true
+        },
+        "evidence": {
+          "before": [
+            "3f06142e-6d04-44af-ba5b-9b21b8ddd0b1",
+            "96180f6d-adff-43f4-9429-1b98627101ce"
+          ],
+          "after": [
+            "3f06142e-6d04-44af-ba5b-9b21b8ddd0b1",
+            "96180f6d-adff-43f4-9429-1b98627101ce"
+          ],
+          "stable": true
+        },
+        "pending": {
+          "before": [
+            "b7e5dbad-bda3-4c52-bc09-a3acb6e7a8e1",
+            "e24a86ad-d9b1-473f-bdad-bdf3c779008d"
+          ],
+          "after": [
+            "b7e5dbad-bda3-4c52-bc09-a3acb6e7a8e1",
+            "e24a86ad-d9b1-473f-bdad-bdf3c779008d"
+          ],
+          "stable": true
+        },
+        "artifacts": {
+          "before": [
+            "9fcceda0-673d-4552-b606-f7eda199b6d3"
+          ],
+          "after": [
+            "9fcceda0-673d-4552-b606-f7eda199b6d3"
+          ],
+          "stable": true
+        },
+        "messages": {
+          "before": [
+            "6e7c1e93-12ef-4e65-9ab2-81f096dcad90",
+            "7ba22df2-bad4-47d8-ae3b-6e1c72dfaf4b",
+            "8d6bd92f-8339-4748-b03a-f33267c22c65",
+            "b8be0435-fade-4e3a-b412-6e576c106b05"
+          ],
+          "after": [
+            "6e7c1e93-12ef-4e65-9ab2-81f096dcad90",
+            "7ba22df2-bad4-47d8-ae3b-6e1c72dfaf4b",
+            "8d6bd92f-8339-4748-b03a-f33267c22c65",
+            "b8be0435-fade-4e3a-b412-6e576c106b05"
+          ],
+          "stable": true
+        },
+        "handoffs": {
+          "before": [],
+          "after": [],
+          "stable": true
+        }
+      }
+    }
+  },
+  "restartedDaemon": {
+    "pid": 369137,
+    "endpoint": "http://127.0.0.1:42179",
+    "health": {
+      "ok": true,
+      "schemaId": "agentis.v2.gate1.0",
+      "apiFamily": "v1",
+      "node": "v24.20.0",
+      "packageVersion": "2.0.0"
+    },
+    "cleanup": {
+      "code": 0,
+      "signal": null,
+      "forced": false,
+      "endpointGone": true
+    }
+  },
+  "refreshAfterRestart": {
+    "cursor": "5",
+    "retainedIdentity": {
+      "stable": true,
+      "collections": {
+        "tasks": {
+          "before": [
+            "102a0017-6eb4-4283-9be4-bf9e54c5c393",
+            "b12162d7-b404-4dab-8426-91b4662664b7"
+          ],
+          "after": [
+            "102a0017-6eb4-4283-9be4-bf9e54c5c393",
+            "b12162d7-b404-4dab-8426-91b4662664b7"
+          ],
+          "stable": true
+        },
+        "threads": {
+          "before": [
+            "d0eb0719-7d2a-4f4c-930d-f235ea1a5004",
+            "faef9eab-2d6b-441b-a1bf-c28a2bbd49cb"
+          ],
+          "after": [
+            "d0eb0719-7d2a-4f4c-930d-f235ea1a5004",
+            "faef9eab-2d6b-441b-a1bf-c28a2bbd49cb"
+          ],
+          "stable": true
+        },
+        "runs": {
+          "before": [
+            "009d9a8b-d550-436c-bef0-3401917c0262",
+            "be2a1965-2ea9-465b-a7ff-de8037410170"
+          ],
+          "after": [
+            "009d9a8b-d550-436c-bef0-3401917c0262",
+            "be2a1965-2ea9-465b-a7ff-de8037410170"
+          ],
+          "stable": true
+        },
+        "botConfigRevisions": {
+          "before": [
+            "0ee8d4df-b87d-4afd-8473-6059385f38fc",
+            "3ccf35ad-84b1-468f-b8c2-e1a82e1d88ce"
+          ],
+          "after": [
+            "0ee8d4df-b87d-4afd-8473-6059385f38fc",
+            "3ccf35ad-84b1-468f-b8c2-e1a82e1d88ce"
+          ],
+          "stable": true
+        },
+        "evidence": {
+          "before": [
+            "3f06142e-6d04-44af-ba5b-9b21b8ddd0b1",
+            "96180f6d-adff-43f4-9429-1b98627101ce"
+          ],
+          "after": [
+            "3f06142e-6d04-44af-ba5b-9b21b8ddd0b1",
+            "96180f6d-adff-43f4-9429-1b98627101ce"
+          ],
+          "stable": true
+        },
+        "pending": {
+          "before": [
+            "b7e5dbad-bda3-4c52-bc09-a3acb6e7a8e1",
+            "e24a86ad-d9b1-473f-bdad-bdf3c779008d"
+          ],
+          "after": [
+            "b7e5dbad-bda3-4c52-bc09-a3acb6e7a8e1",
+            "e24a86ad-d9b1-473f-bdad-bdf3c779008d"
+          ],
+          "stable": true
+        },
+        "artifacts": {
+          "before": [
+            "9fcceda0-673d-4552-b606-f7eda199b6d3"
+          ],
+          "after": [
+            "9fcceda0-673d-4552-b606-f7eda199b6d3"
+          ],
+          "stable": true
+        },
+        "messages": {
+          "before": [
+            "6e7c1e93-12ef-4e65-9ab2-81f096dcad90",
+            "7ba22df2-bad4-47d8-ae3b-6e1c72dfaf4b",
+            "8d6bd92f-8339-4748-b03a-f33267c22c65",
+            "b8be0435-fade-4e3a-b412-6e576c106b05"
+          ],
+          "after": [
+            "6e7c1e93-12ef-4e65-9ab2-81f096dcad90",
+            "7ba22df2-bad4-47d8-ae3b-6e1c72dfaf4b",
+            "8d6bd92f-8339-4748-b03a-f33267c22c65",
+            "b8be0435-fade-4e3a-b412-6e576c106b05"
+          ],
+          "stable": true
+        },
+        "handoffs": {
+          "before": [],
+          "after": [],
+          "stable": true
+        }
+      }
+    }
+  },
+  "sseReconnect": {
+    "httpStatus": 200,
+    "connected": true
+  },
+  "artifactAccessAfterRestart": {
+    "metadataUrl": "http://127.0.0.1:42179/v1/artifacts/9fcceda0-673d-4552-b606-f7eda199b6d3",
+    "contentUrl": "http://127.0.0.1:42179/v1/artifacts/9fcceda0-673d-4552-b606-f7eda199b6d3/content",
+    "metadataStatus": 200,
+    "contentStatus": 200,
+    "publicByteSize": 23,
+    "bytesRead": 23,
+    "publicSha256": "61f9814b641895b41f5e3a642ccf3abb5e853f767a74481d7ce2c17a14b22604",
+    "computedSha256": "61f9814b641895b41f5e3a642ccf3abb5e853f767a74481d7ce2c17a14b22604",
+    "metadataMatches": true,
+    "contentMatches": true,
+    "publicPathAbsent": true,
+    "observedBody": "KAT3240_CLAUDE_RETAINED",
+    "verdict": "PASS"
+  },
+  "cliDoctor": {
+    "command": [
+      "node",
+      "packages/cli/dist/bin.js",
+      "doctor",
+      "--endpoint",
+      "http://127.0.0.1:42179",
+      "--data-root",
+      "/tmp/agentis-kat-3240-live-PQPR59"
+    ],
+    "exitCode": 0,
+    "health": {
+      "ok": true,
+      "schemaId": "agentis.v2.gate1.0",
+      "apiFamily": "v1",
+      "node": "v24.20.0",
+      "packageVersion": "2.0.0"
+    },
+    "restoredTaskId": "b12162d7-b404-4dab-8426-91b4662664b7",
+    "restoredRunId": "009d9a8b-d550-436c-bef0-3401917c0262",
+    "restoredArtifactId": "9fcceda0-673d-4552-b606-f7eda199b6d3"
+  },
+  "cleanup": {
+    "containerQueryExitCode": 0,
+    "networkQueryExitCode": 0,
+    "exactContainers": [],
+    "exactNetworks": [],
+    "passed": true
+  }
+}
