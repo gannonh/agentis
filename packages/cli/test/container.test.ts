@@ -4,6 +4,8 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { createServer } from "node:net";
@@ -130,6 +132,50 @@ const waitForStatus = async (endpoint: URL, token: string, runId: string, status
 };
 
 describe.sequential("Run containers", () => {
+  it("mounts each Run workspace through the host group without world access", async () => {
+    const { root, log } = fakeDocker();
+    process.env.AGENTIS_CODEX_STUB = stub;
+    process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS = "2000";
+    const endpoint = new URL(`http://127.0.0.1:${await port()}`);
+    const server = await Effect.runPromise(
+      startServer({
+        endpoint,
+        dataRoot: root,
+        workspace: join(root, "scratch"),
+        provider: "codex",
+        executionBoundary: "docker-desktop-run-container",
+      }),
+    );
+    const owner = await Effect.runPromise(loadOrCreateOwner(root));
+    const hostGroupId = process.getgid?.();
+    if (hostGroupId === undefined) throw new Error("test requires a host group ID");
+    try {
+      const submitted = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "group-scoped workspace" },
+      });
+      if (!submitted.runId) throw new Error("Run was not created");
+      await waitForStatus(endpoint, owner.token, submitted.runId, "succeeded");
+
+      const workspace = join(root, "scratch", "runs", submitted.runId);
+      const sources = join(workspace, "sources");
+      const source = join(sources, readdirSync(sources)[0] ?? "missing");
+      expect(statSync(workspace).mode & 0o7777).toBe(0o2770);
+      expect(statSync(sources).mode & 0o7777).toBe(0o2750);
+      expect(statSync(source).mode & 0o777).toBe(0o640);
+
+      const commands = await waitForLog(log, (entries) =>
+        entries.some((args) => args.includes("--group-add") && args.includes(String(hostGroupId))),
+      );
+      const launch = commands.find((args) => args[0] === "run" && args.includes("--group-add"));
+      expect(launch).toContain("--user=10001:10001");
+      expect(launch).toContain("--group-add");
+      expect(launch).toContain(String(hostGroupId));
+    } finally {
+      await server.close();
+    }
+  });
+
   it("does not bind a host workspace or owner credentials during version preflight", async () => {
     const { log } = fakeDocker();
     await readCodexVersionInContainer("0.153.4");
