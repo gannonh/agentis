@@ -2414,7 +2414,7 @@ export const mutateForEngine = (storePath: string) => {
           runId: input.runId,
           authorKind: "bot",
           authorName: input.author === "ivo" ? "ivo" : "mara",
-          authorRole: messageRoleOfRun(db, input.runId),
+          authorRole: input.author === "ivo" ? "specialist" : "coordinator",
           kind: "result",
           importance: "result",
           dedupeKey: `result:${input.runId}`,
