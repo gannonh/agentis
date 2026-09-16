@@ -9,7 +9,7 @@ Turn ideas into complete Backlog specs in Linear.
 
 ## Read the conventions first
 
-Read `references/conventions.md` completely before any write. It defines preflight, Linear MCP tools, the spec body template, hierarchy, dependencies, and state rules.
+Read `../conventions.md` completely before any write. It defines preflight, Linear MCP tools, the spec body template, hierarchy, dependencies, and state rules.
 
 ## When to use
 
@@ -35,7 +35,7 @@ Hard gates:
 - Host Linear MCP with `get_issue`, `save_issue`, `save_comment`, `list_comments`, `list_issues`, and `list_issue_statuses`.
 - `gh` authenticated for the GitHub repo (read remote and existing PRs during context gathering).
 
-Run the preflight in `references/conventions.md` before the first Linear write of a session.
+Run the preflight in `../conventions.md` before the first Linear write of a session.
 
 ## Shared principles
 

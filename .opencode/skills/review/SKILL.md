@@ -39,7 +39,7 @@ Do not paginate review comments with raw `gh`. Do not use `gh api graphql` revie
 - CI has settled red, or unanswered review comments are blocking Human Review.
 - A PR closed without merge and the issue needs Todo reconciliation.
 
-Read `references/conventions.md` before any write.
+Read `../conventions.md` before any write.
 
 ## Preconditions
 
