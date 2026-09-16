@@ -7,7 +7,7 @@ import {
   decideHandoff,
   claimDraft,
 } from "./handoff-store.js";
-import { row, rows, run, withTxn, emit, message } from "./store-db.js";
+import { row, rows, run, withTxn, emit, message, type MessageRole } from "./store-db.js";
 import { ProviderState } from "./provider-contract.js";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
@@ -266,6 +266,14 @@ export type EventRow = {
 };
 
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+
+const messageRoleOfRun = (db: DatabaseSync, runId: RunId): MessageRole => {
+  const current = row<{ frozen_json: string }>(db, "SELECT frozen_json FROM runs WHERE id=?", [
+    runId,
+  ]);
+  if (!current) throw new StoreError(`run ${runId} has no frozen config for a message role`);
+  return Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(current.frozen_json)).role;
+};
 
 const DDL = `
 CREATE TABLE IF NOT EXISTS meta (
@@ -1110,6 +1118,7 @@ const expireApprovalAndRun = (
     runId: approval.run_id,
     authorKind: "system",
     authorName: "agentis",
+    authorRole: "system",
     kind: "failure",
     importance: "blocking",
     dedupeKey: `approval-expired:${approval.id}`,
@@ -1469,6 +1478,7 @@ const submitTask = (
     runId,
     authorKind: "human",
     authorName: "owner",
+    authorRole: "operator",
     kind: "request",
     importance: "decision",
     dedupeKey: `request:${commandId}`,
@@ -1583,6 +1593,7 @@ const resolveApproval = (
     runId: approval.run_id,
     authorKind: "human",
     authorName: "owner",
+    authorRole: "operator",
     kind: "approval",
     importance: "decision",
     dedupeKey: `approval-decision:${approval.id}`,
@@ -1662,6 +1673,7 @@ const answerInput = (
     runId: current.id,
     authorKind: "human",
     authorName: "owner",
+    authorRole: "operator",
     kind: "answer",
     importance: "decision",
     dedupeKey: `input-answer:${commandId}`,
@@ -1746,6 +1758,7 @@ const cancelRun = (
     runId: current.id,
     authorKind: "system",
     authorName: "agentis",
+    authorRole: "system",
     kind: "system",
     importance: "blocking",
     dedupeKey: `run-canceled:${current.id}`,
@@ -1794,6 +1807,7 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
       runId: item.id,
       authorKind: "system",
       authorName: "agentis",
+      authorRole: "system",
       kind: "system",
       importance: "blocking",
       dedupeKey: `stop-all:${item.id}`,
@@ -2126,6 +2140,7 @@ const interruptActive = (db: DatabaseSync, nowMs: number): RunId[] => {
         runId: item.id,
         authorKind: "system",
         authorName: "agentis",
+        authorRole: "system",
         kind: "system",
         importance: "blocking",
         dedupeKey: `daemon-restart:${item.id}:${nowMs}`,
@@ -2182,6 +2197,7 @@ export const mutateForEngine = (storePath: string) => {
           runId,
           authorKind: "bot",
           authorName: "ivo",
+          authorRole: messageRoleOfRun(db, runId),
           kind: "progress",
           importance: "routine",
           dedupeKey: `peer:${runId}:${digest(body)}`,
@@ -2283,6 +2299,7 @@ export const mutateForEngine = (storePath: string) => {
           runId: input.runId,
           authorKind: "bot",
           authorName: "mara",
+          authorRole: messageRoleOfRun(db, input.runId),
           kind: "approval",
           importance: "blocking",
           dedupeKey: `approval:${approvalId}`,
@@ -2316,6 +2333,7 @@ export const mutateForEngine = (storePath: string) => {
             runId,
             authorKind: "bot",
             authorName: frozen.bot,
+            authorRole: frozen.role,
             kind: "question",
             importance: "blocking",
             dedupeKey: `question:${runId}:${digest(prompt)}`,
@@ -2395,6 +2413,7 @@ export const mutateForEngine = (storePath: string) => {
           runId: input.runId,
           authorKind: "bot",
           authorName: input.author === "ivo" ? "ivo" : "mara",
+          authorRole: messageRoleOfRun(db, input.runId),
           kind: "result",
           importance: "result",
           dedupeKey: `result:${input.runId}`,
@@ -2443,6 +2462,7 @@ export const mutateForEngine = (storePath: string) => {
           runId,
           authorKind: "bot",
           authorName: currentTask?.bot_name === "ivo" ? "ivo" : "mara",
+          authorRole: messageRoleOfRun(db, runId),
           kind: "failure",
           importance: "blocking",
           dedupeKey: `failure:${runId}:${digest(error)}`,

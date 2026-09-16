@@ -37,6 +37,8 @@ export const emit = (
   ]);
 };
 
+export type MessageRole = "operator" | "coordinator" | "specialist" | "system";
+
 export const message = (
   db: DatabaseSync,
   input: {
@@ -45,7 +47,7 @@ export const message = (
     runId: string | null;
     authorKind: string;
     authorName: string;
-    authorRole?: "operator" | "coordinator" | "specialist" | "system";
+    authorRole: MessageRole;
     kind?: typeof MessageKind.Type;
     importance?: typeof MessageImportance.Type;
     dedupeKey?: string;
@@ -54,18 +56,11 @@ export const message = (
   },
 ) => {
   const id = newMessageId();
-  const authorRole =
-    input.authorRole ??
-    (input.authorName === "mara"
-      ? "coordinator"
-      : input.authorName === "ivo"
-        ? "specialist"
-        : input.authorName === "owner"
-          ? "operator"
-          : "system");
+  const dedupeKey = input.dedupeKey ?? id;
+  const insert = input.dedupeKey ? "INSERT OR IGNORE" : "INSERT";
   const result = db
     .prepare(
-      `INSERT OR IGNORE INTO messages
+      `${insert} INTO messages
        (id, thread_id, task_id, run_id, author_kind, author_name, author_role, kind, importance, dedupe_key, body, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
@@ -76,10 +71,10 @@ export const message = (
       input.runId,
       input.authorKind,
       input.authorName,
-      authorRole,
+      input.authorRole,
       input.kind ?? "progress",
       input.importance ?? "routine",
-      input.dedupeKey ?? id,
+      dedupeKey,
       input.body,
       input.nowMs,
     );
