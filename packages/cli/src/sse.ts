@@ -2,7 +2,7 @@ import type { ServerResponse } from "node:http";
 import { Effect, Either, Schema } from "effect";
 import { Cursor, type Transition } from "./schema.js";
 import { ReplayCursorError, type Store } from "./store.js";
-import { EVENT_SUBSCRIBER_LIMIT } from "./versions.js";
+import { EVENT_SUBSCRIBER_QUEUE_LIMIT } from "./versions.js";
 
 type Subscriber = {
   readonly response: ServerResponse;
@@ -25,6 +25,8 @@ const frame = (transition: Transition) =>
   `id: ${transition.cursor}\nevent: transition\ndata: ${JSON.stringify(transition)}\n\n`;
 
 export class TransitionHub {
+  // No subscriber cap by design: /v1/events requires an owner-authenticated session on the loopback
+  // daemon, and each subscriber's pending-event queue is bounded by EVENT_SUBSCRIBER_QUEUE_LIMIT.
   readonly #subscribers = new Set<Subscriber>();
   readonly #timer: NodeJS.Timeout;
   #pumping = false;
@@ -112,7 +114,7 @@ export class TransitionHub {
   #enqueue(subscriber: Subscriber, transition: Transition) {
     if (subscriber.closed || Number(transition.cursor) <= subscriber.acceptedCursor) return;
     subscriber.acceptedCursor = Number(transition.cursor);
-    if (subscriber.queue.length >= EVENT_SUBSCRIBER_LIMIT) {
+    if (subscriber.queue.length >= EVENT_SUBSCRIBER_QUEUE_LIMIT) {
       this.#overflow(subscriber, "subscriber could not keep up with retained transitions");
       return;
     }

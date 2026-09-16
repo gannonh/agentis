@@ -17,7 +17,7 @@ export const APPROVAL_TTL_MS = 5 * 60 * 1000;
 export const BROWSER_BOOTSTRAP_TTL_MS = 60 * 1000;
 export const BROWSER_SESSION_TTL_MS = 60 * 60 * 1000;
 export const EVENT_REPLAY_LIMIT = 128;
-export const EVENT_SUBSCRIBER_LIMIT = 32;
+export const EVENT_SUBSCRIBER_QUEUE_LIMIT = 32;
 
 export const CLAUDE_CLI_PIN = "2.1.263";
 export const CLAUDE_IMAGE = `agentis-claude:${CLAUDE_CLI_PIN}`;
