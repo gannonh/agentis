@@ -89,16 +89,29 @@ export class UnsupportedSchemaError extends Error {
   }
 }
 
+export type StoreErrorCode =
+  | "forbidden"
+  | "conflict"
+  | "internal"
+  | "cursor_expired"
+  | "resync_required";
+
 export class StoreError extends Error {
   readonly _tag = "StoreError";
+  constructor(
+    readonly code: StoreErrorCode,
+    message: string,
+  ) {
+    super(message);
+  }
 }
 
 export class ReplayCursorError extends StoreError {
   constructor(
-    readonly code: "cursor_expired" | "resync_required",
+    override readonly code: "cursor_expired" | "resync_required",
     message: string,
   ) {
-    super(message);
+    super(code, message);
   }
 }
 
@@ -513,7 +526,7 @@ const assertSchemaBeforeOpen = (db: DatabaseSync, path: string) => {
 
 const ownerOnly = (principal: Principal, commandKind: string) => {
   if (principal.kind !== "owner") {
-    throw new StoreError(`bot cannot ${commandKind}`);
+    throw new StoreError("forbidden", `bot cannot ${commandKind}`);
   }
 };
 
@@ -555,7 +568,7 @@ export const openStore = (
         );
         if (prior) {
           if (prior.payload_digest !== payloadDigest) {
-            throw new StoreError("idempotency key reused with a different payload");
+            throw new StoreError("conflict", "idempotency key reused with a different payload");
           }
           return receiptOf({
             ...(JSON.parse(prior.result_json) as CommandReceipt),
@@ -594,52 +607,52 @@ export const openStore = (
         applyCommand: (input) =>
           Effect.try({
             try: () => applyCommand(input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
           }),
         snapshot: (includeEvents = false) =>
           Effect.try({
             try: () => readSnapshot(db, includeEvents),
-            catch: (error) => new StoreError(String(error)),
+            catch: (error) => new StoreError("internal", String(error)),
           }),
         issueBrowserBootstrap: (input) =>
           Effect.try({
             try: () => issueBrowserBootstrap(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
           }),
         exchangeBrowserBootstrap: (input) =>
           Effect.try({
             try: () => exchangeBrowserBootstrap(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
           }),
         authenticateBrowser: (input) =>
           Effect.try({
             try: () => authenticateBrowser(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
           }),
         acknowledgeBrowserSetup: (input) =>
           Effect.try({
             try: () => acknowledgeBrowserSetup(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
           }),
         workspaceSnapshot: (input) =>
           Effect.try({
             try: () => workspaceSnapshot(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
           }),
         transitionsAfter: (cursor) =>
           Effect.try({
             try: () => transitionsAfter(db, cursor),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
           }),
         artifact: (id) =>
           Effect.try({
             try: () => readArtifact(db, id),
-            catch: (error) => new StoreError(String(error)),
+            catch: (error) => new StoreError("internal", String(error)),
           }),
         interruptActiveRuns: (nowMs) =>
           Effect.try({
             try: () => interruptActive(db, nowMs),
-            catch: (error) => new StoreError(String(error)),
+            catch: (error) => new StoreError("internal", String(error)),
           }),
         close: () =>
           Effect.sync(() => {
@@ -648,7 +661,7 @@ export const openStore = (
       };
     },
     catch: (error) =>
-      error instanceof UnsupportedSchemaError ? error : new StoreError(String(error)),
+      error instanceof UnsupportedSchemaError ? error : new StoreError("internal", String(error)),
   });
 
 const issueBrowserBootstrap = (
@@ -835,7 +848,7 @@ const publicPendingPrompt = (status: string, value: string | null) => {
             : typeof question.question === "string"
               ? question.question
               : null;
-        if (!key) throw new StoreError("provider question is missing its response key");
+        if (!key) throw new StoreError("internal", "provider question is missing its response key");
         const prompt =
           typeof question.question === "string"
             ? question.question
@@ -892,7 +905,7 @@ const workspaceSnapshot = (
             expiresAt: Number.MAX_SAFE_INTEGER,
           }
         : null;
-    if (!session) throw new StoreError("authentication required");
+    if (!session) throw new StoreError("forbidden", "authentication required");
     const snapshot = readSnapshotUnlocked(db, false);
     const providerMatches = session.provider === input.runtime.provider;
     const result = Schema.decodeUnknownSync(WorkspaceSnapshot)({
@@ -1209,7 +1222,7 @@ const dispatch = (db: DatabaseSync, input: ApplyInput, stagedPaths: string[]): C
       return stopAll(db, commandId, input);
     default: {
       const _exhaustive: never = command;
-      throw new StoreError(`unhandled command ${JSON.stringify(_exhaustive)}`);
+      throw new StoreError("internal", `unhandled command ${JSON.stringify(_exhaustive)}`);
     }
   }
 };
@@ -1568,7 +1581,7 @@ const resolveApproval = (
   ]);
   const changed = db.prepare("SELECT changes() AS n").get() as { n: number };
   if (changed.n !== 1) {
-    throw new StoreError("approval compare-and-set lost");
+    throw new StoreError("conflict", "approval compare-and-set lost");
   }
   run(db, "UPDATE pending_actions SET state = ? WHERE approval_id = ? AND state = 'pending'", [
     next,

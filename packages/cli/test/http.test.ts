@@ -7,7 +7,9 @@ import { Effect, Schema } from "effect";
 import { describe, expect, it, vi } from "vitest";
 import { loadOrCreateOwner } from "../src/auth.js";
 import { startServer } from "../src/http.js";
+import { browserRuntimeResolver, makeHttpApiHandler } from "../src/http-api.js";
 import { newIdempotencyKey } from "../src/ids.js";
+import { openStore, StoreError, type Store } from "../src/store.js";
 
 const port = () =>
   new Promise<number>((resolve, reject) => {
@@ -258,6 +260,66 @@ describe("http", () => {
       }
     },
   );
+
+  it("maps store failures to their honest HTTP statuses", async () => {
+    const dataRoot = mkdtempSync(join(tmpdir(), "agentis-http-store-"));
+    const endpoint = new URL("http://127.0.0.1:0");
+    const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
+    const store = await Effect.runPromise(openStore(dataRoot));
+    const post = async (failure: StoreError) => {
+      const failingStore: Store = {
+        ...store,
+        applyCommand: () => Effect.fail(failure),
+      };
+      const api = makeHttpApiHandler({
+        endpoint,
+        workspace: join(dataRoot, "scratch"),
+        provider: "fake",
+        executionBoundary: "unverified-host-scratch",
+        owner,
+        store: failingStore,
+        runtime: browserRuntimeResolver("fake", "unverified-host-scratch", dataRoot),
+      });
+      try {
+        const response = await api.handler(
+          new Request(new URL("/v1/commands", endpoint), {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              authorization: `Bearer ${owner.token}`,
+            },
+            body: JSON.stringify({
+              idempotencyKey: newIdempotencyKey(),
+              command: { kind: "stop_all" },
+            }),
+          }),
+        );
+        return { status: response.status, json: (await response.json()) as Record<string, unknown> };
+      } finally {
+        await api.dispose();
+      }
+    };
+    try {
+      const internal = await post(new StoreError("internal", "sqlite I/O failure"));
+      expect(internal.status).toBe(500);
+      expect(internal.json.code).toBe("internal_error");
+      expect(internal.json.message).toBe("sqlite I/O failure");
+
+      const forbiddenFailure = await post(new StoreError("forbidden", "bot cannot stop_all"));
+      expect(forbiddenFailure.status).toBe(403);
+      expect(forbiddenFailure.json.code).toBe("forbidden");
+      expect(forbiddenFailure.json.message).toBe("bot cannot stop_all");
+
+      const conflictFailure = await post(
+        new StoreError("conflict", "idempotency key reused with a different payload"),
+      );
+      expect(conflictFailure.status).toBe(409);
+      expect(conflictFailure.json.code).toBe("conflict");
+      expect(conflictFailure.json.message).toBe("idempotency key reused with a different payload");
+    } finally {
+      await Effect.runPromise(store.close());
+    }
+  });
 
   it("replays approval receipts without another dispatch effect", async () => {
     const { endpoint, server, owner } = await boot();

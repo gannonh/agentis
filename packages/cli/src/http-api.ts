@@ -1,17 +1,18 @@
 import { HttpApiBuilder, HttpServer, HttpServerResponse, OpenApi } from "@effect/platform";
 import { createHash, randomBytes } from "node:crypto";
 import { Effect, Layer, Schema } from "effect";
-import { AgentisApi, AgentisJsonApi, type RequestHeaders } from "./api.js";
+import { AgentisApi, AgentisJsonApi, storeFailureApiError, type RequestHeaders } from "./api.js";
 import { parseAuthorization, type OwnerSession as OwnerCredential } from "./auth.js";
 import { applyReceiptEffects } from "./engine.js";
 import { providerReadiness } from "./provider-readiness.js";
 import {
   CommandReceipt,
   PublicArtifact,
+  type ApiError,
   type ExecutionBoundary,
   type ProviderKind,
 } from "./schema.js";
-import type { ArtifactRow, BrowserRuntime, Principal, Store } from "./store.js";
+import type { ArtifactRow, BrowserRuntime, Principal, Store, StoreError } from "./store.js";
 import {
   API_FAMILY,
   BROWSER_BOOTSTRAP_TTL_MS,
@@ -53,10 +54,9 @@ const unauthorized = (message = "authentication required") => apiError("unauthor
 const forbidden = (message: string) => apiError("forbidden", message);
 const conflict = (message: string) => apiError("conflict", message);
 const notFound = (message: string) => apiError("not_found", message);
-type AuthorizationError =
-  | ReturnType<typeof unauthorized>
-  | ReturnType<typeof forbidden>
-  | ReturnType<typeof conflict>;
+type AuthorizationError = ApiError;
+
+const storeFailure = Effect.mapError((error: StoreError) => storeFailureApiError(error));
 
 const cookies = (header: string | undefined) => {
   const result = new Map<string, string>();
@@ -141,7 +141,7 @@ export const authorizeRead = (
     const tokenHash = hash(sessionToken);
     const session = yield* dependencies.store
       .authenticateBrowser({ tokenHash, nowMs: Date.now() })
-      .pipe(Effect.mapError((error) => conflict(error.message)));
+      .pipe(storeFailure);
     if (!session) return yield* Effect.fail(unauthorized("browser session expired"));
     return {
       channel: "browser",
@@ -175,7 +175,7 @@ const authorizeBrowserMutation = (dependencies: HttpApiDependencies, headers: He
         csrfHash: hash(csrfHeader),
         nowMs: Date.now(),
       })
-      .pipe(Effect.mapError((error) => conflict(error.message)));
+      .pipe(storeFailure);
     if (!session) return yield* Effect.fail(forbidden("CSRF token mismatch"));
     return authority;
   });
@@ -202,7 +202,7 @@ const statusFor = (
         nowMs: Date.now(),
         runtime,
       })
-      .pipe(Effect.mapError((error) => conflict(error.message)));
+      .pipe(storeFailure);
   });
 
 const publicArtifact = (artifact: ArtifactRow) =>
@@ -250,7 +250,7 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
               nowMs,
               expiresAt,
             })
-            .pipe(Effect.mapError((error) => conflict(error.message)));
+            .pipe(storeFailure);
           return { url: `${dependencies.endpoint.origin}/#bootstrap=${code}`, expiresAt };
         }),
       )
@@ -272,7 +272,7 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
               nowMs,
               expiresAt,
             })
-            .pipe(Effect.mapError((error) => conflict(error.message)));
+            .pipe(storeFailure);
           if (!exchanged) {
             return yield* Effect.fail(conflict("bootstrap code is invalid, expired, or consumed"));
           }
@@ -322,7 +322,7 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
               sources: payload.sources,
               nowMs: Date.now(),
             })
-            .pipe(Effect.mapError((error) => conflict(error.message)));
+            .pipe(storeFailure);
           if (!acknowledged) return yield* Effect.fail(conflict("setup acknowledgement failed"));
           return (yield* statusFor(dependencies, authority)).session;
         }),
@@ -357,13 +357,7 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
               executionBoundary: dependencies.executionBoundary,
               workspaceId: dependencies.workspace,
             })
-            .pipe(
-              Effect.mapError((error) =>
-                error.message.includes("bot cannot")
-                  ? forbidden(error.message)
-                  : conflict(error.message),
-              ),
-            );
+            .pipe(storeFailure);
           yield* Effect.tryPromise({
             try: () =>
               applyReceiptEffects({
@@ -386,7 +380,7 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
           yield* authorizeRead(dependencies, headers);
           const artifact = yield* dependencies.store
             .artifact(path.id)
-            .pipe(Effect.mapError((error) => conflict(error.message)));
+            .pipe(storeFailure);
           if (!artifact) return yield* Effect.fail(notFound("artifact not found"));
           return publicArtifact(artifact);
         }),
