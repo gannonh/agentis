@@ -13,7 +13,7 @@ import {
 } from "./schema.js";
 import type { ApplyInput } from "./store.js";
 import { row, rows, run, emit, message } from "./store-db.js";
-import { ACTIVE_RUN_OR_LOADING_SQL } from "./run-lifecycle.js";
+import { ACTIVE_RUN_OR_LOADING_SQL, finishRun } from "./run-lifecycle.js";
 import { readVerifiedFile } from "./verified-file.js";
 import {
   CLAUDE_CLI_PIN,
@@ -89,15 +89,35 @@ export const rejectHandoff = (
   const handoff = handoffForRun(db, runId);
   if (!handoff || handoff.state !== "proposed") return false;
   run(db, "UPDATE handoffs SET state=? WHERE id=? AND state='proposed'", [state, handoff.id]);
-  run(db, "UPDATE runs SET status=?,waiting_reason='none',completed_at=? WHERE id=?", [
-    runStatus,
-    nowMs,
+  finishRun(db, {
     runId,
-  ]);
+    taskId: handoff.taskId,
+    status: runStatus,
+    taskStatus: runStatus === "failed" ? "failed" : "canceled",
+    nowMs,
+    message: {
+      authorKind: "bot",
+      authorName: "ivo",
+      kind: "handoff",
+      importance: "decision",
+      dedupeKey: `handoff:${handoff.id}:${state}`,
+      body: `Handoff ${state}: ${reason}`,
+    },
+    transition: {
+      reason: state === "rejected" ? "handoff_rejected" : "handoff_expired",
+      body: {
+        handoffId: handoff.id,
+        taskId: handoff.taskId,
+        threadId: handoff.threadId,
+        runId,
+        author: "ivo",
+        reason,
+      },
+    },
+  });
   run(db, "UPDATE pending_actions SET state='canceled' WHERE run_id=? AND state='pending'", [
     runId,
   ]);
-  note(db, handoff, state, reason, nowMs);
   return true;
 };
 const readVerifiedSource = (
