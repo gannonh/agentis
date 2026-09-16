@@ -1,0 +1,106 @@
+{
+  "schema": "kat-3240-live-provider-retention-v1",
+  "recordedAt": "2026-09-15T19:30:54.494Z",
+  "sourceCommit": "5d85ab2c171774eed03dea0e1605123f35cab99c",
+  "productSourceDirty": false,
+  "harnessSourceDirty": false,
+  "dataRoot": "/tmp/agentis-kat-3240-live-PQPR59",
+  "environment": {
+    "node": "v24.20.0",
+    "pnpm": "9.15.9",
+    "packageVersion": "2.0.0",
+    "os": "Linux 7.2.3-arch1-3 x86_64",
+    "docker": "29.7.2",
+    "images": {
+      "codex": "sha256:f95b19bb709947c6d515164730ac2737a683edbbd386178aaf9a6a74437df4cd amd64 linux",
+      "claude": "sha256:5d8f7896b7a5a82caf00564518feab247fd1c3a8554eb8defaeb4ac83fbec1ae arm64 linux"
+    },
+    "providerBoundary": "docker-desktop-run-container",
+    "host": "sartre"
+  },
+  "provider": "claude",
+  "bot": "ivo",
+  "input": {
+    "kind": "submit_task",
+    "bot": "ivo",
+    "brief": "Return exactly KAT3240_CLAUDE_RETAINED and no other text.",
+    "outcome": "Return exactly KAT3240_CLAUDE_RETAINED and no other text.",
+    "constraints": [
+      "Use only the supplied materialized read-only GitHub briefing packet.",
+      "Do not call tools, access other files, or mutate any resource."
+    ],
+    "source": {
+      "kind": "github_briefing",
+      "label": "KAT-3240 read-only release packet",
+      "repository": "gannonh/agentis",
+      "revision": "KAT-3240-live-retention",
+      "url": "https://github.com/gannonh/agentis/pull/468",
+      "text": "The release packet is read-only. The retained proof marker is KAT3240_CLAUDE_RETAINED.",
+      "citations": [
+        {
+          "label": "Read-only release packet",
+          "excerpt": "The release packet is read-only.",
+          "url": "https://github.com/gannonh/agentis/pull/468"
+        }
+      ]
+    }
+  },
+  "expected": {
+    "terminalStatus": "succeeded",
+    "body": "KAT3240_CLAUDE_RETAINED",
+    "publicResourceMutations": 0,
+    "sessionLoad": "succeeded",
+    "retainedIdentityAfterLoad": true,
+    "retainedIdentityAfterRestart": true,
+    "sseReplayDuplicateFree": true,
+    "sseReconnectAccepted": true,
+    "artifactAccessAfterRestart": "PASS"
+  },
+  "status": "FAIL",
+  "secretValuesRecorded": false,
+  "dotenvUsed": false,
+  "initialDaemon": {
+    "pid": 356965,
+    "endpoint": "http://127.0.0.1:44953",
+    "health": {
+      "ok": true,
+      "schemaId": "agentis.v2.gate1.0",
+      "apiFamily": "v1",
+      "node": "v24.20.0",
+      "packageVersion": "2.0.0"
+    },
+    "cleanup": {
+      "code": 0,
+      "signal": null,
+      "forced": false,
+      "endpointGone": true
+    }
+  },
+  "ownerCredentialPrecheck": {
+    "mode": "0600",
+    "tokenPresent": true,
+    "tokenRecorded": false
+  },
+  "before": {
+    "cursor": "0"
+  },
+  "submission": {
+    "commandId": "2d3877c5-3c1b-48bb-8599-ebfd144607c1",
+    "replayed": false,
+    "accepted": true,
+    "taskId": "102a0017-6eb4-4283-9be4-bf9e54c5c393",
+    "runId": "be2a1965-2ea9-465b-a7ff-de8037410170",
+    "threadId": "faef9eab-2d6b-441b-a1bf-c28a2bbd49cb",
+    "effects": [
+      "launch"
+    ]
+  },
+  "failure": "provider run ended failed: provider-error",
+  "cleanup": {
+    "containerQueryExitCode": 0,
+    "networkQueryExitCode": 0,
+    "exactContainers": [],
+    "exactNetworks": [],
+    "passed": true
+  }
+}

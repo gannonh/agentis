@@ -4,7 +4,8 @@ Source builds load secrets from a 1Password Environment through 1Password CLI. T
 dotenv files on disk. Do not create `.env` or `.env.local`. Do not upload those files to
 development servers.
 
-`.env.example` is a committed name template only. Never copy it to `.env`.
+`.env.example` contains variable names and the non-secret Environment id. Secret values stay empty.
+Never copy it to `.env`.
 
 ## One-time setup
 
@@ -29,8 +30,9 @@ development servers.
    Sprite service env, Codex secrets, or login profile. The token is the only secret that lives on
    the machine.
 
-3. Optional: `export OP_ENVIRONMENT_ID=<id>` to use a different Environment. The default is
-   `sjeqjrunoqacvlom5cjq5kizxa`.
+3. Leave `OP_ENVIRONMENT_ID` unset for normal source builds. `loadRepoEnv` uses the committed
+   `DEFAULT_OP_ENVIRONMENT_ID`. Its value is `sjeqjrunoqacvlom5cjq5kizxa`. Set
+   `OP_ENVIRONMENT_ID` only to select a different Environment.
 
 ## Run
 

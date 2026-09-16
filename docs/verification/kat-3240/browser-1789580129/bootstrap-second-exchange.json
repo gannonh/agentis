@@ -1,0 +1,18 @@
+{
+  "request": "POST /v1/browser/session with the consumed bootstrap code, exact Origin, and a CSRF marker",
+  "firstAttemptWithoutOrigin": {
+    "httpStatus": 403,
+    "body": {
+      "code": "forbidden",
+      "message": "exact browser Origin required"
+    }
+  },
+  "withOrigin": {
+    "httpStatus": 409,
+    "body": {
+      "code": "conflict",
+      "message": "bootstrap code is invalid, expired, or consumed"
+    }
+  },
+  "observedSecondExchangeRejected": true
+}

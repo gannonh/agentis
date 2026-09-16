@@ -5,13 +5,16 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadOrCreateOwner } from "../src/auth.js";
 import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
+import { WorkspaceSnapshot } from "../src/schema.js";
+import type { Store } from "../src/store.js";
 
 const stub = fileURLToPath(new URL("./codex-stub.mjs", import.meta.url));
+const stores = new Map<string, Store>();
 
 const port = () =>
   new Promise<number>((resolve, reject) => {
@@ -42,6 +45,7 @@ const boot = async () => {
     }),
   );
   const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
+  stores.set(endpoint.origin, server.store);
   return { endpoint, server, owner, dataRoot };
 };
 
@@ -58,22 +62,17 @@ const statusOf = async (endpoint: URL, token: string) => {
   const response = await fetch(new URL("/v1/status", endpoint), {
     headers: { authorization: `Bearer ${token}` },
   });
-  return (await response.json()) as {
-    runs: {
-      id: string;
-      status: string;
-      providerSessionId: string | null;
-      frozen: unknown;
-      providerState: {
-        loadStatus: string;
-        pendingPrompt: string | null;
-        failure: string | null;
-        history: string[];
-      };
-    }[];
-    pending: { approvalId: string | null; state: string; runId: string }[];
-    artifacts: { taskId: string; runId: string; source: string; sha256: string; path: string }[];
-  };
+  Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
+  const store = stores.get(endpoint.origin);
+  if (!store) throw new Error("missing test store");
+  return Effect.runPromise(store.snapshot());
+};
+
+const publicStatusOf = async (endpoint: URL, token: string) => {
+  const response = await fetch(new URL("/v1/status", endpoint), {
+    headers: { authorization: `Bearer ${token}` },
+  });
+  return Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
 };
 
 const waitFor = async (
@@ -205,6 +204,14 @@ describe("Claude SDK bridge", () => {
         expect(JSON.parse(waiting.runs[0]?.providerState.pendingPrompt ?? "{}")).toMatchObject({
           questions: [{ question: "Pick color" }],
         });
+        const publicInput = await publicStatusOf(endpoint, owner.token);
+        expect(publicInput.runs[0]?.pendingPrompt).toEqual({
+          kind: "questions",
+          questions: [{ key: "Pick color", prompt: "Pick color", options: ["BLUE", "RED"] }],
+        });
+        expect(publicInput.messages.find((message) => message.kind === "question")?.body).toBe(
+          "Pick color",
+        );
         await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
           command: {

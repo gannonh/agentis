@@ -1,0 +1,20 @@
+{
+  "id": "992b5123-c8cd-4b74-8683-e7d19f9385c3",
+  "taskId": "3019269e-639a-4d1d-aa77-4599e86f4d37",
+  "runId": "f74e3f90-2749-49cd-bcda-9a763b9329e4",
+  "author": "ivo",
+  "source": "claude",
+  "mediaType": "text/markdown",
+  "sha256": "c4f9d1c02748b6144a9dbe72b3d50918f69288d4cf09b06c3208d1bad6b6bf97",
+  "byteSize": 16,
+  "citations": [
+    {
+      "label": "Read-only release packet",
+      "excerpt": "The retained proof marker is KAT3242_OK.",
+      "url": "https://github.com/agentis/example/tree/verify-stub"
+    }
+  ],
+  "createdAt": 1789581340543,
+  "metadataUrl": "/v1/artifacts/992b5123-c8cd-4b74-8683-e7d19f9385c3",
+  "contentUrl": "/v1/artifacts/992b5123-c8cd-4b74-8683-e7d19f9385c3/content"
+}

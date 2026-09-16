@@ -1,0 +1,23 @@
+{
+  "schema": "kat-3240-large-transcript-check-v1",
+  "recordedAt": "2026-09-16T18:24:43.096Z",
+  "method": "Status-augmentation proxy in front of the stub daemon: the proxy forwards every route to the daemon at http://127.0.0.1:65449, rewrites Origin to the daemon origin, and appends 150 synthetic MessageRow records to GET /v1/status for the selected thread. The app, its bundle, and the daemon are unmodified product code; only the fixture data is synthetic. Harness script lives outside the repo at /tmp/kat3240-status-augment-proxy.mjs.",
+  "threadId": "0a6aee06-e415-4175-9c2e-ec4fe122e210",
+  "taskId": "3019269e-639a-4d1d-aa77-4599e86f4d37",
+  "syntheticMessages": 150,
+  "realMessages": 6,
+  "observed": {
+    "renderedMessageItems": 156,
+    "retainedLabel": "156 retained",
+    "collapsedRoutineEntries": 113,
+    "transcriptMaxHeightPx": 800,
+    "transcriptScrollHeightPx": 10689,
+    "transcriptScrollable": true,
+    "pageHorizontalOverflow": false,
+    "errorBanner": null,
+    "tabFocusAdvancesAcrossTranscript": true,
+    "pageDownKeyScrolledTranscript": false
+  },
+  "screenshot": "13-large-transcript-156-retained.png",
+  "note": "Routine progress renders collapsed by default. The transcript is a bounded 800px scroll region inside the room, so a long transcript does not stretch the page. Arrow/Page keys did not scroll the transcript under the automation harness; Tab traversal of focusable transcript entries works and keeps focus visible. Pointer scrolling works."
+}

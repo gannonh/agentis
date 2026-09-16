@@ -7,11 +7,36 @@ import {
 } from "./provider.js";
 import { CODEX_IMAGE } from "./versions.js";
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { chmodSync, existsSync, lstatSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 
 const CODEX_CONTAINER_PATH = "/usr/local/bin/codex";
 const CODEX_STUB_CONTAINER_PATH = "/opt/agentis/codex-stub.mjs";
 const MANAGED_CONTAINER_LABEL = "io.agentis.managed";
 const RUN_ID_LABEL = "io.agentis.run-id";
+
+const prepareWorkspaceMount = (workspace: string) => {
+  const workspaceStat = lstatSync(workspace);
+  if (!workspaceStat.isDirectory()) {
+    throw new Error(`Run workspace is not a directory: ${workspace}`);
+  }
+  chmodSync(workspace, 0o2770);
+
+  const sources = join(workspace, "sources");
+  if (!existsSync(sources)) return;
+  const sourcesStat = lstatSync(sources);
+  if (!sourcesStat.isDirectory()) {
+    throw new Error(`Run sources are not a directory: ${sources}`);
+  }
+  chmodSync(sources, 0o2750);
+  for (const entry of readdirSync(sources, { withFileTypes: true })) {
+    const source = join(sources, entry.name);
+    if (!entry.isFile() || !lstatSync(source).isFile()) {
+      throw new Error(`Run source is not a regular file: ${source}`);
+    }
+    chmodSync(source, 0o640);
+  }
+};
 
 const dockerRunBase = (input: {
   readonly workspace?: string;
@@ -54,7 +79,13 @@ const dockerRunBase = (input: {
     );
   }
   if (input.workspace) {
+    const hostGroupId = process.getgid?.();
+    if (hostGroupId === undefined) {
+      throw new Error("Run container launch requires a host group ID");
+    }
     args.push(
+      "--group-add",
+      String(hostGroupId),
       "--mount",
       `type=bind,src=${input.workspace},dst=/workspace${input.workspaceReadonly ? ",readonly" : ""}`,
       "-w",
@@ -130,6 +161,7 @@ export const spawnInRunContainer = (input: {
   readonly providerHomeVolume?: string;
   readonly workspaceReadonly?: boolean;
 }): RunContainerProcess => {
+  prepareWorkspaceMount(input.workspace);
   const name = runContainerName(input.runId);
   const args = dockerRunBase({
     workspace: input.workspace,

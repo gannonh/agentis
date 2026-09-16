@@ -1,0 +1,41 @@
+{
+  "schema": "kat-3240-cursor-expiry-probe-v1",
+  "recordedAt": "2026-09-16T18:01:12.615Z",
+  "endpointHost": "127.0.0.1:52945",
+  "submitsThisRound": 20,
+  "cursorBeforeRound": 96,
+  "highWater": 156,
+  "replayFloor": 28,
+  "staleCursorRequest": {
+    "cursor": 0,
+    "httpStatus": 410,
+    "body": {
+      "ok": false,
+      "code": "cursor_expired",
+      "message": "cursor 0 is older than replay floor 28"
+    }
+  },
+  "floorCursorRequest": {
+    "cursor": 28,
+    "httpStatus": 200,
+    "transitionCount": 128,
+    "duplicateFree": true
+  },
+  "futureCursorRequest": {
+    "cursor": 161,
+    "httpStatus": 409,
+    "body": {
+      "ok": false,
+      "code": "resync_required",
+      "message": "cursor 161 is newer than high-water 156"
+    }
+  },
+  "observed": {
+    "staleCursorRejectedWithCursorExpired": true,
+    "floorCursorAccepted": true,
+    "floorReplayDuplicateFree": true,
+    "futureCursorRejectedWithResyncRequired": true,
+    "freshSnapshotRecovers": true,
+    "futureCursorStatus": 409
+  }
+}

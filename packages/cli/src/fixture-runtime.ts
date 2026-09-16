@@ -2,6 +2,7 @@ import { appendFileSync, lstatSync, realpathSync, statSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createServer, type Server, type Socket } from "node:net";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const FIXTURE_IMAGE =
@@ -17,6 +18,7 @@ const RELAY_SOURCE =
 export type FixtureRuntime = {
   readonly image: string;
   readonly daemonEntry: string;
+  readonly webRoot: string;
 };
 
 export type FixtureContainer = {
@@ -87,10 +89,26 @@ const regularFile = (path: string) => {
   return resolved;
 };
 
-export const resolveFixtureRuntime = (): FixtureRuntime => ({
-  image: FIXTURE_IMAGE,
-  daemonEntry: regularFile(fileURLToPath(new URL("./fixture-daemon.mjs", import.meta.url))),
-});
+const regularDirectory = (path: string) => {
+  const stat = lstatSync(path);
+  if (!stat.isDirectory()) throw new Error(`fixture runtime is not a directory: ${path}`);
+  const resolved = realpathSync(path);
+  if (resolved !== path) throw new Error(`fixture runtime must not be a symlink: ${path}`);
+  if ((statSync(path).mode & 0o555) === 0) {
+    throw new Error(`fixture runtime is not readable: ${path}`);
+  }
+  return resolved;
+};
+
+export const resolveFixtureRuntime = (): FixtureRuntime => {
+  const webRoot = regularDirectory(fileURLToPath(new URL("./web", import.meta.url)));
+  regularFile(join(webRoot, "index.html"));
+  return {
+    image: FIXTURE_IMAGE,
+    daemonEntry: regularFile(fileURLToPath(new URL("./fixture-daemon.mjs", import.meta.url))),
+    webRoot,
+  };
+};
 
 const inspectOwned = (name: string, launchId: string): string | null => {
   const format = `{{.Id}}\t{{index .Config.Labels "${MANAGED_LABEL}"}}\t{{index .Config.Labels "${LAUNCH_LABEL}"}}`;
@@ -218,6 +236,8 @@ export const startFixtureContainer = async (input: {
     `type=bind,src=${dataRoot},dst=${dataRoot}`,
     "--mount",
     `type=bind,src=${input.runtime.daemonEntry},dst=/opt/agentis/fixture-daemon.mjs,readonly`,
+    "--mount",
+    `type=bind,src=${input.runtime.webRoot},dst=/opt/agentis/web,readonly`,
     "--env",
     "HOME=/fixture-home",
     "--env",

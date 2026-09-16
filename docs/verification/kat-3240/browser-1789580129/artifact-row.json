@@ -1,0 +1,20 @@
+{
+  "id": "782640f1-8c20-46b7-b130-f8c14385719d",
+  "taskId": "3019269e-639a-4d1d-aa77-4599e86f4d37",
+  "runId": "75cfc2ef-425e-4446-b26c-f395d47c0bc2",
+  "author": "mara",
+  "source": "codex",
+  "mediaType": "text/markdown",
+  "sha256": "f8339f7af9500f2faeedcd3b00fbffc51f7bed852decfdf92eb4c7e2a04d5f5a",
+  "byteSize": 10,
+  "citations": [
+    {
+      "label": "Read-only release packet",
+      "excerpt": "The retained proof marker is KAT3242_OK.",
+      "url": "https://github.com/agentis/example/tree/verify-stub"
+    }
+  ],
+  "createdAt": 1789580324494,
+  "metadataUrl": "/v1/artifacts/782640f1-8c20-46b7-b130-f8c14385719d",
+  "contentUrl": "/v1/artifacts/782640f1-8c20-46b7-b130-f8c14385719d/content"
+}

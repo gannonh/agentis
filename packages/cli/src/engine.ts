@@ -7,10 +7,11 @@ import {
 } from "./claude.js";
 import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { Effect } from "effect";
 import { writeScratchFile } from "./scratch-file.js";
-import { mutateForEngine, type Store } from "./store.js";
+import { readVerifiedFile } from "./verified-file.js";
+import { mutateForEngine, type Snapshot, type Store } from "./store.js";
 import type {
   Command,
   CommandReceipt,
@@ -40,6 +41,34 @@ export type DriveInput = {
   readonly loadSession?: boolean;
 };
 
+const constraintBlock = (constraints: readonly string[]) =>
+  constraints.length === 0
+    ? ""
+    : `\n\nOperator constraints:\n${constraints.map((constraint) => `- ${constraint}`).join("\n")}`;
+
+const providerBrief = (snapshot: Snapshot, runId: RunId) => {
+  const run = snapshot.runs.find((item) => item.id === runId);
+  const task = run ? snapshot.tasks.find((item) => item.id === run.taskId) : undefined;
+  const evidenceId = task?.evidence[0];
+  const evidence = evidenceId
+    ? snapshot.evidence.find((item) => item.id === evidenceId)
+    : undefined;
+  if (!run || !task || !evidence) return task?.brief ?? "";
+  const bytes = readVerifiedFile({
+    path: evidence.path,
+    root: dirname(dirname(run.frozen.workspaceId)),
+    byteSize: evidence.byteSize,
+    sha256: evidence.contentDigest,
+    maximumBytes: evidence.byteSize,
+  });
+  if (!bytes) throw new Error("materialized source is missing or changed");
+  const text = bytes.toString("utf8");
+  const constraints = constraintBlock(task.constraints);
+  return evidence.label === "CLI brief" && text === task.brief
+    ? `${task.brief}${constraints}`
+    : `${task.outcome}${constraints}\n\nRead-only ${evidence.label}:\n${text}`;
+};
+
 export const driveAfterCommit = (input: DriveInput): Effect.Effect<void, Error> => {
   if (input.provider === "claude") return spawnClaude(input);
   if (input.provider === "codex") {
@@ -60,6 +89,13 @@ export const applyReceiptEffects = async (input: {
   const initial = await Effect.runPromise(store.snapshot());
   const selected = initial.runs.find((run) => run.id === receipt.runId);
   const provider = selected?.frozen.provider ?? input.provider;
+  const launchPending =
+    receipt.replayed &&
+    receipt.runId !== undefined &&
+    initial.pending.some(
+      (action) =>
+        action.runId === receipt.runId && action.kind === "launch" && action.state === "pending",
+    );
   if (
     receipt.accepted &&
     !receipt.replayed &&
@@ -76,7 +112,7 @@ export const applyReceiptEffects = async (input: {
         executionBoundary: selected.frozen.executionBoundary,
         workspace: selected.frozen.workspaceId,
         nowMs,
-        brief: initial.tasks.find((task) => task.id === selected.taskId)?.brief ?? "",
+        brief: providerBrief(initial, selected.id),
         loadSession: true,
       }),
     ).catch(() => undefined);
@@ -84,8 +120,7 @@ export const applyReceiptEffects = async (input: {
   }
   if (
     receipt.accepted &&
-    !receipt.replayed &&
-    receipt.effects.includes("launch") &&
+    ((receipt.effects.includes("launch") && !receipt.replayed) || launchPending) &&
     receipt.runId &&
     receipt.taskId
   ) {
@@ -103,11 +138,22 @@ export const applyReceiptEffects = async (input: {
             executionBoundary: run.frozen.executionBoundary,
             workspace: run.frozen.workspaceId,
             nowMs,
-            brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
+            brief: providerBrief(snapshot, run.id),
           }),
         );
       }
-    } catch {
+    } catch (error) {
+      const engine = mutateForEngine(store.path);
+      try {
+        engine.fail(
+          receipt.runId,
+          receipt.taskId,
+          error instanceof Error ? error.message : String(error),
+          Date.now(),
+        );
+      } finally {
+        engine.close();
+      }
       return;
     }
   }
@@ -137,7 +183,7 @@ export const applyReceiptEffects = async (input: {
           executionBoundary: "unverified-host-scratch",
           workspace: run.frozen.workspaceId,
           nowMs,
-          brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
+          brief: providerBrief(snapshot, run.id),
         }),
       );
     }
@@ -172,7 +218,7 @@ export const applyReceiptEffects = async (input: {
           executionBoundary: "unverified-host-scratch",
           workspace: run.frozen.workspaceId,
           nowMs,
-          brief: snapshot.tasks.find((item) => item.id === receipt.taskId)?.brief ?? "",
+          brief: providerBrief(snapshot, run.id),
         }),
       );
     }

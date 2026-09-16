@@ -1,37 +1,35 @@
 # Task and artifact smoke
 
-The smoke task lets an owner submit a bounded fake task and confirm its persisted Markdown artifact through the public status API and the owned scratch workspace.
+This recipe submits one fake task and verifies its retained Markdown result through authenticated public routes.
 
-## Sub-features
+## Public behavior
 
-- `smoke-submit` accepts an owner brief with the `smoke` fixture and returns task, run, and thread IDs.
-- `smoke-result` reports a succeeded run and completed task through `/v1/status`.
-- `smoke-artifact` records `hello.md` with media type, byte size, and SHA-256, and the bytes match those fields.
+- `task submit --fixture smoke` returns accepted task, run, and thread IDs.
+- `/v1/status` reports a succeeded run, a completed task, and one matching artifact.
+- The artifact row contains `metadataUrl`, `contentUrl`, `byteSize`, and `sha256`. It contains no filesystem path.
+- The authenticated content response has the expected bytes, byte count, and SHA-256.
 
-## How to get to it (user POV)
+## Run the helper
 
-- Start the local verification instance with `node packages/cli/dist/bin.js verify launch`.
-- Submit `verification-smoke` with `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "verification-smoke" --fixture smoke`.
-- Inspect the result with `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT"`, which reads `/v1/health` and authenticated `/v1/status`.
+From the repository root after `pnpm build`, run:
 
-## Driving it with the Agentis smoke helper
+```sh
+EVIDENCE_DIR="docs/verification/verify-agentis/acceptance/smoke-$(date +%s)-$$"
+node .agents/skills/verify-agentis/helpers/smoke.mjs "$EVIDENCE_DIR"
+```
 
-Preconditions:
+The path must not exist. The helper starts `verify launch`, validates the owned Docker container and mount, checks the owner credential without recording it, and submits brief `verification-smoke`. It then polls `/v1/status`, fetches both public artifact URLs with owner authentication, and compares the content with `# verification-smoke\n`.
 
-- **Automated:** run from the repository root after the build. Set `EVIDENCE_DIR="docs/verification/verify-agentis/acceptance/smoke-$(date +%s)-$$"`; it must not exist yet. The helper creates the Docker launch, owner token, relay endpoint, data root, doctor check, and cleanup itself.
-- **Manual:** prefer `node .agents/skills/verify-agentis/helpers/smoke.mjs "$EVIDENCE_DIR"`. To drive commands yourself, start `node packages/cli/dist/bin.js verify launch`, copy its exact `ENDPOINT`, `DATA_ROOT`, `WORKSPACE`, `CONTAINER_ID`, and `CONTAINER_NAME`, and complete the owner token precheck before `doctor`. Confirm `profiles/verify.json` records `executionBoundary: "docker-fixture-container"`.
-- **Manual evidence:** set `EVIDENCE_DIR="docs/verification/verify-agentis/manual-$(date +%s)-$$"` and run `mkdir "$EVIDENCE_DIR"` before redirecting output.
+The helper writes readiness, receipt, status, artifact, and cleanup evidence. It removes only the validated container, supervisor, endpoint, and data root.
 
-- **Automated public proof.** Run `node .agents/skills/verify-agentis/helpers/smoke.mjs "$EVIDENCE_DIR"`. The helper must retain readiness, receipt, status, artifact size/hash, and cleanup evidence in that directory.
-- **Submit manually.** Run `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "verification-smoke" --fixture smoke > "$EVIDENCE_DIR/submit.json"`. The JSON receipt has `accepted: true`, `taskId`, `runId`, `threadId`, and `effects: ["launch"]`.
-- **Read result metadata.** Run `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/doctor.json"`. In its `status`, find the run by the receipt's `runId`; require run `status: "succeeded"`, task `status: "completed"`, and an artifact whose `runId` and `taskId` match.
-- **Verify bytes.** Resolve the artifact `path` below `"$WORKSPACE"`, require a regular file, read its bytes, compare its byte count to `byteSize`, and compare SHA-256 to `sha256`. For this exact brief, the expected bytes are `# verification-smoke\n`; the [artifact byte and hash check](../SKILL.md#artifact-byte-and-hash-check) provides the executable comparison.
-- **Retain proof.** Save the receipt, doctor/status output, and the computed artifact result below the fresh `EVIDENCE_DIR`; stop the launcher, remove its inspected fixture container and supervisor, and remove its exact temporary root only after those files are written.
+## Drive it manually
 
-## Gotchas
+1. Start `node packages/cli/dist/bin.js verify launch` and retain every readiness value.
+2. Check `$DATA_ROOT/owner.token` before `doctor` as described in [the main verification recipe](../SKILL.md#doctor).
+3. Run `node packages/cli/dist/bin.js task submit --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" --brief "verification-smoke" --fixture smoke > "$EVIDENCE_DIR/submit.json"`.
+4. Run `node packages/cli/dist/bin.js doctor --endpoint "$ENDPOINT" --data-root "$DATA_ROOT" > "$EVIDENCE_DIR/doctor.json"`.
+5. Require schema `agentis.v2.gate1.0`, the matching terminal task and run, and one public artifact row.
+6. Set `SUBMIT_FILE`, `STATUS_FILE`, and `EXPECTED_BRIEF="verification-smoke"`, then run the [artifact byte and hash check](../SKILL.md#artifact-byte-and-hash-check).
+7. Stop the launcher after the evidence files exist. Validate ownership before cleanup.
 
-- The readiness `pid` identifies the host `docker run` supervisor; the daemon PID is inside the container, and the foreground launcher has a different PID and receives `Ctrl-C`/`SIGTERM`.
-- A successful submit receipt is an accepted command. The public status and artifact row prove completion and persistence.
-- The artifact path is persisted as an absolute path. Check that it remains below this run's `workspace` before reading it.
-- `doctor` can create `owner.token`; perform the mode and JSON precheck first.
-- Fake smoke evidence covers local fixture behavior. A fixture `PASS` remains separate from live-provider support; live providers, provider authentication, and Gate 0 remain UNVERIFIED.
+A submit receipt proves command acceptance. The status and authenticated artifact responses prove completion and retained content. A fake fixture `PASS` leaves real providers `UNVERIFIED`.

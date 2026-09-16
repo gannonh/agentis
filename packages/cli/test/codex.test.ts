@@ -3,13 +3,16 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadOrCreateOwner } from "../src/auth.js";
 import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
+import { WorkspaceSnapshot } from "../src/schema.js";
+import type { Store } from "../src/store.js";
 
 const stub = fileURLToPath(new URL("./codex-stub.mjs", import.meta.url));
+const stores = new Map<string, Store>();
 
 const port = () =>
   new Promise<number>((resolve, reject) => {
@@ -40,6 +43,7 @@ const boot = async () => {
     }),
   );
   const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
+  stores.set(endpoint.origin, server.store);
   return { endpoint, server, owner, dataRoot };
 };
 
@@ -56,23 +60,17 @@ const statusOf = async (endpoint: URL, token: string) => {
   const response = await fetch(new URL("/v1/status", endpoint), {
     headers: { authorization: `Bearer ${token}` },
   });
-  return (await response.json()) as {
-    runs: {
-      id: string;
-      status: string;
-      providerSessionId: string | null;
-      frozen: unknown;
-      providerState: {
-        loadStatus: string;
-        failure: string | null;
-        pendingPrompt: string | null;
-        history: string[];
-        capabilities: { name: string; operation?: string; reason: string }[];
-      };
-    }[];
-    pending: { approvalId: string | null; state: string; runId: string }[];
-    artifacts: { taskId: string; runId: string; source: string; sha256: string; path: string }[];
-  };
+  Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
+  const store = stores.get(endpoint.origin);
+  if (!store) throw new Error("missing test store");
+  return Effect.runPromise(store.snapshot());
+};
+
+const publicStatusOf = async (endpoint: URL, token: string) => {
+  const response = await fetch(new URL("/v1/status", endpoint), {
+    headers: { authorization: `Bearer ${token}` },
+  });
+  return Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
 };
 
 const waitFor = async (
@@ -98,12 +96,17 @@ afterEach(() => {
 });
 
 describe("codex stub protocol", () => {
-  it("completes a smoke turn with an artifact and frozen config", async () => {
+  it("includes retained constraints in the coordinator prompt", async () => {
     const { endpoint, server, owner, dataRoot } = await boot();
     try {
+      const retainedConstraint = "COORDINATOR_CONSTRAINT_731: use only supplied evidence";
       const submitted = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
-        command: { kind: "submit_task", brief: "Reply exactly PROMPT_ONLY_MARKER." },
+        command: {
+          kind: "submit_task",
+          brief: "Reply exactly PROMPT_ONLY_MARKER.",
+          constraints: [retainedConstraint],
+        },
       });
       expect(submitted.json.accepted).toBe(true);
       const snap = await waitFor(
@@ -123,6 +126,17 @@ describe("codex stub protocol", () => {
         provider: "codex",
         executionBoundary: "unverified-host-scratch",
       });
+      const prompt = Schema.decodeUnknownSync(Schema.Struct({ text: Schema.String }))(
+        JSON.parse(
+          readFileSync(
+            join(dataRoot, "scratch", "runs", String(submitted.json.runId), "prompts.jsonl"),
+            "utf8",
+          ).trim(),
+        ),
+      );
+      expect(prompt.text).toBe(
+        `Reply exactly PROMPT_ONLY_MARKER.\n\nOperator constraints:\n- ${retainedConstraint}`,
+      );
     } finally {
       await server.close();
     }
@@ -189,6 +203,16 @@ describe("codex stub protocol", () => {
       await waitFor(endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === input.json.runId && item.status === "waiting_input"),
       );
+      const publicInput = await publicStatusOf(endpoint, owner.token);
+      expect(publicInput.runs.find((run) => run.id === input.json.runId)?.pendingPrompt).toEqual({
+        kind: "questions",
+        questions: [{ key: "color", prompt: "color", options: [] }],
+      });
+      expect(
+        publicInput.messages.find(
+          (message) => message.runId === input.json.runId && message.kind === "question",
+        )?.body,
+      ).toBe("color");
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "answer_input", runId: input.json.runId, answers: { color: "Blue" } },
