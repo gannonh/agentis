@@ -57,7 +57,7 @@ const note = (
     runId: handoff.recipientRunId,
     authorKind: "bot",
     authorName: author,
-    authorRole: state === "proposed" ? "coordinator" : "specialist",
+    authorRole: author === "mara" ? "coordinator" : "specialist",
     kind: "handoff",
     importance: "decision",
     dedupeKey: `handoff:${handoff.id}:${state}`,

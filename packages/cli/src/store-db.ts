@@ -1,6 +1,6 @@
 import { type DatabaseSync, type SQLInputValue } from "node:sqlite";
 import { newEventId, newMessageId } from "./ids.js";
-import type { MessageImportance, MessageKind } from "./schema.js";
+import type { MessageAuthorRole, MessageImportance, MessageKind } from "./schema.js";
 export const row = <T>(db: DatabaseSync, sql: string, params: SQLInputValue[] = []) =>
   db.prepare(sql).get(...params) as T | undefined;
 
@@ -37,8 +37,6 @@ export const emit = (
   ]);
 };
 
-export type MessageRole = "operator" | "coordinator" | "specialist" | "system";
-
 export const message = (
   db: DatabaseSync,
   input: {
@@ -47,7 +45,7 @@ export const message = (
     runId: string | null;
     authorKind: string;
     authorName: string;
-    authorRole: MessageRole;
+    authorRole: MessageAuthorRole;
     kind?: typeof MessageKind.Type;
     importance?: typeof MessageImportance.Type;
     dedupeKey?: string;
@@ -56,8 +54,9 @@ export const message = (
   },
 ) => {
   const id = newMessageId();
+  const hasDedupeKey = input.dedupeKey !== undefined;
   const dedupeKey = input.dedupeKey ?? id;
-  const insert = input.dedupeKey ? "INSERT OR IGNORE" : "INSERT";
+  const insert = hasDedupeKey ? "INSERT OR IGNORE" : "INSERT";
   const result = db
     .prepare(
       `${insert} INTO messages

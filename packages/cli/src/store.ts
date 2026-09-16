@@ -7,7 +7,7 @@ import {
   decideHandoff,
   claimDraft,
 } from "./handoff-store.js";
-import { row, rows, run, withTxn, emit, message, type MessageRole } from "./store-db.js";
+import { row, rows, run, withTxn, emit, message } from "./store-db.js";
 import { ProviderState } from "./provider-contract.js";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
@@ -55,6 +55,7 @@ import {
   type CommandId,
   type HandoffRow,
   type IdempotencyKey,
+  type MessageAuthorRole,
   type PrincipalKind,
   type SourcePacket,
   type ArtifactId as ArtifactIdType,
@@ -267,7 +268,7 @@ export type EventRow = {
 
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
-const messageRoleOfRun = (db: DatabaseSync, runId: RunId): MessageRole => {
+const messageRoleOfRun = (db: DatabaseSync, runId: RunId): MessageAuthorRole => {
   const current = row<{ frozen_json: string }>(db, "SELECT frozen_json FROM runs WHERE id=?", [
     runId,
   ]);
@@ -2299,7 +2300,7 @@ export const mutateForEngine = (storePath: string) => {
           runId: input.runId,
           authorKind: "bot",
           authorName: "mara",
-          authorRole: messageRoleOfRun(db, input.runId),
+          authorRole: "coordinator",
           kind: "approval",
           importance: "blocking",
           dedupeKey: `approval:${approvalId}`,
