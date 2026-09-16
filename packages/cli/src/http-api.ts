@@ -12,7 +12,13 @@ import {
   type ExecutionBoundary,
   type ProviderKind,
 } from "./schema.js";
-import type { ArtifactRow, BrowserRuntime, Principal, Store, StoreError } from "./store.js";
+import {
+  StoreError,
+  type ArtifactRow,
+  type BrowserRuntime,
+  type Principal,
+  type Store,
+} from "./store.js";
 import {
   API_FAMILY,
   BROWSER_BOOTSTRAP_TTL_MS,
@@ -367,8 +373,12 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
                 provider: dependencies.provider,
                 executionBoundary: dependencies.executionBoundary,
                 nowMs: Date.now(),
+                workspaceRoot: dependencies.workspace,
               }),
-            catch: (error) => conflict(error instanceof Error ? error.message : String(error)),
+            catch: (error) =>
+              error instanceof StoreError
+                ? storeFailureApiError(error)
+                : conflict(error instanceof Error ? error.message : String(error)),
           });
           return receipt.accepted
             ? Schema.decodeUnknownSync(CommandReceipt)(receipt)

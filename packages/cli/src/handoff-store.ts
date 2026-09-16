@@ -112,7 +112,6 @@ const readVerifiedSource = (
     root,
     byteSize: artifact.byte_size,
     sha256: artifact.sha256,
-    maximumBytes: 65_536,
   })?.toString("utf8") ?? null;
 
 export const proposeHandoff = (

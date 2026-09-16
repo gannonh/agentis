@@ -7,7 +7,7 @@ import {
 } from "./claude.js";
 import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { Effect } from "effect";
 import { writeScratchFile } from "./scratch-file.js";
 import { readVerifiedFile } from "./verified-file.js";
@@ -36,6 +36,7 @@ export type DriveInput = {
   readonly provider: "fake" | "codex" | "claude";
   readonly executionBoundary: typeof ExecutionBoundary.Type;
   readonly workspace: string;
+  readonly workspaceRoot: string;
   readonly nowMs: number;
   readonly brief: string;
   readonly loadSession?: boolean;
@@ -46,27 +47,47 @@ const constraintBlock = (constraints: readonly string[]) =>
     ? ""
     : `\n\nOperator constraints:\n${constraints.map((constraint) => `- ${constraint}`).join("\n")}`;
 
-const providerBrief = (snapshot: Snapshot, runId: RunId) => {
+type ProviderBrief =
+  | { readonly ok: true; readonly brief: string }
+  | { readonly ok: false; readonly error: string };
+
+const providerBrief = (
+  snapshot: Snapshot,
+  runId: RunId,
+  workspaceRoot: string,
+): ProviderBrief => {
   const run = snapshot.runs.find((item) => item.id === runId);
   const task = run ? snapshot.tasks.find((item) => item.id === run.taskId) : undefined;
   const evidenceId = task?.evidence[0];
   const evidence = evidenceId
     ? snapshot.evidence.find((item) => item.id === evidenceId)
     : undefined;
-  if (!run || !task || !evidence) return task?.brief ?? "";
+  if (!run || !task || !evidence) return { ok: true, brief: task?.brief ?? "" };
   const bytes = readVerifiedFile({
     path: evidence.path,
-    root: dirname(dirname(run.frozen.workspaceId)),
+    root: workspaceRoot,
     byteSize: evidence.byteSize,
     sha256: evidence.contentDigest,
-    maximumBytes: evidence.byteSize,
   });
-  if (!bytes) throw new Error("materialized source is missing or changed");
+  if (!bytes) return { ok: false, error: "materialized source is missing or changed" };
   const text = bytes.toString("utf8");
   const constraints = constraintBlock(task.constraints);
-  return evidence.label === "CLI brief" && text === task.brief
-    ? `${task.brief}${constraints}`
-    : `${task.outcome}${constraints}\n\nRead-only ${evidence.label}:\n${text}`;
+  return {
+    ok: true,
+    brief:
+      evidence.label === "CLI brief" && text === task.brief
+        ? `${task.brief}${constraints}`
+        : `${task.outcome}${constraints}\n\nRead-only ${evidence.label}:\n${text}`,
+  };
+};
+
+const failRun = (store: Store, runId: RunId, taskId: TaskId, error: string) => {
+  const engine = mutateForEngine(store.path);
+  try {
+    engine.fail(runId, taskId, error, Date.now());
+  } finally {
+    engine.close();
+  }
 };
 
 export const driveAfterCommit = (input: DriveInput): Effect.Effect<void, Error> => {
@@ -84,8 +105,9 @@ export const applyReceiptEffects = async (input: {
   readonly provider: "fake" | "codex" | "claude";
   readonly executionBoundary: typeof ExecutionBoundary.Type;
   readonly nowMs: number;
+  readonly workspaceRoot: string;
 }): Promise<void> => {
-  const { receipt, store, executionBoundary, nowMs, command } = input;
+  const { receipt, store, executionBoundary, nowMs, command, workspaceRoot } = input;
   const initial = await Effect.runPromise(store.snapshot());
   const selected = initial.runs.find((run) => run.id === receipt.runId);
   const provider = selected?.frozen.provider ?? input.provider;
@@ -102,6 +124,11 @@ export const applyReceiptEffects = async (input: {
     receipt.effects.includes("load_session") &&
     selected
   ) {
+    const brief = providerBrief(initial, selected.id, workspaceRoot);
+    if (!brief.ok) {
+      failRun(store, selected.id, selected.taskId, brief.error);
+      return;
+    }
     await Effect.runPromise(
       driveAfterCommit({
         store,
@@ -111,8 +138,9 @@ export const applyReceiptEffects = async (input: {
         provider: selected.frozen.provider,
         executionBoundary: selected.frozen.executionBoundary,
         workspace: selected.frozen.workspaceId,
+        workspaceRoot,
         nowMs,
-        brief: providerBrief(initial, selected.id),
+        brief: brief.brief,
         loadSession: true,
       }),
     ).catch(() => undefined);
@@ -128,6 +156,11 @@ export const applyReceiptEffects = async (input: {
     const run = snapshot.runs.find((item) => item.id === receipt.runId);
     try {
       if (run) {
+        const brief = providerBrief(snapshot, run.id, workspaceRoot);
+        if (!brief.ok) {
+          failRun(store, receipt.runId, receipt.taskId, brief.error);
+          return;
+        }
         await Effect.runPromise(
           driveAfterCommit({
             store,
@@ -137,23 +170,19 @@ export const applyReceiptEffects = async (input: {
             provider,
             executionBoundary: run.frozen.executionBoundary,
             workspace: run.frozen.workspaceId,
+            workspaceRoot,
             nowMs,
-            brief: providerBrief(snapshot, run.id),
+            brief: brief.brief,
           }),
         );
       }
     } catch (error) {
-      const engine = mutateForEngine(store.path);
-      try {
-        engine.fail(
-          receipt.runId,
-          receipt.taskId,
-          error instanceof Error ? error.message : String(error),
-          Date.now(),
-        );
-      } finally {
-        engine.close();
-      }
+      failRun(
+        store,
+        receipt.runId,
+        receipt.taskId,
+        error instanceof Error ? error.message : String(error),
+      );
       return;
     }
   }
@@ -173,6 +202,11 @@ export const applyReceiptEffects = async (input: {
       if (!run) {
         return;
       }
+      const brief = providerBrief(snapshot, run.id, workspaceRoot);
+      if (!brief.ok) {
+        failRun(store, run.id, receipt.taskId, brief.error);
+        return;
+      }
       await Effect.runPromise(
         finishAllowedFake({
           store,
@@ -182,8 +216,9 @@ export const applyReceiptEffects = async (input: {
           provider,
           executionBoundary: "unverified-host-scratch",
           workspace: run.frozen.workspaceId,
+          workspaceRoot,
           nowMs,
-          brief: providerBrief(snapshot, run.id),
+          brief: brief.brief,
         }),
       );
     }
@@ -208,6 +243,11 @@ export const applyReceiptEffects = async (input: {
       if (!run) {
         return;
       }
+      const brief = providerBrief(snapshot, run.id, workspaceRoot);
+      if (!brief.ok) {
+        failRun(store, run.id, receipt.taskId, brief.error);
+        return;
+      }
       await Effect.runPromise(
         finishAllowedFake({
           store,
@@ -217,8 +257,9 @@ export const applyReceiptEffects = async (input: {
           provider,
           executionBoundary: "unverified-host-scratch",
           workspace: run.frozen.workspaceId,
+          workspaceRoot,
           nowMs,
-          brief: providerBrief(snapshot, run.id),
+          brief: brief.brief,
         }),
       );
     }
