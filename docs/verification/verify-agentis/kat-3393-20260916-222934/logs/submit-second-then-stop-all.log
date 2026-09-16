@@ -1,9 +1,0 @@
-$ "sh" "-c" "mise exec -- node packages/cli/dist/bin.js task submit --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data' --brief 'KAT-3393 UAT stop-all drive' --fixture input && mise exec -- node packages/cli/dist/bin.js stop-all --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data'"
-cwd: /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e
-started_at: 2026-09-16T22:30:50.600Z
-
-{"commandId":"2e55de78-8f71-4511-83a1-8db2f37503e9","replayed":false,"accepted":true,"taskId":"c164ffc9-9519-4fff-9d96-116b8ae0aebb","runId":"23aece2d-408b-4c75-9a05-eb44857cb732","threadId":"e00d2796-7a89-403f-aa1c-5f87e33bc7d1","effects":["launch"]}
-{"commandId":"221f7cfb-c45f-4a3b-8a38-86d8c8f97ecb","replayed":false,"accepted":true,"effects":["interrupt_provider"]}
-
-exit_code: 0
-finished_at: 2026-09-16T22:30:51.459Z

@@ -1,7 +1,7 @@
 {
   "schemaId": "agentis.v2.gate1.0",
-  "cursor": "9",
-  "stopAll": true,
+  "cursor": "7",
+  "stopAll": false,
   "session": {
     "expiresAt": 9007199254740991,
     "provider": {
@@ -49,10 +49,10 @@
       ],
       "currentRunId": "5fd93c80-3b83-4931-903a-dcf28e8c2be5",
       "latestArtifactId": null,
-      "status": "canceled",
+      "status": "running",
       "actionCount": 0,
       "createdAt": 1789598385066,
-      "updatedAt": 1789598390967
+      "updatedAt": 1789598385068
     }
   ],
   "threads": [
@@ -90,8 +90,8 @@
       "taskId": "9dafa281-952a-483f-b3e7-bfa0bf833248",
       "threadId": "ad566f52-327d-4ef2-b007-6f5aebf52799",
       "botConfigRevisionId": "21106e42-5988-4404-b2ff-6cb87d776784",
-      "status": "canceled",
-      "waitingReason": "none",
+      "status": "waiting_input",
+      "waitingReason": "input",
       "providerLoadStatus": "idle",
       "pendingPrompt": null,
       "failure": null,
@@ -99,7 +99,7 @@
       "queuedAt": 1789598385066,
       "startedAt": 1789598385068,
       "deadlineAt": 1789599285066,
-      "completedAt": 1789598390967
+      "completedAt": null
     }
   ],
   "botConfigRevisions": [
@@ -252,19 +252,6 @@
       "importance": "blocking",
       "body": "choose color",
       "createdAt": 1789598385068
-    },
-    {
-      "id": "e15055d7-015d-4002-b7e6-2e2caf61a675",
-      "threadId": "ad566f52-327d-4ef2-b007-6f5aebf52799",
-      "taskId": "9dafa281-952a-483f-b3e7-bfa0bf833248",
-      "runId": "5fd93c80-3b83-4931-903a-dcf28e8c2be5",
-      "authorKind": "system",
-      "authorName": "agentis",
-      "authorRole": "system",
-      "kind": "system",
-      "importance": "blocking",
-      "body": "Stop all canceled this run.",
-      "createdAt": 1789598390967
     }
   ]
 }

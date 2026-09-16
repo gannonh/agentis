@@ -1,22 +1,18 @@
 {
   "issue": "KAT-3393",
-  "checked_at": "2026-09-16T22:31:02.796Z",
-  "public_surface": "/v1/status via agentis doctor/status after CLI run cancel and stop-all",
+  "checked_at": "2026-09-16T22:40:10.108Z",
+  "public_surface": "GET /v1/status and GET /v1/events after agentis run cancel and agentis stop-all",
   "checks": [
     {
-      "name": "cancel: run was active with no completedAt before",
+      "name": "cancel: run was waiting_input with completedAt null before",
       "pass": true
     },
     {
-      "name": "cancel: run is canceled",
+      "name": "cancel: run is canceled with numeric completedAt after",
       "pass": true
     },
     {
-      "name": "cancel: run has numeric completedAt",
-      "pass": true
-    },
-    {
-      "name": "cancel: owning task is canceled",
+      "name": "cancel: owning task is canceled at the same timestamp",
       "pass": true
     },
     {
@@ -28,15 +24,31 @@
       "pass": true
     },
     {
-      "name": "stop-all: every run canceled with numeric completedAt",
+      "name": "cancel: SSE stream carries run_canceled",
       "pass": true
     },
     {
-      "name": "stop-all: every owning task canceled with updatedAt equal to its run completedAt",
+      "name": "stop-all: one run was active with completedAt null before",
       "pass": true
     },
     {
-      "name": "stop-all: stop-all message recorded once per newly canceled run",
+      "name": "stop-all: that run is canceled with numeric completedAt after",
+      "pass": true
+    },
+    {
+      "name": "stop-all: every owning task carries updatedAt equal to its run completedAt",
+      "pass": true
+    },
+    {
+      "name": "stop-all: exactly one stop-all message for the newly canceled run",
+      "pass": true
+    },
+    {
+      "name": "stop-all: SSE stream carries the aggregate stop_all reason",
+      "pass": true
+    },
+    {
+      "name": "stop-all: already-terminal runs are not re-canceled (completedAt unchanged)",
       "pass": true
     }
   ],

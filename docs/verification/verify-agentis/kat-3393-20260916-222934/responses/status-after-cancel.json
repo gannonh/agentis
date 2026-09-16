@@ -17,54 +17,54 @@
   },
   "tasks": [
     {
-      "id": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
-      "threadId": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
+      "id": "18fe3bf6-91e1-440b-8b12-d87626b08d17",
+      "threadId": "a855c25c-ee5a-4ec8-89ce-f9f0c564f773",
       "outcome": "KAT-3393 UAT cancel drive",
       "requestedBy": "owner",
       "currentOwner": "mara",
       "ownerRole": "coordinator",
-      "workspaceRef": "task:ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
+      "workspaceRef": "task:18fe3bf6-91e1-440b-8b12-d87626b08d17",
       "constraints": [],
       "evidence": [
-        "c12a8803-f25d-4466-937d-935715ae025c"
+        "c5655629-7558-4b44-8be7-8ed5318981f4"
       ],
-      "currentRunId": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
+      "currentRunId": "a248be0a-8859-43b4-9199-f5b5cc303a83",
       "latestArtifactId": null,
       "status": "canceled",
       "actionCount": 0,
-      "createdAt": 1789597821231,
-      "updatedAt": 1789597834650
+      "createdAt": 1789598375119,
+      "updatedAt": 1789598379819
     }
   ],
   "threads": [
     {
-      "id": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
-      "taskId": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
-      "createdAt": 1789597821231
+      "id": "a855c25c-ee5a-4ec8-89ce-f9f0c564f773",
+      "taskId": "18fe3bf6-91e1-440b-8b12-d87626b08d17",
+      "createdAt": 1789598375119
     }
   ],
   "handoffs": [],
   "runs": [
     {
-      "id": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
-      "taskId": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
-      "threadId": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
-      "botConfigRevisionId": "baa43385-afab-402a-a402-99564fbc720f",
+      "id": "a248be0a-8859-43b4-9199-f5b5cc303a83",
+      "taskId": "18fe3bf6-91e1-440b-8b12-d87626b08d17",
+      "threadId": "a855c25c-ee5a-4ec8-89ce-f9f0c564f773",
+      "botConfigRevisionId": "a06eebeb-7dab-4aa4-b03c-ba4bddc53c35",
       "status": "canceled",
       "waitingReason": "none",
       "providerLoadStatus": "idle",
       "pendingPrompt": null,
       "failure": null,
       "actionCount": 0,
-      "queuedAt": 1789597821231,
-      "startedAt": 1789597821236,
-      "deadlineAt": 1789598721231,
-      "completedAt": 1789597834650
+      "queuedAt": 1789598375119,
+      "startedAt": 1789598375122,
+      "deadlineAt": 1789599275119,
+      "completedAt": 1789598379819
     }
   ],
   "botConfigRevisions": [
     {
-      "id": "baa43385-afab-402a-a402-99564fbc720f",
+      "id": "a06eebeb-7dab-4aa4-b03c-ba4bddc53c35",
       "bot": "mara",
       "role": "coordinator",
       "provider": "fake",
@@ -83,24 +83,24 @@
       "executionBoundary": "unverified-host-scratch",
       "executionLocation": "local daemon scratch",
       "authMode": "none",
-      "createdAt": 1789597821231
+      "createdAt": 1789598375119
     }
   ],
   "evidence": [
     {
-      "id": "c12a8803-f25d-4466-937d-935715ae025c",
+      "id": "c5655629-7558-4b44-8be7-8ed5318981f4",
       "source": "pasted",
       "label": "CLI brief",
       "contentDigest": "b1781cd757f9bc9ba363e15bdb2e3182aedbdebe75e98b8be46d2abfa4c7e5e8",
       "byteSize": 25,
       "citations": [],
-      "createdAt": 1789597821231
+      "createdAt": 1789598375119
     }
   ],
   "pending": [
     {
-      "id": "d5168d5f-d984-4537-82ed-cac7c304339c",
-      "runId": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
+      "id": "7696c52e-0cd6-43ff-8457-b63b9a5851a9",
+      "runId": "a248be0a-8859-43b4-9199-f5b5cc303a83",
       "kind": "launch",
       "state": "claimed",
       "detail": "Run queued for launch.",
@@ -110,43 +110,43 @@
   "artifacts": [],
   "messages": [
     {
-      "id": "cac23430-3411-4a84-a255-b387bca296d1",
-      "threadId": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
-      "taskId": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
-      "runId": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
+      "id": "029f8bd4-abba-43c8-9297-0d949b5ec47a",
+      "threadId": "a855c25c-ee5a-4ec8-89ce-f9f0c564f773",
+      "taskId": "18fe3bf6-91e1-440b-8b12-d87626b08d17",
+      "runId": "a248be0a-8859-43b4-9199-f5b5cc303a83",
       "authorKind": "human",
       "authorName": "owner",
       "authorRole": "operator",
       "kind": "request",
       "importance": "decision",
       "body": "KAT-3393 UAT cancel drive",
-      "createdAt": 1789597821231
+      "createdAt": 1789598375119
     },
     {
-      "id": "18c93a09-5658-46d4-bf39-81e431adb37f",
-      "threadId": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
-      "taskId": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
-      "runId": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
+      "id": "3931d1f3-bbac-4c38-b16e-49a1bda3e38a",
+      "threadId": "a855c25c-ee5a-4ec8-89ce-f9f0c564f773",
+      "taskId": "18fe3bf6-91e1-440b-8b12-d87626b08d17",
+      "runId": "a248be0a-8859-43b4-9199-f5b5cc303a83",
       "authorKind": "bot",
       "authorName": "mara",
       "authorRole": "coordinator",
       "kind": "question",
       "importance": "blocking",
       "body": "waiting for cancel",
-      "createdAt": 1789597821236
+      "createdAt": 1789598375122
     },
     {
-      "id": "fca67b41-8193-4f2b-9aec-fcd31771274a",
-      "threadId": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
-      "taskId": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
-      "runId": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
+      "id": "4ff8376f-5aa2-4fdc-bff2-95b877ebc54f",
+      "threadId": "a855c25c-ee5a-4ec8-89ce-f9f0c564f773",
+      "taskId": "18fe3bf6-91e1-440b-8b12-d87626b08d17",
+      "runId": "a248be0a-8859-43b4-9199-f5b5cc303a83",
       "authorKind": "system",
       "authorName": "agentis",
       "authorRole": "system",
       "kind": "system",
       "importance": "blocking",
       "body": "The owner canceled this run.",
-      "createdAt": 1789597834650
+      "createdAt": 1789598379819
     }
   ]
 }

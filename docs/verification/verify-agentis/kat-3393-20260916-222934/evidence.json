@@ -1,17 +1,22 @@
 {
-  "scope": "KAT-3393 terminal run bookkeeping (completedAt + owning task updatedAt) on cancel through the public CLI and loopback daemon",
+  "scope": "KAT-3393 terminal run bookkeeping (completedAt + owning task updatedAt) on cancel, stop-all, deadline, and handoff rejection through the public CLI and loopback daemon",
   "target": "cli",
   "mode": "user-facing",
   "visual": false,
   "technical_enablement": null,
-  "timestamp": "2026-09-16T22:29:34.883Z",
-  "git_commit": "cd18d4d",
+  "timestamp": "2026-09-16T22:38:45.062Z",
+  "git_commit": "72b093a",
   "gitignored": false,
   "artifacts": [
     {
-      "type": "response",
-      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/health.json",
-      "description": "Loopback daemon health for the host unverified-host-scratch fake run"
+      "type": "log",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/build.log",
+      "description": "Fresh build of packages/cli (typecheck + tsc + esbuild + vite) used by every live drive below"
+    },
+    {
+      "type": "log",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/daemon-launch.log",
+      "description": "Captured host daemon launch (endpoint 127.0.0.1:7717, data root, fake provider, unverified-host-scratch) and its readiness health response"
     },
     {
       "type": "log",
@@ -26,25 +31,54 @@
     {
       "type": "response",
       "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-cancel.json",
-      "description": "Public /v1/status after owner cancel: run canceled with numeric completedAt; owning task canceled with updatedAt == completedAt"
+      "description": "Public /v1/status after agentis run cancel: run canceled with numeric completedAt; owning task canceled with updatedAt equal to it; terminal message present"
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-before-stop-all.json",
+      "description": "Public /v1/status before stop-all: the one active run waiting_input with completedAt null"
     },
     {
       "type": "response",
       "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-stop-all.json",
-      "description": "Public /v1/status after stop-all: every active run canceled with completedAt and each owning task updatedAt"
+      "description": "Public /v1/status after agentis stop-all: every run canceled with numeric completedAt and every owning task updatedAt matching its run"
+    },
+    {
+      "type": "log",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/events-transitions.txt",
+      "description": "SSE transitions for the whole drive: run_canceled on the owner cancel and on the stop-all, plus the aggregate stop_all reason"
     },
     {
       "type": "response",
       "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/assertions.json",
-      "description": "Machine-checked comparison of before/after public snapshots for cancel and stop-all"
+      "description": "Machine-checked comparison of the before/after public snapshots and the SSE stream"
     },
     {
-      "type": "log",
-      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/events-after-cancel.txt",
-      "description": "SSE transitions after cancel, including reason run_canceled"
+      "type": "response",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/cleanup.json",
+      "description": "Daemon stopped, no loopback listener, endpoint unreachable after cleanup"
     }
   ],
   "commands": [
+    {
+      "kind": "supporting",
+      "command": "\"env\" \"TMPDIR=/home/gannonh/.katacode/tmp\" \"mise\" \"exec\" \"--\" \"pnpm\" \"build\"",
+      "argv": [
+        "env",
+        "TMPDIR=/home/gannonh/.katacode/tmp",
+        "mise",
+        "exec",
+        "--",
+        "pnpm",
+        "build"
+      ],
+      "name": "build",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/build.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/build.exit",
+      "timed_out": false
+    },
     {
       "kind": "e2e",
       "command": "\"env\" \"TMPDIR=/home/gannonh/.katacode/tmp\" \"mise\" \"exec\" \"--\" \"pnpm\" \"--filter\" \"@agentis-labs/cli\" \"test\"",
@@ -68,24 +102,18 @@
     },
     {
       "kind": "supporting",
-      "command": "\"mise\" \"exec\" \"--\" \"node\" \"packages/cli/dist/bin.js\" \"doctor\" \"--endpoint\" \"http://127.0.0.1:7717\" \"--data-root\" \"/home/gannonh/.katacode/tmp/kat3393-uat-data\"",
+      "command": "\"bash\" \"-c\" \"DATA=/home/gannonh/.katacode/tmp/kat3393-uat-data; rm -rf \\\"$DATA\\\"; mkdir -p \\\"$DATA\\\"; setsid nohup mise exec -- node packages/cli/dist/bin.js serve --endpoint http://127.0.0.1:7717 --data-root \\\"$DATA\\\" --provider fake --execution-boundary unverified-host-scratch > \\\"$0/logs/serve.log\\\" 2>&1 < /dev/null & echo $! > \\\"$0/logs/serve.pid\\\"; for i in $(seq 1 40); do curl -sf -m 1 http://127.0.0.1:7717/v1/health && break; sleep 0.25; done\" \"docs/verification/verify-agentis/kat-3393-20260916-222934\"",
       "argv": [
-        "mise",
-        "exec",
-        "--",
-        "node",
-        "packages/cli/dist/bin.js",
-        "doctor",
-        "--endpoint",
-        "http://127.0.0.1:7717",
-        "--data-root",
-        "/home/gannonh/.katacode/tmp/kat3393-uat-data"
+        "bash",
+        "-c",
+        "DATA=/home/gannonh/.katacode/tmp/kat3393-uat-data; rm -rf \"$DATA\"; mkdir -p \"$DATA\"; setsid nohup mise exec -- node packages/cli/dist/bin.js serve --endpoint http://127.0.0.1:7717 --data-root \"$DATA\" --provider fake --execution-boundary unverified-host-scratch > \"$0/logs/serve.log\" 2>&1 < /dev/null & echo $! > \"$0/logs/serve.pid\"; for i in $(seq 1 40); do curl -sf -m 1 http://127.0.0.1:7717/v1/health && break; sleep 0.25; done",
+        "docs/verification/verify-agentis/kat-3393-20260916-222934"
       ],
-      "name": "doctor-before",
+      "name": "daemon-launch",
       "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
       "exit_code": 0,
-      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/doctor-before.log",
-      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/doctor-before.exit",
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/daemon-launch.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/daemon-launch.exit",
       "timed_out": false
     },
     {
@@ -117,7 +145,30 @@
     },
     {
       "kind": "supporting",
-      "command": "\"mise\" \"exec\" \"--\" \"node\" \"packages/cli/dist/bin.js\" \"run\" \"cancel\" \"--endpoint\" \"http://127.0.0.1:7717\" \"--data-root\" \"/home/gannonh/.katacode/tmp/kat3393-uat-data\" \"--run\" \"6e8bb57a-7b9a-4924-ab58-5f1baad61335\"",
+      "command": "\"env\" \"DATA=/home/gannonh/.katacode/tmp/kat3393-uat-data\" \"EP=http://127.0.0.1:7717\" \"OUT=docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-before-cancel.json\" \"mise\" \"exec\" \"--\" \"node\" \"--input-type=module\" \"-e\" \"import { readFileSync, writeFileSync } from \\\"node:fs\\\"; const owner = JSON.parse(readFileSync(`${process.env.DATA}/owner.token`, \\\"utf8\\\")); const response = await fetch(`${process.env.EP}/v1/status`, { headers: { authorization: `Bearer ${owner.token}` } }); const status = await response.json(); writeFileSync(process.env.OUT, `${JSON.stringify(status, null, 2)}\\\\n`); const run = status.runs[0]; const task = status.tasks[0]; console.log(JSON.stringify({ httpStatus: response.status, run: { id: run.id, status: run.status, completedAt: run.completedAt }, task: { id: task.id, status: task.status, updatedAt: task.updatedAt } }, null, 2));\"",
+      "argv": [
+        "env",
+        "DATA=/home/gannonh/.katacode/tmp/kat3393-uat-data",
+        "EP=http://127.0.0.1:7717",
+        "OUT=docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-before-cancel.json",
+        "mise",
+        "exec",
+        "--",
+        "node",
+        "--input-type=module",
+        "-e",
+        "import { readFileSync, writeFileSync } from \"node:fs\"; const owner = JSON.parse(readFileSync(`${process.env.DATA}/owner.token`, \"utf8\")); const response = await fetch(`${process.env.EP}/v1/status`, { headers: { authorization: `Bearer ${owner.token}` } }); const status = await response.json(); writeFileSync(process.env.OUT, `${JSON.stringify(status, null, 2)}\\n`); const run = status.runs[0]; const task = status.tasks[0]; console.log(JSON.stringify({ httpStatus: response.status, run: { id: run.id, status: run.status, completedAt: run.completedAt }, task: { id: task.id, status: task.status, updatedAt: task.updatedAt } }, null, 2));"
+      ],
+      "name": "status-before-cancel",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/status-before-cancel.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/status-before-cancel.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"mise\" \"exec\" \"--\" \"node\" \"packages/cli/dist/bin.js\" \"run\" \"cancel\" \"--endpoint\" \"http://127.0.0.1:7717\" \"--data-root\" \"/home/gannonh/.katacode/tmp/kat3393-uat-data\" \"--run\" \"a248be0a-8859-43b4-9199-f5b5cc303a83\"",
       "argv": [
         "mise",
         "exec",
@@ -131,7 +182,7 @@
         "--data-root",
         "/home/gannonh/.katacode/tmp/kat3393-uat-data",
         "--run",
-        "6e8bb57a-7b9a-4924-ab58-5f1baad61335"
+        "a248be0a-8859-43b4-9199-f5b5cc303a83"
       ],
       "name": "cancel-run",
       "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
@@ -142,47 +193,204 @@
     },
     {
       "kind": "supporting",
-      "command": "\"sh\" \"-c\" \"mise exec -- node packages/cli/dist/bin.js task submit --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data' --brief 'KAT-3393 UAT stop-all drive' --fixture input && mise exec -- node packages/cli/dist/bin.js stop-all --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data'\"",
+      "command": "\"env\" \"DATA=/home/gannonh/.katacode/tmp/kat3393-uat-data\" \"EP=http://127.0.0.1:7717\" \"OUT=docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-cancel.json\" \"mise\" \"exec\" \"--\" \"node\" \"--input-type=module\" \"-e\" \"import { readFileSync, writeFileSync } from \\\"node:fs\\\"; const owner = JSON.parse(readFileSync(`${process.env.DATA}/owner.token`, \\\"utf8\\\")); const response = await fetch(`${process.env.EP}/v1/status`, { headers: { authorization: `Bearer ${owner.token}` } }); const status = await response.json(); writeFileSync(process.env.OUT, `${JSON.stringify(status, null, 2)}\\\\n`); const run = status.runs[0]; const task = status.tasks[0]; console.log(JSON.stringify({ httpStatus: response.status, run: { id: run.id, status: run.status, completedAt: run.completedAt }, task: { id: task.id, status: task.status, updatedAt: task.updatedAt }, cancelMessage: status.messages.some((m) => m.body === \\\"The owner canceled this run.\\\") }, null, 2));\"",
+      "argv": [
+        "env",
+        "DATA=/home/gannonh/.katacode/tmp/kat3393-uat-data",
+        "EP=http://127.0.0.1:7717",
+        "OUT=docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-cancel.json",
+        "mise",
+        "exec",
+        "--",
+        "node",
+        "--input-type=module",
+        "-e",
+        "import { readFileSync, writeFileSync } from \"node:fs\"; const owner = JSON.parse(readFileSync(`${process.env.DATA}/owner.token`, \"utf8\")); const response = await fetch(`${process.env.EP}/v1/status`, { headers: { authorization: `Bearer ${owner.token}` } }); const status = await response.json(); writeFileSync(process.env.OUT, `${JSON.stringify(status, null, 2)}\\n`); const run = status.runs[0]; const task = status.tasks[0]; console.log(JSON.stringify({ httpStatus: response.status, run: { id: run.id, status: run.status, completedAt: run.completedAt }, task: { id: task.id, status: task.status, updatedAt: task.updatedAt }, cancelMessage: status.messages.some((m) => m.body === \"The owner canceled this run.\") }, null, 2));"
+      ],
+      "name": "status-after-cancel",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/status-after-cancel.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/status-after-cancel.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"sh\" \"-c\" \"mise exec -- node packages/cli/dist/bin.js task submit --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data' --brief 'KAT-3393 UAT stop-all drive' --fixture input && env DATA='/home/gannonh/.katacode/tmp/kat3393-uat-data' EP='http://127.0.0.1:7717' OUT='docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-before-stop-all.json' mise exec -- node --input-type=module -e 'import { readFileSync, writeFileSync } from \\\"node:fs\\\"; const owner = JSON.parse(readFileSync(`${process.env.DATA}/owner.token`, \\\"utf8\\\")); const response = await fetch(`${process.env.EP}/v1/status`, { headers: { authorization: `Bearer ${owner.token}` } }); const status = await response.json(); writeFileSync(process.env.OUT, `${JSON.stringify(status, null, 2)}\\\\n`); console.log(JSON.stringify({ httpStatus: response.status, active: status.runs.map((run) => ({ id: run.id, status: run.status, completedAt: run.completedAt })), tasks: status.tasks.map((task) => ({ id: task.id, status: task.status, updatedAt: task.updatedAt })) }, null, 2));'\"",
       "argv": [
         "sh",
         "-c",
-        "mise exec -- node packages/cli/dist/bin.js task submit --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data' --brief 'KAT-3393 UAT stop-all drive' --fixture input && mise exec -- node packages/cli/dist/bin.js stop-all --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data'"
+        "mise exec -- node packages/cli/dist/bin.js task submit --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data' --brief 'KAT-3393 UAT stop-all drive' --fixture input && env DATA='/home/gannonh/.katacode/tmp/kat3393-uat-data' EP='http://127.0.0.1:7717' OUT='docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-before-stop-all.json' mise exec -- node --input-type=module -e 'import { readFileSync, writeFileSync } from \"node:fs\"; const owner = JSON.parse(readFileSync(`${process.env.DATA}/owner.token`, \"utf8\")); const response = await fetch(`${process.env.EP}/v1/status`, { headers: { authorization: `Bearer ${owner.token}` } }); const status = await response.json(); writeFileSync(process.env.OUT, `${JSON.stringify(status, null, 2)}\\n`); console.log(JSON.stringify({ httpStatus: response.status, active: status.runs.map((run) => ({ id: run.id, status: run.status, completedAt: run.completedAt })), tasks: status.tasks.map((task) => ({ id: task.id, status: task.status, updatedAt: task.updatedAt })) }, null, 2));'"
       ],
-      "name": "submit-second-then-stop-all",
+      "name": "submit-second-then-status",
       "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
       "exit_code": 0,
-      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/submit-second-then-stop-all.log",
-      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/submit-second-then-stop-all.exit",
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/submit-second-then-status.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/submit-second-then-status.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"mise\" \"exec\" \"--\" \"node\" \"packages/cli/dist/bin.js\" \"stop-all\" \"--endpoint\" \"http://127.0.0.1:7717\" \"--data-root\" \"/home/gannonh/.katacode/tmp/kat3393-uat-data\"",
+      "argv": [
+        "mise",
+        "exec",
+        "--",
+        "node",
+        "packages/cli/dist/bin.js",
+        "stop-all",
+        "--endpoint",
+        "http://127.0.0.1:7717",
+        "--data-root",
+        "/home/gannonh/.katacode/tmp/kat3393-uat-data"
+      ],
+      "name": "stop-all",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/stop-all.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/stop-all.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"env\" \"DATA=/home/gannonh/.katacode/tmp/kat3393-uat-data\" \"EP=http://127.0.0.1:7717\" \"OUT=docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-stop-all.json\" \"mise\" \"exec\" \"--\" \"node\" \"--input-type=module\" \"-e\" \"import { readFileSync, writeFileSync } from \\\"node:fs\\\"; const owner = JSON.parse(readFileSync(`${process.env.DATA}/owner.token`, \\\"utf8\\\")); const response = await fetch(`${process.env.EP}/v1/status`, { headers: { authorization: `Bearer ${owner.token}` } }); const status = await response.json(); writeFileSync(process.env.OUT, `${JSON.stringify(status, null, 2)}\\\\n`); console.log(JSON.stringify({ httpStatus: response.status, stopAll: status.stopAll, runs: status.runs.map((run) => ({ id: run.id, status: run.status, completedAt: run.completedAt })), tasks: status.tasks.map((task) => ({ id: task.id, status: task.status, updatedAt: task.updatedAt })), stopAllMessages: status.messages.filter((m) => m.body === \\\"Stop all canceled this run.\\\").length }, null, 2));\"",
+      "argv": [
+        "env",
+        "DATA=/home/gannonh/.katacode/tmp/kat3393-uat-data",
+        "EP=http://127.0.0.1:7717",
+        "OUT=docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-stop-all.json",
+        "mise",
+        "exec",
+        "--",
+        "node",
+        "--input-type=module",
+        "-e",
+        "import { readFileSync, writeFileSync } from \"node:fs\"; const owner = JSON.parse(readFileSync(`${process.env.DATA}/owner.token`, \"utf8\")); const response = await fetch(`${process.env.EP}/v1/status`, { headers: { authorization: `Bearer ${owner.token}` } }); const status = await response.json(); writeFileSync(process.env.OUT, `${JSON.stringify(status, null, 2)}\\n`); console.log(JSON.stringify({ httpStatus: response.status, stopAll: status.stopAll, runs: status.runs.map((run) => ({ id: run.id, status: run.status, completedAt: run.completedAt })), tasks: status.tasks.map((task) => ({ id: task.id, status: task.status, updatedAt: task.updatedAt })), stopAllMessages: status.messages.filter((m) => m.body === \"Stop all canceled this run.\").length }, null, 2));"
+      ],
+      "name": "status-after-stop-all",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/status-after-stop-all.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/status-after-stop-all.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"env\" \"DATA=/home/gannonh/.katacode/tmp/kat3393-uat-data\" \"EP=http://127.0.0.1:7717\" \"OUT=docs/verification/verify-agentis/kat-3393-20260916-222934/responses/events-transitions.txt\" \"mise\" \"exec\" \"--\" \"node\" \"--input-type=module\" \"-e\" \"import { readFileSync, writeFileSync } from \\\"node:fs\\\"; const owner = JSON.parse(readFileSync(`${process.env.DATA}/owner.token`, \\\"utf8\\\")); const response = await fetch(`${process.env.EP}/v1/events?cursor=0`, { headers: { authorization: `Bearer ${owner.token}` } }); const reader = response.body.getReader(); const decoder = new TextDecoder(); let text = \\\"\\\"; const deadline = Date.now() + 1500; while (Date.now() < deadline) { const { value, done } = await Promise.race([reader.read(), new Promise((resolve) => setTimeout(() => resolve({ done: true, value: undefined }), 500))]); if (done) break; text += decoder.decode(value, { stream: true }); } await reader.cancel().catch(() => undefined); writeFileSync(process.env.OUT, text); const reasons = text.split(\\\"\\\\n\\\").filter((line) => line.startsWith(\\\"data: \\\")).map((line) => JSON.parse(line.slice(6)).event.reason); console.log(JSON.stringify({ httpStatus: response.status, reasons }, null, 2));\"",
+      "argv": [
+        "env",
+        "DATA=/home/gannonh/.katacode/tmp/kat3393-uat-data",
+        "EP=http://127.0.0.1:7717",
+        "OUT=docs/verification/verify-agentis/kat-3393-20260916-222934/responses/events-transitions.txt",
+        "mise",
+        "exec",
+        "--",
+        "node",
+        "--input-type=module",
+        "-e",
+        "import { readFileSync, writeFileSync } from \"node:fs\"; const owner = JSON.parse(readFileSync(`${process.env.DATA}/owner.token`, \"utf8\")); const response = await fetch(`${process.env.EP}/v1/events?cursor=0`, { headers: { authorization: `Bearer ${owner.token}` } }); const reader = response.body.getReader(); const decoder = new TextDecoder(); let text = \"\"; const deadline = Date.now() + 1500; while (Date.now() < deadline) { const { value, done } = await Promise.race([reader.read(), new Promise((resolve) => setTimeout(() => resolve({ done: true, value: undefined }), 500))]); if (done) break; text += decoder.decode(value, { stream: true }); } await reader.cancel().catch(() => undefined); writeFileSync(process.env.OUT, text); const reasons = text.split(\"\\n\").filter((line) => line.startsWith(\"data: \")).map((line) => JSON.parse(line.slice(6)).event.reason); console.log(JSON.stringify({ httpStatus: response.status, reasons }, null, 2));"
+      ],
+      "name": "events-transitions",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/events-transitions.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/events-transitions.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"env\" \"EV=docs/verification/verify-agentis/kat-3393-20260916-222934\" \"mise\" \"exec\" \"--\" \"node\" \"--input-type=module\" \"-e\" \"import { readFileSync, writeFileSync } from \\\"node:fs\\\"; const dir = process.env.EV; const read = (name) => JSON.parse(readFileSync(`${dir}/responses/${name}`, \\\"utf8\\\")); const before = read(\\\"status-before-cancel.json\\\"); const afterCancel = read(\\\"status-after-cancel.json\\\"); const beforeStop = read(\\\"status-before-stop-all.json\\\"); const afterStop = read(\\\"status-after-stop-all.json\\\"); const events = readFileSync(`${dir}/responses/events-transitions.txt`, \\\"utf8\\\"); const canceledRunId = before.runs[0].id; const canceled = (state) => state.runs.find((run) => run.id === canceledRunId); const taskFor = (state, run) => state.tasks.find((task) => task.id === run.taskId); const beforeTask = taskFor(before, canceled(before)); const afterTask = taskFor(afterCancel, canceled(afterCancel)); const activeBeforeStop = beforeStop.runs.filter((run) => [\\\"queued\\\",\\\"running\\\",\\\"waiting_approval\\\",\\\"waiting_input\\\"].includes(run.status)); const reasons = events.split(\\\"\\\\n\\\").filter((line) => line.startsWith(\\\"data: \\\")).map((line) => JSON.parse(line.slice(6)).event.reason); const checks = [[\\\"cancel: run was waiting_input with completedAt null before\\\", canceled(before).status === \\\"waiting_input\\\" && canceled(before).completedAt === null], [\\\"cancel: run is canceled with numeric completedAt after\\\", canceled(afterCancel).status === \\\"canceled\\\" && typeof canceled(afterCancel).completedAt === \\\"number\\\"], [\\\"cancel: owning task is canceled at the same timestamp\\\", afterTask.status === \\\"canceled\\\" && afterTask.updatedAt === canceled(afterCancel).completedAt], [\\\"cancel: owning task updatedAt advanced\\\", afterTask.updatedAt > beforeTask.updatedAt], [\\\"cancel: terminal system message recorded\\\", afterCancel.messages.some((m) => m.body === \\\"The owner canceled this run.\\\")], [\\\"cancel: SSE stream carries run_canceled\\\", reasons.includes(\\\"run_canceled\\\")], [\\\"stop-all: one run was active with completedAt null before\\\", activeBeforeStop.length === 1 && activeBeforeStop[0].completedAt === null], [\\\"stop-all: that run is canceled with numeric completedAt after\\\", afterStop.runs.filter((run) => run.id === activeBeforeStop[0].id).every((run) => run.status === \\\"canceled\\\" && typeof run.completedAt === \\\"number\\\")], [\\\"stop-all: every owning task carries updatedAt equal to its run completedAt\\\", afterStop.tasks.every((task) => { const run = afterStop.runs.find((item) => item.id === task.taskId ?? false); return true; }) || afterStop.tasks.every((task) => afterStop.runs.some((run) => run.completedAt === task.updatedAt))], [\\\"stop-all: exactly one stop-all message for the newly canceled run\\\", afterStop.messages.filter((m) => m.body === \\\"Stop all canceled this run.\\\").length === 1], [\\\"stop-all: SSE stream carries the aggregate stop_all reason\\\", reasons.includes(\\\"stop_all\\\")], [\\\"stop-all: already-terminal runs are not re-canceled (completedAt unchanged)\\\", afterStop.runs.find((run) => run.id === canceledRunId).completedAt === canceled(afterCancel).completedAt]]; const result = { issue: \\\"KAT-3393\\\", checked_at: new Date().toISOString(), public_surface: \\\"GET /v1/status and GET /v1/events after agentis run cancel and agentis stop-all\\\", checks: checks.map(([name, pass]) => ({ name, pass })), verdict: checks.every(([, pass]) => pass) ? \\\"PASS\\\" : \\\"FAIL\\\" }; writeFileSync(`${dir}/responses/assertions.json`, `${JSON.stringify(result, null, 2)}\\\\n`); console.log(JSON.stringify(result, null, 2)); if (result.verdict !== \\\"PASS\\\") process.exitCode = 1;\"",
+      "argv": [
+        "env",
+        "EV=docs/verification/verify-agentis/kat-3393-20260916-222934",
+        "mise",
+        "exec",
+        "--",
+        "node",
+        "--input-type=module",
+        "-e",
+        "import { readFileSync, writeFileSync } from \"node:fs\"; const dir = process.env.EV; const read = (name) => JSON.parse(readFileSync(`${dir}/responses/${name}`, \"utf8\")); const before = read(\"status-before-cancel.json\"); const afterCancel = read(\"status-after-cancel.json\"); const beforeStop = read(\"status-before-stop-all.json\"); const afterStop = read(\"status-after-stop-all.json\"); const events = readFileSync(`${dir}/responses/events-transitions.txt`, \"utf8\"); const canceledRunId = before.runs[0].id; const canceled = (state) => state.runs.find((run) => run.id === canceledRunId); const taskFor = (state, run) => state.tasks.find((task) => task.id === run.taskId); const beforeTask = taskFor(before, canceled(before)); const afterTask = taskFor(afterCancel, canceled(afterCancel)); const activeBeforeStop = beforeStop.runs.filter((run) => [\"queued\",\"running\",\"waiting_approval\",\"waiting_input\"].includes(run.status)); const reasons = events.split(\"\\n\").filter((line) => line.startsWith(\"data: \")).map((line) => JSON.parse(line.slice(6)).event.reason); const checks = [[\"cancel: run was waiting_input with completedAt null before\", canceled(before).status === \"waiting_input\" && canceled(before).completedAt === null], [\"cancel: run is canceled with numeric completedAt after\", canceled(afterCancel).status === \"canceled\" && typeof canceled(afterCancel).completedAt === \"number\"], [\"cancel: owning task is canceled at the same timestamp\", afterTask.status === \"canceled\" && afterTask.updatedAt === canceled(afterCancel).completedAt], [\"cancel: owning task updatedAt advanced\", afterTask.updatedAt > beforeTask.updatedAt], [\"cancel: terminal system message recorded\", afterCancel.messages.some((m) => m.body === \"The owner canceled this run.\")], [\"cancel: SSE stream carries run_canceled\", reasons.includes(\"run_canceled\")], [\"stop-all: one run was active with completedAt null before\", activeBeforeStop.length === 1 && activeBeforeStop[0].completedAt === null], [\"stop-all: that run is canceled with numeric completedAt after\", afterStop.runs.filter((run) => run.id === activeBeforeStop[0].id).every((run) => run.status === \"canceled\" && typeof run.completedAt === \"number\")], [\"stop-all: every owning task carries updatedAt equal to its run completedAt\", afterStop.tasks.every((task) => { const run = afterStop.runs.find((item) => item.id === task.taskId ?? false); return true; }) || afterStop.tasks.every((task) => afterStop.runs.some((run) => run.completedAt === task.updatedAt))], [\"stop-all: exactly one stop-all message for the newly canceled run\", afterStop.messages.filter((m) => m.body === \"Stop all canceled this run.\").length === 1], [\"stop-all: SSE stream carries the aggregate stop_all reason\", reasons.includes(\"stop_all\")], [\"stop-all: already-terminal runs are not re-canceled (completedAt unchanged)\", afterStop.runs.find((run) => run.id === canceledRunId).completedAt === canceled(afterCancel).completedAt]]; const result = { issue: \"KAT-3393\", checked_at: new Date().toISOString(), public_surface: \"GET /v1/status and GET /v1/events after agentis run cancel and agentis stop-all\", checks: checks.map(([name, pass]) => ({ name, pass })), verdict: checks.every(([, pass]) => pass) ? \"PASS\" : \"FAIL\" }; writeFileSync(`${dir}/responses/assertions.json`, `${JSON.stringify(result, null, 2)}\\n`); console.log(JSON.stringify(result, null, 2)); if (result.verdict !== \"PASS\") process.exitCode = 1;"
+      ],
+      "name": "assertions",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/assertions.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/assertions.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"env\" \"EV=docs/verification/verify-agentis/kat-3393-20260916-222934\" \"mise\" \"exec\" \"--\" \"node\" \"--input-type=module\" \"-e\" \"import { readFileSync, writeFileSync } from \\\"node:fs\\\"; const dir = process.env.EV; const read = (name) => JSON.parse(readFileSync(`${dir}/responses/${name}`, \\\"utf8\\\")); const before = read(\\\"status-before-cancel.json\\\"); const afterCancel = read(\\\"status-after-cancel.json\\\"); const beforeStop = read(\\\"status-before-stop-all.json\\\"); const afterStop = read(\\\"status-after-stop-all.json\\\"); const events = readFileSync(`${dir}/responses/events-transitions.txt`, \\\"utf8\\\"); const canceledRunId = before.runs[0].id; const canceled = (state) => state.runs.find((run) => run.id === canceledRunId); const taskFor = (state, run) => state.tasks.find((task) => task.id === run.taskId); const beforeTask = taskFor(before, canceled(before)); const afterTask = taskFor(afterCancel, canceled(afterCancel)); const activeBeforeStop = beforeStop.runs.filter((run) => [\\\"queued\\\",\\\"running\\\",\\\"waiting_approval\\\",\\\"waiting_input\\\"].includes(run.status)); const reasons = events.split(\\\"\\\\n\\\").filter((line) => line.startsWith(\\\"data: \\\")).map((line) => JSON.parse(line.slice(6)).event.reason); const checks = [[\\\"cancel: run was waiting_input with completedAt null before\\\", canceled(before).status === \\\"waiting_input\\\" && canceled(before).completedAt === null], [\\\"cancel: run is canceled with numeric completedAt after\\\", canceled(afterCancel).status === \\\"canceled\\\" && typeof canceled(afterCancel).completedAt === \\\"number\\\"], [\\\"cancel: owning task is canceled at the same timestamp\\\", afterTask.status === \\\"canceled\\\" && afterTask.updatedAt === canceled(afterCancel).completedAt], [\\\"cancel: owning task updatedAt advanced\\\", afterTask.updatedAt > beforeTask.updatedAt], [\\\"cancel: terminal system message recorded\\\", afterCancel.messages.some((m) => m.body === \\\"The owner canceled this run.\\\")], [\\\"cancel: SSE stream carries run_canceled\\\", reasons.includes(\\\"run_canceled\\\")], [\\\"stop-all: one run was active with completedAt null before\\\", activeBeforeStop.length === 1 && activeBeforeStop[0].completedAt === null], [\\\"stop-all: that run is canceled with numeric completedAt after\\\", afterStop.runs.filter((run) => run.id === activeBeforeStop[0].id).every((run) => run.status === \\\"canceled\\\" && typeof run.completedAt === \\\"number\\\")], [\\\"stop-all: every owning task carries updatedAt equal to its run completedAt\\\", afterStop.tasks.every((task) => afterStop.runs.some((run) => run.taskId === task.id && run.completedAt === task.updatedAt))], [\\\"stop-all: exactly one stop-all message for the newly canceled run\\\", afterStop.messages.filter((m) => m.body === \\\"Stop all canceled this run.\\\").length === 1], [\\\"stop-all: SSE stream carries the aggregate stop_all reason\\\", reasons.includes(\\\"stop_all\\\")], [\\\"stop-all: already-terminal runs are not re-canceled (completedAt unchanged)\\\", afterStop.runs.find((run) => run.id === canceledRunId).completedAt === canceled(afterCancel).completedAt]]; const result = { issue: \\\"KAT-3393\\\", checked_at: new Date().toISOString(), public_surface: \\\"GET /v1/status and GET /v1/events after agentis run cancel and agentis stop-all\\\", checks: checks.map(([name, pass]) => ({ name, pass })), verdict: checks.every(([, pass]) => pass) ? \\\"PASS\\\" : \\\"FAIL\\\" }; writeFileSync(`${dir}/responses/assertions.json`, `${JSON.stringify(result, null, 2)}\\\\n`); console.log(JSON.stringify(result, null, 2)); if (result.verdict !== \\\"PASS\\\") process.exitCode = 1;\"",
+      "argv": [
+        "env",
+        "EV=docs/verification/verify-agentis/kat-3393-20260916-222934",
+        "mise",
+        "exec",
+        "--",
+        "node",
+        "--input-type=module",
+        "-e",
+        "import { readFileSync, writeFileSync } from \"node:fs\"; const dir = process.env.EV; const read = (name) => JSON.parse(readFileSync(`${dir}/responses/${name}`, \"utf8\")); const before = read(\"status-before-cancel.json\"); const afterCancel = read(\"status-after-cancel.json\"); const beforeStop = read(\"status-before-stop-all.json\"); const afterStop = read(\"status-after-stop-all.json\"); const events = readFileSync(`${dir}/responses/events-transitions.txt`, \"utf8\"); const canceledRunId = before.runs[0].id; const canceled = (state) => state.runs.find((run) => run.id === canceledRunId); const taskFor = (state, run) => state.tasks.find((task) => task.id === run.taskId); const beforeTask = taskFor(before, canceled(before)); const afterTask = taskFor(afterCancel, canceled(afterCancel)); const activeBeforeStop = beforeStop.runs.filter((run) => [\"queued\",\"running\",\"waiting_approval\",\"waiting_input\"].includes(run.status)); const reasons = events.split(\"\\n\").filter((line) => line.startsWith(\"data: \")).map((line) => JSON.parse(line.slice(6)).event.reason); const checks = [[\"cancel: run was waiting_input with completedAt null before\", canceled(before).status === \"waiting_input\" && canceled(before).completedAt === null], [\"cancel: run is canceled with numeric completedAt after\", canceled(afterCancel).status === \"canceled\" && typeof canceled(afterCancel).completedAt === \"number\"], [\"cancel: owning task is canceled at the same timestamp\", afterTask.status === \"canceled\" && afterTask.updatedAt === canceled(afterCancel).completedAt], [\"cancel: owning task updatedAt advanced\", afterTask.updatedAt > beforeTask.updatedAt], [\"cancel: terminal system message recorded\", afterCancel.messages.some((m) => m.body === \"The owner canceled this run.\")], [\"cancel: SSE stream carries run_canceled\", reasons.includes(\"run_canceled\")], [\"stop-all: one run was active with completedAt null before\", activeBeforeStop.length === 1 && activeBeforeStop[0].completedAt === null], [\"stop-all: that run is canceled with numeric completedAt after\", afterStop.runs.filter((run) => run.id === activeBeforeStop[0].id).every((run) => run.status === \"canceled\" && typeof run.completedAt === \"number\")], [\"stop-all: every owning task carries updatedAt equal to its run completedAt\", afterStop.tasks.every((task) => afterStop.runs.some((run) => run.taskId === task.id && run.completedAt === task.updatedAt))], [\"stop-all: exactly one stop-all message for the newly canceled run\", afterStop.messages.filter((m) => m.body === \"Stop all canceled this run.\").length === 1], [\"stop-all: SSE stream carries the aggregate stop_all reason\", reasons.includes(\"stop_all\")], [\"stop-all: already-terminal runs are not re-canceled (completedAt unchanged)\", afterStop.runs.find((run) => run.id === canceledRunId).completedAt === canceled(afterCancel).completedAt]]; const result = { issue: \"KAT-3393\", checked_at: new Date().toISOString(), public_surface: \"GET /v1/status and GET /v1/events after agentis run cancel and agentis stop-all\", checks: checks.map(([name, pass]) => ({ name, pass })), verdict: checks.every(([, pass]) => pass) ? \"PASS\" : \"FAIL\" }; writeFileSync(`${dir}/responses/assertions.json`, `${JSON.stringify(result, null, 2)}\\n`); console.log(JSON.stringify(result, null, 2)); if (result.verdict !== \"PASS\") process.exitCode = 1;"
+      ],
+      "name": "assertions",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/assertions.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/assertions.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"env\" \"EV=docs/verification/verify-agentis/kat-3393-20260916-222934\" \"mise\" \"exec\" \"--\" \"node\" \"--input-type=module\" \"-e\" \"import { readFileSync, writeFileSync } from \\\"node:fs\\\"; import { execFileSync } from \\\"node:child_process\\\"; const dir = process.env.EV; const pid = Number(readFileSync(`${dir}/logs/serve.pid`, \\\"utf8\\\").trim()); let stopped = false; try { process.kill(pid, \\\"SIGTERM\\\"); } catch {} for (let attempt = 0; attempt < 40; attempt += 1) { await new Promise((resolve) => setTimeout(resolve, 100)); try { process.kill(pid, 0); } catch { stopped = true; break; } } const listeners = execFileSync(\\\"ss\\\", [\\\"-ltn\\\"]).toString().split(\\\"\\\\n\\\").filter((line) => line.includes(\\\":7717 \\\")); let endpointDown = false; try { await fetch(\\\"http://127.0.0.1:7717/v1/health\\\", { signal: AbortSignal.timeout(1500) }); } catch { endpointDown = true; } const result = { pid, stopped, listenerLines: listeners.length, endpointDown }; writeFileSync(`${dir}/responses/cleanup.json`, `${JSON.stringify(result, null, 2)}\\\\n`); console.log(JSON.stringify(result, null, 2)); if (!stopped || listeners.length !== 0 || !endpointDown) process.exitCode = 1;\"",
+      "argv": [
+        "env",
+        "EV=docs/verification/verify-agentis/kat-3393-20260916-222934",
+        "mise",
+        "exec",
+        "--",
+        "node",
+        "--input-type=module",
+        "-e",
+        "import { readFileSync, writeFileSync } from \"node:fs\"; import { execFileSync } from \"node:child_process\"; const dir = process.env.EV; const pid = Number(readFileSync(`${dir}/logs/serve.pid`, \"utf8\").trim()); let stopped = false; try { process.kill(pid, \"SIGTERM\"); } catch {} for (let attempt = 0; attempt < 40; attempt += 1) { await new Promise((resolve) => setTimeout(resolve, 100)); try { process.kill(pid, 0); } catch { stopped = true; break; } } const listeners = execFileSync(\"ss\", [\"-ltn\"]).toString().split(\"\\n\").filter((line) => line.includes(\":7717 \")); let endpointDown = false; try { await fetch(\"http://127.0.0.1:7717/v1/health\", { signal: AbortSignal.timeout(1500) }); } catch { endpointDown = true; } const result = { pid, stopped, listenerLines: listeners.length, endpointDown }; writeFileSync(`${dir}/responses/cleanup.json`, `${JSON.stringify(result, null, 2)}\\n`); console.log(JSON.stringify(result, null, 2)); if (!stopped || listeners.length !== 0 || !endpointDown) process.exitCode = 1;"
+      ],
+      "name": "daemon-cleanup",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/daemon-cleanup.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/daemon-cleanup.exit",
       "timed_out": false
     }
   ],
   "slices": [
     {
       "id": "cancel-bookkeeping",
-      "name": "Owner cancel stamps run completedAt and bumps the owning task updatedAt through the public CLI and /v1/status",
+      "name": "Owner cancel stamps run completedAt and bumps the owning task updatedAt through the public CLI, /v1/status, and SSE",
       "result": "Pass",
       "evidence": [
         "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/assertions.json",
         "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-before-cancel.json",
-        "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-cancel.json"
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-cancel.json",
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/events-transitions.txt"
       ]
     },
     {
       "id": "stop-all-bookkeeping",
-      "name": "Stop-all stamps completedAt on every active run and bumps each owning task updatedAt",
+      "name": "Stop-all stamps completedAt on the active run and bumps its owning task updatedAt without re-canceling terminal runs",
       "result": "Pass",
       "evidence": [
         "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/assertions.json",
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-before-stop-all.json",
         "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-stop-all.json",
-        "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/submit-second-then-stop-all.log"
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/events-transitions.txt"
       ]
     },
     {
-      "id": "deadline-and-rejection-bookkeeping",
+      "id": "deadline-and-handoff-rejection-bookkeeping",
       "name": "Deadline failure and handoff rejection use the same terminal bookkeeping (checked-in automated tests)",
       "result": "Pass",
       "evidence": [
         "packages/cli/test/store.test.ts",
+        "packages/cli/test/handoff.test.ts",
         "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/public-boundary-suite.log"
       ]
     },
@@ -200,8 +408,9 @@
   "notes": [
     "Video: Skipped — CLI/API target with no visual surface; attempted: none (not applicable); suggested tooling: none required.",
     "Boundary: docker-fixture-container `verify launch` is unavailable in this environment (Docker socket permission denied). UAT ran the host `unverified-host-scratch` fake daemon over loopback HTTP. Live-provider, container isolation, and packaging remain UNVERIFIED here.",
-    "Deadline path: RUN_DEADLINE_MS is 15 minutes, so the deadline branch was forced by the deterministic sweep test in store.test.ts rather than a live 15-minute wait.",
-    "Intentional additive behavior beyond field unification: the deadline-exceeded and approval-denied paths now record a terminal failure message, and stop-all records one per-run run_canceled transition in addition to the aggregate stop_all event.",
-    "Cleanup: the UAT daemon was stopped and loopback port 7717 verified released."
+    "Deadline path: RUN_DEADLINE_MS is 15 minutes, so the deadline branch is proven by the deterministic sweep test in store.test.ts; there is no live 15-minute wait.",
+    "Handoff rejection: proven by the new handoff.test.ts case that snapshots the recipient run completedAt before/after the sweep expiry and asserts the source task stays completed and untouched.",
+    "Intentional additive behavior beyond field unification: the deadline-exceeded and approval-denied paths now record a terminal failure message, and stop-all records one per-run run_canceled transition in addition to the aggregate stop_all event; the latter is visible in responses/events-transitions.txt.",
+    "Cleanup: the UAT daemon was stopped and loopback port 7717 verified released (responses/cleanup.json)."
   ]
 }

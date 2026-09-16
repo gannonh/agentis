@@ -1,0 +1,13 @@
+$ "env" "EV=docs/verification/verify-agentis/kat-3393-20260916-222934" "mise" "exec" "--" "node" "--input-type=module" "-e" "import { readFileSync, writeFileSync } from \"node:fs\"; import { execFileSync } from \"node:child_process\"; const dir = process.env.EV; const pid = Number(readFileSync(`${dir}/logs/serve.pid`, \"utf8\").trim()); let stopped = false; try { process.kill(pid, \"SIGTERM\"); } catch {} for (let attempt = 0; attempt < 40; attempt += 1) { await new Promise((resolve) => setTimeout(resolve, 100)); try { process.kill(pid, 0); } catch { stopped = true; break; } } const listeners = execFileSync(\"ss\", [\"-ltn\"]).toString().split(\"\\n\").filter((line) => line.includes(\":7717 \")); let endpointDown = false; try { await fetch(\"http://127.0.0.1:7717/v1/health\", { signal: AbortSignal.timeout(1500) }); } catch { endpointDown = true; } const result = { pid, stopped, listenerLines: listeners.length, endpointDown }; writeFileSync(`${dir}/responses/cleanup.json`, `${JSON.stringify(result, null, 2)}\\n`); console.log(JSON.stringify(result, null, 2)); if (!stopped || listeners.length !== 0 || !endpointDown) process.exitCode = 1;"
+cwd: /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e
+started_at: 2026-09-16T22:40:14.424Z
+
+{
+  "pid": 3113114,
+  "stopped": true,
+  "listenerLines": 0,
+  "endpointDown": true
+}
+
+exit_code: 0
+finished_at: 2026-09-16T22:40:14.595Z

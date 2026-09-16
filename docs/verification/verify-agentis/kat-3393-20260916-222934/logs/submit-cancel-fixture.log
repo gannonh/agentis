@@ -1,8 +1,8 @@
 $ "mise" "exec" "--" "node" "packages/cli/dist/bin.js" "task" "submit" "--endpoint" "http://127.0.0.1:7717" "--data-root" "/home/gannonh/.katacode/tmp/kat3393-uat-data" "--brief" "KAT-3393 UAT cancel drive" "--fixture" "cancel"
 cwd: /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e
-started_at: 2026-09-16T22:30:20.830Z
+started_at: 2026-09-16T22:39:34.701Z
 
-{"commandId":"2b9558a0-0aba-44e8-a99e-ad54dd645ca0","replayed":false,"accepted":true,"taskId":"ffa7be82-2b56-4ae5-aede-b2d5fcd4545f","runId":"6e8bb57a-7b9a-4924-ab58-5f1baad61335","threadId":"1eaf65c1-c96b-4087-81b5-37685b959e3b","effects":["launch"]}
+{"commandId":"9df5b1a8-365a-4c54-9cc3-161ec113eae1","replayed":false,"accepted":true,"taskId":"18fe3bf6-91e1-440b-8b12-d87626b08d17","runId":"a248be0a-8859-43b4-9199-f5b5cc303a83","threadId":"a855c25c-ee5a-4ec8-89ce-f9f0c564f773","effects":["launch"]}
 
 exit_code: 0
-finished_at: 2026-09-16T22:30:21.260Z
+finished_at: 2026-09-16T22:39:35.147Z
