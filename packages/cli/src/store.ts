@@ -9,6 +9,7 @@ import {
 } from "./handoff-store.js";
 import { row, rows, run, withTxn, emit, message } from "./store-db.js";
 import { ProviderState } from "./provider-contract.js";
+import { frozenConfig } from "./provider-profile.js";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -69,10 +70,6 @@ import {
 } from "./schema.js";
 import {
   APPROVAL_TTL_MS,
-  CLAUDE_CLI_PIN,
-  CODEX_AUTH_MODE,
-  CODEX_CLI_PIN,
-  CODEX_TRANSPORT,
   EVENT_REPLAY_LIMIT,
   MAX_ACTIONS_PER_RUN,
   MAX_ACTIONS_PER_TASK,
@@ -1351,37 +1348,13 @@ const submitTask = (
     citations: [],
   };
   const outcome = command.outcome ?? command.brief;
-  const frozen: FrozenConfig = {
+  const frozen = frozenConfig({
     bot,
-    role: bot === "mara" ? "coordinator" : "specialist",
-    mode: command.mode ?? "agent",
     provider,
-    transport:
-      provider === "codex"
-        ? CODEX_TRANSPORT
-        : provider === "claude"
-          ? "claude-sdk-jsonl-stdio"
-          : "fake-in-process",
-    executableVersion:
-      provider === "codex" ? CODEX_CLI_PIN : provider === "claude" ? CLAUDE_CLI_PIN : "fake-1",
-    model:
-      provider === "codex" ? "gpt-5.6-sol" : provider === "claude" ? "claude-sonnet-5" : "fake",
-    ...(provider !== "fake" ? { effort: "medium" } : {}),
-    skills: bot === "mara" ? ["coordinate", "business-brief"] : ["specialist-draft"],
-    grants: ["read:provided-source", "write:task-artifact"],
-    publicConfig: { sourceMode: "materialized-read-only" },
     executionBoundary: input.executionBoundary,
-    executionLocation:
-      input.executionBoundary === "docker-fixture-container"
-        ? "isolated fixture container"
-        : input.executionBoundary === "docker-desktop-run-container"
-          ? "local provider container"
-          : "local daemon scratch",
-    authMode: provider === "codex" ? CODEX_AUTH_MODE : provider === "claude" ? "api-key" : "none",
     workspaceId,
-    deadlineMs: RUN_DEADLINE_MS,
-    actionBudget: MAX_ACTIONS_PER_RUN,
-  };
+    mode: command.mode,
+  });
   mkdirSync(join(workspaceId, "sources"), { recursive: true, mode: 0o700 });
   const sourcePath = join(workspaceId, "sources", `${evidenceId}.txt`);
   writeScratchFile(sourcePath, source.text);

@@ -25,7 +25,7 @@ const port = () =>
     });
   });
 
-const boot = async () => {
+const boot = async (provider: "fake" | "codex" | "claude" = "fake") => {
   const dataRoot = mkdtempSync(join(tmpdir(), "agentis-http-"));
   const endpoint = new URL(`http://127.0.0.1:${await port()}`);
   const server = await Effect.runPromise(
@@ -33,7 +33,7 @@ const boot = async () => {
       endpoint,
       dataRoot,
       workspace: join(dataRoot, "scratch"),
-      provider: "fake",
+      provider,
       executionBoundary: "unverified-host-scratch",
     }),
   );
@@ -318,6 +318,41 @@ describe("http", () => {
       expect(conflictFailure.json.message).toBe("idempotency key reused with a different payload");
     } finally {
       await Effect.runPromise(store.close());
+    }
+  });
+
+  it("reports one provider metadata map to the setup screen and the frozen submission", async () => {
+    const { endpoint, server, owner } = await boot("fake");
+    try {
+      const submitted = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "provider metadata", fixture: "smoke" },
+      });
+      expect(submitted.json.accepted).toBe(true);
+      const status = await fetch(new URL("/v1/status", endpoint), {
+        headers: { authorization: `Bearer ${owner.token}` },
+      });
+      const snap = Schema.decodeUnknownSync(WorkspaceSnapshot)(await status.json());
+      const run = snap.runs.find((item) => item.id === String(submitted.json.runId));
+      const revision = snap.botConfigRevisions.find((item) => item.id === run?.botConfigRevisionId);
+      const expected = {
+        model: "fake",
+        authMode: "none",
+        executionLocation: "local daemon scratch",
+      };
+      expect(revision).toBeDefined();
+      expect({
+        model: revision?.model,
+        authMode: revision?.authMode,
+        executionLocation: revision?.executionLocation,
+      }).toEqual(expected);
+      expect({
+        model: snap.session.provider.model,
+        authMode: snap.session.provider.authMode,
+        executionLocation: snap.session.provider.executionLocation,
+      }).toEqual(expected);
+    } finally {
+      await server.close();
     }
   });
 

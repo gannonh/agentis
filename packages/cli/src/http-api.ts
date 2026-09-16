@@ -4,6 +4,7 @@ import { Effect, Layer, Schema } from "effect";
 import { AgentisApi, AgentisJsonApi, storeFailureApiError, type RequestHeaders } from "./api.js";
 import { parseAuthorization, type OwnerSession as OwnerCredential } from "./auth.js";
 import { applyReceiptEffects } from "./engine.js";
+import { executionLocation, providerProfile } from "./provider-profile.js";
 import { providerReadiness } from "./provider-readiness.js";
 import {
   CommandReceipt,
@@ -23,7 +24,6 @@ import {
   API_FAMILY,
   BROWSER_BOOTSTRAP_TTL_MS,
   BROWSER_SESSION_TTL_MS,
-  CODEX_AUTH_MODE,
   PACKAGE_VERSION,
   SCHEMA_ID,
 } from "./versions.js";
@@ -86,17 +86,12 @@ export const browserRuntime = async (
   dataRoot: string,
 ): Promise<BrowserRuntime> => {
   const readiness = await providerReadiness({ provider, executionBoundary, dataRoot });
+  const profile = providerProfile(provider);
   return {
     provider,
-    model:
-      provider === "codex" ? "gpt-5.6-sol" : provider === "claude" ? "claude-sonnet-5" : "fake",
-    authMode: provider === "codex" ? CODEX_AUTH_MODE : provider === "claude" ? "api-key" : "none",
-    executionLocation:
-      executionBoundary === "docker-fixture-container"
-        ? "isolated fixture container"
-        : executionBoundary === "docker-desktop-run-container"
-          ? "local provider container"
-          : "local daemon scratch",
+    model: profile.model,
+    authMode: profile.authMode,
+    executionLocation: executionLocation(executionBoundary),
     eligible: readiness.eligible,
     ineligibleReason: readiness.reason,
   };
