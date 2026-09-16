@@ -57,6 +57,11 @@
       "type": "response",
       "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/cleanup.json",
       "description": "Daemon stopped, no loopback listener, endpoint unreachable after cleanup"
+    },
+    {
+      "type": "log",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/docker-access-check.log",
+      "description": "Captured environment limit: docker CLI works but the server socket is permission denied, so the container fixture launch was unavailable"
     }
   ],
   "commands": [
@@ -299,27 +304,6 @@
     },
     {
       "kind": "supporting",
-      "command": "\"env\" \"EV=docs/verification/verify-agentis/kat-3393-20260916-222934\" \"mise\" \"exec\" \"--\" \"node\" \"--input-type=module\" \"-e\" \"import { readFileSync, writeFileSync } from \\\"node:fs\\\"; const dir = process.env.EV; const read = (name) => JSON.parse(readFileSync(`${dir}/responses/${name}`, \\\"utf8\\\")); const before = read(\\\"status-before-cancel.json\\\"); const afterCancel = read(\\\"status-after-cancel.json\\\"); const beforeStop = read(\\\"status-before-stop-all.json\\\"); const afterStop = read(\\\"status-after-stop-all.json\\\"); const events = readFileSync(`${dir}/responses/events-transitions.txt`, \\\"utf8\\\"); const canceledRunId = before.runs[0].id; const canceled = (state) => state.runs.find((run) => run.id === canceledRunId); const taskFor = (state, run) => state.tasks.find((task) => task.id === run.taskId); const beforeTask = taskFor(before, canceled(before)); const afterTask = taskFor(afterCancel, canceled(afterCancel)); const activeBeforeStop = beforeStop.runs.filter((run) => [\\\"queued\\\",\\\"running\\\",\\\"waiting_approval\\\",\\\"waiting_input\\\"].includes(run.status)); const reasons = events.split(\\\"\\\\n\\\").filter((line) => line.startsWith(\\\"data: \\\")).map((line) => JSON.parse(line.slice(6)).event.reason); const checks = [[\\\"cancel: run was waiting_input with completedAt null before\\\", canceled(before).status === \\\"waiting_input\\\" && canceled(before).completedAt === null], [\\\"cancel: run is canceled with numeric completedAt after\\\", canceled(afterCancel).status === \\\"canceled\\\" && typeof canceled(afterCancel).completedAt === \\\"number\\\"], [\\\"cancel: owning task is canceled at the same timestamp\\\", afterTask.status === \\\"canceled\\\" && afterTask.updatedAt === canceled(afterCancel).completedAt], [\\\"cancel: owning task updatedAt advanced\\\", afterTask.updatedAt > beforeTask.updatedAt], [\\\"cancel: terminal system message recorded\\\", afterCancel.messages.some((m) => m.body === \\\"The owner canceled this run.\\\")], [\\\"cancel: SSE stream carries run_canceled\\\", reasons.includes(\\\"run_canceled\\\")], [\\\"stop-all: one run was active with completedAt null before\\\", activeBeforeStop.length === 1 && activeBeforeStop[0].completedAt === null], [\\\"stop-all: that run is canceled with numeric completedAt after\\\", afterStop.runs.filter((run) => run.id === activeBeforeStop[0].id).every((run) => run.status === \\\"canceled\\\" && typeof run.completedAt === \\\"number\\\")], [\\\"stop-all: every owning task carries updatedAt equal to its run completedAt\\\", afterStop.tasks.every((task) => { const run = afterStop.runs.find((item) => item.id === task.taskId ?? false); return true; }) || afterStop.tasks.every((task) => afterStop.runs.some((run) => run.completedAt === task.updatedAt))], [\\\"stop-all: exactly one stop-all message for the newly canceled run\\\", afterStop.messages.filter((m) => m.body === \\\"Stop all canceled this run.\\\").length === 1], [\\\"stop-all: SSE stream carries the aggregate stop_all reason\\\", reasons.includes(\\\"stop_all\\\")], [\\\"stop-all: already-terminal runs are not re-canceled (completedAt unchanged)\\\", afterStop.runs.find((run) => run.id === canceledRunId).completedAt === canceled(afterCancel).completedAt]]; const result = { issue: \\\"KAT-3393\\\", checked_at: new Date().toISOString(), public_surface: \\\"GET /v1/status and GET /v1/events after agentis run cancel and agentis stop-all\\\", checks: checks.map(([name, pass]) => ({ name, pass })), verdict: checks.every(([, pass]) => pass) ? \\\"PASS\\\" : \\\"FAIL\\\" }; writeFileSync(`${dir}/responses/assertions.json`, `${JSON.stringify(result, null, 2)}\\\\n`); console.log(JSON.stringify(result, null, 2)); if (result.verdict !== \\\"PASS\\\") process.exitCode = 1;\"",
-      "argv": [
-        "env",
-        "EV=docs/verification/verify-agentis/kat-3393-20260916-222934",
-        "mise",
-        "exec",
-        "--",
-        "node",
-        "--input-type=module",
-        "-e",
-        "import { readFileSync, writeFileSync } from \"node:fs\"; const dir = process.env.EV; const read = (name) => JSON.parse(readFileSync(`${dir}/responses/${name}`, \"utf8\")); const before = read(\"status-before-cancel.json\"); const afterCancel = read(\"status-after-cancel.json\"); const beforeStop = read(\"status-before-stop-all.json\"); const afterStop = read(\"status-after-stop-all.json\"); const events = readFileSync(`${dir}/responses/events-transitions.txt`, \"utf8\"); const canceledRunId = before.runs[0].id; const canceled = (state) => state.runs.find((run) => run.id === canceledRunId); const taskFor = (state, run) => state.tasks.find((task) => task.id === run.taskId); const beforeTask = taskFor(before, canceled(before)); const afterTask = taskFor(afterCancel, canceled(afterCancel)); const activeBeforeStop = beforeStop.runs.filter((run) => [\"queued\",\"running\",\"waiting_approval\",\"waiting_input\"].includes(run.status)); const reasons = events.split(\"\\n\").filter((line) => line.startsWith(\"data: \")).map((line) => JSON.parse(line.slice(6)).event.reason); const checks = [[\"cancel: run was waiting_input with completedAt null before\", canceled(before).status === \"waiting_input\" && canceled(before).completedAt === null], [\"cancel: run is canceled with numeric completedAt after\", canceled(afterCancel).status === \"canceled\" && typeof canceled(afterCancel).completedAt === \"number\"], [\"cancel: owning task is canceled at the same timestamp\", afterTask.status === \"canceled\" && afterTask.updatedAt === canceled(afterCancel).completedAt], [\"cancel: owning task updatedAt advanced\", afterTask.updatedAt > beforeTask.updatedAt], [\"cancel: terminal system message recorded\", afterCancel.messages.some((m) => m.body === \"The owner canceled this run.\")], [\"cancel: SSE stream carries run_canceled\", reasons.includes(\"run_canceled\")], [\"stop-all: one run was active with completedAt null before\", activeBeforeStop.length === 1 && activeBeforeStop[0].completedAt === null], [\"stop-all: that run is canceled with numeric completedAt after\", afterStop.runs.filter((run) => run.id === activeBeforeStop[0].id).every((run) => run.status === \"canceled\" && typeof run.completedAt === \"number\")], [\"stop-all: every owning task carries updatedAt equal to its run completedAt\", afterStop.tasks.every((task) => { const run = afterStop.runs.find((item) => item.id === task.taskId ?? false); return true; }) || afterStop.tasks.every((task) => afterStop.runs.some((run) => run.completedAt === task.updatedAt))], [\"stop-all: exactly one stop-all message for the newly canceled run\", afterStop.messages.filter((m) => m.body === \"Stop all canceled this run.\").length === 1], [\"stop-all: SSE stream carries the aggregate stop_all reason\", reasons.includes(\"stop_all\")], [\"stop-all: already-terminal runs are not re-canceled (completedAt unchanged)\", afterStop.runs.find((run) => run.id === canceledRunId).completedAt === canceled(afterCancel).completedAt]]; const result = { issue: \"KAT-3393\", checked_at: new Date().toISOString(), public_surface: \"GET /v1/status and GET /v1/events after agentis run cancel and agentis stop-all\", checks: checks.map(([name, pass]) => ({ name, pass })), verdict: checks.every(([, pass]) => pass) ? \"PASS\" : \"FAIL\" }; writeFileSync(`${dir}/responses/assertions.json`, `${JSON.stringify(result, null, 2)}\\n`); console.log(JSON.stringify(result, null, 2)); if (result.verdict !== \"PASS\") process.exitCode = 1;"
-      ],
-      "name": "assertions",
-      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
-      "exit_code": 0,
-      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/assertions.log",
-      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/assertions.exit",
-      "timed_out": false
-    },
-    {
-      "kind": "supporting",
       "command": "\"env\" \"EV=docs/verification/verify-agentis/kat-3393-20260916-222934\" \"mise\" \"exec\" \"--\" \"node\" \"--input-type=module\" \"-e\" \"import { readFileSync, writeFileSync } from \\\"node:fs\\\"; const dir = process.env.EV; const read = (name) => JSON.parse(readFileSync(`${dir}/responses/${name}`, \\\"utf8\\\")); const before = read(\\\"status-before-cancel.json\\\"); const afterCancel = read(\\\"status-after-cancel.json\\\"); const beforeStop = read(\\\"status-before-stop-all.json\\\"); const afterStop = read(\\\"status-after-stop-all.json\\\"); const events = readFileSync(`${dir}/responses/events-transitions.txt`, \\\"utf8\\\"); const canceledRunId = before.runs[0].id; const canceled = (state) => state.runs.find((run) => run.id === canceledRunId); const taskFor = (state, run) => state.tasks.find((task) => task.id === run.taskId); const beforeTask = taskFor(before, canceled(before)); const afterTask = taskFor(afterCancel, canceled(afterCancel)); const activeBeforeStop = beforeStop.runs.filter((run) => [\\\"queued\\\",\\\"running\\\",\\\"waiting_approval\\\",\\\"waiting_input\\\"].includes(run.status)); const reasons = events.split(\\\"\\\\n\\\").filter((line) => line.startsWith(\\\"data: \\\")).map((line) => JSON.parse(line.slice(6)).event.reason); const checks = [[\\\"cancel: run was waiting_input with completedAt null before\\\", canceled(before).status === \\\"waiting_input\\\" && canceled(before).completedAt === null], [\\\"cancel: run is canceled with numeric completedAt after\\\", canceled(afterCancel).status === \\\"canceled\\\" && typeof canceled(afterCancel).completedAt === \\\"number\\\"], [\\\"cancel: owning task is canceled at the same timestamp\\\", afterTask.status === \\\"canceled\\\" && afterTask.updatedAt === canceled(afterCancel).completedAt], [\\\"cancel: owning task updatedAt advanced\\\", afterTask.updatedAt > beforeTask.updatedAt], [\\\"cancel: terminal system message recorded\\\", afterCancel.messages.some((m) => m.body === \\\"The owner canceled this run.\\\")], [\\\"cancel: SSE stream carries run_canceled\\\", reasons.includes(\\\"run_canceled\\\")], [\\\"stop-all: one run was active with completedAt null before\\\", activeBeforeStop.length === 1 && activeBeforeStop[0].completedAt === null], [\\\"stop-all: that run is canceled with numeric completedAt after\\\", afterStop.runs.filter((run) => run.id === activeBeforeStop[0].id).every((run) => run.status === \\\"canceled\\\" && typeof run.completedAt === \\\"number\\\")], [\\\"stop-all: every owning task carries updatedAt equal to its run completedAt\\\", afterStop.tasks.every((task) => afterStop.runs.some((run) => run.taskId === task.id && run.completedAt === task.updatedAt))], [\\\"stop-all: exactly one stop-all message for the newly canceled run\\\", afterStop.messages.filter((m) => m.body === \\\"Stop all canceled this run.\\\").length === 1], [\\\"stop-all: SSE stream carries the aggregate stop_all reason\\\", reasons.includes(\\\"stop_all\\\")], [\\\"stop-all: already-terminal runs are not re-canceled (completedAt unchanged)\\\", afterStop.runs.find((run) => run.id === canceledRunId).completedAt === canceled(afterCancel).completedAt]]; const result = { issue: \\\"KAT-3393\\\", checked_at: new Date().toISOString(), public_surface: \\\"GET /v1/status and GET /v1/events after agentis run cancel and agentis stop-all\\\", checks: checks.map(([name, pass]) => ({ name, pass })), verdict: checks.every(([, pass]) => pass) ? \\\"PASS\\\" : \\\"FAIL\\\" }; writeFileSync(`${dir}/responses/assertions.json`, `${JSON.stringify(result, null, 2)}\\\\n`); console.log(JSON.stringify(result, null, 2)); if (result.verdict !== \\\"PASS\\\") process.exitCode = 1;\"",
       "argv": [
         "env",
@@ -359,6 +343,20 @@
       "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/daemon-cleanup.log",
       "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/daemon-cleanup.exit",
       "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"docker\" \"info\"",
+      "argv": [
+        "docker",
+        "info"
+      ],
+      "name": "docker-access-check",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 1,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/docker-access-check.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/docker-access-check.exit",
+      "timed_out": false
     }
   ],
   "slices": [
@@ -396,7 +394,7 @@
     },
     {
       "id": "predicate-and-status-model",
-      "name": "One exported active-run predicate serves every active-run query and the unwritten reconciling status is gone",
+      "name": "One active-run status source feeds every active-run query predicate, and the unwritten reconciling status is gone",
       "result": "Pass",
       "evidence": [
         "packages/cli/src/run-lifecycle.ts",
@@ -407,7 +405,7 @@
   ],
   "notes": [
     "Video: Skipped — CLI/API target with no visual surface; attempted: none (not applicable); suggested tooling: none required.",
-    "Boundary: docker-fixture-container `verify launch` is unavailable in this environment (Docker socket permission denied). UAT ran the host `unverified-host-scratch` fake daemon over loopback HTTP. Live-provider, container isolation, and packaging remain UNVERIFIED here.",
+    "Boundary: docker-fixture-container `verify launch` is unavailable in this environment (Docker socket permission denied). UAT ran the host `unverified-host-scratch` fake daemon over loopback HTTP. Live-provider, container isolation, and packaging remain UNVERIFIED here. Captured at logs/docker-access-check.log (exit 1, permission denied on /var/run/docker.sock).",
     "Deadline path: RUN_DEADLINE_MS is 15 minutes, so the deadline branch is proven by the deterministic sweep test in store.test.ts; there is no live 15-minute wait.",
     "Handoff rejection: proven by the new handoff.test.ts case that snapshots the recipient run completedAt before/after the sweep expiry and asserts the source task stays completed and untouched.",
     "Intentional additive behavior beyond field unification: the deadline-exceeded and approval-denied paths now record a terminal failure message, and stop-all records one per-run run_canceled transition in addition to the aggregate stop_all event; the latter is visible in responses/events-transitions.txt.",
