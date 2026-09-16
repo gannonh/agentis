@@ -5,7 +5,6 @@ import {
   type ArtifactId,
   type RunId,
   type RunStatus,
-  type TaskId,
   type TransitionReason,
 } from "./schema.js";
 import { emit, message, row, run } from "./store-db.js";
@@ -24,11 +23,22 @@ export const ACTIVE_RUN_SQL = `status IN (${quoted})`;
 export const ACTIVE_RUN_OR_LOADING_SQL = `(${ACTIVE_RUN_SQL} OR json_extract(provider_state,'$.loadStatus')='loading')`;
 
 export type ActiveRunStatus = (typeof ACTIVE_RUN_STATUSES)[number];
-export type FinishedRunStatus = "succeeded" | "failed" | "canceled";
+
+export const FINISHED_RUN_STATUSES = ["succeeded", "failed", "canceled"] as const;
+export type FinishedRunStatus = (typeof FINISHED_RUN_STATUSES)[number];
 export type FinishedTaskStatus = "completed" | "failed" | "canceled";
+
+const finishedTaskStatus: Record<FinishedRunStatus, FinishedTaskStatus> = {
+  succeeded: "completed",
+  failed: "failed",
+  canceled: "canceled",
+};
 
 export const isActiveRunStatus = (status: string): boolean =>
   (ACTIVE_RUN_STATUSES as readonly string[]).includes(status);
+
+export const isFinishedRunStatus = (status: string): boolean =>
+  (FINISHED_RUN_STATUSES as readonly string[]).includes(status);
 
 export const isTerminalStatus = (status: string): boolean => !isActiveRunStatus(status);
 
@@ -43,9 +53,7 @@ export type FinishRunMessage = {
 
 export type FinishRunInput = {
   readonly runId: RunId;
-  readonly taskId: TaskId;
   readonly status: FinishedRunStatus;
-  readonly taskStatus: FinishedTaskStatus;
   readonly nowMs: number;
   readonly latestArtifactId?: ArtifactId;
   readonly message: FinishRunMessage;
@@ -56,6 +64,12 @@ export type FinishRunInput = {
 };
 
 export const finishRun = (db: DatabaseSync, input: FinishRunInput): void => {
+  const current = row<{ task_id: string; thread_id: string }>(
+    db,
+    "SELECT task_id,thread_id FROM runs WHERE id=?",
+    [input.runId],
+  );
+  if (!current) throw new Error(`finishRun requires an existing run: ${input.runId}`);
   run(db, "UPDATE runs SET status=?,waiting_reason='none',completed_at=? WHERE id=?", [
     input.status,
     input.nowMs,
@@ -64,14 +78,17 @@ export const finishRun = (db: DatabaseSync, input: FinishRunInput): void => {
   run(
     db,
     "UPDATE tasks SET status=?,updated_at=?,latest_artifact_id=COALESCE(?,latest_artifact_id) WHERE id=? AND current_run_id=?",
-    [input.taskStatus, input.nowMs, input.latestArtifactId ?? null, input.taskId, input.runId],
+    [
+      finishedTaskStatus[input.status],
+      input.nowMs,
+      input.latestArtifactId ?? null,
+      current.task_id,
+      input.runId,
+    ],
   );
-  const thread = row<{ thread_id: string }>(db, "SELECT thread_id FROM runs WHERE id=?", [
-    input.runId,
-  ]);
   message(db, {
-    threadId: thread?.thread_id ?? "",
-    taskId: input.taskId,
+    threadId: current.thread_id,
+    taskId: current.task_id,
     runId: input.runId,
     ...input.message,
     nowMs: input.nowMs,

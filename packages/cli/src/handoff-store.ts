@@ -91,9 +91,7 @@ export const rejectHandoff = (
   run(db, "UPDATE handoffs SET state=? WHERE id=? AND state='proposed'", [state, handoff.id]);
   finishRun(db, {
     runId,
-    taskId: handoff.taskId,
     status: runStatus,
-    taskStatus: runStatus === "failed" ? "failed" : "canceled",
     nowMs,
     message: {
       authorKind: "bot",

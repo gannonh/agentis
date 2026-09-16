@@ -20,7 +20,7 @@ import {
   ACTIVE_RUN_SQL,
   finishRun,
   isActiveRunStatus,
-  isTerminalStatus,
+  isFinishedRunStatus,
 } from "./run-lifecycle.js";
 import {
   newActionIntentId,
@@ -1106,9 +1106,7 @@ const expireApprovalAndRun = (
   );
   finishRun(db, {
     runId: approval.run_id as RunId,
-    taskId: approval.task_id as TaskId,
     status: "failed",
-    taskStatus: "failed",
     nowMs,
     message: {
       authorKind: "system",
@@ -1605,9 +1603,7 @@ const resolveApproval = (
   if (next === "denied") {
     finishRun(db, {
       runId: approval.run_id as RunId,
-      taskId: approval.task_id as TaskId,
       status: "failed",
-      taskStatus: "failed",
       nowMs: input.nowMs,
       message: {
         authorKind: "system",
@@ -1708,9 +1704,9 @@ const cancelRun = (
   command: typeof CancelRun.Type,
 ): CommandReceipt => {
   ownerOnly(input.principal, "cancel_run");
-  const current = row<{ id: string; status: string; task_id: string; thread_id: string }>(
+  const current = row<{ id: string; status: string; task_id: string }>(
     db,
-    "SELECT id, status, task_id, thread_id FROM runs WHERE id = ?",
+    "SELECT id, status, task_id FROM runs WHERE id = ?",
     [command.runId],
   );
   if (!current) {
@@ -1723,7 +1719,7 @@ const cancelRun = (
       effects: [],
     });
   }
-  if (isTerminalStatus(current.status) && current.status !== "interrupted") {
+  if (isFinishedRunStatus(current.status)) {
     return receiptOf({
       commandId,
       replayed: false,
@@ -1743,9 +1739,7 @@ const cancelRun = (
   );
   finishRun(db, {
     runId: current.id as RunId,
-    taskId: current.task_id as TaskId,
     status: "canceled",
-    taskStatus: "canceled",
     nowMs: input.nowMs,
     message: {
       authorKind: "system",
@@ -1776,9 +1770,9 @@ const cancelRun = (
 const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): CommandReceipt => {
   ownerOnly(input.principal, "stop_all");
   run(db, "UPDATE stop_all SET latched = 1, updated_at = ? WHERE id = 1", [input.nowMs]);
-  const active = rows<{ id: string; task_id: string; thread_id: string }>(
+  const active = rows<{ id: string; task_id: string }>(
     db,
-    `SELECT id, task_id, thread_id FROM runs WHERE ${ACTIVE_RUN_SQL}`,
+    `SELECT id, task_id FROM runs WHERE ${ACTIVE_RUN_SQL}`,
   );
   for (const item of active) {
     rejectHandoff(
@@ -1791,9 +1785,7 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
     );
     finishRun(db, {
       runId: item.id as RunId,
-      taskId: item.task_id as TaskId,
       status: "canceled",
-      taskStatus: "canceled",
       nowMs: input.nowMs,
       message: {
         authorKind: "system",
@@ -2376,9 +2368,7 @@ export const mutateForEngine = (storePath: string) => {
         );
         finishRun(db, {
           runId: input.runId,
-          taskId: input.taskId,
           status: "succeeded",
-          taskStatus: "completed",
           nowMs: input.nowMs,
           latestArtifactId: artifactId,
           message: {
@@ -2420,16 +2410,12 @@ export const mutateForEngine = (storePath: string) => {
           return;
         }
         if (rejectHandoff(db, runId, "rejected", "failed", error, nowMs)) return;
-        const currentTask = row<{ thread_id: string; bot_name: string }>(
-          db,
-          "SELECT thread_id,bot_name FROM tasks WHERE id=?",
-          [taskId],
-        );
+        const currentTask = row<{ bot_name: string }>(db, "SELECT bot_name FROM tasks WHERE id=?", [
+          taskId,
+        ]);
         finishRun(db, {
           runId,
-          taskId,
           status: "failed",
-          taskStatus: "failed",
           nowMs,
           message: {
             authorKind: "bot",
@@ -2509,9 +2495,7 @@ export const sweepRunTimeouts = (storePath: string, nowMs: number): readonly Run
       for (const item of overdue) {
         finishRun(db, {
           runId: item.id as RunId,
-          taskId: item.task_id as TaskId,
           status: "failed",
-          taskStatus: "failed",
           nowMs,
           message: {
             authorKind: "system",
