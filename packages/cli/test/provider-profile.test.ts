@@ -5,6 +5,12 @@ import { describe, expect, it } from "vitest";
 import { browserRuntime } from "../src/http-api.js";
 import { executionLocation, frozenConfig } from "../src/provider-profile.js";
 import type { ExecutionBoundary, ProviderKind } from "../src/schema.js";
+import {
+  CLAUDE_CLI_PIN,
+  CODEX_AUTH_MODE,
+  CODEX_CLI_PIN,
+  CODEX_TRANSPORT,
+} from "../src/versions.js";
 
 const dataRoot = () => mkdtempSync(join(tmpdir(), "agentis-profile-"));
 
@@ -60,6 +66,32 @@ describe("provider profile", () => {
       expect(frozen.grants).toEqual(["read:provided-source", "write:task-artifact"]);
       expect(frozen.publicConfig).toEqual({ sourceMode: "materialized-read-only" });
     }
+  });
+
+  it("freezes the versioned transport metadata the providers declare", () => {
+    const codex = frozenFor("mara", "codex", "unverified-host-scratch");
+    expect(codex.transport).toBe(CODEX_TRANSPORT);
+    expect(codex.executableVersion).toBe(CODEX_CLI_PIN);
+    expect(codex.authMode).toBe(CODEX_AUTH_MODE);
+    expect(codex.mode).toBe("agent");
+
+    const claude = frozenFor("ivo", "claude", "unverified-host-scratch");
+    expect(claude.transport).toBe("claude-sdk-jsonl-stdio");
+    expect(claude.executableVersion).toBe(CLAUDE_CLI_PIN);
+    expect(claude.authMode).toBe("api-key");
+
+    const fake = frozenFor("mara", "fake", "unverified-host-scratch");
+    expect(fake.transport).toBe("fake-in-process");
+    expect(fake.executableVersion).toBe("fake-1");
+
+    const planned = frozenConfig({
+      bot: "mara",
+      provider: "fake",
+      executionBoundary: "unverified-host-scratch",
+      workspaceId: join(dataRoot(), "runs", "run-3"),
+      mode: "plan",
+    });
+    expect(planned.mode).toBe("plan");
   });
 
   it("records effort only for providers that declare one", () => {
