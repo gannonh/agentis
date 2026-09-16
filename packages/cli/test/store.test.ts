@@ -9,7 +9,7 @@ import { newApprovalId, newIdempotencyKey, newRunId, newSessionId } from "../src
 import { applyReceiptEffects } from "../src/engine.js";
 import { mutateForEngine, openStore, type ApplyInput, type Principal } from "../src/store.js";
 import { EVENT_REPLAY_LIMIT, SCHEMA_ID } from "../src/versions.js";
-import { Cursor, type Command, type CommandReceipt, type SourcePacket } from "../src/schema.js";
+import { Cursor, type Command, type SourcePacket } from "../src/schema.js";
 
 const owner = (): Principal => ({ kind: "owner", sessionId: newSessionId() });
 const bot = (): Principal => ({ kind: "bot", sessionId: "bot-token" });
@@ -370,51 +370,58 @@ describe("store", () => {
     await Effect.runPromise(store.close());
   });
 
-  it("fails the run when the materialized source is missing on the load-session drive", async () => {
+  it("records a failed session load when the source is missing on the load-session drive", async () => {
     const root = tempRoot();
     const workspaceRoot = join(root, "scratch");
     const store = await Effect.runPromise(openStore(root));
     const principal = owner();
-    const submit: Command = {
-      kind: "submit_task",
-      brief: "Prepare the launch brief",
-      source: { kind: "pasted", label: "Notes", text: "Proof", citations: [] },
-      fixture: "cancel",
-    };
-    const launched = await Effect.runPromise(
+    const receipt = await Effect.runPromise(
       store.applyCommand({
         principal,
         idempotencyKey: newIdempotencyKey(),
-        command: submit,
+        command: {
+          kind: "submit_task",
+          brief: "Prepare the launch brief",
+          source: { kind: "pasted", label: "Notes", text: "Proof", citations: [] },
+        },
         nowMs: 1_000,
-        provider: "fake",
+        provider: "codex",
         executionBoundary: "unverified-host-scratch",
         workspaceId: workspaceRoot,
       }),
     );
-    await applyReceiptEffects({
-      store,
-      receipt: launched,
-      command: submit,
-      provider: "fake",
-      executionBoundary: "unverified-host-scratch",
-      nowMs: 2_000,
-      workspaceRoot,
-    });
-    const waiting = await Effect.runPromise(store.snapshot());
-    expect(waiting.runs[0]?.status).toBe("waiting_input");
-    const runId = launched.runId;
-    const taskId = launched.taskId;
-    if (!runId || !taskId) throw new Error("missing run");
+    const runId = receipt.runId;
+    if (!runId) throw new Error("missing run");
+    const engine = mutateForEngine(join(root, "state.sqlite"));
+    engine.markRunning(runId, "codex-session", 2_000);
+    engine.close();
+    await Effect.runPromise(
+      store.applyCommand({
+        principal,
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "cancel_run", runId },
+        nowMs: 3_000,
+        provider: "codex",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: workspaceRoot,
+      }),
+    );
     const command: Command = { kind: "load_session", runId };
-    const receipt: CommandReceipt = {
-      commandId: launched.commandId,
-      replayed: false,
-      accepted: true,
-      runId,
-      taskId,
-      effects: ["load_session"],
-    };
+    const loaded = await Effect.runPromise(
+      store.applyCommand({
+        principal,
+        idempotencyKey: newIdempotencyKey(),
+        command,
+        nowMs: 4_000,
+        provider: "codex",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: workspaceRoot,
+      }),
+    );
+    expect(loaded.accepted).toBe(true);
+    expect(loaded.effects).toContain("load_session");
+
+    const waiting = await Effect.runPromise(store.snapshot());
     const evidencePath = waiting.evidence[0]?.path;
     if (!evidencePath) throw new Error("missing evidence path");
     rmSync(evidencePath);
@@ -422,24 +429,19 @@ describe("store", () => {
     await expect(
       applyReceiptEffects({
         store,
-        receipt,
+        receipt: loaded,
         command,
-        provider: "fake",
+        provider: "codex",
         executionBoundary: "unverified-host-scratch",
-        nowMs: 3_000,
+        nowMs: 5_000,
         workspaceRoot,
       }),
     ).resolves.toBeUndefined();
 
     const failed = await Effect.runPromise(store.snapshot());
-    expect(failed.runs[0]?.status).toBe("failed");
-    expect(
-      failed.messages.some(
-        (message) =>
-          message.kind === "failure" &&
-          message.body === "materialized source is missing or changed",
-      ),
-    ).toBe(true);
+    expect(failed.runs[0]?.status).toBe("canceled");
+    expect(failed.runs[0]?.providerLoadStatus).toBe("failed");
+    expect(failed.runs[0]?.failure).toBe("provider-error");
     await Effect.runPromise(store.close());
   });
 

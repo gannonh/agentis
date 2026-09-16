@@ -12,6 +12,7 @@ import { Effect } from "effect";
 import { writeScratchFile } from "./scratch-file.js";
 import { readVerifiedFile } from "./verified-file.js";
 import { mutateForEngine, type Snapshot, type Store } from "./store.js";
+import { classifyFailure } from "./provider-contract.js";
 import type {
   Command,
   CommandReceipt,
@@ -84,7 +85,21 @@ const providerBrief = (
 const failRun = (store: Store, runId: RunId, taskId: TaskId, error: string) => {
   const engine = mutateForEngine(store.path);
   try {
-    engine.fail(runId, taskId, error, Date.now());
+    if (engine.isActive(runId)) {
+      engine.fail(runId, taskId, error, Date.now());
+      return;
+    }
+    engine.providerState(runId, (state) =>
+      state.loadStatus === "loading"
+        ? {
+            ...state,
+            failure: classifyFailure(error),
+            failureDetail: classifyFailure(error),
+            pendingPrompt: null,
+            loadStatus: "failed",
+          }
+        : state,
+    );
   } finally {
     engine.close();
   }
