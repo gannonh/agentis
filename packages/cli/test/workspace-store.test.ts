@@ -165,6 +165,17 @@ describe("WorkspaceStore", () => {
     store.dispose();
   });
 
+  it("accepts a lower snapshot cursor after bounded regressions", async () => {
+    const test = harness([snapshot("5"), snapshot("3"), snapshot("4"), snapshot("2")]);
+    const store = new WorkspaceStore(test.api, test.browser);
+    await store.start();
+    expect(store.getState().snapshot?.cursor).toBe("5");
+    await store.refresh();
+    expect(test.api.status).toHaveBeenCalledTimes(4);
+    expect(store.getState().snapshot?.cursor).toBe("2");
+    store.dispose();
+  });
+
   it("returns an accepted receipt and completes the form when its refresh fails", async () => {
     const test = harness([snapshot("1")]);
     const accepted = Schema.decodeUnknownSync(CommandReceipt)({

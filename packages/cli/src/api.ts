@@ -107,5 +107,3 @@ const ApiWithErrors = HttpApi.make("agentis")
 
 export const AgentisJsonApi = ApiWithErrors.add(JsonApiGroup);
 export const AgentisApi = ApiWithErrors.add(JsonApiGroup).add(RawApiGroup);
-
-export const RAW_ROUTE_KEYS = ["GET /v1/events", "GET /v1/artifacts/:id/content"] as const;

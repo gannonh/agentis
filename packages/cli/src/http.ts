@@ -327,7 +327,7 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
       options.executionBoundary,
       options.dataRoot,
     );
-    runtime();
+    runtime().catch(() => undefined);
     const dependencies: HttpApiDependencies = {
       ...options,
       owner,
