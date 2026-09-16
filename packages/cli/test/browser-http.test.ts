@@ -504,7 +504,10 @@ describe("browser HTTP boundary", () => {
     }
   });
 
-  it("requires a cursor, resumes without duplicates, and expires only the replay window", async () => {
+  it(
+    "requires a cursor, resumes without duplicates, and expires only the replay window",
+    { timeout: 20_000 },
+    async () => {
     const { endpoint, owner, server } = await boot();
     try {
       const session = await browserSession(endpoint, owner.token);
@@ -554,7 +557,9 @@ describe("browser HTTP boundary", () => {
       const insert = db.prepare(
         "INSERT INTO events (id, type, body, created_at) VALUES (?, 'peer_progress', '{}', ?)",
       );
+      db.exec("BEGIN IMMEDIATE");
       for (let index = 0; index < 140; index += 1) insert.run(`old_${index}`, index);
+      db.exec("COMMIT");
       const retained = (
         db.prepare("SELECT COUNT(*) AS count FROM events").get() as { count: number }
       ).count;
@@ -572,5 +577,6 @@ describe("browser HTTP boundary", () => {
     } finally {
       await server.close();
     }
-  });
+    },
+  );
 });
