@@ -52,11 +52,7 @@ type ProviderBrief =
   | { readonly ok: true; readonly brief: string }
   | { readonly ok: false; readonly error: string };
 
-const providerBrief = (
-  snapshot: Snapshot,
-  runId: RunId,
-  workspaceRoot: string,
-): ProviderBrief => {
+const providerBrief = (snapshot: Snapshot, runId: RunId, workspaceRoot: string): ProviderBrief => {
   const run = snapshot.runs.find((item) => item.id === runId);
   const task = run ? snapshot.tasks.find((item) => item.id === run.taskId) : undefined;
   const evidenceId = task?.evidence[0];
@@ -94,7 +90,7 @@ const failRun = (store: Store, runId: RunId, taskId: TaskId, error: string) => {
         ? {
             ...state,
             failure: classifyFailure(error),
-            failureDetail: classifyFailure(error),
+            failureDetail: error,
             pendingPrompt: null,
             loadStatus: "failed",
           }

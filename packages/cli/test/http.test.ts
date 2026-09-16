@@ -1,4 +1,4 @@
-import { WorkspaceSnapshot } from "../src/schema.js";
+import { CommandReceipt, WorkspaceSnapshot } from "../src/schema.js";
 import { mkdtempSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
@@ -294,7 +294,10 @@ describe("http", () => {
             }),
           }),
         );
-        return { status: response.status, json: (await response.json()) as Record<string, unknown> };
+        return {
+          status: response.status,
+          json: (await response.json()) as Record<string, unknown>,
+        };
       } finally {
         await api.dispose();
       }
@@ -317,6 +320,56 @@ describe("http", () => {
       expect(conflictFailure.json.code).toBe("conflict");
       expect(conflictFailure.json.message).toBe("idempotency key reused with a different payload");
     } finally {
+      await Effect.runPromise(store.close());
+    }
+  });
+
+  it("reports post-commit engine failures as internal errors, not conflicts", async () => {
+    const dataRoot = mkdtempSync(join(tmpdir(), "agentis-http-post-commit-"));
+    const endpoint = new URL("http://127.0.0.1:0");
+    const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
+    const store = await Effect.runPromise(openStore(dataRoot));
+    const receipt = Schema.decodeUnknownSync(CommandReceipt)({
+      commandId: "command-post-commit",
+      replayed: false,
+      accepted: true,
+      taskId: "task-post-commit",
+      runId: "run-post-commit",
+      effects: ["launch"],
+    });
+    const failingStore: Store = {
+      ...store,
+      applyCommand: () => Effect.succeed(receipt),
+      snapshot: () => Effect.die(new Error("engine connection lost")),
+    };
+    const api = makeHttpApiHandler({
+      endpoint,
+      workspace: join(dataRoot, "scratch"),
+      provider: "fake",
+      executionBoundary: "unverified-host-scratch",
+      owner,
+      store: failingStore,
+      runtime: browserRuntimeResolver("fake", "unverified-host-scratch", dataRoot),
+    });
+    try {
+      const response = await api.handler(
+        new Request(new URL("/v1/commands", endpoint), {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${owner.token}`,
+          },
+          body: JSON.stringify({
+            idempotencyKey: newIdempotencyKey(),
+            command: { kind: "stop_all" },
+          }),
+        }),
+      );
+      expect(response.status).toBe(500);
+      const json = (await response.json()) as Record<string, unknown>;
+      expect(json.code).toBe("internal_error");
+    } finally {
+      await api.dispose();
       await Effect.runPromise(store.close());
     }
   });

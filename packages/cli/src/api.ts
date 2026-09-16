@@ -43,6 +43,11 @@ export type ApiErrorCode = keyof typeof API_ERROR_STATUS;
 
 export const apiErrorStatus = (code: ApiErrorCode): number => API_ERROR_STATUS[code];
 
+export const internalError = (message: string): typeof InternalApiError.Type => ({
+  code: "internal_error",
+  message,
+});
+
 export const storeFailureApiError = (error: StoreError): ApiError => {
   switch (error.code) {
     case "forbidden":

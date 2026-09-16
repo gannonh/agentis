@@ -441,7 +441,7 @@ describe("store", () => {
     const failed = await Effect.runPromise(store.snapshot());
     expect(failed.runs[0]?.status).toBe("canceled");
     expect(failed.runs[0]?.providerLoadStatus).toBe("failed");
-    expect(failed.runs[0]?.failure).toBe("provider-error");
+    expect(failed.runs[0]?.failure).toBe("materialized source is missing or changed");
     await Effect.runPromise(store.close());
   });
 

@@ -604,7 +604,8 @@ export const openStore = (
         applyCommand: (input) =>
           Effect.try({
             try: () => applyCommand(input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         snapshot: (includeEvents = false) =>
           Effect.try({
@@ -614,32 +615,38 @@ export const openStore = (
         issueBrowserBootstrap: (input) =>
           Effect.try({
             try: () => issueBrowserBootstrap(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         exchangeBrowserBootstrap: (input) =>
           Effect.try({
             try: () => exchangeBrowserBootstrap(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         authenticateBrowser: (input) =>
           Effect.try({
             try: () => authenticateBrowser(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         acknowledgeBrowserSetup: (input) =>
           Effect.try({
             try: () => acknowledgeBrowserSetup(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         workspaceSnapshot: (input) =>
           Effect.try({
             try: () => workspaceSnapshot(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         transitionsAfter: (cursor) =>
           Effect.try({
             try: () => transitionsAfter(db, cursor),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError("internal", String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         artifact: (id) =>
           Effect.try({

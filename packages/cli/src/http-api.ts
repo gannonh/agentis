@@ -1,7 +1,13 @@
 import { HttpApiBuilder, HttpServer, HttpServerResponse, OpenApi } from "@effect/platform";
 import { createHash, randomBytes } from "node:crypto";
 import { Effect, Layer, Schema } from "effect";
-import { AgentisApi, AgentisJsonApi, storeFailureApiError, type RequestHeaders } from "./api.js";
+import {
+  AgentisApi,
+  AgentisJsonApi,
+  internalError,
+  storeFailureApiError,
+  type RequestHeaders,
+} from "./api.js";
 import { parseAuthorization, type OwnerSession as OwnerCredential } from "./auth.js";
 import { applyReceiptEffects } from "./engine.js";
 import { executionLocation, providerProfile } from "./provider-profile.js";
@@ -373,7 +379,7 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
             catch: (error) =>
               error instanceof StoreError
                 ? storeFailureApiError(error)
-                : conflict(error instanceof Error ? error.message : String(error)),
+                : internalError(error instanceof Error ? error.message : String(error)),
           });
           return receipt.accepted
             ? Schema.decodeUnknownSync(CommandReceipt)(receipt)
@@ -383,9 +389,7 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
       .handle("artifact", ({ headers, path }) =>
         Effect.gen(function* () {
           yield* authorizeRead(dependencies, headers);
-          const artifact = yield* dependencies.store
-            .artifact(path.id)
-            .pipe(storeFailure);
+          const artifact = yield* dependencies.store.artifact(path.id).pipe(storeFailure);
           if (!artifact) return yield* Effect.fail(notFound("artifact not found"));
           return publicArtifact(artifact);
         }),
