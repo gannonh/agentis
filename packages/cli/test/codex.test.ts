@@ -1,94 +1,9 @@
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { createServer } from "node:net";
-import { tmpdir } from "node:os";
-import { fileURLToPath } from "node:url";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { Effect, Schema } from "effect";
+import { Schema } from "effect";
 import { afterEach, describe, expect, it } from "vitest";
-import { loadOrCreateOwner } from "../src/auth.js";
-import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
-import { WorkspaceSnapshot } from "../src/schema.js";
-import type { Store } from "../src/store.js";
-
-const stub = fileURLToPath(new URL("./codex-stub.mjs", import.meta.url));
-const stores = new Map<string, Store>();
-
-const port = () =>
-  new Promise<number>((resolve, reject) => {
-    const server = createServer();
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      if (!address || typeof address === "string") {
-        reject(new Error("no port"));
-        return;
-      }
-      const value = address.port;
-      server.close((error) => (error ? reject(error) : resolve(value)));
-    });
-  });
-
-const boot = async () => {
-  process.env.AGENTIS_CODEX_STUB = stub;
-  process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS = "5000";
-  const dataRoot = mkdtempSync(join(tmpdir(), "agentis-codex-"));
-  const endpoint = new URL(`http://127.0.0.1:${await port()}`);
-  const server = await Effect.runPromise(
-    startServer({
-      endpoint,
-      dataRoot,
-      workspace: join(dataRoot, "scratch"),
-      provider: "codex",
-      executionBoundary: "unverified-host-scratch",
-    }),
-  );
-  const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
-  stores.set(endpoint.origin, server.store);
-  return { endpoint, server, owner, dataRoot };
-};
-
-const command = async (endpoint: URL, token: string, body: unknown) => {
-  const response = await fetch(new URL("/v1/commands", endpoint), {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
-  });
-  return { status: response.status, json: (await response.json()) as Record<string, unknown> };
-};
-
-const statusOf = async (endpoint: URL, token: string) => {
-  const response = await fetch(new URL("/v1/status", endpoint), {
-    headers: { authorization: `Bearer ${token}` },
-  });
-  Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
-  const store = stores.get(endpoint.origin);
-  if (!store) throw new Error("missing test store");
-  return Effect.runPromise(store.snapshot());
-};
-
-const publicStatusOf = async (endpoint: URL, token: string) => {
-  const response = await fetch(new URL("/v1/status", endpoint), {
-    headers: { authorization: `Bearer ${token}` },
-  });
-  return Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
-};
-
-const waitFor = async (
-  endpoint: URL,
-  token: string,
-  match: (snap: Awaited<ReturnType<typeof statusOf>>) => boolean,
-) => {
-  const deadline = Date.now() + 4000;
-  let snap = await statusOf(endpoint, token);
-  while (!match(snap)) {
-    if (Date.now() > deadline) {
-      throw new Error(`codex stub timed out: ${JSON.stringify(snap.runs)}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 25));
-    snap = await statusOf(endpoint, token);
-  }
-  return snap;
-};
+import { boot, codexStub, command, publicStatusOf, statusOf, waitFor } from "./helpers/daemon.js";
 
 afterEach(() => {
   delete process.env.AGENTIS_CODEX_STUB;
@@ -97,7 +12,7 @@ afterEach(() => {
 
 describe("codex stub protocol", () => {
   it("includes retained constraints in the coordinator prompt", async () => {
-    const { endpoint, server, owner, dataRoot } = await boot();
+    const { endpoint, server, owner, store, dataRoot } = await boot();
     try {
       const retainedConstraint = "COORDINATOR_CONSTRAINT_731: use only supplied evidence";
       const submitted = await command(endpoint, owner.token, {
@@ -110,6 +25,7 @@ describe("codex stub protocol", () => {
       });
       expect(submitted.json.accepted).toBe(true);
       const snap = await waitFor(
+        store,
         endpoint,
         owner.token,
         (value) => value.runs[0]?.status === "succeeded" && value.artifacts.length === 1,
@@ -143,13 +59,13 @@ describe("codex stub protocol", () => {
   });
 
   it("allows, denies, answers input, and cancels", async () => {
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const allow = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "ALLOW python once" },
       });
-      const waitingAllow = await waitFor(endpoint, owner.token, (value) =>
+      const waitingAllow = await waitFor(store, endpoint, owner.token, (value) =>
         value.pending.some((item) => item.state === "pending" && item.approvalId),
       );
       const approval = waitingAllow.pending.find((item) => item.approvalId);
@@ -162,7 +78,7 @@ describe("codex stub protocol", () => {
         },
       });
       expect(allowed.json.accepted).toBe(true);
-      const allowDone = await waitFor(endpoint, owner.token, (value) =>
+      const allowDone = await waitFor(store, endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === allow.json.runId && item.status === "succeeded"),
       );
       expect(
@@ -173,7 +89,7 @@ describe("codex stub protocol", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "DENY python once" },
       });
-      const waitingDeny = await waitFor(endpoint, owner.token, (value) =>
+      const waitingDeny = await waitFor(store, endpoint, owner.token, (value) =>
         value.pending.some(
           (item) => item.runId === deny.json.runId && item.state === "pending" && item.approvalId,
         ),
@@ -189,7 +105,7 @@ describe("codex stub protocol", () => {
           decision: "denied",
         },
       });
-      const denyDone = await waitFor(endpoint, owner.token, (value) =>
+      const denyDone = await waitFor(store, endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === deny.json.runId && item.status === "failed"),
       );
       expect(
@@ -200,7 +116,7 @@ describe("codex stub protocol", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "INPUT choose color" },
       });
-      await waitFor(endpoint, owner.token, (value) =>
+      await waitFor(store, endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === input.json.runId && item.status === "waiting_input"),
       );
       const publicInput = await publicStatusOf(endpoint, owner.token);
@@ -217,7 +133,7 @@ describe("codex stub protocol", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "answer_input", runId: input.json.runId, answers: { color: "Blue" } },
       });
-      const inputDone = await waitFor(endpoint, owner.token, (value) =>
+      const inputDone = await waitFor(store, endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === input.json.runId && item.status === "succeeded"),
       );
       expect(
@@ -228,7 +144,7 @@ describe("codex stub protocol", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "CANCEL wait" },
       });
-      await waitFor(endpoint, owner.token, (value) =>
+      await waitFor(store, endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === cancel.json.runId && item.status === "waiting_input"),
       );
       const canceled = await command(endpoint, owner.token, {
@@ -236,7 +152,7 @@ describe("codex stub protocol", () => {
         command: { kind: "cancel_run", runId: cancel.json.runId },
       });
       expect(canceled.json.accepted).toBe(true);
-      await waitFor(endpoint, owner.token, (value) =>
+      await waitFor(store, endpoint, owner.token, (value) =>
         value.runs.some((item) => item.id === cancel.json.runId && item.status === "canceled"),
       );
     } finally {
@@ -244,19 +160,19 @@ describe("codex stub protocol", () => {
     }
   });
   it("loads paginated native history without starting another turn", async () => {
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const submitted = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const loaded = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "load_session", runId: submitted.json.runId },
       });
       expect(loaded.json.accepted).toBe(true);
-      const state = await statusOf(endpoint, owner.token);
+      const state = await statusOf(store, endpoint, owner.token);
       expect(state.artifacts).toHaveLength(1);
       expect(state.runs[0]?.providerSessionId).toBe("thread-stub");
     } finally {
@@ -264,18 +180,18 @@ describe("codex stub protocol", () => {
     }
   });
   it("keeps a successful load retry intact after the crashed attempt timeout", async () => {
-    const { endpoint, server, owner, dataRoot } = await boot();
+    const { endpoint, server, owner, store, dataRoot } = await boot();
     process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS = "700";
     try {
       const submitted = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const crashing = join(dataRoot, "crashing.mjs");
       writeFileSync(
         crashing,
-        readFileSync(stub, "utf8").replace(
+        readFileSync(codexStub, "utf8").replace(
           'if (message.method === "thread/resume") {',
           'if (message.method === "thread/resume") { process.exit(17);',
         ),
@@ -286,11 +202,12 @@ describe("codex stub protocol", () => {
         command: { kind: "load_session", runId: submitted.json.runId },
       });
       await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.providerState.loadStatus === "failed",
       );
-      process.env.AGENTIS_CODEX_STUB = stub;
+      process.env.AGENTIS_CODEX_STUB = codexStub;
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "load_session", runId: submitted.json.runId },
@@ -299,7 +216,7 @@ describe("codex stub protocol", () => {
       expect(crashed.status).toBe(200);
       expect(crashed.json).toMatchObject({ accepted: true, effects: ["load_session"] });
       await new Promise((resolve) => setTimeout(resolve, 750));
-      const state = await statusOf(endpoint, owner.token);
+      const state = await statusOf(store, endpoint, owner.token);
       expect(state.runs[0]?.providerState).toMatchObject({
         loadStatus: "succeeded",
         failure: null,
@@ -311,13 +228,14 @@ describe("codex stub protocol", () => {
   });
 
   it("does not let an overlapping input replace a pending permission", async () => {
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "OVERLAP" },
       });
       const waiting = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "waiting_approval",
@@ -333,6 +251,7 @@ describe("codex stub protocol", () => {
         },
       });
       const done = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "succeeded",
@@ -343,7 +262,7 @@ describe("codex stub protocol", () => {
     }
   });
   it("classifies the native missing-credential exit as auth-unavailable", async () => {
-    const { endpoint, server, owner, dataRoot } = await boot();
+    const { endpoint, server, owner, store, dataRoot } = await boot();
     const missingAuth = join(dataRoot, "missing-auth.mjs");
     writeFileSync(missingAuth, "process.exit(77);\n");
     process.env.AGENTIS_CODEX_STUB = missingAuth;
@@ -353,6 +272,7 @@ describe("codex stub protocol", () => {
         command: { kind: "submit_task", brief: "smoke" },
       });
       const done = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "failed",
@@ -364,13 +284,14 @@ describe("codex stub protocol", () => {
     }
   });
   it("classifies a protocol quota failure without a successful artifact", async () => {
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "QUOTA" },
       });
       const done = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "failed",
@@ -382,13 +303,13 @@ describe("codex stub protocol", () => {
     }
   });
   it("retains native plan-only output without inventing a blocking approval", async () => {
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "PLAN_ONLY", mode: "plan" },
       });
-      const done = await waitFor(endpoint, owner.token, (state) =>
+      const done = await waitFor(store, endpoint, owner.token, (state) =>
         ["succeeded", "failed"].includes(state.runs[0]?.status ?? ""),
       );
       expect(done.runs[0]?.status).toBe("succeeded");
@@ -412,13 +333,14 @@ describe("codex stub protocol", () => {
     }
   });
   it("keeps the first completed plan when the same item is delivered again", async () => {
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "PLAN_DUPLICATE", mode: "plan" },
       });
       const done = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "succeeded",
