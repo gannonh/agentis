@@ -1,0 +1,207 @@
+{
+  "scope": "KAT-3393 terminal run bookkeeping (completedAt + owning task updatedAt) on cancel through the public CLI and loopback daemon",
+  "target": "cli",
+  "mode": "user-facing",
+  "visual": false,
+  "technical_enablement": null,
+  "timestamp": "2026-09-16T22:29:34.883Z",
+  "git_commit": "cd18d4d",
+  "gitignored": false,
+  "artifacts": [
+    {
+      "type": "response",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/health.json",
+      "description": "Loopback daemon health for the host unverified-host-scratch fake run"
+    },
+    {
+      "type": "log",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/serve.log",
+      "description": "Daemon readiness object: endpoint, pid, data root, boundary, provider fake"
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-before-cancel.json",
+      "description": "Public /v1/status before cancel: run waiting_input with completedAt null; task running"
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-cancel.json",
+      "description": "Public /v1/status after owner cancel: run canceled with numeric completedAt; owning task canceled with updatedAt == completedAt"
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-stop-all.json",
+      "description": "Public /v1/status after stop-all: every active run canceled with completedAt and each owning task updatedAt"
+    },
+    {
+      "type": "response",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/assertions.json",
+      "description": "Machine-checked comparison of before/after public snapshots for cancel and stop-all"
+    },
+    {
+      "type": "log",
+      "path": "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/events-after-cancel.txt",
+      "description": "SSE transitions after cancel, including reason run_canceled"
+    }
+  ],
+  "commands": [
+    {
+      "kind": "e2e",
+      "command": "\"env\" \"TMPDIR=/home/gannonh/.katacode/tmp\" \"mise\" \"exec\" \"--\" \"pnpm\" \"--filter\" \"@agentis-labs/cli\" \"test\"",
+      "argv": [
+        "env",
+        "TMPDIR=/home/gannonh/.katacode/tmp",
+        "mise",
+        "exec",
+        "--",
+        "pnpm",
+        "--filter",
+        "@agentis-labs/cli",
+        "test"
+      ],
+      "name": "public-boundary-suite",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/public-boundary-suite.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/public-boundary-suite.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"mise\" \"exec\" \"--\" \"node\" \"packages/cli/dist/bin.js\" \"doctor\" \"--endpoint\" \"http://127.0.0.1:7717\" \"--data-root\" \"/home/gannonh/.katacode/tmp/kat3393-uat-data\"",
+      "argv": [
+        "mise",
+        "exec",
+        "--",
+        "node",
+        "packages/cli/dist/bin.js",
+        "doctor",
+        "--endpoint",
+        "http://127.0.0.1:7717",
+        "--data-root",
+        "/home/gannonh/.katacode/tmp/kat3393-uat-data"
+      ],
+      "name": "doctor-before",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/doctor-before.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/doctor-before.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"mise\" \"exec\" \"--\" \"node\" \"packages/cli/dist/bin.js\" \"task\" \"submit\" \"--endpoint\" \"http://127.0.0.1:7717\" \"--data-root\" \"/home/gannonh/.katacode/tmp/kat3393-uat-data\" \"--brief\" \"KAT-3393 UAT cancel drive\" \"--fixture\" \"cancel\"",
+      "argv": [
+        "mise",
+        "exec",
+        "--",
+        "node",
+        "packages/cli/dist/bin.js",
+        "task",
+        "submit",
+        "--endpoint",
+        "http://127.0.0.1:7717",
+        "--data-root",
+        "/home/gannonh/.katacode/tmp/kat3393-uat-data",
+        "--brief",
+        "KAT-3393 UAT cancel drive",
+        "--fixture",
+        "cancel"
+      ],
+      "name": "submit-cancel-fixture",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/submit-cancel-fixture.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/submit-cancel-fixture.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"mise\" \"exec\" \"--\" \"node\" \"packages/cli/dist/bin.js\" \"run\" \"cancel\" \"--endpoint\" \"http://127.0.0.1:7717\" \"--data-root\" \"/home/gannonh/.katacode/tmp/kat3393-uat-data\" \"--run\" \"6e8bb57a-7b9a-4924-ab58-5f1baad61335\"",
+      "argv": [
+        "mise",
+        "exec",
+        "--",
+        "node",
+        "packages/cli/dist/bin.js",
+        "run",
+        "cancel",
+        "--endpoint",
+        "http://127.0.0.1:7717",
+        "--data-root",
+        "/home/gannonh/.katacode/tmp/kat3393-uat-data",
+        "--run",
+        "6e8bb57a-7b9a-4924-ab58-5f1baad61335"
+      ],
+      "name": "cancel-run",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/cancel-run.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/cancel-run.exit",
+      "timed_out": false
+    },
+    {
+      "kind": "supporting",
+      "command": "\"sh\" \"-c\" \"mise exec -- node packages/cli/dist/bin.js task submit --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data' --brief 'KAT-3393 UAT stop-all drive' --fixture input && mise exec -- node packages/cli/dist/bin.js stop-all --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data'\"",
+      "argv": [
+        "sh",
+        "-c",
+        "mise exec -- node packages/cli/dist/bin.js task submit --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data' --brief 'KAT-3393 UAT stop-all drive' --fixture input && mise exec -- node packages/cli/dist/bin.js stop-all --endpoint 'http://127.0.0.1:7717' --data-root '/home/gannonh/.katacode/tmp/kat3393-uat-data'"
+      ],
+      "name": "submit-second-then-stop-all",
+      "cwd": "/home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e",
+      "exit_code": 0,
+      "output_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/submit-second-then-stop-all.log",
+      "exit_code_path": "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/submit-second-then-stop-all.exit",
+      "timed_out": false
+    }
+  ],
+  "slices": [
+    {
+      "id": "cancel-bookkeeping",
+      "name": "Owner cancel stamps run completedAt and bumps the owning task updatedAt through the public CLI and /v1/status",
+      "result": "Pass",
+      "evidence": [
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/assertions.json",
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-before-cancel.json",
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-cancel.json"
+      ]
+    },
+    {
+      "id": "stop-all-bookkeeping",
+      "name": "Stop-all stamps completedAt on every active run and bumps each owning task updatedAt",
+      "result": "Pass",
+      "evidence": [
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/assertions.json",
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/responses/status-after-stop-all.json",
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/submit-second-then-stop-all.log"
+      ]
+    },
+    {
+      "id": "deadline-and-rejection-bookkeeping",
+      "name": "Deadline failure and handoff rejection use the same terminal bookkeeping (checked-in automated tests)",
+      "result": "Pass",
+      "evidence": [
+        "packages/cli/test/store.test.ts",
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/public-boundary-suite.log"
+      ]
+    },
+    {
+      "id": "predicate-and-status-model",
+      "name": "One exported active-run predicate serves every active-run query and the unwritten reconciling status is gone",
+      "result": "Pass",
+      "evidence": [
+        "packages/cli/src/run-lifecycle.ts",
+        "packages/cli/src/schema.ts",
+        "docs/verification/verify-agentis/kat-3393-20260916-222934/logs/public-boundary-suite.log"
+      ]
+    }
+  ],
+  "notes": [
+    "Video: Skipped — CLI/API target with no visual surface; attempted: none (not applicable); suggested tooling: none required.",
+    "Boundary: docker-fixture-container `verify launch` is unavailable in this environment (Docker socket permission denied). UAT ran the host `unverified-host-scratch` fake daemon over loopback HTTP. Live-provider, container isolation, and packaging remain UNVERIFIED here.",
+    "Deadline path: RUN_DEADLINE_MS is 15 minutes, so the deadline branch was forced by the deterministic sweep test in store.test.ts rather than a live 15-minute wait.",
+    "Intentional additive behavior beyond field unification: the deadline-exceeded and approval-denied paths now record a terminal failure message, and stop-all records one per-run run_canceled transition in addition to the aggregate stop_all event.",
+    "Cleanup: the UAT daemon was stopped and loopback port 7717 verified released."
+  ]
+}

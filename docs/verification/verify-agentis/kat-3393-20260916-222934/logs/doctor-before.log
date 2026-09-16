@@ -1,0 +1,43 @@
+$ "mise" "exec" "--" "node" "packages/cli/dist/bin.js" "doctor" "--endpoint" "http://127.0.0.1:7717" "--data-root" "/home/gannonh/.katacode/tmp/kat3393-uat-data"
+cwd: /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e
+started_at: 2026-09-16T22:30:16.822Z
+
+{
+  "health": {
+    "ok": true,
+    "schemaId": "agentis.v2.gate1.0",
+    "apiFamily": "v1",
+    "node": "v24.20.0",
+    "packageVersion": "2.0.0"
+  },
+  "status": {
+    "schemaId": "agentis.v2.gate1.0",
+    "cursor": "0",
+    "stopAll": false,
+    "session": {
+      "expiresAt": 9007199254740991,
+      "provider": {
+        "kind": "fake",
+        "model": "fake",
+        "authMode": "none",
+        "executionLocation": "local daemon scratch",
+        "eligible": true,
+        "ineligibleReason": null,
+        "acknowledgedAt": null
+      },
+      "sources": []
+    },
+    "tasks": [],
+    "threads": [],
+    "handoffs": [],
+    "runs": [],
+    "botConfigRevisions": [],
+    "evidence": [],
+    "pending": [],
+    "artifacts": [],
+    "messages": []
+  }
+}
+
+exit_code: 0
+finished_at: 2026-09-16T22:30:17.275Z

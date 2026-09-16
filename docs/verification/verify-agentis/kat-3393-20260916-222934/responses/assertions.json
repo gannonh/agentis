@@ -1,0 +1,44 @@
+{
+  "issue": "KAT-3393",
+  "checked_at": "2026-09-16T22:31:02.796Z",
+  "public_surface": "/v1/status via agentis doctor/status after CLI run cancel and stop-all",
+  "checks": [
+    {
+      "name": "cancel: run was active with no completedAt before",
+      "pass": true
+    },
+    {
+      "name": "cancel: run is canceled",
+      "pass": true
+    },
+    {
+      "name": "cancel: run has numeric completedAt",
+      "pass": true
+    },
+    {
+      "name": "cancel: owning task is canceled",
+      "pass": true
+    },
+    {
+      "name": "cancel: owning task updatedAt advanced",
+      "pass": true
+    },
+    {
+      "name": "cancel: terminal system message recorded",
+      "pass": true
+    },
+    {
+      "name": "stop-all: every run canceled with numeric completedAt",
+      "pass": true
+    },
+    {
+      "name": "stop-all: every owning task canceled with updatedAt equal to its run completedAt",
+      "pass": true
+    },
+    {
+      "name": "stop-all: stop-all message recorded once per newly canceled run",
+      "pass": true
+    }
+  ],
+  "verdict": "PASS"
+}

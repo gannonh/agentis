@@ -1,0 +1,48 @@
+$ "env" "TMPDIR=/home/gannonh/.katacode/tmp" "mise" "exec" "--" "pnpm" "--filter" "@agentis-labs/cli" "test"
+cwd: /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e
+started_at: 2026-09-16T22:29:39.236Z
+
+
+> @agentis-labs/cli@2.0.0 test /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e/packages/cli
+> vitest run
+
+
+ RUN  v3.2.4 /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e/packages/cli
+
+ ✓ test/browser-http.test.ts (6 tests) 7593ms
+   ✓ browser HTTP boundary > uses one-use fragment bootstrap, persisted setup, CSRF, and idempotent commands  3158ms
+   ✓ browser HTTP boundary > requires a cursor, resumes without duplicates, and expires only the replay window  4130ms
+ ✓ test/handoff.test.ts (21 tests) 3994ms
+   ✓ bounded handoff > expires a proposal before a late provider accepts without losing the source  430ms
+   ✓ bounded handoff > cancel_run before acceptance retains the coordinator result  445ms
+   ✓ bounded handoff > stop_all before acceptance retains the coordinator result  447ms
+   ✓ bounded handoff > loads a canceled accepted handoff without replaying ownership or output  475ms
+ ✓ test/container.test.ts (13 tests) 2743ms
+   ✓ Run containers > mounts each Run workspace through the host group without world access  347ms
+   ✓ Run containers > starts live Codex with run-local auth and removes its proxy and internal network  346ms
+   ✓ Run containers > isolates sequential Run mounts and removes both terminal containers  567ms
+   ✓ Run containers > does not load a session after stop-all during native version preflight  344ms
+ ✓ test/claude.test.ts (24 tests) 2498ms
+ ✓ test/codex.test.ts (9 tests) 1714ms
+   ✓ codex stub protocol > keeps a successful load retry intact after the crashed attempt timeout  914ms
+ ✓ test/store.test.ts (18 tests) 560ms
+ ✓ test/http.test.ts (7 tests) 479ms
+ ✓ test/boundary.test.ts (3 tests) 63ms
+ ✓ test/verified-file.test.ts (2 tests) 8ms
+ ✓ test/auth.test.ts (1 test) 8ms
+ ✓ test/sse.test.ts (1 test) 6ms
+ ✓ test/claude-container.test.ts (5 tests) 6ms
+ ✓ test/scratch-file.test.ts (2 tests) 3ms
+ ✓ test/cli.test.ts (1 test) 2ms
+ ✓ test/claude-result.test.ts (4 tests) 2ms
+ ✓ test/app.test.tsx (5 tests) 89ms
+ ✓ test/workspace-store.test.ts (10 tests) 18ms
+
+ Test Files  17 passed (17)
+      Tests  132 passed (132)
+   Start at  15:29:39
+   Duration  26.54s (transform 302ms, setup 0ms, collect 4.27s, tests 19.79s, environment 399ms, prepare 580ms)
+
+
+exit_code: 0
+finished_at: 2026-09-16T22:30:06.325Z

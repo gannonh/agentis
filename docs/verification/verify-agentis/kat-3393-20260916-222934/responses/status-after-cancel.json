@@ -1,0 +1,152 @@
+{
+  "schemaId": "agentis.v2.gate1.0",
+  "cursor": "4",
+  "stopAll": false,
+  "session": {
+    "expiresAt": 9007199254740991,
+    "provider": {
+      "kind": "fake",
+      "model": "fake",
+      "authMode": "none",
+      "executionLocation": "local daemon scratch",
+      "eligible": true,
+      "ineligibleReason": null,
+      "acknowledgedAt": null
+    },
+    "sources": []
+  },
+  "tasks": [
+    {
+      "id": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
+      "threadId": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
+      "outcome": "KAT-3393 UAT cancel drive",
+      "requestedBy": "owner",
+      "currentOwner": "mara",
+      "ownerRole": "coordinator",
+      "workspaceRef": "task:ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
+      "constraints": [],
+      "evidence": [
+        "c12a8803-f25d-4466-937d-935715ae025c"
+      ],
+      "currentRunId": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
+      "latestArtifactId": null,
+      "status": "canceled",
+      "actionCount": 0,
+      "createdAt": 1789597821231,
+      "updatedAt": 1789597834650
+    }
+  ],
+  "threads": [
+    {
+      "id": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
+      "taskId": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
+      "createdAt": 1789597821231
+    }
+  ],
+  "handoffs": [],
+  "runs": [
+    {
+      "id": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
+      "taskId": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
+      "threadId": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
+      "botConfigRevisionId": "baa43385-afab-402a-a402-99564fbc720f",
+      "status": "canceled",
+      "waitingReason": "none",
+      "providerLoadStatus": "idle",
+      "pendingPrompt": null,
+      "failure": null,
+      "actionCount": 0,
+      "queuedAt": 1789597821231,
+      "startedAt": 1789597821236,
+      "deadlineAt": 1789598721231,
+      "completedAt": 1789597834650
+    }
+  ],
+  "botConfigRevisions": [
+    {
+      "id": "baa43385-afab-402a-a402-99564fbc720f",
+      "bot": "mara",
+      "role": "coordinator",
+      "provider": "fake",
+      "model": "fake",
+      "skills": [
+        "coordinate",
+        "business-brief"
+      ],
+      "grants": [
+        "read:provided-source",
+        "write:task-artifact"
+      ],
+      "publicConfig": {
+        "sourceMode": "materialized-read-only"
+      },
+      "executionBoundary": "unverified-host-scratch",
+      "executionLocation": "local daemon scratch",
+      "authMode": "none",
+      "createdAt": 1789597821231
+    }
+  ],
+  "evidence": [
+    {
+      "id": "c12a8803-f25d-4466-937d-935715ae025c",
+      "source": "pasted",
+      "label": "CLI brief",
+      "contentDigest": "b1781cd757f9bc9ba363e15bdb2e3182aedbdebe75e98b8be46d2abfa4c7e5e8",
+      "byteSize": 25,
+      "citations": [],
+      "createdAt": 1789597821231
+    }
+  ],
+  "pending": [
+    {
+      "id": "d5168d5f-d984-4537-82ed-cac7c304339c",
+      "runId": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
+      "kind": "launch",
+      "state": "claimed",
+      "detail": "Run queued for launch.",
+      "approvalId": null
+    }
+  ],
+  "artifacts": [],
+  "messages": [
+    {
+      "id": "cac23430-3411-4a84-a255-b387bca296d1",
+      "threadId": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
+      "taskId": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
+      "runId": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
+      "authorKind": "human",
+      "authorName": "owner",
+      "authorRole": "operator",
+      "kind": "request",
+      "importance": "decision",
+      "body": "KAT-3393 UAT cancel drive",
+      "createdAt": 1789597821231
+    },
+    {
+      "id": "18c93a09-5658-46d4-bf39-81e431adb37f",
+      "threadId": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
+      "taskId": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
+      "runId": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
+      "authorKind": "bot",
+      "authorName": "mara",
+      "authorRole": "coordinator",
+      "kind": "question",
+      "importance": "blocking",
+      "body": "waiting for cancel",
+      "createdAt": 1789597821236
+    },
+    {
+      "id": "fca67b41-8193-4f2b-9aec-fcd31771274a",
+      "threadId": "1eaf65c1-c96b-4087-81b5-37685b959e3b",
+      "taskId": "ffa7be82-2b56-4ae5-aede-b2d5fcd4545f",
+      "runId": "6e8bb57a-7b9a-4924-ab58-5f1baad61335",
+      "authorKind": "system",
+      "authorName": "agentis",
+      "authorRole": "system",
+      "kind": "system",
+      "importance": "blocking",
+      "body": "The owner canceled this run.",
+      "createdAt": 1789597834650
+    }
+  ]
+}
