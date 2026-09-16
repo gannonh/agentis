@@ -6,6 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import { Effect, Schema } from "effect";
 import { describe, expect, it } from "vitest";
 import { newApprovalId, newIdempotencyKey, newRunId, newSessionId } from "../src/ids.js";
+import { applyReceiptEffects } from "../src/engine.js";
 import { mutateForEngine, openStore, type ApplyInput, type Principal } from "../src/store.js";
 import { EVENT_REPLAY_LIMIT, SCHEMA_ID } from "../src/versions.js";
 import { Cursor, type Command, type SourcePacket } from "../src/schema.js";
@@ -126,6 +127,47 @@ describe("store", () => {
       });
     },
   );
+
+  it("dispatches the launch for a replayed submit that never started its run", async () => {
+    const root = tempRoot();
+    const store = await Effect.runPromise(openStore(root));
+    const input: ApplyInput = {
+      principal: owner(),
+      idempotencyKey: newIdempotencyKey(),
+      command: {
+        kind: "submit_task",
+        brief: "Prepare the launch brief",
+        source: { kind: "pasted", label: "Notes", text: "Proof", citations: [] },
+        fixture: "smoke",
+      },
+      nowMs: 1_000,
+      provider: "fake",
+      executionBoundary: "unverified-host-scratch",
+      workspaceId: join(root, "scratch"),
+    };
+    const receipt = await Effect.runPromise(store.applyCommand(input));
+    const replayed = await Effect.runPromise(store.applyCommand(input));
+    expect(replayed.replayed).toBe(true);
+    expect(replayed.effects).toEqual([]);
+    const queued = await Effect.runPromise(store.snapshot());
+    expect(queued.runs[0]?.status).toBe("queued");
+
+    await applyReceiptEffects({
+      store,
+      receipt: replayed,
+      command: input.command,
+      provider: "fake",
+      executionBoundary: "unverified-host-scratch",
+      nowMs: 2_000,
+    });
+
+    const finished = await Effect.runPromise(store.snapshot());
+    expect(finished.runs[0]?.status).toBe("succeeded");
+    expect(finished.artifacts).toHaveLength(1);
+    expect(finished.pending.some((action) => action.state === "pending")).toBe(false);
+    await Effect.runPromise(store.close());
+    expect(receipt.accepted).toBe(true);
+  });
 
   it("admits two distinct bots and freezes the selected provider", async () => {
     const root = tempRoot();

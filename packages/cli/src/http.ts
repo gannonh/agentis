@@ -337,7 +337,11 @@ export const startServer = (options: ServeOptions): Effect.Effect<RunningServer,
     const api = makeHttpApiHandler(dependencies);
     const hub = new TransitionHub(store);
     const sweepTimer = setInterval(() => {
-      applySweepEffects(store, options.executionBoundary);
+      try {
+        applySweepEffects(store, options.executionBoundary);
+      } catch {
+        process.stderr.write("sweep failed\n");
+      }
     }, 1000);
     sweepTimer.unref();
     const server = createServer((request, response) => {

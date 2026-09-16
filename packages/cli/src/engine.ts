@@ -89,6 +89,13 @@ export const applyReceiptEffects = async (input: {
   const initial = await Effect.runPromise(store.snapshot());
   const selected = initial.runs.find((run) => run.id === receipt.runId);
   const provider = selected?.frozen.provider ?? input.provider;
+  const launchPending =
+    receipt.replayed &&
+    receipt.runId !== undefined &&
+    initial.pending.some(
+      (action) =>
+        action.runId === receipt.runId && action.kind === "launch" && action.state === "pending",
+    );
   if (
     receipt.accepted &&
     !receipt.replayed &&
@@ -113,8 +120,7 @@ export const applyReceiptEffects = async (input: {
   }
   if (
     receipt.accepted &&
-    !receipt.replayed &&
-    receipt.effects.includes("launch") &&
+    ((receipt.effects.includes("launch") && !receipt.replayed) || launchPending) &&
     receipt.runId &&
     receipt.taskId
   ) {
