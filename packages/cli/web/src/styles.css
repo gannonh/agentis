@@ -188,6 +188,8 @@ h3 {
 .room-grid {
   display: grid;
   min-width: 0;
+  grid-column: 2;
+  grid-row: 1 / span 2;
   gap: 1rem;
 }
 
@@ -558,6 +560,11 @@ summary {
   }
 
   .request-panel {
+    grid-row: auto;
+  }
+
+  .room-grid {
+    grid-column: auto;
     grid-row: auto;
   }
 
