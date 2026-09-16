@@ -15,6 +15,7 @@ import { dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { Effect, Schema } from "effect";
 import { writeScratchFile } from "./scratch-file.js";
+import { ACTIVE_RUN_OR_LOADING_SQL, ACTIVE_RUN_SQL } from "./run-lifecycle.js";
 import {
   newActionIntentId,
   newApprovalId,
@@ -1175,7 +1176,7 @@ const dispatch = (db: DatabaseSync, input: ApplyInput, stagedPaths: string[]): C
         "loading";
       const counts = row<{ total: number; bot: number }>(
         db,
-        `SELECT COUNT(*) AS total, COALESCE(SUM(json_extract(frozen_json,'$.bot') = ?),0) AS bot FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling') OR json_extract(provider_state,'$.loadStatus')='loading'`,
+        `SELECT COUNT(*) AS total, COALESCE(SUM(json_extract(frozen_json,'$.bot') = ?),0) AS bot FROM runs WHERE ${ACTIVE_RUN_OR_LOADING_SQL}`,
         [frozen.bot],
       );
       if (
@@ -1299,7 +1300,7 @@ const submitTask = (
   }
   const active = row<{ n: number }>(
     db,
-    "SELECT COUNT(*) AS n FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling') OR json_extract(provider_state, '$.loadStatus') = 'loading'",
+    `SELECT COUNT(*) AS n FROM runs WHERE ${ACTIVE_RUN_OR_LOADING_SQL}`,
     [],
   );
   if ((active?.n ?? 0) >= MAX_ACTIVE_RUNS) {
@@ -1313,7 +1314,7 @@ const submitTask = (
   }
   const perBot = row<{ n: number }>(
     db,
-    "SELECT COUNT(*) AS n FROM runs WHERE json_extract(frozen_json, '$.bot') = ? AND (status IN ('queued','running','waiting_approval','waiting_input','reconciling') OR json_extract(provider_state, '$.loadStatus') = 'loading')",
+    `SELECT COUNT(*) AS n FROM runs WHERE json_extract(frozen_json, '$.bot') = ? AND ${ACTIVE_RUN_OR_LOADING_SQL}`,
     [bot],
   );
   if ((perBot?.n ?? 0) >= MAX_ACTIVE_RUNS_PER_BOT) {
@@ -1768,7 +1769,7 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
   run(db, "UPDATE stop_all SET latched = 1, updated_at = ? WHERE id = 1", [input.nowMs]);
   const active = rows<{ id: string; task_id: string; thread_id: string }>(
     db,
-    "SELECT id, task_id, thread_id FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')",
+    `SELECT id, task_id, thread_id FROM runs WHERE ${ACTIVE_RUN_SQL}`,
   );
   for (const item of active) {
     run(db, "UPDATE runs SET status = 'canceled', waiting_reason = 'none' WHERE id = ?", [item.id]);
@@ -2110,7 +2111,7 @@ const isTerminal = (status: string) =>
 const interruptActive = (db: DatabaseSync, nowMs: number): RunId[] => {
   const active = rows<{ id: string; task_id: string; thread_id: string }>(
     db,
-    "SELECT id,task_id,thread_id FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')",
+    `SELECT id,task_id,thread_id FROM runs WHERE ${ACTIVE_RUN_SQL}`,
   );
   db.exec("BEGIN IMMEDIATE");
   try {
@@ -2511,7 +2512,7 @@ export const sweepRunTimeouts = (storePath: string, nowMs: number): readonly Run
       const overdue = rows<{ id: string; task_id: string }>(
         db,
         `SELECT id, task_id FROM runs
-         WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')
+         WHERE ${ACTIVE_RUN_SQL}
            AND deadline_at <= ?`,
         [nowMs],
       );

@@ -568,4 +568,18 @@ describe("store", () => {
     expect(snapshot.evidence).toEqual([]);
     await Effect.runPromise(store.close());
   });
+
+  it("releases the active-run slot when a run is canceled", async () => {
+    const root = tempRoot();
+    const first = await apply(root, { kind: "submit_task", brief: "one", fixture: "cancel" });
+    expect(first.accepted).toBe(true);
+    if (!first.runId) throw new Error("first Run was not created");
+    const blocked = await apply(root, { kind: "submit_task", brief: "two", fixture: "smoke" });
+    expect(blocked.accepted).toBe(false);
+    expect(blocked.error).toMatch(/concurrency/);
+    await apply(root, { kind: "cancel_run", runId: first.runId });
+    const admitted = await apply(root, { kind: "submit_task", brief: "three", fixture: "smoke" });
+    expect(admitted.accepted).toBe(true);
+    expect(admitted.runId).toBeDefined();
+  });
 });

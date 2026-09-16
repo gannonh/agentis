@@ -13,6 +13,7 @@ import {
 } from "./schema.js";
 import type { ApplyInput } from "./store.js";
 import { row, rows, run, emit, message } from "./store-db.js";
+import { ACTIVE_RUN_OR_LOADING_SQL } from "./run-lifecycle.js";
 import { readVerifiedFile } from "./verified-file.js";
 import {
   CLAUDE_CLI_PIN,
@@ -149,7 +150,7 @@ export const proposeHandoff = (
     return denied("stop-all is latched");
   const counts = row<{ total: number; bot: number }>(
     db,
-    `SELECT COUNT(*) AS total,COALESCE(SUM(json_extract(frozen_json,'$.bot')='ivo'),0) AS bot FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling') OR json_extract(provider_state,'$.loadStatus')='loading'`,
+    `SELECT COUNT(*) AS total,COALESCE(SUM(json_extract(frozen_json,'$.bot')='ivo'),0) AS bot FROM runs WHERE ${ACTIVE_RUN_OR_LOADING_SQL}`,
   );
   if ((counts?.total ?? 0) >= MAX_ACTIVE_RUNS || (counts?.bot ?? 0) >= MAX_ACTIVE_RUNS_PER_BOT)
     return denied("handoff concurrency exceeded");

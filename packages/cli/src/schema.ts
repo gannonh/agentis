@@ -57,7 +57,6 @@ export const RunStatus = Schema.Literal(
   "waiting_approval",
   "waiting_input",
   "interrupted",
-  "reconciling",
   "succeeded",
   "failed",
   "canceled",
