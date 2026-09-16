@@ -36,7 +36,7 @@ export type HttpApiDependencies = {
   readonly runtime: BrowserRuntimeResolver;
 };
 
-export type BrowserRuntimeResolver = (force?: boolean) => BrowserRuntime;
+export type BrowserRuntimeResolver = (force?: boolean) => Promise<BrowserRuntime>;
 
 export type RequestAuthority =
   | { readonly channel: "cli"; readonly principal: Principal }
@@ -74,12 +74,12 @@ const cookies = (header: string | undefined) => {
   return result;
 };
 
-export const browserRuntime = (
+export const browserRuntime = async (
   provider: ProviderKind,
   executionBoundary: ExecutionBoundary,
   dataRoot: string,
-): BrowserRuntime => {
-  const readiness = providerReadiness({ provider, executionBoundary, dataRoot });
+): Promise<BrowserRuntime> => {
+  const readiness = await providerReadiness({ provider, executionBoundary, dataRoot });
   return {
     provider,
     model:
@@ -103,13 +103,23 @@ export const browserRuntimeResolver = (
 ): BrowserRuntimeResolver => {
   let current: BrowserRuntime | null = null;
   let checkedAt = 0;
+  let inFlight: Promise<BrowserRuntime> | null = null;
   return (force = false) => {
     const now = Date.now();
-    if (force || current === null || now - checkedAt >= 1_000) {
-      current = browserRuntime(provider, executionBoundary, dataRoot);
-      checkedAt = now;
+    if (!force && current !== null && now - checkedAt < 1_000) {
+      return Promise.resolve(current);
     }
-    return current;
+    if (inFlight !== null) return inFlight;
+    inFlight = browserRuntime(provider, executionBoundary, dataRoot)
+      .then((next) => {
+        current = next;
+        checkedAt = Date.now();
+        return next;
+      })
+      .finally(() => {
+        inFlight = null;
+      });
+    return inFlight;
   };
 };
 
@@ -182,15 +192,18 @@ const statusFor = (
   authority: RequestAuthority,
   forceConnectionCheck = false,
 ) =>
-  dependencies.store
-    .workspaceSnapshot({
-      ...(authority.channel === "browser"
-        ? { tokenHash: authority.tokenHash }
-        : { ownerSession: authority.principal.sessionId }),
-      nowMs: Date.now(),
-      runtime: dependencies.runtime(forceConnectionCheck),
-    })
-    .pipe(Effect.mapError((error) => conflict(error.message)));
+  Effect.gen(function* () {
+    const runtime = yield* Effect.promise(() => dependencies.runtime(forceConnectionCheck));
+    return yield* dependencies.store
+      .workspaceSnapshot({
+        ...(authority.channel === "browser"
+          ? { tokenHash: authority.tokenHash }
+          : { ownerSession: authority.principal.sessionId }),
+        nowMs: Date.now(),
+        runtime,
+      })
+      .pipe(Effect.mapError((error) => conflict(error.message)));
+  });
 
 const publicArtifact = (artifact: ArtifactRow) =>
   Schema.decodeUnknownSync(PublicArtifact)({
@@ -293,7 +306,7 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
       .handle("acknowledgeSetup", ({ headers, payload }) =>
         Effect.gen(function* () {
           const authority = yield* authorizeBrowserMutation(dependencies, headers);
-          const runtime = dependencies.runtime(true);
+          const runtime = yield* Effect.promise(() => dependencies.runtime(true));
           if (!runtime.eligible || payload.provider !== runtime.provider) {
             return yield* Effect.fail(
               forbidden(
@@ -324,7 +337,7 @@ export const makeHttpApiHandler = (dependencies: HttpApiDependencies) => {
         Effect.gen(function* () {
           const authority = yield* authorizeMutation(dependencies, headers);
           if (authority.channel === "browser" && payload.command.kind === "submit_task") {
-            const runtime = dependencies.runtime(true);
+            const runtime = yield* Effect.promise(() => dependencies.runtime(true));
             if (!runtime.eligible) {
               return yield* Effect.fail(
                 forbidden(

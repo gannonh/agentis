@@ -253,7 +253,7 @@ describe("store", () => {
         }),
       ),
     ).rejects.toThrow(/different payload/);
-    const snapshot = await Effect.runPromise(store.snapshot());
+    const snapshot = await Effect.runPromise(store.snapshot(true));
     expect(snapshot.tasks).toHaveLength(1);
     expect(snapshot.runs).toHaveLength(1);
     expect(snapshot.evidence).toHaveLength(1);

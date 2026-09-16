@@ -430,7 +430,7 @@ CREATE TABLE IF NOT EXISTS stop_all (
 export type Store = {
   readonly path: string;
   readonly applyCommand: (input: ApplyInput) => Effect.Effect<CommandReceipt, StoreError>;
-  readonly snapshot: () => Effect.Effect<Snapshot, StoreError>;
+  readonly snapshot: (includeEvents?: boolean) => Effect.Effect<Snapshot, StoreError>;
   readonly issueBrowserBootstrap: (input: {
     readonly codeHash: string;
     readonly ownerSession: string;
@@ -596,9 +596,9 @@ export const openStore = (
             try: () => applyCommand(input),
             catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
           }),
-        snapshot: () =>
+        snapshot: (includeEvents = false) =>
           Effect.try({
-            try: () => readSnapshot(db),
+            try: () => readSnapshot(db, includeEvents),
             catch: (error) => new StoreError(String(error)),
           }),
         issueBrowserBootstrap: (input) =>
@@ -1816,10 +1816,10 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
   });
 };
 
-const readSnapshot = (db: DatabaseSync): Snapshot => {
+const readSnapshot = (db: DatabaseSync, includeEvents = false): Snapshot => {
   db.exec("BEGIN DEFERRED");
   try {
-    const snapshot = readSnapshotUnlocked(db);
+    const snapshot = readSnapshotUnlocked(db, includeEvents);
     db.exec("COMMIT");
     return snapshot;
   } catch (error) {
@@ -1868,7 +1868,7 @@ const readArtifact = (db: DatabaseSync, id: ArtifactIdType) => {
   return artifact ? decodeArtifact(artifact) : null;
 };
 
-const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = true): Snapshot => {
+const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = false): Snapshot => {
   const schema = row<{ value: string }>(db, "SELECT value FROM meta WHERE key = 'schema_id'", []);
   const stop = row<{ latched: number }>(db, "SELECT latched FROM stop_all WHERE id = 1", []);
   const tasks = rows<{

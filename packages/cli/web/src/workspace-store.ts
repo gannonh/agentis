@@ -209,10 +209,17 @@ export class WorkspaceStore {
       try {
         let snapshot: WorkspaceSnapshot;
         let forceConnectionCheck = checkConnection;
+        let regressions = 0;
         do {
           snapshot = await this.#api.status(forceConnectionCheck);
           forceConnectionCheck = false;
-          this.#pendingCursor = Math.max(this.#pendingCursor, Number(snapshot.cursor));
+          const reported = Number(snapshot.cursor);
+          if (reported < this.#pendingCursor) {
+            regressions += 1;
+            if (regressions >= 3) this.#pendingCursor = reported;
+          } else {
+            this.#pendingCursor = reported;
+          }
           this.#update({
             phase: sessionReady(snapshot.session) ? "ready" : "setup",
             session: snapshot.session,

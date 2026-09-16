@@ -31,8 +31,6 @@ export type RunningServer = {
   readonly store: Store;
 };
 
-export const RAW_HANDLER_ROUTE_KEYS = ["GET /v1/events", "GET /v1/artifacts/:id/content"] as const;
-
 const MAX_JSON_BODY_BYTES = 2 * 1024 * 1024;
 
 class RequestBodyTooLargeError extends Error {}

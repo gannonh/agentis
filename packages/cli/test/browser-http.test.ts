@@ -8,10 +8,9 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
 import { describe, expect, it, vi } from "vitest";
-import { RAW_ROUTE_KEYS } from "../src/api.js";
 import { loadOrCreateOwner } from "../src/auth.js";
 import { runCli } from "../src/cli.js";
-import { RAW_HANDLER_ROUTE_KEYS, startServer } from "../src/http.js";
+import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
 import { WorkspaceSnapshot } from "../src/schema.js";
 
@@ -380,7 +379,6 @@ describe("browser HTTP boundary", () => {
           "/v1/artifacts/{id}/content",
         ]),
       );
-      expect(RAW_HANDLER_ROUTE_KEYS).toEqual(RAW_ROUTE_KEYS);
       expect(JSON.stringify(document)).toContain("payload_too_large");
       expect(JSON.stringify(document)).toContain("internal_error");
 

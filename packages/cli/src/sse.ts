@@ -48,6 +48,10 @@ export class TransitionHub {
       closed: false,
     };
     this.#subscribers.add(subscriber);
+    response.on("error", () => {
+      subscriber.closed = true;
+      this.#subscribers.delete(subscriber);
+    });
     const replay = await Effect.runPromise(Effect.either(this.store.transitionsAfter(cursor)));
     if (Either.isLeft(replay)) {
       this.#subscribers.delete(subscriber);

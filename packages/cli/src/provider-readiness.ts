@@ -1,8 +1,11 @@
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
+import { promisify } from "node:util";
 import { providerVolume } from "./provider.js";
 import type { ExecutionBoundary, ProviderKind } from "./schema.js";
 import { CODEX_IMAGE } from "./versions.js";
+
+const run = promisify(execFile);
 
 export type ProviderReadiness = {
   readonly eligible: boolean;
@@ -11,11 +14,11 @@ export type ProviderReadiness = {
 
 const unavailable = (reason: string): ProviderReadiness => ({ eligible: false, reason });
 
-export const providerReadiness = (input: {
+export const providerReadiness = async (input: {
   readonly provider: ProviderKind;
   readonly executionBoundary: ExecutionBoundary;
   readonly dataRoot: string;
-}): ProviderReadiness => {
+}): Promise<ProviderReadiness> => {
   if (input.provider === "fake") return { eligible: true, reason: null };
   if (input.provider !== "codex") {
     return unavailable("Mara coordination requires a configured Codex provider connection.");
@@ -34,41 +37,49 @@ export const providerReadiness = (input: {
     return unavailable("Live Codex requires the configured local provider container.");
   }
   const volume = providerVolume(input.dataRoot);
-  const inspected = spawnSync(
-    "docker",
-    ["volume", "inspect", "--format", '{{index .Labels "io.agentis.managed"}}', volume],
-    { encoding: "utf8", timeout: 5_000 },
-  );
-  if (inspected.status !== 0 || inspected.stdout.trim() !== "provider-auth") {
+  try {
+    const inspected = await run(
+      "docker",
+      ["volume", "inspect", "--format", '{{index .Labels "io.agentis.managed"}}', volume],
+      { encoding: "utf8", timeout: 5_000 },
+    );
+    if (inspected.stdout.trim() !== "provider-auth") {
+      return unavailable(
+        "Codex authentication is unavailable. Run agentis provider provision first.",
+      );
+    }
+  } catch {
     return unavailable(
       "Codex authentication is unavailable. Run agentis provider provision first.",
     );
   }
-  const checked = spawnSync(
-    "docker",
-    [
-      "run",
-      "--rm",
-      "--pull=never",
-      "--network",
-      "none",
-      "--read-only",
-      "--user=10001:10001",
-      "--cap-drop=ALL",
-      "--security-opt=no-new-privileges",
-      "--pids-limit=32",
-      "--memory=128m",
-      "--cpus=1",
-      "--mount",
-      `type=volume,src=${volume},dst=/provider-auth,readonly`,
-      CODEX_IMAGE,
-      "test",
-      "-s",
-      "/provider-auth/auth.json",
-    ],
-    { stdio: "ignore", timeout: 5_000 },
-  );
-  return checked.status === 0
-    ? { eligible: true, reason: null }
-    : unavailable("Codex authentication is unavailable. Run agentis provider login first.");
+  try {
+    await run(
+      "docker",
+      [
+        "run",
+        "--rm",
+        "--pull=never",
+        "--network",
+        "none",
+        "--read-only",
+        "--user=10001:10001",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--pids-limit=32",
+        "--memory=128m",
+        "--cpus=1",
+        "--mount",
+        `type=volume,src=${volume},dst=/provider-auth,readonly`,
+        CODEX_IMAGE,
+        "test",
+        "-s",
+        "/provider-auth/auth.json",
+      ],
+      { timeout: 5_000 },
+    );
+  } catch {
+    return unavailable("Codex authentication is unavailable. Run agentis provider login first.");
+  }
+  return { eligible: true, reason: null };
 };

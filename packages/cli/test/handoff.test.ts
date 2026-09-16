@@ -64,7 +64,7 @@ const statusOf = async (endpoint: URL, token: string) => {
   Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
   const store = stores.get(endpoint.origin);
   if (!store) throw new Error("missing test store");
-  return Effect.runPromise(store.snapshot());
+  return Effect.runPromise(store.snapshot(true));
 };
 
 const waitFor = async (
