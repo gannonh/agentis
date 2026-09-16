@@ -22,8 +22,6 @@ export const ACTIVE_RUN_SQL = `status IN (${quoted})`;
 
 export const ACTIVE_RUN_OR_LOADING_SQL = `(${ACTIVE_RUN_SQL} OR json_extract(provider_state,'$.loadStatus')='loading')`;
 
-export type ActiveRunStatus = (typeof ACTIVE_RUN_STATUSES)[number];
-
 export const FINISHED_RUN_STATUSES = ["succeeded", "failed", "canceled"] as const;
 export type FinishedRunStatus = (typeof FINISHED_RUN_STATUSES)[number];
 export type FinishedTaskStatus = "completed" | "failed" | "canceled";
@@ -39,8 +37,6 @@ export const isActiveRunStatus = (status: string): boolean =>
 
 export const isFinishedRunStatus = (status: string): boolean =>
   (FINISHED_RUN_STATUSES as readonly string[]).includes(status);
-
-export const isTerminalStatus = (status: string): boolean => !isActiveRunStatus(status);
 
 export type FinishRunMessage = {
   readonly authorKind: "human" | "bot" | "system";
