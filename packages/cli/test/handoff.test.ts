@@ -61,10 +61,11 @@ const statusOf = async (endpoint: URL, token: string) => {
   const response = await fetch(new URL("/v1/status", endpoint), {
     headers: { authorization: `Bearer ${token}` },
   });
-  Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
+  const publicSnapshot = Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
   const store = stores.get(endpoint.origin);
   if (!store) throw new Error("missing test store");
-  return Effect.runPromise(store.snapshot(true));
+  const snapshot = await Effect.runPromise(store.snapshot(true));
+  return { ...snapshot, publicHandoffs: publicSnapshot.handoffs };
 };
 
 const waitFor = async (
@@ -125,6 +126,20 @@ describe("bounded handoff", () => {
         grants: "draft_only",
         onwardDelegation: false,
       });
+      expect(Object.hasOwn(done.handoffs[0] ?? {}, "sender")).toBe(false);
+      expect(Object.hasOwn(done.handoffs[0] ?? {}, "recipient")).toBe(false);
+      const handoff = done.handoffs[0];
+      if (!handoff) throw new Error("missing handoff");
+      const botOf = (runId: typeof handoff.sourceRunId) =>
+        done.botConfigRevisions.find(
+          (revision) =>
+            revision.id === done.runs.find((item) => item.id === runId)?.botConfigRevisionId,
+        )?.bot;
+      expect(done.publicHandoffs[0]).toMatchObject({
+        sender: botOf(handoff.sourceRunId),
+        recipient: botOf(handoff.recipientRunId),
+      });
+      expect(done.publicHandoffs[0]).toMatchObject({ sender: "mara", recipient: "ivo" });
       expect(
         done.messages
           .filter((message) => message.authorName === "ivo")

@@ -31,8 +31,6 @@ export const HANDOFF_DDL = `CREATE TABLE IF NOT EXISTS handoffs (
 const decodeHandoff = (value: Record<string, unknown>) =>
   Schema.decodeUnknownSync(HandoffRow)({
     ...value,
-    sender: "mara",
-    recipient: "ivo",
     onwardDelegation: value.onwardDelegation === 0 ? false : value.onwardDelegation,
   });
 export const handoffs = (db: DatabaseSync): HandoffRow[] =>
@@ -209,8 +207,6 @@ export const proposeHandoff = (
     threadId: source.thread_id,
     sourceRunId: command.sourceRunId,
     recipientRunId,
-    sender: "mara",
-    recipient: "ivo",
     context,
     state: "proposed",
     expiresAt: input.nowMs + 60000,
