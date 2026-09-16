@@ -1770,10 +1770,7 @@ const cancelRun = (
 const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): CommandReceipt => {
   ownerOnly(input.principal, "stop_all");
   run(db, "UPDATE stop_all SET latched = 1, updated_at = ? WHERE id = 1", [input.nowMs]);
-  const active = rows<{ id: string; task_id: string }>(
-    db,
-    `SELECT id, task_id FROM runs WHERE ${ACTIVE_RUN_SQL}`,
-  );
+  const active = rows<{ id: string }>(db, `SELECT id FROM runs WHERE ${ACTIVE_RUN_SQL}`);
   for (const item of active) {
     rejectHandoff(
       db,
@@ -2485,9 +2482,9 @@ export const sweepRunTimeouts = (storePath: string, nowMs: number): readonly Run
         )
           effects.push({ runId: handoff.recipientRunId, effects: ["interrupt_provider"] });
       }
-      const overdue = rows<{ id: string; task_id: string }>(
+      const overdue = rows<{ id: string }>(
         db,
-        `SELECT id, task_id FROM runs
+        `SELECT id FROM runs
          WHERE ${ACTIVE_RUN_SQL}
            AND deadline_at <= ?`,
         [nowMs],
