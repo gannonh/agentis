@@ -1418,7 +1418,7 @@ const submitTask = (
       outcome,
       input.principal.sessionId,
       bot,
-      bot === "mara" ? "coordinator" : "specialist",
+      frozen.role,
       `task:${taskId}`,
       JSON.stringify(command.constraints ?? []),
       JSON.stringify([evidenceId]),

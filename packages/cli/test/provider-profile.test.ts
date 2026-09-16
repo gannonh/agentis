@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { browserRuntime } from "../src/http-api.js";
-import { executionLocation, frozenConfig } from "../src/provider-profile.js";
+import { executionLocation, frozenConfig, providerProfile } from "../src/provider-profile.js";
 import type { ExecutionBoundary, ProviderKind } from "../src/schema.js";
 import {
   CLAUDE_CLI_PIN,
@@ -69,6 +69,11 @@ describe("provider profile", () => {
   });
 
   it("freezes the versioned transport metadata the providers declare", () => {
+    expect(providerProfile("codex").model).toBe("gpt-5.6-sol");
+    expect(providerProfile("codex").authMode).toBe(CODEX_AUTH_MODE);
+    expect(providerProfile("claude").model).toBe("claude-sonnet-5");
+    expect(providerProfile("claude").authMode).toBe("api-key");
+
     const codex = frozenFor("mara", "codex", "unverified-host-scratch");
     expect(codex.transport).toBe(CODEX_TRANSPORT);
     expect(codex.executableVersion).toBe(CODEX_CLI_PIN);
