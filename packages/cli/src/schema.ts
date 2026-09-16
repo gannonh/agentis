@@ -373,7 +373,20 @@ export const PublicArtifact = Schema.Struct({
 });
 export type PublicArtifact = typeof PublicArtifact.Type;
 export const PublicHandoff = Schema.extend(
-  HandoffRow,
+  HandoffRow.pipe(
+    Schema.pick(
+      "id",
+      "taskId",
+      "threadId",
+      "sourceRunId",
+      "recipientRunId",
+      "context",
+      "state",
+      "expiresAt",
+      "grants",
+      "onwardDelegation",
+    ),
+  ),
   Schema.Struct({
     sender: Schema.Literal("mara", "ivo"),
     recipient: Schema.Literal("mara", "ivo"),

@@ -882,17 +882,23 @@ const workspaceSnapshot = (
         : null;
     if (!session) throw new StoreError("authentication required");
     const snapshot = readSnapshotUnlocked(db);
-    const handoffDirection = (runId: RunId) => {
-      const handoffRun = snapshot.runs.find((item) => item.id === runId);
-      if (!handoffRun) throw new StoreError(`handoff references missing run ${runId}`);
-      const revision = snapshot.botConfigRevisions.find(
-        (item) => item.id === handoffRun.botConfigRevisionId,
-      );
-      if (!revision)
+    const botByRevisionId = new Map(
+      snapshot.botConfigRevisions.map((revision) => [revision.id, revision.bot]),
+    );
+    const botByRunId = new Map(
+      snapshot.runs.flatMap((runItem) => {
+        const bot = botByRevisionId.get(runItem.botConfigRevisionId);
+        return bot === undefined ? [] : [[runItem.id, bot] as const];
+      }),
+    );
+    const botForRun = (runId: RunId) => {
+      const bot = botByRunId.get(runId);
+      if (bot === undefined) {
         throw new StoreError(
-          `handoff references missing bot config revision ${handoffRun.botConfigRevisionId}`,
+          `handoff references run ${runId} without a stored bot config revision`,
         );
-      return revision.bot;
+      }
+      return bot;
     };
     const providerMatches = session.provider === input.runtime.provider;
     const result = Schema.decodeUnknownSync(WorkspaceSnapshot)({
@@ -936,8 +942,8 @@ const workspaceSnapshot = (
         threadId: handoff.threadId,
         sourceRunId: handoff.sourceRunId,
         recipientRunId: handoff.recipientRunId,
-        sender: handoffDirection(handoff.sourceRunId),
-        recipient: handoffDirection(handoff.recipientRunId),
+        sender: botForRun(handoff.sourceRunId),
+        recipient: botForRun(handoff.recipientRunId),
         context: publicHandoffContext(handoff.context),
         state: handoff.state,
         expiresAt: handoff.expiresAt,

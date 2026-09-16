@@ -144,6 +144,8 @@ describe("bounded handoff", () => {
           (revision) =>
             revision.id === done.runs.find((item) => item.id === runId)?.botConfigRevisionId,
         )?.bot;
+      expect(botOf(handoff.sourceRunId)).toBe("mara");
+      expect(botOf(handoff.recipientRunId)).toBe("ivo");
       expect(done.publicHandoffs[0]).toMatchObject({
         sender: botOf(handoff.sourceRunId),
         recipient: botOf(handoff.recipientRunId),
