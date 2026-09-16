@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { Effect, Schema } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { WorkspaceSnapshot } from "../src/schema.js";
+import { Cursor, WorkspaceSnapshot } from "../src/schema.js";
 import { sweepRunTimeouts, openStore, type Store } from "../src/store.js";
 import { loadOrCreateOwner } from "../src/auth.js";
 import { startServer } from "../src/http.js";
@@ -64,8 +64,17 @@ const statusOf = async (endpoint: URL, token: string) => {
   const publicSnapshot = Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
   const store = stores.get(endpoint.origin);
   if (!store) throw new Error("missing test store");
-  const snapshot = await Effect.runPromise(store.snapshot(true));
+  const snapshot = await Effect.runPromise(store.snapshot());
   return { ...snapshot, publicHandoffs: publicSnapshot.handoffs };
+};
+
+const transitionsOf = async (endpoint: URL) => {
+  const store = stores.get(endpoint.origin);
+  if (!store) throw new Error("missing test store");
+  const window = await Effect.runPromise(
+    store.transitionsAfter(Schema.decodeUnknownSync(Cursor)("0")),
+  );
+  return window.events;
 };
 
 const waitFor = async (
@@ -145,13 +154,10 @@ describe("bounded handoff", () => {
           .filter((message) => message.authorName === "ivo")
           .every((message) => message.threadId === source.json.threadId),
       ).toBe(true);
-      expect(
-        done.events.some(
-          (event) =>
-            event.type === "peer_progress" &&
-            JSON.parse(event.body).threadId === source.json.threadId,
-        ),
-      ).toBe(true);
+      const transitions = await transitionsOf(endpoint);
+      expect(transitions.some((transition) => transition.event.reason === "peer_progress")).toBe(
+        true,
+      );
       expect(done.pending.filter((action) => action.kind === "handoff_draft")).toHaveLength(1);
       expect(done.runs[1]?.actionCount).toBe(2);
       const prompts = readFileSync(

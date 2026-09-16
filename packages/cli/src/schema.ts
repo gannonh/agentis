@@ -71,7 +71,6 @@ export const ActionState = Schema.Literal(
   "expired",
   "canceled",
   "claimed",
-  "confirmed",
 );
 export type ActionState = typeof ActionState.Type;
 
@@ -441,7 +440,6 @@ export const SetupAcknowledgement = Schema.Struct({
   provider: ProviderKind,
   sources: Schema.Array(SourceKind),
 });
-export const ArtifactPath = Schema.Struct({ id: ArtifactId });
 export const EventsQuery = Schema.Struct({ cursor: Cursor });
 const apiError = <Code extends string>(code: Code) =>
   Schema.Struct({ code: Schema.Literal(code), message: Schema.String });

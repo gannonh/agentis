@@ -168,7 +168,6 @@ export type PendingActionRow = {
   readonly kind: string;
   readonly state: typeof ActionState.Type;
   readonly payload: string;
-  readonly detail: string;
   readonly approvalId: ApprovalId | null;
 };
 
@@ -246,7 +245,6 @@ export type Snapshot = {
   readonly pending: readonly PendingActionRow[];
   readonly artifacts: readonly ArtifactRow[];
   readonly messages: readonly MessageRow[];
-  readonly events: readonly EventRow[];
   readonly evidence: readonly EvidenceRow[];
   readonly botConfigRevisions: readonly BotConfigRevisionRow[];
 };
@@ -254,14 +252,6 @@ export type Snapshot = {
 export type ThreadRow = {
   readonly id: string;
   readonly taskId: TaskId;
-  readonly createdAt: number;
-};
-
-export type EventRow = {
-  readonly seq: number;
-  readonly id: string;
-  readonly type: string;
-  readonly body: string;
   readonly createdAt: number;
 };
 
@@ -430,7 +420,7 @@ CREATE TABLE IF NOT EXISTS stop_all (
 export type Store = {
   readonly path: string;
   readonly applyCommand: (input: ApplyInput) => Effect.Effect<CommandReceipt, StoreError>;
-  readonly snapshot: (includeEvents?: boolean) => Effect.Effect<Snapshot, StoreError>;
+  readonly snapshot: () => Effect.Effect<Snapshot, StoreError>;
   readonly issueBrowserBootstrap: (input: {
     readonly codeHash: string;
     readonly ownerSession: string;
@@ -488,8 +478,6 @@ export type BrowserSessionRecord = {
 };
 
 export type TransitionWindow = {
-  readonly cursor: CursorType;
-  readonly replayFloor: CursorType;
   readonly events: readonly TransitionType[];
 };
 
@@ -596,9 +584,9 @@ export const openStore = (
             try: () => applyCommand(input),
             catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
           }),
-        snapshot: (includeEvents = false) =>
+        snapshot: () =>
           Effect.try({
-            try: () => readSnapshot(db, includeEvents),
+            try: () => readSnapshot(db),
             catch: (error) => new StoreError(String(error)),
           }),
         issueBrowserBootstrap: (input) =>
@@ -893,7 +881,7 @@ const workspaceSnapshot = (
           }
         : null;
     if (!session) throw new StoreError("authentication required");
-    const snapshot = readSnapshotUnlocked(db, false);
+    const snapshot = readSnapshotUnlocked(db);
     const handoffDirection = (runId: RunId) => {
       const handoffRun = snapshot.runs.find((item) => item.id === runId);
       if (!handoffRun) throw new StoreError(`handoff references missing run ${runId}`);
@@ -1075,8 +1063,6 @@ const transitionsAfter = (db: DatabaseSync, cursor: CursorType): TransitionWindo
       [requested, highWater],
     );
     const result = {
-      cursor: Schema.decodeUnknownSync(Cursor)(String(highWater)),
-      replayFloor: Schema.decodeUnknownSync(Cursor)(String(replayFloor)),
       events: retained.map((item) =>
         Schema.decodeUnknownSync(Transition)({
           cursor: String(item.seq),
@@ -1828,10 +1814,10 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
   });
 };
 
-const readSnapshot = (db: DatabaseSync, includeEvents = false): Snapshot => {
+const readSnapshot = (db: DatabaseSync): Snapshot => {
   db.exec("BEGIN DEFERRED");
   try {
-    const snapshot = readSnapshotUnlocked(db, includeEvents);
+    const snapshot = readSnapshotUnlocked(db);
     db.exec("COMMIT");
     return snapshot;
   } catch (error) {
@@ -1880,7 +1866,7 @@ const readArtifact = (db: DatabaseSync, id: ArtifactIdType) => {
   return artifact ? decodeArtifact(artifact) : null;
 };
 
-const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = false): Snapshot => {
+const readSnapshotUnlocked = (db: DatabaseSync): Snapshot => {
   const schema = row<{ value: string }>(db, "SELECT value FROM meta WHERE key = 'schema_id'", []);
   const stop = row<{ latched: number }>(db, "SELECT latched FROM stop_all WHERE id = 1", []);
   const tasks = rows<{
@@ -1946,15 +1932,6 @@ const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = false): Snapshot
     created_at: number;
   }>(db, "SELECT * FROM messages ORDER BY created_at");
   const cursorRow = row<{ seq: number | null }>(db, "SELECT MAX(seq) AS seq FROM events", []);
-  const events = includeEvents
-    ? rows<{
-        seq: number;
-        id: string;
-        type: string;
-        body: string;
-        created_at: number;
-      }>(db, "SELECT seq, id, type, body, created_at FROM events ORDER BY seq")
-    : [];
   const evidence = rows<{
     id: string;
     task_id: string;
@@ -2053,7 +2030,6 @@ const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = false): Snapshot
       kind: item.kind,
       state: Schema.decodeUnknownSync(ActionState)(item.state),
       payload: item.payload,
-      detail: item.payload,
       approvalId: (item.approval_id as ApprovalId | null) ?? null,
     })),
     artifacts: artifacts.map(decodeArtifact),
@@ -2068,13 +2044,6 @@ const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = false): Snapshot
       kind: item.kind,
       importance: item.importance,
       dedupeKey: item.dedupe_key,
-      body: item.body,
-      createdAt: item.created_at,
-    })),
-    events: events.map((item) => ({
-      seq: item.seq,
-      id: item.id,
-      type: item.type,
       body: item.body,
       createdAt: item.created_at,
     })),
