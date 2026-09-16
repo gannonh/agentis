@@ -1,0 +1,17 @@
+{
+  "metadataUrl": "http://127.0.0.1:65449/v1/artifacts/782640f1-8c20-46b7-b130-f8c14385719d",
+  "contentUrl": "http://127.0.0.1:65449/v1/artifacts/782640f1-8c20-46b7-b130-f8c14385719d/content",
+  "mediaType": "text/markdown",
+  "metadataStatus": 200,
+  "contentStatus": 200,
+  "publicByteSize": 10,
+  "bytesRead": 10,
+  "publicSha256": "f8339f7af9500f2faeedcd3b00fbffc51f7bed852decfdf92eb4c7e2a04d5f5a",
+  "sha256": "f8339f7af9500f2faeedcd3b00fbffc51f7bed852decfdf92eb4c7e2a04d5f5a",
+  "metadataMatches": true,
+  "expectedBytes": "KAT3242_OK",
+  "observedBytes": "KAT3242_OK",
+  "expected": "KAT3242_OK",
+  "observed": "matching metadata, byte count, SHA-256, and body",
+  "verdict": "PASS"
+}

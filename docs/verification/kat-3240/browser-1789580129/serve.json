@@ -1,0 +1,6 @@
+{
+  "endpoint": "http://127.0.0.1:65449/",
+  "pid": 70902,
+  "dataRoot": "/tmp/agentis-browser-kat3240-DAUY7C",
+  "log": "/tmp/agentis-browser-kat3240-DAUY7C/daemon.log"
+}

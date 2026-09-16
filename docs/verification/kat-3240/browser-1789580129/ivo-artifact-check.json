@@ -1,0 +1,15 @@
+{
+  "metadataUrl": "http://127.0.0.1:65449/v1/artifacts/992b5123-c8cd-4b74-8683-e7d19f9385c3",
+  "contentUrl": "http://127.0.0.1:65449/v1/artifacts/992b5123-c8cd-4b74-8683-e7d19f9385c3/content",
+  "mediaType": "text/markdown",
+  "metadataStatus": 200,
+  "contentStatus": 200,
+  "publicByteSize": 16,
+  "bytesRead": 16,
+  "publicSha256": "c4f9d1c02748b6144a9dbe72b3d50918f69288d4cf09b06c3208d1bad6b6bf97",
+  "sha256": "c4f9d1c02748b6144a9dbe72b3d50918f69288d4cf09b06c3208d1bad6b6bf97",
+  "metadataMatches": true,
+  "expectedBytes": "SPECIALIST_DRAFT",
+  "observedBytes": "SPECIALIST_DRAFT",
+  "verdict": "PASS"
+}
