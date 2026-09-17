@@ -1,8 +1,9 @@
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import type { WorkspaceSnapshot } from "../src/schema.js";
+import type { Snapshot } from "../src/store.js";
 import { newIdempotencyKey } from "../src/ids.js";
-import { boot, command, publicStatusOf, waitFor } from "./helpers/daemon.js";
+import { boot, command, publicStatusOf, waitFor, type Daemon } from "./helpers/daemon.js";
 
 afterEach(() => {
   delete process.env.AGENTIS_CLAUDE_STUB;
@@ -10,55 +11,48 @@ afterEach(() => {
   delete process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS;
 });
 
-const AUTHOR_ROLES = {
-  owner: "operator",
-  mara: "coordinator",
-  ivo: "specialist",
-  agentis: "system",
-} as const;
-
 type PublicMessage = WorkspaceSnapshot["messages"][number];
 
-const authorRoles = (messages: readonly PublicMessage[]) =>
-  messages.map((message) => `${message.authorName}/${message.authorRole}`);
-
-const kindAuthorPairs = (messages: readonly PublicMessage[]) =>
-  messages.map((message) => `${message.kind} ${message.authorName}/${message.authorRole}`);
-
-const expectAuthorRoleInvariant = (messages: readonly PublicMessage[]) => {
-  expect(authorRoles(messages)).toEqual(
-    messages.map((message) => `${message.authorName}/${AUTHOR_ROLES[message.authorName]}`),
-  );
+const expectKindAuthorPairs = (messages: readonly PublicMessage[], expected: readonly string[]) => {
+  expect(
+    messages.map((message) => `${message.kind} ${message.authorName}/${message.authorRole}`).sort(),
+  ).toEqual([...expected].sort());
 };
 
-const expectKindAuthorPairs = (messages: readonly PublicMessage[], expected: readonly string[]) => {
-  expect(kindAuthorPairs(messages).sort()).toEqual([...expected].sort());
+const driveApproval = async (
+  daemon: Daemon,
+  input: { brief: string; decision: "allowed" | "denied"; status: "succeeded" | "failed" },
+) => {
+  const { endpoint, owner, store } = daemon;
+  await command(endpoint, owner.token, {
+    idempotencyKey: newIdempotencyKey(),
+    command: { kind: "submit_task", brief: input.brief },
+  });
+  const waiting = await waitFor(
+    store,
+    endpoint,
+    owner.token,
+    (state) => state.runs[0]?.status === "waiting_approval",
+  );
+  const approvalId = waiting.pending.find((action) => action.approvalId)?.approvalId;
+  if (!approvalId) throw new Error("missing pending approval");
+  await command(endpoint, owner.token, {
+    idempotencyKey: newIdempotencyKey(),
+    command: { kind: "resolve_approval", approvalId, decision: input.decision },
+  });
+  await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === input.status);
 };
 
 describe("message author and role pairs", () => {
   it("pairs approval and result messages with their authors through the public status snapshot", async () => {
-    const { endpoint, server, owner, store } = await boot();
+    const daemon = await boot();
     try {
-      await command(endpoint, owner.token, {
-        idempotencyKey: newIdempotencyKey(),
-        command: { kind: "submit_task", brief: "ALLOW python once" },
+      await driveApproval(daemon, {
+        brief: "ALLOW python once",
+        decision: "allowed",
+        status: "succeeded",
       });
-      const waiting = await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "waiting_approval",
-      );
-      const approvalId = waiting.pending.find((action) => action.approvalId)?.approvalId;
-      if (!approvalId) throw new Error("missing pending approval");
-      await command(endpoint, owner.token, {
-        idempotencyKey: newIdempotencyKey(),
-        command: { kind: "resolve_approval", approvalId, decision: "allowed" },
-      });
-      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
-
-      const snapshot = await publicStatusOf(endpoint, owner.token);
-      expectAuthorRoleInvariant(snapshot.messages);
+      const snapshot = await publicStatusOf(daemon.endpoint, daemon.owner.token);
       expectKindAuthorPairs(snapshot.messages, [
         "request owner/operator",
         "approval mara/coordinator",
@@ -66,33 +60,19 @@ describe("message author and role pairs", () => {
         "result mara/coordinator",
       ]);
     } finally {
-      await server.close();
+      await daemon.server.close();
     }
   });
 
   it("pairs a denied-approval failure message with its system author through the public status snapshot", async () => {
-    const { endpoint, server, owner, store } = await boot();
+    const daemon = await boot();
     try {
-      await command(endpoint, owner.token, {
-        idempotencyKey: newIdempotencyKey(),
-        command: { kind: "submit_task", brief: "DENY python once" },
+      await driveApproval(daemon, {
+        brief: "DENY python once",
+        decision: "denied",
+        status: "failed",
       });
-      const waiting = await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "waiting_approval",
-      );
-      const approvalId = waiting.pending.find((action) => action.approvalId)?.approvalId;
-      if (!approvalId) throw new Error("missing pending approval");
-      await command(endpoint, owner.token, {
-        idempotencyKey: newIdempotencyKey(),
-        command: { kind: "resolve_approval", approvalId, decision: "denied" },
-      });
-      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "failed");
-
-      const snapshot = await publicStatusOf(endpoint, owner.token);
-      expectAuthorRoleInvariant(snapshot.messages);
+      const snapshot = await publicStatusOf(daemon.endpoint, daemon.owner.token);
       expectKindAuthorPairs(snapshot.messages, [
         "request owner/operator",
         "approval mara/coordinator",
@@ -100,20 +80,22 @@ describe("message author and role pairs", () => {
         "failure agentis/system",
       ]);
     } finally {
-      await server.close();
+      await daemon.server.close();
     }
   });
 
   it("pairs handoff messages with their authors through the public status snapshot", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner, store } = await boot();
+    const daemon = await boot();
+    const wait = (match: (state: Snapshot) => boolean) =>
+      waitFor(daemon.store, daemon.endpoint, daemon.owner.token, match);
     try {
-      const source = await command(endpoint, owner.token, {
+      const source = await command(daemon.endpoint, daemon.owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
-      await command(endpoint, owner.token, {
+      await wait((state) => state.runs[0]?.status === "succeeded");
+      await command(daemon.endpoint, daemon.owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
           kind: "propose_handoff",
@@ -122,10 +104,9 @@ describe("message author and role pairs", () => {
           context: "Write a concise specialist draft",
         },
       });
-      await waitFor(store, endpoint, owner.token, (state) => state.runs[1]?.status === "succeeded");
+      await wait((state) => state.runs[1]?.status === "succeeded");
 
-      const snapshot = await publicStatusOf(endpoint, owner.token);
-      expectAuthorRoleInvariant(snapshot.messages);
+      const snapshot = await publicStatusOf(daemon.endpoint, daemon.owner.token);
       expectKindAuthorPairs(snapshot.messages, [
         "request owner/operator",
         "result mara/coordinator",
@@ -135,7 +116,7 @@ describe("message author and role pairs", () => {
         "result ivo/specialist",
       ]);
     } finally {
-      await server.close();
+      await daemon.server.close();
     }
   });
 });

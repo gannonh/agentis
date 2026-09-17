@@ -609,31 +609,33 @@ describe("store", () => {
     );
     const { threadId, taskId, runId } = receipt;
     if (!threadId || !taskId || !runId) throw new Error("missing ids");
+    const base: Parameters<typeof message>[1] = {
+      threadId,
+      taskId,
+      runId,
+      authorKind: "bot",
+      authorName: "mara",
+      authorRole: "coordinator",
+      kind: "progress",
+      body: "dedupe probe",
+      nowMs: 2_000,
+    };
     const db = new DatabaseSync(store.path);
     try {
-      const base = {
-        threadId,
-        taskId,
-        runId,
-        authorKind: "bot",
-        authorName: "mara",
-        authorRole: "coordinator" as const,
-        kind: "progress" as const,
-        body: "dedupe probe",
-        nowMs: 2_000,
-      };
       expect(message(db, { ...base, dedupeKey: "dedupe-probe:once" })).toBe(true);
       expect(message(db, { ...base, dedupeKey: "dedupe-probe:once" })).toBe(false);
-      expect(message(db, { ...base, body: "plain insert one", nowMs: 3_000 })).toBe(true);
-      expect(message(db, { ...base, body: "plain insert two", nowMs: 4_000 })).toBe(true);
+      expect(message(db, { ...base, body: "plain insert", nowMs: 3_000 })).toBe(true);
+      expect(message(db, { ...base, body: "plain insert", nowMs: 4_000 })).toBe(true);
     } finally {
       db.close();
     }
-    const snapshot = await Effect.runPromise(store.snapshot());
-    await Effect.runPromise(store.close());
-    expect(snapshot.messages.filter((item) => item.body === "dedupe probe")).toHaveLength(1);
-    expect(snapshot.messages.filter((item) => item.body === "plain insert one")).toHaveLength(1);
-    expect(snapshot.messages.filter((item) => item.body === "plain insert two")).toHaveLength(1);
+    try {
+      const snapshot = await Effect.runPromise(store.snapshot());
+      expect(snapshot.messages.filter((item) => item.body === "dedupe probe")).toHaveLength(1);
+      expect(snapshot.messages.filter((item) => item.body === "plain insert")).toHaveLength(2);
+    } finally {
+      await Effect.runPromise(store.close());
+    }
   });
 
   it("freezes a distinct workspace root for every Run", async () => {
