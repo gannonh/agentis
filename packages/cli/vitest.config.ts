@@ -4,6 +4,6 @@ export default defineConfig({
   test: {
     include: ["test/**/*.test.{ts,tsx}"],
     fileParallelism: false,
-    setupFiles: ["test/helpers/temp-root-setup.ts"],
+    setupFiles: ["test/helpers/tmpdir-scope.ts"],
   },
 });

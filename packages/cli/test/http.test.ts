@@ -1,5 +1,7 @@
 import { CommandReceipt, WorkspaceSnapshot } from "../src/schema.js";
+import { mkdtempSync } from "node:fs";
 import { createServer } from "node:net";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Effect, Schema } from "effect";
 import { describe, expect, it, vi } from "vitest";
@@ -8,7 +10,6 @@ import { startServer } from "../src/http.js";
 import { browserRuntimeResolver, makeHttpApiHandler } from "../src/http-api.js";
 import { newIdempotencyKey } from "../src/ids.js";
 import { openStore, StoreError, type Store } from "../src/store.js";
-import { tempRoot } from "./helpers/temp-root.js";
 
 const port = () =>
   new Promise<number>((resolve, reject) => {
@@ -25,7 +26,7 @@ const port = () =>
   });
 
 const boot = async (provider: "fake" | "codex" | "claude" = "fake") => {
-  const dataRoot = tempRoot("agentis-http-");
+  const dataRoot = mkdtempSync(join(tmpdir(), "agentis-http-"));
   const endpoint = new URL(`http://127.0.0.1:${await port()}`);
   const server = await Effect.runPromise(
     startServer({
@@ -261,7 +262,7 @@ describe("http", () => {
   );
 
   it("maps store failures to their honest HTTP statuses", async () => {
-    const dataRoot = tempRoot("agentis-http-store-");
+    const dataRoot = mkdtempSync(join(tmpdir(), "agentis-http-store-"));
     const endpoint = new URL("http://127.0.0.1:0");
     const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
     const store = await Effect.runPromise(openStore(dataRoot));
@@ -324,7 +325,7 @@ describe("http", () => {
   });
 
   it("reports post-commit engine failures as internal errors, not conflicts", async () => {
-    const dataRoot = tempRoot("agentis-http-post-commit-");
+    const dataRoot = mkdtempSync(join(tmpdir(), "agentis-http-post-commit-"));
     const endpoint = new URL("http://127.0.0.1:0");
     const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
     const store = await Effect.runPromise(openStore(dataRoot));

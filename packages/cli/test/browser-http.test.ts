@@ -2,7 +2,8 @@ import { DatabaseSync } from "node:sqlite";
 import { createHash } from "node:crypto";
 import { request as httpRequest } from "node:http";
 import { createServer } from "node:net";
-import { readFileSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect, Schema } from "effect";
@@ -12,7 +13,6 @@ import { runCli } from "../src/cli.js";
 import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
 import { WorkspaceSnapshot } from "../src/schema.js";
-import { tempRoot } from "./helpers/temp-root.js";
 
 const codexStub = fileURLToPath(new URL("./codex-stub.mjs", import.meta.url));
 
@@ -36,7 +36,7 @@ const boot = async (
     | "docker-desktop-run-container"
     | "docker-fixture-container" = "unverified-host-scratch",
 ) => {
-  const dataRoot = tempRoot("agentis-browser-http-");
+  const dataRoot = mkdtempSync(join(tmpdir(), "agentis-browser-http-"));
   const endpoint = new URL(`http://127.0.0.1:${await port()}`);
   const server = await Effect.runPromise(
     startServer({
@@ -288,7 +288,10 @@ describe("browser HTTP boundary", () => {
 
   it("exposes and enforces configured provider connection readiness", async () => {
     const originalStub = process.env.AGENTIS_CODEX_STUB;
-    const unavailableStub = join(tempRoot("agentis-browser-readiness-"), "missing-codex-stub.mjs");
+    const unavailableStub = join(
+      mkdtempSync(join(tmpdir(), "agentis-browser-readiness-")),
+      "missing-codex-stub.mjs",
+    );
     process.env.AGENTIS_CODEX_STUB = unavailableStub;
     const { endpoint, owner, server } = await boot("codex");
     try {
@@ -431,7 +434,7 @@ describe("browser HTTP boundary", () => {
         ).status,
       ).toBe(409);
 
-      const outsideRoot = tempRoot("agentis-artifact-outside-");
+      const outsideRoot = mkdtempSync(join(tmpdir(), "agentis-artifact-outside-"));
       const outside = join(outsideRoot, "matching.md");
       writeFileSync(outside, original);
       unlinkSync(artifact.path);

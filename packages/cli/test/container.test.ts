@@ -2,12 +2,14 @@ import {
   chmodSync,
   copyFileSync,
   mkdirSync,
+  mkdtempSync,
   readFileSync,
   readdirSync,
   statSync,
   writeFileSync,
 } from "node:fs";
 import { createServer } from "node:net";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
@@ -23,7 +25,6 @@ import { runCli } from "../src/cli.js";
 import { startServer } from "../src/http.js";
 import { newIdempotencyKey } from "../src/ids.js";
 import { openStore } from "../src/store.js";
-import { tempRoot } from "./helpers/temp-root.js";
 
 const originalPath = process.env.PATH;
 const stub = fileURLToPath(new URL("./codex-stub.mjs", import.meta.url));
@@ -59,7 +60,7 @@ const waitForFile = async (path: string) => {
 };
 
 const fakeDocker = () => {
-  const root = tempRoot("agentis-container-test-");
+  const root = mkdtempSync(join(tmpdir(), "agentis-container-test-"));
   const bin = join(root, "bin");
   const docker = join(bin, "docker");
   const codex = join(bin, "codex");

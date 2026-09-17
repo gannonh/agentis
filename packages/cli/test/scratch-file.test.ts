@@ -1,12 +1,19 @@
-import { lstatSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  lstatSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { writeScratchFile } from "../src/scratch-file.js";
-import { tempRoot } from "./helpers/temp-root.js";
 
 describe("writeScratchFile", () => {
   it("replaces a provider-planted symlink instead of writing through it", () => {
-    const root = tempRoot("agentis-scratch-");
+    const root = mkdtempSync(join(tmpdir(), "agentis-scratch-"));
     const target = join(root, "host-secret");
     writeFileSync(target, "untouched");
     const path = join(root, "hello.md");
@@ -19,7 +26,7 @@ describe("writeScratchFile", () => {
   });
 
   it("overwrites an existing regular file and refuses a directory", () => {
-    const root = tempRoot("agentis-scratch-");
+    const root = mkdtempSync(join(tmpdir(), "agentis-scratch-"));
     const path = join(root, "hello.md");
     writeFileSync(path, "stale");
     writeScratchFile(path, "fresh");
