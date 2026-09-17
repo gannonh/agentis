@@ -282,7 +282,8 @@ const messageRoleOfRun = (db: DatabaseSync, runId: RunId): MessageAuthorRole => 
   const current = row<{ frozen_json: string }>(db, "SELECT frozen_json FROM runs WHERE id=?", [
     runId,
   ]);
-  if (!current) throw new StoreError(`run ${runId} has no frozen config for a message role`);
+  if (!current)
+    throw new StoreError("internal", `run ${runId} has no frozen config for a message role`);
   return Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(current.frozen_json)).role;
 };
 
