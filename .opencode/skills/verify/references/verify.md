@@ -2,7 +2,7 @@
 
 Use this workflow to validate merged implementation against the spec issue's acceptance criteria and publish the evidence on the Linear issue.
 
-Verify starts after Done. Read `references/conventions.md` before starting.
+Verify starts after Done. Read `../conventions.md` before starting.
 
 ## Autonomy contract
 
@@ -41,7 +41,7 @@ Collect:
 - The Build matrix comment, if present.
 - The merged PR and merge commit.
 
-Run the phase-entry hygiene check from `references/conventions.md` and report findings. If acceptance criteria are missing or ambiguous, stop and return to Plan via a Backlog follow-up. Leave the original issue Done.
+Run the phase-entry hygiene check from `../conventions.md` and report findings. If acceptance criteria are missing or ambiguous, stop and return to Plan via a Backlog follow-up. Leave the original issue Done.
 
 If the issue is not Done, stop. Verify does not run against In Progress, Agent Review, Human Review, or Merging.
 

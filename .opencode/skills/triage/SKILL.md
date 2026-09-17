@@ -9,7 +9,7 @@ Groom the Linear backlog so the roadmap stays readable and every spec issue is i
 
 ## Read the conventions first
 
-Read `references/conventions.md` completely before any write.
+Read `../conventions.md` completely before any write.
 
 ## When to use
 
