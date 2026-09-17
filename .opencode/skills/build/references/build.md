@@ -2,7 +2,7 @@
 
 Use this workflow to execute an approved Linear spec issue through small implementation tasks, review gates, pre-merge acceptance, and a draft pull request.
 
-Build starts from Todo after an explicit start. Read `references/conventions.md` before starting.
+Build starts from Todo after an explicit start. Read `../conventions.md` before starting.
 
 ## Required inputs
 
@@ -27,7 +27,7 @@ Implementation tasks must use the bundled TDD workflow before writing production
 
 Before editing files:
 
-1. Run the preflight from `references/conventions.md`.
+1. Run the preflight from `../conventions.md`.
 2. Read the issue completely:
 
 ```
@@ -53,7 +53,7 @@ If several are ready, ask which to build or confirm the order. State the choice 
 
 6. Confirm the issue contains `## Acceptance criteria` with concrete checkbox criteria. If missing or ambiguous, stop and return to Plan.
 7. Confirm `## Demonstration` describes behavior that can be exercised after this issue alone.
-8. Run the phase-entry hygiene check from `references/conventions.md` and report findings.
+8. Run the phase-entry hygiene check from `../conventions.md` and report findings.
 9. Inspect repo instructions such as `AGENTS.md`, `CLAUDE.md`, and README command sections.
 10. Check worktree state with `git status --short --branch`.
 11. Confirm `Blocking open questions` is `None`, or confirm the user explicitly approved proceeding with listed questions.
@@ -68,7 +68,7 @@ Use `git switch "<gitBranchName>"` when the branch already exists. Do not start 
 13. Capture a base SHA with `git rev-parse HEAD`.
 14. Identify verification commands from the issue's `## Build handoff` and `## Verification` sections plus repo scripts.
 15. Confirm required tools are available: todo tracking and subagent dispatch if using the subagent path.
-16. On an explicit start from Todo, move the issue to In Progress using the state-write protocol in `references/conventions.md`:
+16. On an explicit start from Todo, move the issue to In Progress using the state-write protocol in `../conventions.md`:
 
 ```
 get_issue({ "id": "<id>", "includeRelations": true })

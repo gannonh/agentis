@@ -3,6 +3,7 @@ import {
   MessageImportance,
   MessageKind,
   type ArtifactId,
+  type MessageAuthorRole,
   type RunId,
   type RunStatus,
   type TransitionReason,
@@ -41,6 +42,7 @@ export const isFinishedRunStatus = (status: string): boolean =>
 export type FinishRunMessage = {
   readonly authorKind: "human" | "bot" | "system";
   readonly authorName: "owner" | "mara" | "ivo" | "agentis";
+  readonly authorRole: MessageAuthorRole;
   readonly kind: typeof MessageKind.Type;
   readonly importance: typeof MessageImportance.Type;
   readonly dedupeKey: string;

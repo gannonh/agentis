@@ -271,6 +271,7 @@ export const MessageKind = Schema.Literal(
   "system",
 );
 export const MessageImportance = Schema.Literal("routine", "decision", "blocking", "result");
+export const MessageAuthorRole = Schema.Literal("operator", "coordinator", "specialist", "system");
 export const MessageRow = Schema.Struct({
   id: MessageId,
   threadId: ThreadId,
@@ -278,13 +279,14 @@ export const MessageRow = Schema.Struct({
   runId: Schema.NullOr(RunId),
   authorKind: Schema.Literal("human", "bot", "system"),
   authorName: Schema.Literal("owner", "mara", "ivo", "agentis"),
-  authorRole: Schema.Literal("operator", "coordinator", "specialist", "system"),
+  authorRole: MessageAuthorRole,
   kind: MessageKind,
   importance: MessageImportance,
   body: Schema.String,
   createdAt: Schema.Number,
 });
 export type MessageRow = typeof MessageRow.Type;
+export type MessageAuthorRole = typeof MessageAuthorRole.Type;
 
 export const ThreadRow = Schema.Struct({
   id: ThreadId,

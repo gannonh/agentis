@@ -58,6 +58,7 @@ const note = (
     runId: handoff.recipientRunId,
     authorKind: "bot",
     authorName: author,
+    authorRole: author === "mara" ? "coordinator" : "specialist",
     kind: "handoff",
     importance: "decision",
     dedupeKey: `handoff:${handoff.id}:${state}`,
@@ -96,6 +97,7 @@ export const rejectHandoff = (
     message: {
       authorKind: "bot",
       authorName: "ivo",
+      authorRole: "specialist",
       kind: "handoff",
       importance: "decision",
       dedupeKey: `handoff:${handoff.id}:${state}`,
