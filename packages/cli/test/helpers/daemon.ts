@@ -60,17 +60,12 @@ export const command = async (endpoint: URL, token: string, body: unknown) => {
   return { status: response.status, json: (await response.json()) as Record<string, unknown> };
 };
 
-export const statusOf = async (
-  store: Store,
-  endpoint: URL,
-  token: string,
-  includeEvents = false,
-) => {
+export const statusOf = async (store: Store, endpoint: URL, token: string) => {
   const response = await fetch(new URL("/v1/status", endpoint), {
     headers: { authorization: `Bearer ${token}` },
   });
   Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
-  return Effect.runPromise(store.snapshot(includeEvents));
+  return Effect.runPromise(store.snapshot());
 };
 
 export const publicStatusOf = async (endpoint: URL, token: string) => {
@@ -85,16 +80,15 @@ export const waitFor = async (
   endpoint: URL,
   token: string,
   match: (snap: Snapshot) => boolean,
-  includeEvents = false,
 ) => {
   const deadline = Date.now() + 4000;
-  let snap = await statusOf(store, endpoint, token, includeEvents);
+  let snap = await statusOf(store, endpoint, token);
   while (!match(snap)) {
     if (Date.now() > deadline) {
       throw new Error(`codex stub timed out: ${JSON.stringify(snap.runs)}`);
     }
     await new Promise((resolve) => setTimeout(resolve, 25));
-    snap = await statusOf(store, endpoint, token, includeEvents);
+    snap = await statusOf(store, endpoint, token);
   }
   return snap;
 };

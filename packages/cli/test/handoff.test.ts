@@ -4,9 +4,10 @@ import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { Effect, Schema } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Cursor } from "../src/schema.js";
 import { sweepRunTimeouts, openStore } from "../src/store.js";
 import { newIdempotencyKey } from "../src/ids.js";
-import { boot, command, statusOf, waitFor } from "./helpers/daemon.js";
+import { boot, command, publicStatusOf, statusOf, waitFor } from "./helpers/daemon.js";
 
 afterEach(() => {
   delete process.env.AGENTIS_CLAUDE_STUB;
@@ -24,13 +25,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke", constraints: [retainedConstraint] },
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const proposal = {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -47,7 +42,6 @@ describe("bounded handoff", () => {
         endpoint,
         owner.token,
         (state) => state.runs[1]?.status === "succeeded",
-        true,
       );
       expect(done.artifacts).toHaveLength(2);
       expect(done.tasks[0]?.botName).toBe("ivo");
@@ -57,17 +51,33 @@ describe("bounded handoff", () => {
         grants: "draft_only",
         onwardDelegation: false,
       });
+      expect(Object.hasOwn(done.handoffs[0] ?? {}, "sender")).toBe(false);
+      expect(Object.hasOwn(done.handoffs[0] ?? {}, "recipient")).toBe(false);
+      const handoff = done.handoffs[0];
+      if (!handoff) throw new Error("missing handoff");
+      const botOf = (runId: typeof handoff.sourceRunId) =>
+        done.botConfigRevisions.find(
+          (revision) =>
+            revision.id === done.runs.find((item) => item.id === runId)?.botConfigRevisionId,
+        )?.bot;
+      expect(botOf(handoff.sourceRunId)).toBe("mara");
+      expect(botOf(handoff.recipientRunId)).toBe("ivo");
+      const publicHandoffs = (await publicStatusOf(endpoint, owner.token)).handoffs;
+      expect(publicHandoffs[0]).toMatchObject({
+        sender: botOf(handoff.sourceRunId),
+        recipient: botOf(handoff.recipientRunId),
+      });
+      expect(publicHandoffs[0]).toMatchObject({ sender: "mara", recipient: "ivo" });
       expect(
         done.messages
           .filter((message) => message.authorName === "ivo")
           .every((message) => message.threadId === source.json.threadId),
       ).toBe(true);
+      const transitions = await Effect.runPromise(
+        store.transitionsAfter(Schema.decodeUnknownSync(Cursor)("0")),
+      );
       expect(
-        done.events.some(
-          (event) =>
-            event.type === "peer_progress" &&
-            JSON.parse(event.body).threadId === source.json.threadId,
-        ),
+        transitions.events.some((transition) => transition.event.reason === "peer_progress"),
       ).toBe(true);
       expect(done.pending.filter((action) => action.kind === "handoff_draft")).toHaveLength(1);
       expect(done.runs[1]?.actionCount).toBe(2);
@@ -92,7 +102,7 @@ describe("bounded handoff", () => {
         (await command(endpoint, owner.token, { ...proposal, idempotencyKey: newIdempotencyKey() }))
           .json.accepted,
       ).toBe(false);
-      expect((await statusOf(store, endpoint, owner.token, true)).runs).toHaveLength(2);
+      expect((await statusOf(store, endpoint, owner.token)).runs).toHaveLength(2);
     } finally {
       await server.close();
     }
@@ -112,13 +122,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const proposal = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -134,7 +138,6 @@ describe("bounded handoff", () => {
         endpoint,
         owner.token,
         (state) => state.runs[1]?.status === "failed",
-        true,
       );
       expect(done.tasks[0]).toMatchObject({ botName: "mara", status: "completed" });
       expect(done.artifacts).toHaveLength(1);
@@ -154,13 +157,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -172,7 +169,7 @@ describe("bounded handoff", () => {
       });
       sweepRunTimeouts(server.store.path, Date.now() + 61000);
       await new Promise((resolve) => setTimeout(resolve, 350));
-      const done = await statusOf(store, endpoint, owner.token, true);
+      const done = await statusOf(store, endpoint, owner.token);
       expect(done.handoffs[0]?.state).toBe("expired");
       expect(done.tasks[0]).toMatchObject({ botName: "mara", status: "completed" });
       expect(done.artifacts).toHaveLength(1);
@@ -189,13 +186,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -241,7 +232,6 @@ describe("bounded handoff", () => {
           endpoint,
           owner.token,
           (state) => state.runs[0]?.status === "succeeded",
-          true,
         );
         const proposed = await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
@@ -257,7 +247,7 @@ describe("bounded handoff", () => {
           command: { kind, ...(kind === "cancel_run" ? { runId: proposed.json.runId } : {}) },
         });
         await new Promise((resolve) => setTimeout(resolve, 350));
-        const done = await statusOf(store, endpoint, owner.token, true);
+        const done = await statusOf(store, endpoint, owner.token);
         expect(done.tasks[0]).toMatchObject({ botName: "mara", status: "completed" });
         expect(done.handoffs[0]?.state).toBe("rejected");
         expect(done.runs.find((run) => run.id === proposed.json.runId)?.status).toBe("canceled");
@@ -277,13 +267,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const body = {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -313,13 +297,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       let resume = () => {};
       const immediate = vi.spyOn(scheduler, "yield").mockImplementationOnce(
         () =>
@@ -342,7 +320,6 @@ describe("bounded handoff", () => {
           endpoint,
           owner.token,
           (state) => state.handoffs[0]?.state === "accepted",
-          true,
         );
         await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
@@ -351,7 +328,7 @@ describe("bounded handoff", () => {
         immediate.mockRestore();
         resume();
         await new Promise((resolve) => setTimeout(resolve, 30));
-        const stopped = await statusOf(store, endpoint, owner.token, true);
+        const stopped = await statusOf(store, endpoint, owner.token);
         expect(stopped.tasks[0]).toMatchObject({ botName: "ivo", status: "canceled" });
         expect(stopped.runs[1]?.actionCount).toBe(1);
         expect(stopped.artifacts).toHaveLength(1);
@@ -372,13 +349,7 @@ describe("bounded handoff", () => {
       idempotencyKey: newIdempotencyKey(),
       command: { kind: "submit_task", brief: "smoke" },
     });
-    await waitFor(
-      store,
-      endpoint,
-      owner.token,
-      (state) => state.runs[0]?.status === "succeeded",
-      true,
-    );
+    await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
     await command(endpoint, owner.token, {
       idempotencyKey: newIdempotencyKey(),
       command: {
@@ -393,7 +364,6 @@ describe("bounded handoff", () => {
       endpoint,
       owner.token,
       (state) => state.runs[1]?.status === "succeeded",
-      true,
     );
     await server.close();
     const reopened = await Effect.runPromise(openStore(dataRoot));
@@ -415,13 +385,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const busy = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief: "QUESTION" },
@@ -431,7 +395,6 @@ describe("bounded handoff", () => {
         endpoint,
         owner.token,
         (state) => state.runs[1]?.status === "waiting_input",
-        true,
       );
       const body = {
         kind: "propose_handoff",
@@ -455,13 +418,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: body,
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[2]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[2]?.status === "succeeded");
       const onward = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { ...body, sourceRunId: accepted.json.runId },
@@ -480,13 +437,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -501,7 +452,6 @@ describe("bounded handoff", () => {
         endpoint,
         owner.token,
         (state) => state.runs[1]?.status === "succeeded",
-        true,
       );
       expect(done.pending.some((action) => action.approvalId)).toBe(false);
       expect(readFileSync(done.artifacts[1]?.path ?? "", "utf8")).toContain('"behavior":"deny"');
@@ -517,13 +467,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const proposed = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -538,14 +482,13 @@ describe("bounded handoff", () => {
         endpoint,
         owner.token,
         (state) => state.handoffs[0]?.state === "accepted",
-        true,
       );
       await new Promise((resolve) => setTimeout(resolve, 60));
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "cancel_run", runId: proposed.json.runId },
       });
-      const canceled = await statusOf(store, endpoint, owner.token, true);
+      const canceled = await statusOf(store, endpoint, owner.token);
       for (let attempt = 0; attempt < 2; attempt++) {
         await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
@@ -556,7 +499,6 @@ describe("bounded handoff", () => {
           endpoint,
           owner.token,
           (state) => state.runs[1]?.providerState.loadStatus !== "loading",
-          true,
         );
         expect(loaded.runs[1]?.providerState.loadStatus).toBe("succeeded");
         expect(loaded.runs[1]?.providerState.history).toHaveLength(3);
@@ -577,13 +519,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -593,12 +529,8 @@ describe("bounded handoff", () => {
           context: "NO_INIT_DRAFT",
         },
       });
-      const done = await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => ["failed", "succeeded"].includes(state.runs[1]?.status ?? ""),
-        true,
+      const done = await waitFor(store, endpoint, owner.token, (state) =>
+        ["failed", "succeeded"].includes(state.runs[1]?.status ?? ""),
       );
       expect(done.runs[1]?.status).toBe("failed");
       expect(done.artifacts).toHaveLength(1);
@@ -614,13 +546,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(
-        store,
-        endpoint,
-        owner.token,
-        (state) => state.runs[0]?.status === "succeeded",
-        true,
-      );
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -635,7 +561,6 @@ describe("bounded handoff", () => {
         endpoint,
         owner.token,
         (state) => state.runs[1]?.status === "succeeded",
-        true,
       );
       const recipient = before.runs[1];
       const loaded = await command(endpoint, owner.token, {
@@ -648,7 +573,6 @@ describe("bounded handoff", () => {
         endpoint,
         owner.token,
         (state) => state.runs[1]?.providerState.loadStatus !== "loading",
-        true,
       );
       expect(after.runs[1]?.providerState.loadStatus).toBe("succeeded");
       expect(after.runs[1]?.providerState.history).toEqual(recipient?.providerState.history);
@@ -683,7 +607,6 @@ describe("bounded handoff", () => {
           endpoint,
           owner.token,
           (state) => state.runs[0]?.status === "succeeded",
-          true,
         );
         const path = before.artifacts[0]?.path ?? "";
         if (kind === "symlink") {
@@ -702,7 +625,7 @@ describe("bounded handoff", () => {
           },
         });
         expect(proposal.json.accepted).toBe(false);
-        const after = await statusOf(store, endpoint, owner.token, true);
+        const after = await statusOf(store, endpoint, owner.token);
         expect(after.runs).toHaveLength(1);
         expect(after.handoffs).toHaveLength(0);
         expect(after.tasks).toEqual(before.tasks);

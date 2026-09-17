@@ -3,7 +3,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, isAbsolute, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Effect, Either, Schema } from "effect";
-import { RequestHeaders } from "./api.js";
+import { RequestHeaders, apiErrorStatus } from "./api.js";
 import { loadOrCreateOwner } from "./auth.js";
 import {
   authorizeRead,
@@ -34,24 +34,6 @@ export type RunningServer = {
 const MAX_JSON_BODY_BYTES = 2 * 1024 * 1024;
 
 class RequestBodyTooLargeError extends Error {}
-
-const apiErrorStatus = (code: string) => {
-  switch (code) {
-    case "unauthorized":
-      return 401;
-    case "forbidden":
-      return 403;
-    case "not_found":
-      return 404;
-    case "cursor_expired":
-      return 410;
-    case "conflict":
-    case "resync_required":
-      return 409;
-    default:
-      return 400;
-  }
-};
 
 const json = (response: ServerResponse, status: number, value: unknown) => {
   if (response.headersSent || response.writableEnded) return;

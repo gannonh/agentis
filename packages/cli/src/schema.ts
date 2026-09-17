@@ -70,7 +70,6 @@ export const ActionState = Schema.Literal(
   "expired",
   "canceled",
   "claimed",
-  "confirmed",
 );
 export type ActionState = typeof ActionState.Type;
 
@@ -167,8 +166,6 @@ export const HandoffRow = Schema.Struct({
   threadId: ThreadId,
   sourceRunId: RunId,
   recipientRunId: RunId,
-  sender: Schema.Literal("mara"),
-  recipient: Schema.Literal("ivo"),
   context: Schema.String,
   state: Schema.Literal("proposed", "accepted", "rejected", "expired"),
   expiresAt: Schema.Number,
@@ -376,21 +373,25 @@ export const PublicArtifact = Schema.Struct({
   contentUrl: Schema.String,
 });
 export type PublicArtifact = typeof PublicArtifact.Type;
-export const PublicHandoff = HandoffRow.pipe(
-  Schema.pick(
-    "id",
-    "taskId",
-    "threadId",
-    "sourceRunId",
-    "recipientRunId",
-    "sender",
-    "recipient",
-    "context",
-    "state",
-    "expiresAt",
-    "grants",
-    "onwardDelegation",
+export const PublicHandoff = Schema.extend(
+  HandoffRow.pipe(
+    Schema.pick(
+      "id",
+      "taskId",
+      "threadId",
+      "sourceRunId",
+      "recipientRunId",
+      "context",
+      "state",
+      "expiresAt",
+      "grants",
+      "onwardDelegation",
+    ),
   ),
+  Schema.Struct({
+    sender: Schema.Literal("mara", "ivo"),
+    recipient: Schema.Literal("mara", "ivo"),
+  }),
 );
 export type PublicHandoff = typeof PublicHandoff.Type;
 
@@ -453,7 +454,6 @@ export const SetupAcknowledgement = Schema.Struct({
   provider: ProviderKind,
   sources: Schema.Array(SourceKind),
 });
-export const ArtifactPath = Schema.Struct({ id: ArtifactId });
 export const EventsQuery = Schema.Struct({ cursor: Cursor });
 const apiError = <Code extends string>(code: Code) =>
   Schema.Struct({ code: Schema.Literal(code), message: Schema.String });

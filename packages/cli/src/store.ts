@@ -9,6 +9,7 @@ import {
 } from "./handoff-store.js";
 import { row, rows, run, withTxn, emit, message } from "./store-db.js";
 import { ProviderState } from "./provider-contract.js";
+import { frozenConfig } from "./provider-profile.js";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, rmSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -77,10 +78,6 @@ import {
 } from "./schema.js";
 import {
   APPROVAL_TTL_MS,
-  CLAUDE_CLI_PIN,
-  CODEX_AUTH_MODE,
-  CODEX_CLI_PIN,
-  CODEX_TRANSPORT,
   EVENT_REPLAY_LIMIT,
   MAX_ACTIONS_PER_RUN,
   MAX_ACTIONS_PER_TASK,
@@ -97,16 +94,29 @@ export class UnsupportedSchemaError extends Error {
   }
 }
 
+export type StoreErrorCode =
+  | "forbidden"
+  | "conflict"
+  | "internal"
+  | "cursor_expired"
+  | "resync_required";
+
 export class StoreError extends Error {
   readonly _tag = "StoreError";
+  constructor(
+    readonly code: StoreErrorCode,
+    message: string,
+  ) {
+    super(message);
+  }
 }
 
 export class ReplayCursorError extends StoreError {
   constructor(
-    readonly code: "cursor_expired" | "resync_required",
+    override readonly code: "cursor_expired" | "resync_required",
     message: string,
   ) {
-    super(message);
+    super(code, message);
   }
 }
 
@@ -176,7 +186,6 @@ export type PendingActionRow = {
   readonly kind: string;
   readonly state: typeof ActionState.Type;
   readonly payload: string;
-  readonly detail: string;
   readonly approvalId: ApprovalId | null;
 };
 
@@ -254,7 +263,6 @@ export type Snapshot = {
   readonly pending: readonly PendingActionRow[];
   readonly artifacts: readonly ArtifactRow[];
   readonly messages: readonly MessageRow[];
-  readonly events: readonly EventRow[];
   readonly evidence: readonly EvidenceRow[];
   readonly botConfigRevisions: readonly BotConfigRevisionRow[];
 };
@@ -265,21 +273,14 @@ export type ThreadRow = {
   readonly createdAt: number;
 };
 
-export type EventRow = {
-  readonly seq: number;
-  readonly id: string;
-  readonly type: string;
-  readonly body: string;
-  readonly createdAt: number;
-};
-
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
 const messageRoleOfRun = (db: DatabaseSync, runId: RunId): MessageAuthorRole => {
   const current = row<{ frozen_json: string }>(db, "SELECT frozen_json FROM runs WHERE id=?", [
     runId,
   ]);
-  if (!current) throw new StoreError(`run ${runId} has no frozen config for a message role`);
+  if (!current)
+    throw new StoreError("internal", `run ${runId} has no frozen config for a message role`);
   return Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(current.frozen_json)).role;
 };
 
@@ -446,7 +447,7 @@ CREATE TABLE IF NOT EXISTS stop_all (
 export type Store = {
   readonly path: string;
   readonly applyCommand: (input: ApplyInput) => Effect.Effect<CommandReceipt, StoreError>;
-  readonly snapshot: (includeEvents?: boolean) => Effect.Effect<Snapshot, StoreError>;
+  readonly snapshot: () => Effect.Effect<Snapshot, StoreError>;
   readonly issueBrowserBootstrap: (input: {
     readonly codeHash: string;
     readonly ownerSession: string;
@@ -504,8 +505,6 @@ export type BrowserSessionRecord = {
 };
 
 export type TransitionWindow = {
-  readonly cursor: CursorType;
-  readonly replayFloor: CursorType;
   readonly events: readonly TransitionType[];
 };
 
@@ -529,7 +528,7 @@ const assertSchemaBeforeOpen = (db: DatabaseSync, path: string) => {
 
 const ownerOnly = (principal: Principal, commandKind: string) => {
   if (principal.kind !== "owner") {
-    throw new StoreError(`bot cannot ${commandKind}`);
+    throw new StoreError("forbidden", `bot cannot ${commandKind}`);
   }
 };
 
@@ -571,7 +570,7 @@ export const openStore = (
         );
         if (prior) {
           if (prior.payload_digest !== payloadDigest) {
-            throw new StoreError("idempotency key reused with a different payload");
+            throw new StoreError("conflict", "idempotency key reused with a different payload");
           }
           return receiptOf({
             ...(JSON.parse(prior.result_json) as CommandReceipt),
@@ -610,52 +609,59 @@ export const openStore = (
         applyCommand: (input) =>
           Effect.try({
             try: () => applyCommand(input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
-        snapshot: (includeEvents = false) =>
+        snapshot: () =>
           Effect.try({
-            try: () => readSnapshot(db, includeEvents),
-            catch: (error) => new StoreError(String(error)),
+            try: () => readSnapshot(db),
+            catch: (error) => new StoreError("internal", String(error)),
           }),
         issueBrowserBootstrap: (input) =>
           Effect.try({
             try: () => issueBrowserBootstrap(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         exchangeBrowserBootstrap: (input) =>
           Effect.try({
             try: () => exchangeBrowserBootstrap(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         authenticateBrowser: (input) =>
           Effect.try({
             try: () => authenticateBrowser(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         acknowledgeBrowserSetup: (input) =>
           Effect.try({
             try: () => acknowledgeBrowserSetup(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         workspaceSnapshot: (input) =>
           Effect.try({
             try: () => workspaceSnapshot(db, input),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         transitionsAfter: (cursor) =>
           Effect.try({
             try: () => transitionsAfter(db, cursor),
-            catch: (error) => (error instanceof StoreError ? error : new StoreError(String(error))),
+            catch: (error) =>
+              error instanceof StoreError ? error : new StoreError("internal", String(error)),
           }),
         artifact: (id) =>
           Effect.try({
             try: () => readArtifact(db, id),
-            catch: (error) => new StoreError(String(error)),
+            catch: (error) => new StoreError("internal", String(error)),
           }),
         interruptActiveRuns: (nowMs) =>
           Effect.try({
             try: () => interruptActive(db, nowMs),
-            catch: (error) => new StoreError(String(error)),
+            catch: (error) => new StoreError("internal", String(error)),
           }),
         close: () =>
           Effect.sync(() => {
@@ -664,7 +670,7 @@ export const openStore = (
       };
     },
     catch: (error) =>
-      error instanceof UnsupportedSchemaError ? error : new StoreError(String(error)),
+      error instanceof UnsupportedSchemaError ? error : new StoreError("internal", String(error)),
   });
 
 const issueBrowserBootstrap = (
@@ -851,7 +857,7 @@ const publicPendingPrompt = (status: string, value: string | null) => {
             : typeof question.question === "string"
               ? question.question
               : null;
-        if (!key) throw new StoreError("provider question is missing its response key");
+        if (!key) throw new StoreError("internal", "provider question is missing its response key");
         const prompt =
           typeof question.question === "string"
             ? question.question
@@ -908,8 +914,27 @@ const workspaceSnapshot = (
             expiresAt: Number.MAX_SAFE_INTEGER,
           }
         : null;
-    if (!session) throw new StoreError("authentication required");
-    const snapshot = readSnapshotUnlocked(db, false);
+    if (!session) throw new StoreError("forbidden", "authentication required");
+    const snapshot = readSnapshotUnlocked(db);
+    const botByRevisionId = new Map(
+      snapshot.botConfigRevisions.map((revision) => [revision.id, revision.bot]),
+    );
+    const botByRunId = new Map(
+      snapshot.runs.flatMap((runItem) => {
+        const bot = botByRevisionId.get(runItem.botConfigRevisionId);
+        return bot === undefined ? [] : [[runItem.id, bot] as const];
+      }),
+    );
+    const botForRun = (runId: RunId) => {
+      const bot = botByRunId.get(runId);
+      if (bot === undefined) {
+        throw new StoreError(
+          "internal",
+          `handoff references run ${runId} without a stored bot config revision`,
+        );
+      }
+      return bot;
+    };
     const providerMatches = session.provider === input.runtime.provider;
     const result = Schema.decodeUnknownSync(WorkspaceSnapshot)({
       schemaId: snapshot.schemaId,
@@ -952,8 +977,8 @@ const workspaceSnapshot = (
         threadId: handoff.threadId,
         sourceRunId: handoff.sourceRunId,
         recipientRunId: handoff.recipientRunId,
-        sender: handoff.sender,
-        recipient: handoff.recipient,
+        sender: botForRun(handoff.sourceRunId),
+        recipient: botForRun(handoff.recipientRunId),
         context: publicHandoffContext(handoff.context),
         state: handoff.state,
         expiresAt: handoff.expiresAt,
@@ -1079,8 +1104,6 @@ const transitionsAfter = (db: DatabaseSync, cursor: CursorType): TransitionWindo
       [requested, highWater],
     );
     const result = {
-      cursor: Schema.decodeUnknownSync(Cursor)(String(highWater)),
-      replayFloor: Schema.decodeUnknownSync(Cursor)(String(replayFloor)),
       events: retained.map((item) =>
         Schema.decodeUnknownSync(Transition)({
           cursor: String(item.seq),
@@ -1219,7 +1242,7 @@ const dispatch = (db: DatabaseSync, input: ApplyInput, stagedPaths: string[]): C
       return stopAll(db, commandId, input);
     default: {
       const _exhaustive: never = command;
-      throw new StoreError(`unhandled command ${JSON.stringify(_exhaustive)}`);
+      throw new StoreError("internal", `unhandled command ${JSON.stringify(_exhaustive)}`);
     }
   }
 };
@@ -1348,37 +1371,13 @@ const submitTask = (
     citations: [],
   };
   const outcome = command.outcome ?? command.brief;
-  const frozen: FrozenConfig = {
+  const frozen = frozenConfig({
     bot,
-    role: bot === "mara" ? "coordinator" : "specialist",
-    mode: command.mode ?? "agent",
     provider,
-    transport:
-      provider === "codex"
-        ? CODEX_TRANSPORT
-        : provider === "claude"
-          ? "claude-sdk-jsonl-stdio"
-          : "fake-in-process",
-    executableVersion:
-      provider === "codex" ? CODEX_CLI_PIN : provider === "claude" ? CLAUDE_CLI_PIN : "fake-1",
-    model:
-      provider === "codex" ? "gpt-5.6-sol" : provider === "claude" ? "claude-sonnet-5" : "fake",
-    ...(provider !== "fake" ? { effort: "medium" } : {}),
-    skills: bot === "mara" ? ["coordinate", "business-brief"] : ["specialist-draft"],
-    grants: ["read:provided-source", "write:task-artifact"],
-    publicConfig: { sourceMode: "materialized-read-only" },
     executionBoundary: input.executionBoundary,
-    executionLocation:
-      input.executionBoundary === "docker-fixture-container"
-        ? "isolated fixture container"
-        : input.executionBoundary === "docker-desktop-run-container"
-          ? "local provider container"
-          : "local daemon scratch",
-    authMode: provider === "codex" ? CODEX_AUTH_MODE : provider === "claude" ? "api-key" : "none",
     workspaceId,
-    deadlineMs: RUN_DEADLINE_MS,
-    actionBudget: MAX_ACTIONS_PER_RUN,
-  };
+    mode: command.mode,
+  });
   mkdirSync(join(workspaceId, "sources"), { recursive: true, mode: 0o700 });
   const sourcePath = join(workspaceId, "sources", `${evidenceId}.txt`);
   writeScratchFile(sourcePath, source.text);
@@ -1442,7 +1441,7 @@ const submitTask = (
       outcome,
       input.principal.sessionId,
       bot,
-      bot === "mara" ? "coordinator" : "specialist",
+      frozen.role,
       `task:${taskId}`,
       JSON.stringify(command.constraints ?? []),
       JSON.stringify([evidenceId]),
@@ -1579,7 +1578,7 @@ const resolveApproval = (
   ]);
   const changed = db.prepare("SELECT changes() AS n").get() as { n: number };
   if (changed.n !== 1) {
-    throw new StoreError("approval compare-and-set lost");
+    throw new StoreError("conflict", "approval compare-and-set lost");
   }
   run(db, "UPDATE pending_actions SET state = ? WHERE approval_id = ? AND state = 'pending'", [
     next,
@@ -1831,10 +1830,10 @@ const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): Com
   });
 };
 
-const readSnapshot = (db: DatabaseSync, includeEvents = false): Snapshot => {
+const readSnapshot = (db: DatabaseSync): Snapshot => {
   db.exec("BEGIN DEFERRED");
   try {
-    const snapshot = readSnapshotUnlocked(db, includeEvents);
+    const snapshot = readSnapshotUnlocked(db);
     db.exec("COMMIT");
     return snapshot;
   } catch (error) {
@@ -1883,7 +1882,7 @@ const readArtifact = (db: DatabaseSync, id: ArtifactIdType) => {
   return artifact ? decodeArtifact(artifact) : null;
 };
 
-const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = false): Snapshot => {
+const readSnapshotUnlocked = (db: DatabaseSync): Snapshot => {
   const schema = row<{ value: string }>(db, "SELECT value FROM meta WHERE key = 'schema_id'", []);
   const stop = row<{ latched: number }>(db, "SELECT latched FROM stop_all WHERE id = 1", []);
   const tasks = rows<{
@@ -1949,15 +1948,6 @@ const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = false): Snapshot
     created_at: number;
   }>(db, "SELECT * FROM messages ORDER BY created_at");
   const cursorRow = row<{ seq: number | null }>(db, "SELECT MAX(seq) AS seq FROM events", []);
-  const events = includeEvents
-    ? rows<{
-        seq: number;
-        id: string;
-        type: string;
-        body: string;
-        created_at: number;
-      }>(db, "SELECT seq, id, type, body, created_at FROM events ORDER BY seq")
-    : [];
   const evidence = rows<{
     id: string;
     task_id: string;
@@ -2056,7 +2046,6 @@ const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = false): Snapshot
       kind: item.kind,
       state: Schema.decodeUnknownSync(ActionState)(item.state),
       payload: item.payload,
-      detail: item.payload,
       approvalId: (item.approval_id as ApprovalId | null) ?? null,
     })),
     artifacts: artifacts.map(decodeArtifact),
@@ -2071,13 +2060,6 @@ const readSnapshotUnlocked = (db: DatabaseSync, includeEvents = false): Snapshot
       kind: item.kind,
       importance: item.importance,
       dedupeKey: item.dedupe_key,
-      body: item.body,
-      createdAt: item.created_at,
-    })),
-    events: events.map((item) => ({
-      seq: item.seq,
-      id: item.id,
-      type: item.type,
       body: item.body,
       createdAt: item.created_at,
     })),
