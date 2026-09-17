@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { Effect, Schema } from "effect";
@@ -16,10 +15,11 @@ import {
 } from "../src/store.js";
 import { EVENT_REPLAY_LIMIT, SCHEMA_ID } from "../src/versions.js";
 import { Cursor, type Command, type SourcePacket } from "../src/schema.js";
+import { tempRoot as makeTempRoot } from "./helpers/temp-root.js";
 
 const owner = (): Principal => ({ kind: "owner", sessionId: newSessionId() });
 const bot = (): Principal => ({ kind: "bot", sessionId: "bot-token" });
-const tempRoot = () => mkdtempSync(join(tmpdir(), "agentis-store-"));
+const tempRoot = () => makeTempRoot("agentis-store-");
 
 const sourceCases: readonly { readonly name: string; readonly source: SourcePacket }[] = [
   {

@@ -1,6 +1,4 @@
-import { mkdtempSync } from "node:fs";
 import { createServer } from "node:net";
-import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { Effect, Schema } from "effect";
@@ -8,6 +6,7 @@ import { loadOrCreateOwner, type OwnerSession } from "../../src/auth.js";
 import { startServer, type RunningServer } from "../../src/http.js";
 import { WorkspaceSnapshot } from "../../src/schema.js";
 import type { Snapshot, Store } from "../../src/store.js";
+import { tempRoot } from "./temp-root.js";
 
 export type Daemon = {
   endpoint: URL;
@@ -36,7 +35,7 @@ const port = () =>
 export const boot = async (): Promise<Daemon> => {
   process.env.AGENTIS_CODEX_STUB = codexStub;
   process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS = "5000";
-  const dataRoot = mkdtempSync(join(tmpdir(), "agentis-codex-"));
+  const dataRoot = tempRoot("agentis-codex-");
   const endpoint = new URL(`http://127.0.0.1:${await port()}`);
   const server = await Effect.runPromise(
     startServer({

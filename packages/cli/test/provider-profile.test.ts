@@ -1,5 +1,3 @@
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { browserRuntime } from "../src/http-api.js";
@@ -11,8 +9,9 @@ import {
   CODEX_CLI_PIN,
   CODEX_TRANSPORT,
 } from "../src/versions.js";
+import { tempRoot } from "./helpers/temp-root.js";
 
-const dataRoot = () => mkdtempSync(join(tmpdir(), "agentis-profile-"));
+const dataRoot = () => tempRoot("agentis-profile-");
 
 const frozenFor = (
   bot: "mara" | "ivo",
