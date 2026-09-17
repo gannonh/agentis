@@ -33,6 +33,7 @@ describe("codex stub protocol", () => {
       expect(readFileSync(snap.artifacts[0]?.path ?? "", "utf8")).toBe("KAT3242_OK");
       expect(snap.runs[0]?.providerSessionId).toBe("thread-stub");
       expect(snap.artifacts[0]?.source).toBe("codex");
+      expect(snap.artifacts[0]?.author).toBe("mara");
       expect(snap.artifacts[0]?.runId).toBe(submitted.json.runId);
       expect(snap.artifacts[0]?.taskId).toBe(submitted.json.taskId);
       expect(snap.artifacts[0]?.path).toBe(
