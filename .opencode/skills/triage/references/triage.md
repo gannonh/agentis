@@ -2,7 +2,7 @@
 
 Use this workflow to groom the Linear backlog and to turn inbound GitHub Issues into full Linear specs.
 
-Triage is on-demand. It never runs automatically. Read `references/conventions.md` before starting.
+Triage is on-demand. It never runs automatically. Read `../conventions.md` before starting.
 
 ## Scope
 
@@ -193,7 +193,7 @@ Also inspect `links` on nearby Linear issues.
 gh issue comment <N> --body "Tracked as <linear-url>"
 ```
 
-4. If none exists, create a full Backlog spec with AC using the template in `references/conventions.md`:
+4. If none exists, create a full Backlog spec with AC using the template in `../conventions.md`:
 
 ```
 save_issue({

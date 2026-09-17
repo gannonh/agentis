@@ -9,7 +9,7 @@ Execute an approved Linear spec issue through small implementation tasks, review
 
 ## Read the conventions first
 
-Read `references/conventions.md` completely before any write.
+Read `../conventions.md` completely before any write.
 
 ## When to use
 
