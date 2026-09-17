@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, readdirSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -159,6 +159,7 @@ describe("store", () => {
       provider: "fake",
       executionBoundary: "unverified-host-scratch",
       nowMs: 2_000,
+      workspaceRoot: join(root, "scratch"),
     });
 
     const finished = await Effect.runPromise(store.snapshot());
@@ -167,6 +168,281 @@ describe("store", () => {
     expect(finished.pending.some((action) => action.state === "pending")).toBe(false);
     await Effect.runPromise(store.close());
     expect(receipt.accepted).toBe(true);
+  });
+
+  it("fails the run when the materialized source is missing on the launch drive", async () => {
+    const root = tempRoot();
+    const workspaceRoot = join(root, "scratch");
+    const store = await Effect.runPromise(openStore(root));
+    const input: ApplyInput = {
+      principal: owner(),
+      idempotencyKey: newIdempotencyKey(),
+      command: {
+        kind: "submit_task",
+        brief: "Prepare the launch brief",
+        source: { kind: "pasted", label: "Notes", text: "Proof", citations: [] },
+        fixture: "smoke",
+      },
+      nowMs: 1_000,
+      provider: "fake",
+      executionBoundary: "unverified-host-scratch",
+      workspaceId: workspaceRoot,
+    };
+    const receipt = await Effect.runPromise(store.applyCommand(input));
+    const submitted = await Effect.runPromise(store.snapshot());
+    const evidencePath = submitted.evidence[0]?.path;
+    if (!evidencePath) throw new Error("missing evidence path");
+    rmSync(evidencePath);
+
+    await expect(
+      applyReceiptEffects({
+        store,
+        receipt,
+        command: input.command,
+        provider: "fake",
+        executionBoundary: "unverified-host-scratch",
+        nowMs: 2_000,
+        workspaceRoot,
+      }),
+    ).resolves.toBeUndefined();
+
+    const failed = await Effect.runPromise(store.snapshot());
+    expect(failed.runs[0]?.status).toBe("failed");
+    expect(
+      failed.messages.some(
+        (message) =>
+          message.kind === "failure" &&
+          message.body === "materialized source is missing or changed",
+      ),
+    ).toBe(true);
+    await Effect.runPromise(store.close());
+  });
+
+  it("fails the run when the materialized source is missing on the dispatch-tool drive", async () => {
+    const root = tempRoot();
+    const workspaceRoot = join(root, "scratch");
+    const store = await Effect.runPromise(openStore(root));
+    const principal = owner();
+    const submit: Command = {
+      kind: "submit_task",
+      brief: "Prepare the launch brief",
+      source: { kind: "pasted", label: "Notes", text: "Proof", citations: [] },
+      fixture: "allow",
+    };
+    const launched = await Effect.runPromise(
+      store.applyCommand({
+        principal,
+        idempotencyKey: newIdempotencyKey(),
+        command: submit,
+        nowMs: 1_000,
+        provider: "fake",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: workspaceRoot,
+      }),
+    );
+    await applyReceiptEffects({
+      store,
+      receipt: launched,
+      command: submit,
+      provider: "fake",
+      executionBoundary: "unverified-host-scratch",
+      nowMs: 2_000,
+      workspaceRoot,
+    });
+    const waiting = await Effect.runPromise(store.snapshot());
+    expect(waiting.runs[0]?.status).toBe("waiting_approval");
+    const approvalId = waiting.pending.find(
+      (action) => action.runId === launched.runId && action.approvalId,
+    )?.approvalId;
+    if (!approvalId) throw new Error("missing pending approval");
+    const resolve: Command = { kind: "resolve_approval", approvalId, decision: "allowed" };
+    const resolved = await Effect.runPromise(
+      store.applyCommand({
+        principal,
+        idempotencyKey: newIdempotencyKey(),
+        command: resolve,
+        nowMs: 3_000,
+        provider: "fake",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: workspaceRoot,
+      }),
+    );
+    const evidencePath = waiting.evidence[0]?.path;
+    if (!evidencePath) throw new Error("missing evidence path");
+    rmSync(evidencePath);
+
+    await expect(
+      applyReceiptEffects({
+        store,
+        receipt: resolved,
+        command: resolve,
+        provider: "fake",
+        executionBoundary: "unverified-host-scratch",
+        nowMs: 4_000,
+        workspaceRoot,
+      }),
+    ).resolves.toBeUndefined();
+
+    const failed = await Effect.runPromise(store.snapshot());
+    expect(failed.runs[0]?.status).toBe("failed");
+    expect(
+      failed.messages.some(
+        (message) =>
+          message.kind === "failure" &&
+          message.body === "materialized source is missing or changed",
+      ),
+    ).toBe(true);
+    await Effect.runPromise(store.close());
+  });
+
+  it("fails the run when the materialized source is missing on the resume-input drive", async () => {
+    const root = tempRoot();
+    const workspaceRoot = join(root, "scratch");
+    const store = await Effect.runPromise(openStore(root));
+    const principal = owner();
+    const submit: Command = {
+      kind: "submit_task",
+      brief: "Prepare the launch brief",
+      source: { kind: "pasted", label: "Notes", text: "Proof", citations: [] },
+      fixture: "input",
+    };
+    const launched = await Effect.runPromise(
+      store.applyCommand({
+        principal,
+        idempotencyKey: newIdempotencyKey(),
+        command: submit,
+        nowMs: 1_000,
+        provider: "fake",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: workspaceRoot,
+      }),
+    );
+    await applyReceiptEffects({
+      store,
+      receipt: launched,
+      command: submit,
+      provider: "fake",
+      executionBoundary: "unverified-host-scratch",
+      nowMs: 2_000,
+      workspaceRoot,
+    });
+    const waiting = await Effect.runPromise(store.snapshot());
+    expect(waiting.runs[0]?.status).toBe("waiting_input");
+    const runId = launched.runId;
+    if (!runId) throw new Error("missing run");
+    const answer: Command = { kind: "answer_input", runId, answers: { color: "Blue" } };
+    const answered = await Effect.runPromise(
+      store.applyCommand({
+        principal,
+        idempotencyKey: newIdempotencyKey(),
+        command: answer,
+        nowMs: 3_000,
+        provider: "fake",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: workspaceRoot,
+      }),
+    );
+    const evidencePath = waiting.evidence[0]?.path;
+    if (!evidencePath) throw new Error("missing evidence path");
+    rmSync(evidencePath);
+
+    await expect(
+      applyReceiptEffects({
+        store,
+        receipt: answered,
+        command: answer,
+        provider: "fake",
+        executionBoundary: "unverified-host-scratch",
+        nowMs: 4_000,
+        workspaceRoot,
+      }),
+    ).resolves.toBeUndefined();
+
+    const failed = await Effect.runPromise(store.snapshot());
+    expect(failed.runs[0]?.status).toBe("failed");
+    expect(
+      failed.messages.some(
+        (message) =>
+          message.kind === "failure" &&
+          message.body === "materialized source is missing or changed",
+      ),
+    ).toBe(true);
+    await Effect.runPromise(store.close());
+  });
+
+  it("records a failed session load when the source is missing on the load-session drive", async () => {
+    const root = tempRoot();
+    const workspaceRoot = join(root, "scratch");
+    const store = await Effect.runPromise(openStore(root));
+    const principal = owner();
+    const receipt = await Effect.runPromise(
+      store.applyCommand({
+        principal,
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "submit_task",
+          brief: "Prepare the launch brief",
+          source: { kind: "pasted", label: "Notes", text: "Proof", citations: [] },
+        },
+        nowMs: 1_000,
+        provider: "codex",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: workspaceRoot,
+      }),
+    );
+    const runId = receipt.runId;
+    if (!runId) throw new Error("missing run");
+    const engine = mutateForEngine(join(root, "state.sqlite"));
+    engine.markRunning(runId, "codex-session", 2_000);
+    engine.close();
+    await Effect.runPromise(
+      store.applyCommand({
+        principal,
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "cancel_run", runId },
+        nowMs: 3_000,
+        provider: "codex",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: workspaceRoot,
+      }),
+    );
+    const command: Command = { kind: "load_session", runId };
+    const loaded = await Effect.runPromise(
+      store.applyCommand({
+        principal,
+        idempotencyKey: newIdempotencyKey(),
+        command,
+        nowMs: 4_000,
+        provider: "codex",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: workspaceRoot,
+      }),
+    );
+    expect(loaded.accepted).toBe(true);
+    expect(loaded.effects).toContain("load_session");
+
+    const waiting = await Effect.runPromise(store.snapshot());
+    const evidencePath = waiting.evidence[0]?.path;
+    if (!evidencePath) throw new Error("missing evidence path");
+    rmSync(evidencePath);
+
+    await expect(
+      applyReceiptEffects({
+        store,
+        receipt: loaded,
+        command,
+        provider: "codex",
+        executionBoundary: "unverified-host-scratch",
+        nowMs: 5_000,
+        workspaceRoot,
+      }),
+    ).resolves.toBeUndefined();
+
+    const failed = await Effect.runPromise(store.snapshot());
+    expect(failed.runs[0]?.status).toBe("canceled");
+    expect(failed.runs[0]?.providerLoadStatus).toBe("failed");
+    expect(failed.runs[0]?.failure).toBe("materialized source is missing or changed");
+    await Effect.runPromise(store.close());
   });
 
   it("admits two distinct bots and freezes the selected provider", async () => {

@@ -23,7 +23,45 @@ import {
   StatusQuery,
   UnauthorizedApiError,
   WorkspaceSnapshot,
+  type ApiError,
 } from "./schema.js";
+import type { StoreError } from "./store.js";
+
+export const API_ERROR_STATUS = {
+  bad_request: 400,
+  unauthorized: 401,
+  forbidden: 403,
+  not_found: 404,
+  conflict: 409,
+  cursor_expired: 410,
+  resync_required: 409,
+  payload_too_large: 413,
+  internal_error: 500,
+} as const;
+
+export type ApiErrorCode = keyof typeof API_ERROR_STATUS;
+
+export const apiErrorStatus = (code: ApiErrorCode): number => API_ERROR_STATUS[code];
+
+export const internalError = (message: string): typeof InternalApiError.Type => ({
+  code: "internal_error",
+  message,
+});
+
+export const storeFailureApiError = (error: StoreError): ApiError => {
+  switch (error.code) {
+    case "forbidden":
+      return { code: "forbidden", message: error.message };
+    case "conflict":
+      return { code: "conflict", message: error.message };
+    case "internal":
+      return { code: "internal_error", message: error.message };
+    case "cursor_expired":
+      return { code: "cursor_expired", message: error.message };
+    case "resync_required":
+      return { code: "resync_required", message: error.message };
+  }
+};
 
 export const RequestHeaders = Schema.Struct({
   authorization: Schema.optional(Schema.String),
@@ -95,15 +133,15 @@ export const RawApiGroup = HttpApiGroup.make("raw")
   );
 
 const ApiWithErrors = HttpApi.make("agentis")
-  .addError(BadRequestApiError, { status: 400 })
-  .addError(UnauthorizedApiError, { status: 401 })
-  .addError(ForbiddenApiError, { status: 403 })
-  .addError(NotFoundApiError, { status: 404 })
-  .addError(ConflictApiError, { status: 409 })
-  .addError(CursorExpiredApiError, { status: 410 })
-  .addError(ResyncRequiredApiError, { status: 409 })
-  .addError(PayloadTooLargeApiError, { status: 413 })
-  .addError(InternalApiError, { status: 500 });
+  .addError(BadRequestApiError, { status: API_ERROR_STATUS.bad_request })
+  .addError(UnauthorizedApiError, { status: API_ERROR_STATUS.unauthorized })
+  .addError(ForbiddenApiError, { status: API_ERROR_STATUS.forbidden })
+  .addError(NotFoundApiError, { status: API_ERROR_STATUS.not_found })
+  .addError(ConflictApiError, { status: API_ERROR_STATUS.conflict })
+  .addError(CursorExpiredApiError, { status: API_ERROR_STATUS.cursor_expired })
+  .addError(ResyncRequiredApiError, { status: API_ERROR_STATUS.resync_required })
+  .addError(PayloadTooLargeApiError, { status: API_ERROR_STATUS.payload_too_large })
+  .addError(InternalApiError, { status: API_ERROR_STATUS.internal_error });
 
 export const AgentisJsonApi = ApiWithErrors.add(JsonApiGroup);
 export const AgentisApi = ApiWithErrors.add(JsonApiGroup).add(RawApiGroup);

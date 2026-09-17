@@ -5,7 +5,7 @@ import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { openVerifiedFile } from "../src/verified-file.js";
+import { openVerifiedFile, readVerifiedFile } from "../src/verified-file.js";
 
 const digest = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 
@@ -60,6 +60,64 @@ describe("verified artifact streaming", () => {
         chunks.push(Buffer.from(chunk));
       }
       expect(Buffer.concat(chunks)).toEqual(original);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("verified artifact reads", () => {
+  it("reads the original bytes when size and digest still match", () => {
+    const root = mkdtempSync(join(tmpdir(), "agentis-verified-read-"));
+    const path = join(root, "artifact.txt");
+    const original = Buffer.from("materialized source");
+    writeFileSync(path, original);
+    try {
+      const bytes = readVerifiedFile({
+        path,
+        root,
+        byteSize: original.byteLength,
+        sha256: digest(original),
+      });
+      expect(bytes).toEqual(original);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("returns null after the file content changes at the recorded size", () => {
+    const root = mkdtempSync(join(tmpdir(), "agentis-verified-changed-"));
+    const path = join(root, "artifact.txt");
+    const original = Buffer.from("materialized source");
+    writeFileSync(path, original);
+    try {
+      writeFileSync(path, Buffer.alloc(original.byteLength, 0x78));
+      const bytes = readVerifiedFile({
+        path,
+        root,
+        byteSize: original.byteLength,
+        sha256: digest(original),
+      });
+      expect(bytes).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("returns null when the file grew past the recorded byte size", () => {
+    const root = mkdtempSync(join(tmpdir(), "agentis-verified-oversized-"));
+    const path = join(root, "artifact.txt");
+    const original = Buffer.from("materialized source");
+    writeFileSync(path, original);
+    try {
+      writeFileSync(path, Buffer.concat([original, Buffer.alloc(1024, 0x2e)]));
+      const bytes = readVerifiedFile({
+        path,
+        root,
+        byteSize: original.byteLength,
+        sha256: digest(original),
+      });
+      expect(bytes).toBeNull();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
