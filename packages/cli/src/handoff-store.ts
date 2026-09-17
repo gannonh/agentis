@@ -13,9 +13,9 @@ import {
 } from "./schema.js";
 import type { ApplyInput } from "./store.js";
 import { row, rows, run, emit, message } from "./store-db.js";
+import { frozenConfig } from "./provider-profile.js";
 import { readVerifiedFile } from "./verified-file.js";
 import {
-  CLAUDE_CLI_PIN,
   MAX_ACTIVE_RUNS,
   MAX_ACTIVE_RUNS_PER_BOT,
   MAX_ACTIONS_PER_TASK,
@@ -113,7 +113,6 @@ const readVerifiedSource = (
     root,
     byteSize: artifact.byte_size,
     sha256: artifact.sha256,
-    maximumBytes: 65_536,
   })?.toString("utf8") ?? null;
 
 export const proposeHandoff = (
@@ -180,30 +179,14 @@ export const proposeHandoff = (
     request: command.context,
   });
   const recipientRunId = newRunId();
-  const frozen: FrozenConfig = {
+  const frozen = frozenConfig({
+    bot: "ivo",
+    provider: "claude",
     executionBoundary: original.executionBoundary,
+    workspaceId: join(input.workspaceId, "runs", recipientRunId),
     deadlineMs: original.deadlineMs,
     actionBudget: original.actionBudget,
-    bot: "ivo",
-    role: "specialist",
-    provider: "claude",
-    transport: "claude-sdk-jsonl-stdio",
-    executableVersion: CLAUDE_CLI_PIN,
-    model: "claude-sonnet-5",
-    effort: "medium",
-    skills: ["specialist-draft"],
-    grants: ["read:provided-source", "write:task-artifact"],
-    publicConfig: { sourceMode: "materialized-read-only" },
-    authMode: "api-key",
-    executionLocation:
-      original.executionBoundary === "docker-fixture-container"
-        ? "isolated fixture container"
-        : original.executionBoundary === "docker-desktop-run-container"
-          ? "local provider container"
-          : "local daemon scratch",
-    workspaceId: join(input.workspaceId, "runs", recipientRunId),
-    mode: "agent",
-  };
+  });
   const handoff = Schema.decodeUnknownSync(HandoffRow)({
     id: `handoff_${randomUUID()}`,
     taskId: source.task_id,

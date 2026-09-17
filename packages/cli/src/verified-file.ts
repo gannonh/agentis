@@ -9,7 +9,6 @@ export type VerifiedFile = {
   readonly root: string;
   readonly byteSize: number;
   readonly sha256: string;
-  readonly maximumBytes: number;
 };
 
 export type VerifiedFileHandle = {
@@ -33,7 +32,7 @@ export const readVerifiedFile = (input: VerifiedFile): Buffer | null => {
     const root = realpathSync(input.root);
     const parent = realpathSync(dirname(input.path));
     if (!within(root, parent) && parent !== root) return null;
-    if (input.byteSize < 0 || input.byteSize > input.maximumBytes) return null;
+    if (!Number.isSafeInteger(input.byteSize) || input.byteSize < 0) return null;
     descriptor = openSync(
       input.path,
       constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
@@ -57,9 +56,7 @@ export const readVerifiedFile = (input: VerifiedFile): Buffer | null => {
   }
 };
 
-export const openVerifiedFile = async (
-  input: Omit<VerifiedFile, "maximumBytes">,
-): Promise<VerifiedFileHandle | null> => {
+export const openVerifiedFile = async (input: VerifiedFile): Promise<VerifiedFileHandle | null> => {
   let source: FileHandle | undefined;
   let spool: FileHandle | undefined;
   let spoolDirectory: string | undefined;
