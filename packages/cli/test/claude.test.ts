@@ -1,96 +1,11 @@
 import { spawn } from "node:child_process";
-import * as claudeContainer from "../src/claude-container.js";
-import { mkdtempSync, readFileSync, existsSync } from "node:fs";
-import { createServer } from "node:net";
-import { tmpdir } from "node:os";
+import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { Effect, Schema } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { loadOrCreateOwner } from "../src/auth.js";
-import { startServer } from "../src/http.js";
+import * as claudeContainer from "../src/claude-container.js";
 import { newIdempotencyKey } from "../src/ids.js";
-import { WorkspaceSnapshot } from "../src/schema.js";
-import type { Store } from "../src/store.js";
-
-const stub = fileURLToPath(new URL("./codex-stub.mjs", import.meta.url));
-const stores = new Map<string, Store>();
-
-const port = () =>
-  new Promise<number>((resolve, reject) => {
-    const server = createServer();
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      if (!address || typeof address === "string") {
-        reject(new Error("no port"));
-        return;
-      }
-      const value = address.port;
-      server.close((error) => (error ? reject(error) : resolve(value)));
-    });
-  });
-
-const boot = async () => {
-  process.env.AGENTIS_CODEX_STUB = stub;
-  process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS = "5000";
-  const dataRoot = mkdtempSync(join(tmpdir(), "agentis-codex-"));
-  const endpoint = new URL(`http://127.0.0.1:${await port()}`);
-  const server = await Effect.runPromise(
-    startServer({
-      endpoint,
-      dataRoot,
-      workspace: join(dataRoot, "scratch"),
-      provider: "codex",
-      executionBoundary: "unverified-host-scratch",
-    }),
-  );
-  const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
-  stores.set(endpoint.origin, server.store);
-  return { endpoint, server, owner, dataRoot };
-};
-
-const command = async (endpoint: URL, token: string, body: unknown) => {
-  const response = await fetch(new URL("/v1/commands", endpoint), {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
-  });
-  return { status: response.status, json: (await response.json()) as Record<string, unknown> };
-};
-
-const statusOf = async (endpoint: URL, token: string) => {
-  const response = await fetch(new URL("/v1/status", endpoint), {
-    headers: { authorization: `Bearer ${token}` },
-  });
-  Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
-  const store = stores.get(endpoint.origin);
-  if (!store) throw new Error("missing test store");
-  return Effect.runPromise(store.snapshot());
-};
-
-const publicStatusOf = async (endpoint: URL, token: string) => {
-  const response = await fetch(new URL("/v1/status", endpoint), {
-    headers: { authorization: `Bearer ${token}` },
-  });
-  return Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
-};
-
-const waitFor = async (
-  endpoint: URL,
-  token: string,
-  match: (snap: Awaited<ReturnType<typeof statusOf>>) => boolean,
-) => {
-  const deadline = Date.now() + 4000;
-  let snap = await statusOf(endpoint, token);
-  while (!match(snap)) {
-    if (Date.now() > deadline) {
-      throw new Error(`codex stub timed out: ${JSON.stringify(snap.runs)}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 25));
-    snap = await statusOf(endpoint, token);
-  }
-  return snap;
-};
+import { boot, command, publicStatusOf, statusOf, waitFor } from "./helpers/daemon.js";
 
 afterEach(() => {
   delete process.env.AGENTIS_CODEX_STUB;
@@ -100,14 +15,14 @@ afterEach(() => {
 describe("Claude SDK bridge", () => {
   it("routes ivo over SDK bridge and retains negotiated capabilities", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const submitted = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke", bot: "ivo" },
       });
       expect(submitted.json.accepted).toBe(true);
-      const state = await waitFor(endpoint, owner.token, (state) =>
+      const state = await waitFor(store, endpoint, owner.token, (state) =>
         state.runs.some((run) => run.status === "succeeded"),
       );
       expect(state.artifacts[0]?.source).toBe("claude");
@@ -120,7 +35,7 @@ describe("Claude SDK bridge", () => {
   });
   it("answers Claude permissions without dispatching the Codex run", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
@@ -130,7 +45,7 @@ describe("Claude SDK bridge", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "ALLOW", bot: "ivo" },
       });
-      const waiting = await waitFor(endpoint, owner.token, (state) =>
+      const waiting = await waitFor(store, endpoint, owner.token, (state) =>
         state.runs.some(
           (run) => run.id === submitted.json.runId && run.status === "waiting_approval",
         ),
@@ -147,7 +62,7 @@ describe("Claude SDK bridge", () => {
         },
       });
       expect(allowed.json.accepted).toBe(true);
-      const done = await waitFor(endpoint, owner.token, (state) =>
+      const done = await waitFor(store, endpoint, owner.token, (state) =>
         state.runs.some((run) => run.id === submitted.json.runId && run.status === "succeeded"),
       );
       expect(done.runs.find((run) => run.id !== submitted.json.runId)?.status).toBe(
@@ -161,19 +76,19 @@ describe("Claude SDK bridge", () => {
 
   it("loads a completed session without another prompt or duplicated history", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const submitted = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke", bot: "ivo" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const loaded = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "load_session", runId: submitted.json.runId },
       });
       expect(loaded.json.accepted).toBe(true);
-      const state = await statusOf(endpoint, owner.token);
+      const state = await statusOf(store, endpoint, owner.token);
       expect(state.artifacts).toHaveLength(1);
       expect(state.runs[0]?.providerState.failure).toBeNull();
       expect(state.runs[0]?.providerState.history).toHaveLength(2);
@@ -190,13 +105,14 @@ describe("Claude SDK bridge", () => {
       process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(
         new URL("./claude-stub.mjs", import.meta.url),
       );
-      const { endpoint, server, owner } = await boot();
+      const { endpoint, server, owner, store } = await boot();
       try {
         await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
           command: { kind: "submit_task", bot: "ivo", brief: "QUESTION" },
         });
         const waiting = await waitFor(
+          store,
           endpoint,
           owner.token,
           (state) => state.runs[0]?.status === "waiting_input",
@@ -221,6 +137,7 @@ describe("Claude SDK bridge", () => {
           },
         });
         const done = await waitFor(
+          store,
           endpoint,
           owner.token,
           (state) => state.runs[0]?.status === "succeeded",
@@ -248,13 +165,14 @@ describe("Claude SDK bridge", () => {
     ["EMPTY", "malformed-response"],
   ])("records %s without a successful artifact", async (brief, failure) => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief },
       });
       const state = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "failed",
@@ -269,13 +187,14 @@ describe("Claude SDK bridge", () => {
 
   it("loads newly persisted native history after cancel without creating output", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief: "QUESTION" },
       });
       const waiting = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "waiting_input",
@@ -289,6 +208,7 @@ describe("Claude SDK bridge", () => {
         command: { kind: "load_session", runId: waiting.runs[0]?.id },
       });
       const loaded = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.providerState.loadStatus !== "loading",
@@ -303,7 +223,7 @@ describe("Claude SDK bridge", () => {
     }
   });
   it("keeps HTTP serving when provider cleanup throws", async () => {
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     const report = vi.spyOn(process.stderr, "write").mockReturnValue(true);
     vi.spyOn(claudeContainer, "spawnClaudeInContainer").mockImplementation((input) => {
       const child = spawn(
@@ -325,6 +245,7 @@ describe("Claude SDK bridge", () => {
         command: { kind: "submit_task", bot: "ivo", brief: "QUESTION" },
       });
       const waiting = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "waiting_input",
@@ -334,7 +255,7 @@ describe("Claude SDK bridge", () => {
         command: { kind: "cancel_run", runId: waiting.runs[0]?.id },
       });
       expect(canceled.json.accepted).toBe(true);
-      expect((await statusOf(endpoint, owner.token)).runs[0]?.status).toBe("canceled");
+      expect((await statusOf(store, endpoint, owner.token)).runs[0]?.status).toBe("canceled");
       expect(report).toHaveBeenCalled();
     } finally {
       await server.close();
@@ -343,13 +264,14 @@ describe("Claude SDK bridge", () => {
   });
   it("records startup failure for both launch and load without losing a completed result", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief: "smoke" },
       });
       const done = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "succeeded",
@@ -364,7 +286,7 @@ describe("Claude SDK bridge", () => {
       });
       expect(receipt.status).toBe(200);
       expect(receipt.json).toMatchObject({ accepted: true, effects: ["load_session"] });
-      const loaded = await statusOf(endpoint, owner.token);
+      const loaded = await statusOf(store, endpoint, owner.token);
       expect(loaded.runs[0]?.providerState).toMatchObject({
         loadStatus: "failed",
         failure: "auth-unavailable",
@@ -375,7 +297,7 @@ describe("Claude SDK bridge", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief: "smoke" },
       });
-      const failed = await statusOf(endpoint, owner.token);
+      const failed = await statusOf(store, endpoint, owner.token);
       expect(failed.runs[1]?.status).toBe("failed");
       expect(failed.runs[1]?.providerState.failure).toBe("auth-unavailable");
     } finally {
@@ -386,13 +308,14 @@ describe("Claude SDK bridge", () => {
   });
   it("loads a completed session after its execution deadline", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief: "smoke" },
       });
       const done = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "succeeded",
@@ -403,6 +326,7 @@ describe("Claude SDK bridge", () => {
         command: { kind: "load_session", runId: done.runs[0]?.id },
       });
       const loaded = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.providerState.loadStatus !== "loading",
@@ -416,13 +340,14 @@ describe("Claude SDK bridge", () => {
   });
   it("terminates the active provider when an expired approval decision is rejected", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner, dataRoot } = await boot();
+    const { endpoint, server, owner, store, dataRoot } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief: "ALLOW" },
       });
       const waiting = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "waiting_approval",
@@ -447,7 +372,7 @@ describe("Claude SDK bridge", () => {
       expect(receipt.json.effects).toContain("interrupt_provider");
       await new Promise((resolve) => setTimeout(resolve, 100));
       expect(() => process.kill(pid, 0)).toThrow();
-      const expired = await statusOf(endpoint, owner.token);
+      const expired = await statusOf(store, endpoint, owner.token);
       expect(expired.runs[0]?.status).toBe("failed");
       expect(expired.pending.find((action) => action.approvalId)?.state).toBe("expired");
       expect(expired.artifacts).toHaveLength(0);
@@ -459,7 +384,7 @@ describe("Claude SDK bridge", () => {
   });
   it("stop-all cancels both providers and late replies cannot revive them", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
@@ -470,6 +395,7 @@ describe("Claude SDK bridge", () => {
         command: { kind: "submit_task", bot: "ivo", brief: "QUESTION" },
       });
       await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) =>
@@ -480,7 +406,7 @@ describe("Claude SDK bridge", () => {
         command: { kind: "stop_all" },
       });
       await new Promise((resolve) => setTimeout(resolve, 30));
-      const stopped = await statusOf(endpoint, owner.token);
+      const stopped = await statusOf(store, endpoint, owner.token);
       expect(stopped.runs.map((run) => run.status)).toEqual(["canceled", "canceled"]);
       expect(stopped.artifacts).toHaveLength(0);
       const late = await command(endpoint, owner.token, {
@@ -499,13 +425,14 @@ describe("Claude SDK bridge", () => {
   });
   it("claims session loads and rejects concurrent provider operations", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief: "SLOW_LOAD" },
       });
       const done = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "succeeded",
@@ -515,6 +442,7 @@ describe("Claude SDK bridge", () => {
         command: { kind: "load_session", runId: done.runs[0]?.id },
       });
       await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.providerState.loadStatus === "loading",
@@ -568,13 +496,14 @@ describe("Claude SDK bridge", () => {
 
   it("terminates a denied provider before admitting another run", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner, dataRoot } = await boot();
+    const { endpoint, server, owner, store, dataRoot } = await boot();
     try {
       const old = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief: "ALLOW" },
       });
       const waiting = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "waiting_approval",
@@ -598,7 +527,7 @@ describe("Claude SDK bridge", () => {
       expect(
         existsSync(join(dataRoot, "scratch", "runs", String(old.json.runId), "hello.md")),
       ).toBe(false);
-      const state = await statusOf(endpoint, owner.token);
+      const state = await statusOf(store, endpoint, owner.token);
       expect(state.artifacts.every((artifact) => artifact.runId !== old.json.runId)).toBe(true);
     } finally {
       await server.close();
@@ -607,13 +536,14 @@ describe("Claude SDK bridge", () => {
   });
   it("does not let a second provider request replace the approved action", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief: "OVERLAP" },
       });
       const waiting = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "waiting_approval",
@@ -629,6 +559,7 @@ describe("Claude SDK bridge", () => {
         },
       });
       const done = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "succeeded",
@@ -641,13 +572,14 @@ describe("Claude SDK bridge", () => {
   });
   it("keeps ordinary error text drafts and rejects the observed proxy failure", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief: "ERROR_DRAFT" },
       });
       const draft = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[0]?.status === "succeeded" || state.runs[0]?.status === "failed",
@@ -659,6 +591,7 @@ describe("Claude SDK bridge", () => {
         command: { kind: "submit_task", bot: "ivo", brief: "PROXY_ERROR" },
       });
       const failed = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[1]?.status === "failed",

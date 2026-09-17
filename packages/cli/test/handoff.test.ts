@@ -1,98 +1,13 @@
 import { scheduler } from "node:timers/promises";
-import { mkdtempSync, readFileSync, writeFileSync, unlinkSync, symlinkSync } from "node:fs";
-import { createServer } from "node:net";
-import { tmpdir } from "node:os";
+import { readFileSync, writeFileSync, unlinkSync, symlinkSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { Effect, Schema } from "effect";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Cursor, WorkspaceSnapshot } from "../src/schema.js";
-import { sweepRunTimeouts, openStore, type Store } from "../src/store.js";
-import { loadOrCreateOwner } from "../src/auth.js";
-import { startServer } from "../src/http.js";
+import { Cursor } from "../src/schema.js";
+import { sweepRunTimeouts, openStore } from "../src/store.js";
 import { newIdempotencyKey } from "../src/ids.js";
-
-const stub = fileURLToPath(new URL("./codex-stub.mjs", import.meta.url));
-const stores = new Map<string, Store>();
-
-const port = () =>
-  new Promise<number>((resolve, reject) => {
-    const server = createServer();
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      if (!address || typeof address === "string") {
-        reject(new Error("no port"));
-        return;
-      }
-      const value = address.port;
-      server.close((error) => (error ? reject(error) : resolve(value)));
-    });
-  });
-
-const boot = async () => {
-  process.env.AGENTIS_CODEX_STUB = stub;
-  process.env.AGENTIS_CODEX_RPC_TIMEOUT_MS = "5000";
-  const dataRoot = mkdtempSync(join(tmpdir(), "agentis-codex-"));
-  const endpoint = new URL(`http://127.0.0.1:${await port()}`);
-  const server = await Effect.runPromise(
-    startServer({
-      endpoint,
-      dataRoot,
-      workspace: join(dataRoot, "scratch"),
-      provider: "codex",
-      executionBoundary: "unverified-host-scratch",
-    }),
-  );
-  const owner = await Effect.runPromise(loadOrCreateOwner(dataRoot));
-  stores.set(endpoint.origin, server.store);
-  return { endpoint, server, owner, dataRoot };
-};
-
-const command = async (endpoint: URL, token: string, body: unknown) => {
-  const response = await fetch(new URL("/v1/commands", endpoint), {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
-    body: JSON.stringify(body),
-  });
-  return { status: response.status, json: (await response.json()) as Record<string, unknown> };
-};
-
-const statusOf = async (endpoint: URL, token: string) => {
-  const response = await fetch(new URL("/v1/status", endpoint), {
-    headers: { authorization: `Bearer ${token}` },
-  });
-  const publicSnapshot = Schema.decodeUnknownSync(WorkspaceSnapshot)(await response.json());
-  const store = stores.get(endpoint.origin);
-  if (!store) throw new Error("missing test store");
-  const snapshot = await Effect.runPromise(store.snapshot());
-  return { ...snapshot, publicHandoffs: publicSnapshot.handoffs };
-};
-
-const transitionsOf = async (endpoint: URL) => {
-  const store = stores.get(endpoint.origin);
-  if (!store) throw new Error("missing test store");
-  const window = await Effect.runPromise(
-    store.transitionsAfter(Schema.decodeUnknownSync(Cursor)("0")),
-  );
-  return window.events;
-};
-
-const waitFor = async (
-  endpoint: URL,
-  token: string,
-  match: (snap: Awaited<ReturnType<typeof statusOf>>) => boolean,
-) => {
-  const deadline = Date.now() + 4000;
-  let snap = await statusOf(endpoint, token);
-  while (!match(snap)) {
-    if (Date.now() > deadline) {
-      throw new Error(`codex stub timed out: ${JSON.stringify(snap.runs)}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 25));
-    snap = await statusOf(endpoint, token);
-  }
-  return snap;
-};
+import { boot, command, publicStatusOf, statusOf, waitFor } from "./helpers/daemon.js";
 
 afterEach(() => {
   delete process.env.AGENTIS_CLAUDE_STUB;
@@ -103,14 +18,14 @@ afterEach(() => {
 describe("bounded handoff", () => {
   it("returns Ivo's accepted draft to Mara's original conversation exactly once", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const retainedConstraint = "SPECIALIST_CONSTRAINT_947: return one paragraph";
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke", constraints: [retainedConstraint] },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const proposal = {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -123,6 +38,7 @@ describe("bounded handoff", () => {
       const accepted = await command(endpoint, owner.token, proposal);
       expect(accepted.json.accepted).toBe(true);
       const done = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[1]?.status === "succeeded",
@@ -146,20 +62,23 @@ describe("bounded handoff", () => {
         )?.bot;
       expect(botOf(handoff.sourceRunId)).toBe("mara");
       expect(botOf(handoff.recipientRunId)).toBe("ivo");
-      expect(done.publicHandoffs[0]).toMatchObject({
+      const publicHandoffs = (await publicStatusOf(endpoint, owner.token)).handoffs;
+      expect(publicHandoffs[0]).toMatchObject({
         sender: botOf(handoff.sourceRunId),
         recipient: botOf(handoff.recipientRunId),
       });
-      expect(done.publicHandoffs[0]).toMatchObject({ sender: "mara", recipient: "ivo" });
+      expect(publicHandoffs[0]).toMatchObject({ sender: "mara", recipient: "ivo" });
       expect(
         done.messages
           .filter((message) => message.authorName === "ivo")
           .every((message) => message.threadId === source.json.threadId),
       ).toBe(true);
-      const transitions = await transitionsOf(endpoint);
-      expect(transitions.some((transition) => transition.event.reason === "peer_progress")).toBe(
-        true,
+      const transitions = await Effect.runPromise(
+        store.transitionsAfter(Schema.decodeUnknownSync(Cursor)("0")),
       );
+      expect(
+        transitions.events.some((transition) => transition.event.reason === "peer_progress"),
+      ).toBe(true);
       expect(done.pending.filter((action) => action.kind === "handoff_draft")).toHaveLength(1);
       expect(done.runs[1]?.actionCount).toBe(2);
       const prompts = readFileSync(
@@ -183,7 +102,7 @@ describe("bounded handoff", () => {
         (await command(endpoint, owner.token, { ...proposal, idempotencyKey: newIdempotencyKey() }))
           .json.accepted,
       ).toBe(false);
-      expect((await statusOf(endpoint, owner.token)).runs).toHaveLength(2);
+      expect((await statusOf(store, endpoint, owner.token)).runs).toHaveLength(2);
     } finally {
       await server.close();
     }
@@ -197,13 +116,13 @@ describe("bounded handoff", () => {
     "WRONG_SESSION_HANDOFF",
   ])("keeps Mara's ownership and result on %s", async (context) => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const proposal = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -215,6 +134,7 @@ describe("bounded handoff", () => {
       });
       expect(proposal.json.accepted).toBe(true);
       const done = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[1]?.status === "failed",
@@ -231,13 +151,13 @@ describe("bounded handoff", () => {
   });
   it("expires a proposal before a late provider accepts without losing the source", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -249,7 +169,7 @@ describe("bounded handoff", () => {
       });
       sweepRunTimeouts(server.store.path, Date.now() + 61000);
       await new Promise((resolve) => setTimeout(resolve, 350));
-      const done = await statusOf(endpoint, owner.token);
+      const done = await statusOf(store, endpoint, owner.token);
       expect(done.handoffs[0]?.state).toBe("expired");
       expect(done.tasks[0]).toMatchObject({ botName: "mara", status: "completed" });
       expect(done.artifacts).toHaveLength(1);
@@ -264,13 +184,18 @@ describe("bounded handoff", () => {
       process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(
         new URL("./claude-stub.mjs", import.meta.url),
       );
-      const { endpoint, server, owner } = await boot();
+      const { endpoint, server, owner, store } = await boot();
       try {
         const source = await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
           command: { kind: "submit_task", brief: "smoke" },
         });
-        await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+        await waitFor(
+          store,
+          endpoint,
+          owner.token,
+          (state) => state.runs[0]?.status === "succeeded",
+        );
         const proposed = await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
           command: {
@@ -285,7 +210,7 @@ describe("bounded handoff", () => {
           command: { kind, ...(kind === "cancel_run" ? { runId: proposed.json.runId } : {}) },
         });
         await new Promise((resolve) => setTimeout(resolve, 350));
-        const done = await statusOf(endpoint, owner.token);
+        const done = await statusOf(store, endpoint, owner.token);
         expect(done.tasks[0]).toMatchObject({ botName: "mara", status: "completed" });
         expect(done.handoffs[0]?.state).toBe("rejected");
         expect(done.runs.find((run) => run.id === proposed.json.runId)?.status).toBe("canceled");
@@ -299,13 +224,13 @@ describe("bounded handoff", () => {
 
   it("denies guessed Bot identities even when replaying an owner's handoff key", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const body = {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -329,13 +254,13 @@ describe("bounded handoff", () => {
 
   it("stop-all after acceptance commit prevents the pending draft from dispatching", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       let resume = () => {};
       const immediate = vi.spyOn(scheduler, "yield").mockImplementationOnce(
         () =>
@@ -353,7 +278,12 @@ describe("bounded handoff", () => {
             context: "normal draft",
           },
         });
-        await waitFor(endpoint, owner.token, (state) => state.handoffs[0]?.state === "accepted");
+        await waitFor(
+          store,
+          endpoint,
+          owner.token,
+          (state) => state.handoffs[0]?.state === "accepted",
+        );
         await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
           command: { kind: "stop_all" },
@@ -361,7 +291,7 @@ describe("bounded handoff", () => {
         immediate.mockRestore();
         resume();
         await new Promise((resolve) => setTimeout(resolve, 30));
-        const stopped = await statusOf(endpoint, owner.token);
+        const stopped = await statusOf(store, endpoint, owner.token);
         expect(stopped.tasks[0]).toMatchObject({ botName: "ivo", status: "canceled" });
         expect(stopped.runs[1]?.actionCount).toBe(1);
         expect(stopped.artifacts).toHaveLength(1);
@@ -377,12 +307,12 @@ describe("bounded handoff", () => {
   });
   it("preserves transferred ownership and replay receipts when the store reopens", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner, dataRoot } = await boot();
+    const { endpoint, server, owner, store, dataRoot } = await boot();
     const source = await command(endpoint, owner.token, {
       idempotencyKey: newIdempotencyKey(),
       command: { kind: "submit_task", brief: "smoke" },
     });
-    await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+    await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
     await command(endpoint, owner.token, {
       idempotencyKey: newIdempotencyKey(),
       command: {
@@ -393,6 +323,7 @@ describe("bounded handoff", () => {
       },
     });
     const before = await waitFor(
+      store,
       endpoint,
       owner.token,
       (state) => state.runs[1]?.status === "succeeded",
@@ -411,18 +342,23 @@ describe("bounded handoff", () => {
   });
   it("counts active Ivo work and refuses onward handoff from a specialist", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const busy = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", bot: "ivo", brief: "QUESTION" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[1]?.status === "waiting_input");
+      await waitFor(
+        store,
+        endpoint,
+        owner.token,
+        (state) => state.runs[1]?.status === "waiting_input",
+      );
       const body = {
         kind: "propose_handoff",
         sourceRunId: source.json.runId,
@@ -445,7 +381,7 @@ describe("bounded handoff", () => {
         idempotencyKey: newIdempotencyKey(),
         command: body,
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[2]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[2]?.status === "succeeded");
       const onward = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { ...body, sourceRunId: accepted.json.runId },
@@ -458,13 +394,13 @@ describe("bounded handoff", () => {
 
   it("denies native permission requests without creating an owner approval or granting tools", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -475,6 +411,7 @@ describe("bounded handoff", () => {
         },
       });
       const done = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[1]?.status === "succeeded",
@@ -487,13 +424,13 @@ describe("bounded handoff", () => {
   });
   it("loads a canceled accepted handoff without replaying ownership or output", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       const proposed = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -503,19 +440,25 @@ describe("bounded handoff", () => {
           context: "DELAY_DRAFT",
         },
       });
-      await waitFor(endpoint, owner.token, (state) => state.handoffs[0]?.state === "accepted");
+      await waitFor(
+        store,
+        endpoint,
+        owner.token,
+        (state) => state.handoffs[0]?.state === "accepted",
+      );
       await new Promise((resolve) => setTimeout(resolve, 60));
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "cancel_run", runId: proposed.json.runId },
       });
-      const canceled = await statusOf(endpoint, owner.token);
+      const canceled = await statusOf(store, endpoint, owner.token);
       for (let attempt = 0; attempt < 2; attempt++) {
         await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
           command: { kind: "load_session", runId: proposed.json.runId },
         });
         const loaded = await waitFor(
+          store,
           endpoint,
           owner.token,
           (state) => state.runs[1]?.providerState.loadStatus !== "loading",
@@ -533,13 +476,13 @@ describe("bounded handoff", () => {
   });
   it("requires native inventory on the resumed draft turn", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -549,7 +492,7 @@ describe("bounded handoff", () => {
           context: "NO_INIT_DRAFT",
         },
       });
-      const done = await waitFor(endpoint, owner.token, (state) =>
+      const done = await waitFor(store, endpoint, owner.token, (state) =>
         ["failed", "succeeded"].includes(state.runs[1]?.status ?? ""),
       );
       expect(done.runs[1]?.status).toBe("failed");
@@ -560,13 +503,13 @@ describe("bounded handoff", () => {
   });
   it("loads the completed recipient session without redispatching its draft", async () => {
     process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
-    const { endpoint, server, owner } = await boot();
+    const { endpoint, server, owner, store } = await boot();
     try {
       const source = await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "smoke" },
       });
-      await waitFor(endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
       await command(endpoint, owner.token, {
         idempotencyKey: newIdempotencyKey(),
         command: {
@@ -577,6 +520,7 @@ describe("bounded handoff", () => {
         },
       });
       const before = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[1]?.status === "succeeded",
@@ -588,6 +532,7 @@ describe("bounded handoff", () => {
       });
       expect(loaded.json.accepted).toBe(true);
       const after = await waitFor(
+        store,
         endpoint,
         owner.token,
         (state) => state.runs[1]?.providerState.loadStatus !== "loading",
@@ -614,13 +559,14 @@ describe("bounded handoff", () => {
       process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(
         new URL("./claude-stub.mjs", import.meta.url),
       );
-      const { endpoint, server, owner, dataRoot } = await boot();
+      const { endpoint, server, owner, store, dataRoot } = await boot();
       try {
         const source = await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
           command: { kind: "submit_task", brief: "smoke" },
         });
         const before = await waitFor(
+          store,
           endpoint,
           owner.token,
           (state) => state.runs[0]?.status === "succeeded",
@@ -642,7 +588,7 @@ describe("bounded handoff", () => {
           },
         });
         expect(proposal.json.accepted).toBe(false);
-        const after = await statusOf(endpoint, owner.token);
+        const after = await statusOf(store, endpoint, owner.token);
         expect(after.runs).toHaveLength(1);
         expect(after.handoffs).toHaveLength(0);
         expect(after.tasks).toEqual(before.tasks);

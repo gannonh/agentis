@@ -4,7 +4,7 @@ Help turn ideas into fully formed design specs through natural collaborative dia
 
 Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design and get user approval of the draft. Humans move Backlog to Todo.
 
-The result is a Linear issue whose description is the spec. Read `references/conventions.md` before starting.
+The result is a Linear issue whose description is the spec. Read `../conventions.md` before starting.
 
 Every spec issue must include an explicit `## Acceptance criteria` section written as task-list checkboxes.
 
@@ -33,7 +33,7 @@ Create a task for each of these items and complete them in order:
 
 **Preflight:**
 
-- Run the preflight from `references/conventions.md`.
+- Run the preflight from `../conventions.md`.
 - Search for an existing issue covering this work before designing anything new:
 
 ```
@@ -93,7 +93,7 @@ list_issues({
 
 After the user approves the design conversationally:
 
-1. Compose the description using the spec issue body template from `references/conventions.md`.
+1. Compose the description using the spec issue body template from `../conventions.md`.
 2. Write acceptance criteria as `- [ ]` checkboxes.
 3. Create the issue in Backlog:
 
