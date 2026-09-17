@@ -2262,22 +2262,27 @@ export const mutateForEngine = (storePath: string) => {
           "UPDATE runs SET status = 'waiting_approval', waiting_reason = 'approval' WHERE id = ?",
           [input.runId],
         );
-        const current = row<{ thread_id: string }>(db, "SELECT thread_id FROM runs WHERE id=?", [
-          input.runId,
-        ]);
-        message(db, {
-          threadId: current?.thread_id ?? "",
-          taskId: input.taskId,
-          runId: input.runId,
-          authorKind: "bot",
-          authorName: "mara",
-          authorRole: "coordinator",
-          kind: "approval",
-          importance: "blocking",
-          dedupeKey: `approval:${approvalId}`,
-          body: `Approval required for ${input.tool}`,
-          nowMs: input.nowMs,
-        });
+        const current = row<{ thread_id: string; frozen_json: string }>(
+          db,
+          "SELECT thread_id,frozen_json FROM runs WHERE id=?",
+          [input.runId],
+        );
+        if (current) {
+          const frozen = Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(current.frozen_json));
+          message(db, {
+            threadId: current.thread_id,
+            taskId: input.taskId,
+            runId: input.runId,
+            authorKind: "bot",
+            authorName: frozen.bot,
+            authorRole: frozen.role,
+            kind: "approval",
+            importance: "blocking",
+            dedupeKey: `approval:${approvalId}`,
+            body: `Approval required for ${input.tool}`,
+            nowMs: input.nowMs,
+          });
+        }
         emit(
           db,
           "waiting_approval",

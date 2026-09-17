@@ -34,6 +34,7 @@ export type DriveInput = {
   readonly runId: RunId;
   readonly taskId: TaskId;
   readonly fixture: FixtureKind | null;
+  readonly bot: "mara" | "ivo";
   readonly provider: "fake" | "codex" | "claude";
   readonly executionBoundary: typeof ExecutionBoundary.Type;
   readonly workspace: string;
@@ -146,6 +147,7 @@ export const applyReceiptEffects = async (input: {
         runId: selected.id,
         taskId: selected.taskId,
         fixture: selected.fixture,
+        bot: selected.frozen.bot,
         provider: selected.frozen.provider,
         executionBoundary: selected.frozen.executionBoundary,
         workspace: selected.frozen.workspaceId,
@@ -178,6 +180,7 @@ export const applyReceiptEffects = async (input: {
             runId: receipt.runId,
             taskId: receipt.taskId,
             fixture: run.fixture,
+            bot: run.frozen.bot,
             provider,
             executionBoundary: run.frozen.executionBoundary,
             workspace: run.frozen.workspaceId,
@@ -224,6 +227,7 @@ export const applyReceiptEffects = async (input: {
           runId: receipt.runId,
           taskId: receipt.taskId,
           fixture: "allow",
+          bot: run.frozen.bot,
           provider,
           executionBoundary: "unverified-host-scratch",
           workspace: run.frozen.workspaceId,
@@ -265,6 +269,7 @@ export const applyReceiptEffects = async (input: {
           runId: receipt.runId,
           taskId: receipt.taskId,
           fixture: "input",
+          bot: run.frozen.bot,
           provider,
           executionBoundary: "unverified-host-scratch",
           workspace: run.frozen.workspaceId,
@@ -346,7 +351,7 @@ const writeArtifact = (engine: ReturnType<typeof mutateForEngine>, input: DriveI
   engine.complete({
     runId: input.runId,
     taskId: input.taskId,
-    author: "mara",
+    author: input.bot,
     source: input.provider === "codex" ? "codex" : "fake",
     mediaType: "text/markdown",
     sha256,
