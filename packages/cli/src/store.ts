@@ -17,6 +17,13 @@ import { DatabaseSync } from "node:sqlite";
 import { Effect, Schema } from "effect";
 import { writeScratchFile } from "./scratch-file.js";
 import {
+  ACTIVE_RUN_OR_LOADING_SQL,
+  ACTIVE_RUN_SQL,
+  finishRun,
+  isActiveRunStatus,
+  isFinishedRunStatus,
+} from "./run-lifecycle.js";
+import {
   newActionIntentId,
   newApprovalId,
   newArtifactId,
@@ -1129,27 +1136,24 @@ const expireApprovalAndRun = (
     "UPDATE pending_actions SET state = 'expired' WHERE approval_id = ? AND state = 'pending'",
     [approval.id],
   );
-  run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [
-    approval.run_id,
-  ]);
-  run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [approval.task_id]);
-  const current = row<{ thread_id: string }>(db, "SELECT thread_id FROM runs WHERE id=?", [
-    approval.run_id,
-  ]);
-  message(db, {
-    threadId: current?.thread_id ?? "",
-    taskId: approval.task_id,
-    runId: approval.run_id,
-    authorKind: "system",
-    authorName: "agentis",
-    authorRole: "system",
-    kind: "failure",
-    importance: "blocking",
-    dedupeKey: `approval-expired:${approval.id}`,
-    body: "Approval expired before a decision was recorded.",
+  finishRun(db, {
+    runId: approval.run_id as RunId,
+    status: "failed",
     nowMs,
+    message: {
+      authorKind: "system",
+      authorName: "agentis",
+      authorRole: "system",
+      kind: "failure",
+      importance: "blocking",
+      dedupeKey: `approval-expired:${approval.id}`,
+      body: "Approval expired before a decision was recorded.",
+    },
+    transition: {
+      reason: "run_failed",
+      body: { runId: approval.run_id, error: "approval expired", commandId },
+    },
   });
-  emit(db, "run_failed", { runId: approval.run_id, error: "approval expired", commandId }, nowMs);
 };
 
 const dispatch = (db: DatabaseSync, input: ApplyInput, stagedPaths: string[]): CommandReceipt => {
@@ -1180,11 +1184,7 @@ const dispatch = (db: DatabaseSync, input: ApplyInput, stagedPaths: string[]): C
         "SELECT task_id,status,provider_session_id,frozen_json,provider_state FROM runs WHERE id = ?",
         [command.runId],
       );
-      if (
-        !target ||
-        !target.provider_session_id ||
-        (!isTerminal(target.status) && target.status !== "interrupted")
-      )
+      if (!target || !target.provider_session_id || isActiveRunStatus(target.status))
         return receiptOf({
           commandId,
           replayed: false,
@@ -1208,7 +1208,7 @@ const dispatch = (db: DatabaseSync, input: ApplyInput, stagedPaths: string[]): C
         "loading";
       const counts = row<{ total: number; bot: number }>(
         db,
-        `SELECT COUNT(*) AS total, COALESCE(SUM(json_extract(frozen_json,'$.bot') = ?),0) AS bot FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling') OR json_extract(provider_state,'$.loadStatus')='loading'`,
+        `SELECT COUNT(*) AS total, COALESCE(SUM(json_extract(frozen_json,'$.bot') = ?),0) AS bot FROM runs WHERE ${ACTIVE_RUN_OR_LOADING_SQL}`,
         [frozen.bot],
       );
       if (
@@ -1332,7 +1332,7 @@ const submitTask = (
   }
   const active = row<{ n: number }>(
     db,
-    "SELECT COUNT(*) AS n FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling') OR json_extract(provider_state, '$.loadStatus') = 'loading'",
+    `SELECT COUNT(*) AS n FROM runs WHERE ${ACTIVE_RUN_OR_LOADING_SQL}`,
     [],
   );
   if ((active?.n ?? 0) >= MAX_ACTIVE_RUNS) {
@@ -1346,7 +1346,7 @@ const submitTask = (
   }
   const perBot = row<{ n: number }>(
     db,
-    "SELECT COUNT(*) AS n FROM runs WHERE json_extract(frozen_json, '$.bot') = ? AND (status IN ('queued','running','waiting_approval','waiting_input','reconciling') OR json_extract(provider_state, '$.loadStatus') = 'loading')",
+    `SELECT COUNT(*) AS n FROM runs WHERE json_extract(frozen_json, '$.bot') = ? AND ${ACTIVE_RUN_OR_LOADING_SQL}`,
     [bot],
   );
   if ((perBot?.n ?? 0) >= MAX_ACTIVE_RUNS_PER_BOT) {
@@ -1612,10 +1612,24 @@ const resolveApproval = (
     [approval.run_id],
   );
   if (next === "denied") {
-    run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [
-      approval.run_id,
-    ]);
-    run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [approval.task_id]);
+    finishRun(db, {
+      runId: approval.run_id as RunId,
+      status: "failed",
+      nowMs: input.nowMs,
+      message: {
+        authorKind: "system",
+        authorName: "agentis",
+        authorRole: "system",
+        kind: "failure",
+        importance: "blocking",
+        dedupeKey: `approval-denied:${approval.id}`,
+        body: "The owner denied the requested action; the run failed.",
+      },
+      transition: {
+        reason: "run_failed",
+        body: { runId: approval.run_id, error: "approval denied", commandId },
+      },
+    });
     return receiptOf({
       commandId,
       replayed: false,
@@ -1703,9 +1717,9 @@ const cancelRun = (
   command: typeof CancelRun.Type,
 ): CommandReceipt => {
   ownerOnly(input.principal, "cancel_run");
-  const current = row<{ id: string; status: string; task_id: string; thread_id: string }>(
+  const current = row<{ id: string; status: string; task_id: string }>(
     db,
-    "SELECT id, status, task_id, thread_id FROM runs WHERE id = ?",
+    "SELECT id, status, task_id FROM runs WHERE id = ?",
     [command.runId],
   );
   if (!current) {
@@ -1718,11 +1732,7 @@ const cancelRun = (
       effects: [],
     });
   }
-  if (
-    current.status === "succeeded" ||
-    current.status === "failed" ||
-    current.status === "canceled"
-  ) {
+  if (isFinishedRunStatus(current.status)) {
     return receiptOf({
       commandId,
       replayed: false,
@@ -1732,40 +1742,35 @@ const cancelRun = (
       effects: [],
     });
   }
-  run(db, "UPDATE runs SET status = 'canceled', waiting_reason = 'none' WHERE id = ?", [
-    current.id,
-  ]);
-  if (
-    !rejectHandoff(
-      db,
-      command.runId,
-      "rejected",
-      "canceled",
-      "owner canceled before acceptance",
-      input.nowMs,
-    )
-  )
-    run(db, "UPDATE tasks SET status = 'canceled' WHERE id = ?", [current.task_id]);
+  rejectHandoff(
+    db,
+    command.runId,
+    "rejected",
+    "canceled",
+    "owner canceled before acceptance",
+    input.nowMs,
+  );
+  finishRun(db, {
+    runId: current.id as RunId,
+    status: "canceled",
+    nowMs: input.nowMs,
+    message: {
+      authorKind: "system",
+      authorName: "agentis",
+      authorRole: "system",
+      kind: "system",
+      importance: "blocking",
+      dedupeKey: `run-canceled:${current.id}`,
+      body: "The owner canceled this run.",
+    },
+    transition: { reason: "run_canceled", body: { runId: current.id, commandId } },
+  });
   run(
     db,
     "UPDATE pending_actions SET state = 'canceled' WHERE run_id = ? AND state IN ('pending','allowed')",
     [current.id],
   );
   run(db, "UPDATE approvals SET state='canceled' WHERE run_id=? AND state='pending'", [current.id]);
-  message(db, {
-    threadId: current.thread_id,
-    taskId: current.task_id,
-    runId: current.id,
-    authorKind: "system",
-    authorName: "agentis",
-    authorRole: "system",
-    kind: "system",
-    importance: "blocking",
-    dedupeKey: `run-canceled:${current.id}`,
-    body: "The owner canceled this run.",
-    nowMs: input.nowMs,
-  });
-  emit(db, "run_canceled", { runId: current.id, commandId }, input.nowMs);
   return receiptOf({
     commandId,
     replayed: false,
@@ -1779,41 +1784,36 @@ const cancelRun = (
 const stopAll = (db: DatabaseSync, commandId: CommandId, input: ApplyInput): CommandReceipt => {
   ownerOnly(input.principal, "stop_all");
   run(db, "UPDATE stop_all SET latched = 1, updated_at = ? WHERE id = 1", [input.nowMs]);
-  const active = rows<{ id: string; task_id: string; thread_id: string }>(
-    db,
-    "SELECT id, task_id, thread_id FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')",
-  );
+  const active = rows<{ id: string }>(db, `SELECT id FROM runs WHERE ${ACTIVE_RUN_SQL}`);
   for (const item of active) {
-    run(db, "UPDATE runs SET status = 'canceled', waiting_reason = 'none' WHERE id = ?", [item.id]);
-    if (
-      !rejectHandoff(
-        db,
-        item.id as RunId,
-        "rejected",
-        "canceled",
-        "stop-all before acceptance",
-        input.nowMs,
-      )
-    )
-      run(db, "UPDATE tasks SET status = 'canceled' WHERE id = ?", [item.task_id]);
+    rejectHandoff(
+      db,
+      item.id as RunId,
+      "rejected",
+      "canceled",
+      "stop-all before acceptance",
+      input.nowMs,
+    );
+    finishRun(db, {
+      runId: item.id as RunId,
+      status: "canceled",
+      nowMs: input.nowMs,
+      message: {
+        authorKind: "system",
+        authorName: "agentis",
+        authorRole: "system",
+        kind: "system",
+        importance: "blocking",
+        dedupeKey: `stop-all:${item.id}`,
+        body: "Stop all canceled this run.",
+      },
+      transition: { reason: "run_canceled", body: { runId: item.id, commandId } },
+    });
     run(
       db,
       "UPDATE pending_actions SET state = 'canceled' WHERE run_id = ? AND state IN ('pending','allowed')",
       [item.id],
     );
-    message(db, {
-      threadId: item.thread_id,
-      taskId: item.task_id,
-      runId: item.id,
-      authorKind: "system",
-      authorName: "agentis",
-      authorRole: "system",
-      kind: "system",
-      importance: "blocking",
-      dedupeKey: `stop-all:${item.id}`,
-      body: "Stop all canceled this run.",
-      nowMs: input.nowMs,
-    });
   }
   run(db, "UPDATE approvals SET state='canceled' WHERE state='pending'", []);
   run(
@@ -2098,16 +2098,10 @@ const readSnapshotUnlocked = (db: DatabaseSync): Snapshot => {
   };
 };
 
-const isTerminal = (status: string) =>
-  status === "succeeded" ||
-  status === "failed" ||
-  status === "canceled" ||
-  status === "interrupted";
-
 const interruptActive = (db: DatabaseSync, nowMs: number): RunId[] => {
   const active = rows<{ id: string; task_id: string; thread_id: string }>(
     db,
-    "SELECT id,task_id,thread_id FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')",
+    `SELECT id,task_id,thread_id FROM runs WHERE ${ACTIVE_RUN_SQL}`,
   );
   db.exec("BEGIN IMMEDIATE");
   try {
@@ -2152,12 +2146,7 @@ export const mutateForEngine = (storePath: string) => {
   const active = (runId: RunId) => {
     const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [runId]);
     const stopped = row<{ latched: number }>(db, "SELECT latched FROM stop_all WHERE id = 1", []);
-    return (
-      current !== undefined &&
-      !isTerminal(current.status) &&
-      current.status !== "interrupted" &&
-      stopped?.latched !== 1
-    );
+    return current !== undefined && isActiveRunStatus(current.status) && stopped?.latched !== 1;
   };
   return {
     isActive: active,
@@ -2376,32 +2365,24 @@ export const mutateForEngine = (storePath: string) => {
             input.nowMs,
           ],
         );
-        run(
-          db,
-          "UPDATE runs SET status='succeeded',waiting_reason='none',completed_at=? WHERE id=?",
-          [input.nowMs, input.runId],
-        );
-        run(
-          db,
-          "UPDATE tasks SET status='completed',latest_artifact_id=?,updated_at=? WHERE id=?",
-          [artifactId, input.nowMs, input.taskId],
-        );
-        emit(db, "run_succeeded", { runId: input.runId, artifactId }, input.nowMs);
-        const task = row<{ thread_id: string }>(db, "SELECT thread_id FROM tasks WHERE id=?", [
-          input.taskId,
-        ]);
-        message(db, {
-          threadId: task?.thread_id ?? handoff?.threadId ?? "",
-          taskId: input.taskId,
+        finishRun(db, {
           runId: input.runId,
-          authorKind: "bot",
-          authorName: input.author === "ivo" ? "ivo" : "mara",
-          authorRole: input.author === "ivo" ? "specialist" : "coordinator",
-          kind: "result",
-          importance: "result",
-          dedupeKey: `result:${input.runId}`,
-          body: `Result ready: ${artifactId}`,
+          status: "succeeded",
           nowMs: input.nowMs,
+          latestArtifactId: artifactId,
+          message: {
+            authorKind: "bot",
+            authorName: input.author === "ivo" ? "ivo" : "mara",
+            authorRole: input.author === "ivo" ? "specialist" : "coordinator",
+            kind: "result",
+            importance: "result",
+            dedupeKey: `result:${input.runId}`,
+            body: `Result ready: ${artifactId}`,
+          },
+          transition: {
+            reason: "run_succeeded",
+            body: { runId: input.runId, artifactId },
+          },
         });
         if (handoff) {
           emit(
@@ -2429,30 +2410,24 @@ export const mutateForEngine = (storePath: string) => {
           return;
         }
         if (rejectHandoff(db, runId, "rejected", "failed", error, nowMs)) return;
-        const currentTask = row<{ thread_id: string; bot_name: string }>(
-          db,
-          "SELECT thread_id,bot_name FROM tasks WHERE id=?",
-          [taskId],
-        );
-        run(db, "UPDATE runs SET status='failed',waiting_reason='none',completed_at=? WHERE id=?", [
-          nowMs,
-          runId,
-        ]);
-        run(db, "UPDATE tasks SET status='failed',updated_at=? WHERE id=?", [nowMs, taskId]);
-        message(db, {
-          threadId: currentTask?.thread_id ?? "",
+        const currentTask = row<{ bot_name: string }>(db, "SELECT bot_name FROM tasks WHERE id=?", [
           taskId,
+        ]);
+        finishRun(db, {
           runId,
-          authorKind: "bot",
-          authorName: currentTask?.bot_name === "ivo" ? "ivo" : "mara",
-          authorRole: messageRoleOfRun(db, runId),
-          kind: "failure",
-          importance: "blocking",
-          dedupeKey: `failure:${runId}:${digest(error)}`,
-          body: error,
+          status: "failed",
           nowMs,
+          message: {
+            authorKind: "bot",
+            authorName: currentTask?.bot_name === "ivo" ? "ivo" : "mara",
+            authorRole: messageRoleOfRun(db, runId),
+            kind: "failure",
+            importance: "blocking",
+            dedupeKey: `failure:${runId}:${digest(error)}`,
+            body: error,
+          },
+          transition: { reason: "run_failed", body: { runId, error } },
         });
-        emit(db, "run_failed", { runId, error }, nowMs);
       }),
     bumpAction: (runId: RunId, taskId: TaskId) =>
       withTxn(db, () => {
@@ -2511,19 +2486,32 @@ export const sweepRunTimeouts = (storePath: string, nowMs: number): readonly Run
         )
           effects.push({ runId: handoff.recipientRunId, effects: ["interrupt_provider"] });
       }
-      const overdue = rows<{ id: string; task_id: string }>(
+      const overdue = rows<{ id: string }>(
         db,
-        `SELECT id, task_id FROM runs
-         WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling')
+        `SELECT id FROM runs
+         WHERE ${ACTIVE_RUN_SQL}
            AND deadline_at <= ?`,
         [nowMs],
       );
       for (const item of overdue) {
-        run(db, "UPDATE runs SET status = 'failed', waiting_reason = 'none' WHERE id = ?", [
-          item.id,
-        ]);
-        run(db, "UPDATE tasks SET status = 'failed' WHERE id = ?", [item.task_id]);
-        emit(db, "run_failed", { runId: item.id, error: "run deadline exceeded" }, nowMs);
+        finishRun(db, {
+          runId: item.id as RunId,
+          status: "failed",
+          nowMs,
+          message: {
+            authorKind: "system",
+            authorName: "agentis",
+            authorRole: "system",
+            kind: "failure",
+            importance: "blocking",
+            dedupeKey: `deadline:${item.id}`,
+            body: "The run deadline was exceeded.",
+          },
+          transition: {
+            reason: "run_failed",
+            body: { runId: item.id, error: "run deadline exceeded" },
+          },
+        });
         effects.push({ runId: item.id as RunId, effects: ["interrupt_provider"] });
       }
       const expired = rows<{ id: string; run_id: string; task_id: string }>(

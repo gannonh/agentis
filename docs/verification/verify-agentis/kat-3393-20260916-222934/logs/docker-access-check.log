@@ -1,0 +1,21 @@
+$ "docker" "info"
+cwd: /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e
+started_at: 2026-09-16T22:43:43.994Z
+
+Client:
+ Version:    29.7.2
+ Context:    default
+ Debug Mode: false
+ Plugins:
+  buildx: Docker Buildx (Docker Inc.)
+    Version:  0.37.0
+    Path:     /usr/lib/docker/cli-plugins/docker-buildx
+  compose: Docker Compose (Docker Inc.)
+    Version:  5.5.1
+    Path:     /usr/lib/docker/cli-plugins/docker-compose
+
+Server:
+permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+
+exit_code: 1
+finished_at: 2026-09-16T22:43:44.025Z

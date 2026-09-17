@@ -1,0 +1,28 @@
+$ "env" "TMPDIR=/home/gannonh/.katacode/tmp" "mise" "exec" "--" "pnpm" "build"
+cwd: /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e
+started_at: 2026-09-16T22:38:45.099Z
+
+
+> agentis@2.0.0 build /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e
+> pnpm --filter @agentis-labs/cli build
+
+
+> @agentis-labs/cli@2.0.0 build /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e/packages/cli
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json && esbuild src/fixture-daemon.ts --bundle --platform=node --format=esm --outfile=dist/fixture-daemon.mjs && vite build --config vite.config.ts
+
+
+  dist/fixture-daemon.mjs  1.4mb ⚠️
+
+⚡ Done in 92ms
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 738 modules transformed.
+rendering chunks...
+computing gzip size...
+../dist/web/index.html                   0.45 kB │ gzip:   0.29 kB
+../dist/web/assets/index-DYfl71df.css    7.68 kB │ gzip:   2.56 kB
+../dist/web/assets/index-Bhr3JzG5.js   477.00 kB │ gzip: 151.05 kB
+✓ built in 2.52s
+
+exit_code: 0
+finished_at: 2026-09-16T22:38:48.714Z

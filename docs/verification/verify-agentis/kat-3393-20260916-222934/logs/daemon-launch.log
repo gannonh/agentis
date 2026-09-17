@@ -1,0 +1,7 @@
+$ "bash" "-c" "DATA=/home/gannonh/.katacode/tmp/kat3393-uat-data; rm -rf \"$DATA\"; mkdir -p \"$DATA\"; setsid nohup mise exec -- node packages/cli/dist/bin.js serve --endpoint http://127.0.0.1:7717 --data-root \"$DATA\" --provider fake --execution-boundary unverified-host-scratch > \"$0/logs/serve.log\" 2>&1 < /dev/null & echo $! > \"$0/logs/serve.pid\"; for i in $(seq 1 40); do curl -sf -m 1 http://127.0.0.1:7717/v1/health && break; sleep 0.25; done" "docs/verification/verify-agentis/kat-3393-20260916-222934"
+cwd: /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e
+started_at: 2026-09-16T22:39:28.024Z
+
+{"ok":true,"schemaId":"agentis.v2.gate1.0","apiFamily":"v1","node":"v24.20.0","packageVersion":"2.0.0"}
+exit_code: 0
+finished_at: 2026-09-16T22:39:28.569Z

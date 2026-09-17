@@ -1,0 +1,63 @@
+$ "env" "EV=docs/verification/verify-agentis/kat-3393-20260916-222934" "mise" "exec" "--" "node" "--input-type=module" "-e" "import { readFileSync, writeFileSync } from \"node:fs\"; const dir = process.env.EV; const read = (name) => JSON.parse(readFileSync(`${dir}/responses/${name}`, \"utf8\")); const before = read(\"status-before-cancel.json\"); const afterCancel = read(\"status-after-cancel.json\"); const beforeStop = read(\"status-before-stop-all.json\"); const afterStop = read(\"status-after-stop-all.json\"); const events = readFileSync(`${dir}/responses/events-transitions.txt`, \"utf8\"); const canceledRunId = before.runs[0].id; const canceled = (state) => state.runs.find((run) => run.id === canceledRunId); const taskFor = (state, run) => state.tasks.find((task) => task.id === run.taskId); const beforeTask = taskFor(before, canceled(before)); const afterTask = taskFor(afterCancel, canceled(afterCancel)); const activeBeforeStop = beforeStop.runs.filter((run) => [\"queued\",\"running\",\"waiting_approval\",\"waiting_input\"].includes(run.status)); const reasons = events.split(\"\\n\").filter((line) => line.startsWith(\"data: \")).map((line) => JSON.parse(line.slice(6)).event.reason); const checks = [[\"cancel: run was waiting_input with completedAt null before\", canceled(before).status === \"waiting_input\" && canceled(before).completedAt === null], [\"cancel: run is canceled with numeric completedAt after\", canceled(afterCancel).status === \"canceled\" && typeof canceled(afterCancel).completedAt === \"number\"], [\"cancel: owning task is canceled at the same timestamp\", afterTask.status === \"canceled\" && afterTask.updatedAt === canceled(afterCancel).completedAt], [\"cancel: owning task updatedAt advanced\", afterTask.updatedAt > beforeTask.updatedAt], [\"cancel: terminal system message recorded\", afterCancel.messages.some((m) => m.body === \"The owner canceled this run.\")], [\"cancel: SSE stream carries run_canceled\", reasons.includes(\"run_canceled\")], [\"stop-all: one run was active with completedAt null before\", activeBeforeStop.length === 1 && activeBeforeStop[0].completedAt === null], [\"stop-all: that run is canceled with numeric completedAt after\", afterStop.runs.filter((run) => run.id === activeBeforeStop[0].id).every((run) => run.status === \"canceled\" && typeof run.completedAt === \"number\")], [\"stop-all: every owning task carries updatedAt equal to its run completedAt\", afterStop.tasks.every((task) => afterStop.runs.some((run) => run.taskId === task.id && run.completedAt === task.updatedAt))], [\"stop-all: exactly one stop-all message for the newly canceled run\", afterStop.messages.filter((m) => m.body === \"Stop all canceled this run.\").length === 1], [\"stop-all: SSE stream carries the aggregate stop_all reason\", reasons.includes(\"stop_all\")], [\"stop-all: already-terminal runs are not re-canceled (completedAt unchanged)\", afterStop.runs.find((run) => run.id === canceledRunId).completedAt === canceled(afterCancel).completedAt]]; const result = { issue: \"KAT-3393\", checked_at: new Date().toISOString(), public_surface: \"GET /v1/status and GET /v1/events after agentis run cancel and agentis stop-all\", checks: checks.map(([name, pass]) => ({ name, pass })), verdict: checks.every(([, pass]) => pass) ? \"PASS\" : \"FAIL\" }; writeFileSync(`${dir}/responses/assertions.json`, `${JSON.stringify(result, null, 2)}\\n`); console.log(JSON.stringify(result, null, 2)); if (result.verdict !== \"PASS\") process.exitCode = 1;"
+cwd: /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e
+started_at: 2026-09-16T22:40:10.073Z
+
+{
+  "issue": "KAT-3393",
+  "checked_at": "2026-09-16T22:40:10.108Z",
+  "public_surface": "GET /v1/status and GET /v1/events after agentis run cancel and agentis stop-all",
+  "checks": [
+    {
+      "name": "cancel: run was waiting_input with completedAt null before",
+      "pass": true
+    },
+    {
+      "name": "cancel: run is canceled with numeric completedAt after",
+      "pass": true
+    },
+    {
+      "name": "cancel: owning task is canceled at the same timestamp",
+      "pass": true
+    },
+    {
+      "name": "cancel: owning task updatedAt advanced",
+      "pass": true
+    },
+    {
+      "name": "cancel: terminal system message recorded",
+      "pass": true
+    },
+    {
+      "name": "cancel: SSE stream carries run_canceled",
+      "pass": true
+    },
+    {
+      "name": "stop-all: one run was active with completedAt null before",
+      "pass": true
+    },
+    {
+      "name": "stop-all: that run is canceled with numeric completedAt after",
+      "pass": true
+    },
+    {
+      "name": "stop-all: every owning task carries updatedAt equal to its run completedAt",
+      "pass": true
+    },
+    {
+      "name": "stop-all: exactly one stop-all message for the newly canceled run",
+      "pass": true
+    },
+    {
+      "name": "stop-all: SSE stream carries the aggregate stop_all reason",
+      "pass": true
+    },
+    {
+      "name": "stop-all: already-terminal runs are not re-canceled (completedAt unchanged)",
+      "pass": true
+    }
+  ],
+  "verdict": "PASS"
+}
+
+exit_code: 0
+finished_at: 2026-09-16T22:40:10.113Z

@@ -1,0 +1,8 @@
+$ "mise" "exec" "--" "node" "packages/cli/dist/bin.js" "run" "cancel" "--endpoint" "http://127.0.0.1:7717" "--data-root" "/home/gannonh/.katacode/tmp/kat3393-uat-data" "--run" "a248be0a-8859-43b4-9199-f5b5cc303a83"
+cwd: /home/gannonh/.katacode/worktrees/agentis/katacode-c776e61e
+started_at: 2026-09-16T22:39:39.397Z
+
+{"commandId":"20317329-962b-436e-aed6-1c636c84de66","replayed":false,"accepted":true,"taskId":"18fe3bf6-91e1-440b-8b12-d87626b08d17","runId":"a248be0a-8859-43b4-9199-f5b5cc303a83","effects":["interrupt_provider"]}
+
+exit_code: 0
+finished_at: 2026-09-16T22:39:39.838Z

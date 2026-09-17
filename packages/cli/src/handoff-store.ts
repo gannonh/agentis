@@ -13,6 +13,7 @@ import {
 } from "./schema.js";
 import type { ApplyInput } from "./store.js";
 import { row, rows, run, emit, message } from "./store-db.js";
+import { ACTIVE_RUN_OR_LOADING_SQL, finishRun } from "./run-lifecycle.js";
 import { frozenConfig } from "./provider-profile.js";
 import { readVerifiedFile } from "./verified-file.js";
 import {
@@ -87,15 +88,34 @@ export const rejectHandoff = (
   const handoff = handoffForRun(db, runId);
   if (!handoff || handoff.state !== "proposed") return false;
   run(db, "UPDATE handoffs SET state=? WHERE id=? AND state='proposed'", [state, handoff.id]);
-  run(db, "UPDATE runs SET status=?,waiting_reason='none',completed_at=? WHERE id=?", [
-    runStatus,
-    nowMs,
+  finishRun(db, {
     runId,
-  ]);
+    status: runStatus,
+    nowMs,
+    message: {
+      authorKind: "bot",
+      authorName: "ivo",
+      authorRole: "specialist",
+      kind: "handoff",
+      importance: "decision",
+      dedupeKey: `handoff:${handoff.id}:${state}`,
+      body: `Handoff ${state}: ${reason}`,
+    },
+    transition: {
+      reason: state === "rejected" ? "handoff_rejected" : "handoff_expired",
+      body: {
+        handoffId: handoff.id,
+        taskId: handoff.taskId,
+        threadId: handoff.threadId,
+        runId,
+        author: "ivo",
+        reason,
+      },
+    },
+  });
   run(db, "UPDATE pending_actions SET state='canceled' WHERE run_id=? AND state='pending'", [
     runId,
   ]);
-  note(db, handoff, state, reason, nowMs);
   return true;
 };
 const readVerifiedSource = (
@@ -147,7 +167,7 @@ export const proposeHandoff = (
     return denied("stop-all is latched");
   const counts = row<{ total: number; bot: number }>(
     db,
-    `SELECT COUNT(*) AS total,COALESCE(SUM(json_extract(frozen_json,'$.bot')='ivo'),0) AS bot FROM runs WHERE status IN ('queued','running','waiting_approval','waiting_input','reconciling') OR json_extract(provider_state,'$.loadStatus')='loading'`,
+    `SELECT COUNT(*) AS total,COALESCE(SUM(json_extract(frozen_json,'$.bot')='ivo'),0) AS bot FROM runs WHERE ${ACTIVE_RUN_OR_LOADING_SQL}`,
   );
   if ((counts?.total ?? 0) >= MAX_ACTIVE_RUNS || (counts?.bot ?? 0) >= MAX_ACTIVE_RUNS_PER_BOT)
     return denied("handoff concurrency exceeded");

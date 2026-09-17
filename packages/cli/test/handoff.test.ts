@@ -178,6 +178,43 @@ describe("bounded handoff", () => {
       await server.close();
     }
   });
+  it("stamps a rejected proposal's run and leaves the source task untouched", async () => {
+    process.env.AGENTIS_CLAUDE_STUB = fileURLToPath(new URL("./claude-stub.mjs", import.meta.url));
+    const { endpoint, server, owner, store } = await boot();
+    try {
+      const source = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "smoke" },
+      });
+      await waitFor(store, endpoint, owner.token, (state) => state.runs[0]?.status === "succeeded");
+      await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "propose_handoff",
+          sourceRunId: source.json.runId,
+          recipient: "ivo",
+          context: "DELAY_HANDOFF",
+        },
+      });
+      const before = await waitFor(
+        store,
+        endpoint,
+        owner.token,
+        (state) => state.handoffs[0]?.state === "proposed",
+      );
+      const sourceTaskUpdatedAt = before.tasks[0]?.updatedAt;
+      expect(before.runs[1]?.completedAt).toBeNull();
+      const sweptAt = Date.now() + 61000;
+      sweepRunTimeouts(server.store.path, sweptAt);
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      const after = await statusOf(store, endpoint, owner.token);
+      expect(after.handoffs[0]?.state).toBe("expired");
+      expect(after.runs[1]).toMatchObject({ status: "failed", completedAt: sweptAt });
+      expect(after.tasks[0]).toMatchObject({ status: "completed", updatedAt: sourceTaskUpdatedAt });
+    } finally {
+      await server.close();
+    }
+  });
   it.each(["cancel_run", "stop_all"])(
     "%s before acceptance retains the coordinator result",
     async (kind) => {

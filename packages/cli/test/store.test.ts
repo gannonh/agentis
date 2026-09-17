@@ -7,7 +7,13 @@ import { Effect, Schema } from "effect";
 import { describe, expect, it } from "vitest";
 import { newApprovalId, newIdempotencyKey, newRunId, newSessionId } from "../src/ids.js";
 import { applyReceiptEffects } from "../src/engine.js";
-import { mutateForEngine, openStore, type ApplyInput, type Principal } from "../src/store.js";
+import {
+  mutateForEngine,
+  openStore,
+  sweepRunTimeouts,
+  type ApplyInput,
+  type Principal,
+} from "../src/store.js";
 import { EVENT_REPLAY_LIMIT, SCHEMA_ID } from "../src/versions.js";
 import { Cursor, type Command, type SourcePacket } from "../src/schema.js";
 
@@ -847,5 +853,73 @@ describe("store", () => {
     expect(snapshot.tasks).toEqual([]);
     expect(snapshot.evidence).toEqual([]);
     await Effect.runPromise(store.close());
+  });
+
+  it("releases the active-run slot when a run is canceled", async () => {
+    const root = tempRoot();
+    const first = await apply(root, { kind: "submit_task", brief: "one", fixture: "cancel" });
+    expect(first.accepted).toBe(true);
+    if (!first.runId) throw new Error("first Run was not created");
+    const blocked = await apply(root, { kind: "submit_task", brief: "two", fixture: "smoke" });
+    expect(blocked.accepted).toBe(false);
+    expect(blocked.error).toMatch(/concurrency/);
+    await apply(root, { kind: "cancel_run", runId: first.runId });
+    const admitted = await apply(root, { kind: "submit_task", brief: "three", fixture: "smoke" });
+    expect(admitted.accepted).toBe(true);
+    expect(admitted.runId).toBeDefined();
+  });
+
+  it("stamps completed_at and task updated_at when the owner cancels a run", async () => {
+    const root = tempRoot();
+    const store = await Effect.runPromise(openStore(root));
+    const principal = owner();
+    const submitted = await Effect.runPromise(
+      store.applyCommand({
+        principal,
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "cancel me", fixture: "cancel" },
+        nowMs: 1_000,
+        provider: "fake",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: join(root, "scratch"),
+      }),
+    );
+    if (!submitted.runId) throw new Error("missing run");
+    const canceledAt = 5_000;
+    const canceled = await Effect.runPromise(
+      store.applyCommand({
+        principal,
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "cancel_run", runId: submitted.runId },
+        nowMs: canceledAt,
+        provider: "fake",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: join(root, "scratch"),
+      }),
+    );
+    const snapshot = await Effect.runPromise(store.snapshot());
+    await Effect.runPromise(store.close());
+    expect(canceled.accepted).toBe(true);
+    expect(snapshot.runs[0]).toMatchObject({ status: "canceled", completedAt: canceledAt });
+    expect(snapshot.tasks[0]).toMatchObject({ status: "canceled", updatedAt: canceledAt });
+  });
+
+  it("stamps completed_at and task updated_at when the sweep fails an overdue run", async () => {
+    const root = tempRoot();
+    const submitted = await apply(root, {
+      kind: "submit_task",
+      brief: "deadline",
+      fixture: "cancel",
+    });
+    if (!submitted.runId) throw new Error("missing run");
+    const store = await Effect.runPromise(openStore(root));
+    const before = await Effect.runPromise(store.snapshot());
+    const sweptAt = (before.runs[0]?.deadlineAt ?? 0) + 1;
+    const effects = sweepRunTimeouts(join(root, "state.sqlite"), sweptAt);
+    const snapshot = await Effect.runPromise(store.snapshot());
+    await Effect.runPromise(store.close());
+    expect(effects).toEqual([{ runId: submitted.runId, effects: ["interrupt_provider"] }]);
+    expect(snapshot.runs[0]).toMatchObject({ status: "failed", completedAt: sweptAt });
+    expect(snapshot.tasks[0]).toMatchObject({ status: "failed", updatedAt: sweptAt });
   });
 });

@@ -1,0 +1,6 @@
+{
+  "endpoint": "http://127.0.0.1:7717/",
+  "pid": 3113114,
+  "dataRoot": "/home/gannonh/.katacode/tmp/kat3393-uat-data",
+  "log": "/home/gannonh/.katacode/tmp/kat3393-uat-data/daemon.log"
+}

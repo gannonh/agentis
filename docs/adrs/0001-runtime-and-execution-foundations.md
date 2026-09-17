@@ -14,7 +14,7 @@ Accepted under [KAT-3249](https://linear.app/kata-sh/issue/KAT-3249). Acceptance
 
    Capture bot revision, skill versions, grants, provider, model/effort and environment at run creation. Later configuration edits do not silently change an active attempt. A follow-up is a new attempt linked to the same task. Distinguish Agentis ids from external provider ids.
 
-   Run states are queued, running, waiting for approval, waiting for input, interrupted, reconciling, succeeded, failed and canceled. Enforce allowed transitions and one terminal result per attempt. Represent unknown external action outcomes separately, with receipts and reconciliation evidence.
+   Run states are queued, running, waiting for approval, waiting for input, interrupted, succeeded, failed and canceled. Enforce allowed transitions and one terminal result per attempt. Represent unknown external action outcomes separately, with receipts and reconciliation evidence.
 
 3. **Persistence and recovery**
 
