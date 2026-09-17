@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cursor, Transition } from "../src/schema.js";
 import { TransitionHub } from "../src/sse.js";
 import type { Store } from "../src/store.js";
-import { EVENT_SUBSCRIBER_LIMIT } from "../src/versions.js";
+import { EVENT_SUBSCRIBER_QUEUE_LIMIT } from "../src/versions.js";
 
 class TestResponse extends EventEmitter {
   readonly frames: string[] = [];
@@ -39,7 +39,7 @@ describe("TransitionHub", () => {
   it("resyncs one bounded slow subscriber without blocking a fast peer and closes promptly", async () => {
     vi.useFakeTimers();
     let live = false;
-    const events = Array.from({ length: EVENT_SUBSCRIBER_LIMIT + 2 }, (_, index) =>
+    const events = Array.from({ length: EVENT_SUBSCRIBER_QUEUE_LIMIT + 2 }, (_, index) =>
       Schema.decodeUnknownSync(Transition)({
         cursor: String(index + 1),
         id: `event_${index + 1}`,
@@ -50,8 +50,6 @@ describe("TransitionHub", () => {
     const store = {
       transitionsAfter: () =>
         Effect.succeed({
-          cursor: Schema.decodeUnknownSync(Cursor)(String(events.length)),
-          replayFloor: Schema.decodeUnknownSync(Cursor)("0"),
           events: live ? events : [],
         }),
     } as unknown as Store;

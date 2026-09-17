@@ -571,13 +571,18 @@ describe("store", () => {
         }),
       ),
     ).rejects.toThrow(/different payload/);
-    const snapshot = await Effect.runPromise(store.snapshot(true));
+    const snapshot = await Effect.runPromise(store.snapshot());
     expect(snapshot.tasks).toHaveLength(1);
     expect(snapshot.runs).toHaveLength(1);
     expect(snapshot.evidence).toHaveLength(1);
     expect(snapshot.botConfigRevisions).toHaveLength(1);
     expect(snapshot.messages).toHaveLength(1);
-    expect(snapshot.events.filter((event) => event.type === "task_submitted")).toHaveLength(1);
+    const transitions = await Effect.runPromise(
+      store.transitionsAfter(Schema.decodeUnknownSync(Cursor)("0")),
+    );
+    expect(
+      transitions.events.filter((transition) => transition.event.reason === "task_submitted"),
+    ).toHaveLength(1);
     await Effect.runPromise(store.close());
   });
 
@@ -806,7 +811,6 @@ describe("store", () => {
     const window = await Effect.runPromise(
       store.transitionsAfter(Schema.decodeUnknownSync(Cursor)("128")),
     );
-    expect(window.cursor).toBe("130");
     expect(window.events.map((event) => event.cursor)).toEqual(["129", "130"]);
     expect(window.events.every((event) => event.event.reason === "peer_progress")).toBe(true);
     const retained = new DatabaseSync(store.path);
