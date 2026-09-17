@@ -387,7 +387,6 @@ export const spawnClaude = (input: DriveInput): Effect.Effect<void, Error> =>
             engine.complete({
               runId: input.runId,
               taskId: input.taskId,
-              author: run.frozen.bot,
               source: "claude",
               mediaType: "text/markdown",
               sha256: createHash("sha256").update(body).digest("hex"),

@@ -2326,7 +2326,6 @@ export const mutateForEngine = (storePath: string) => {
     complete: (input: {
       runId: RunId;
       taskId: TaskId;
-      author: string;
       source: string;
       mediaType: string;
       sha256: string;
@@ -2335,12 +2334,15 @@ export const mutateForEngine = (storePath: string) => {
       nowMs: number;
     }) =>
       withTxn(db, () => {
-        const current = row<{ status: string }>(db, "SELECT status FROM runs WHERE id = ?", [
-          input.runId,
-        ]);
+        const current = row<{ status: string; frozen_json: string }>(
+          db,
+          "SELECT status, frozen_json FROM runs WHERE id = ?",
+          [input.runId],
+        );
         if (!current || !active(input.runId)) {
           return null;
         }
+        const frozen = Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(current.frozen_json));
         const handoff = handoffForRun(db, input.runId);
         if (handoff && handoff.state !== "accepted") return null;
         const artifactId = newArtifactId();
@@ -2360,7 +2362,7 @@ export const mutateForEngine = (storePath: string) => {
             artifactId,
             input.taskId,
             input.runId,
-            input.author,
+            frozen.bot,
             input.source,
             input.mediaType,
             input.sha256,
@@ -2377,8 +2379,8 @@ export const mutateForEngine = (storePath: string) => {
           latestArtifactId: artifactId,
           message: {
             authorKind: "bot",
-            authorName: input.author === "ivo" ? "ivo" : "mara",
-            authorRole: input.author === "ivo" ? "specialist" : "coordinator",
+            authorName: frozen.bot,
+            authorRole: frozen.role,
             kind: "result",
             importance: "result",
             dedupeKey: `result:${input.runId}`,
