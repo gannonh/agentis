@@ -535,7 +535,6 @@ const finish = (session: Session, input: DriveInput, text: string) => {
   engine.complete({
     runId: input.runId,
     taskId: input.taskId,
-    author: "mara",
     source: "codex",
     mediaType: "text/markdown",
     sha256: createHash("sha256").update(body).digest("hex"),

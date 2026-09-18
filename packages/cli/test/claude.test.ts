@@ -26,6 +26,7 @@ describe("Claude SDK bridge", () => {
         state.runs.some((run) => run.status === "succeeded"),
       );
       expect(state.artifacts[0]?.source).toBe("claude");
+      expect(state.artifacts[0]?.author).toBe("ivo");
       expect(readFileSync(state.artifacts[0]?.path ?? "", "utf8")).toBe("CLAUDE_OK");
       expect(state.runs[0]?.providerSessionId).toBe("claude-session-1");
     } finally {

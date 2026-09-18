@@ -346,7 +346,6 @@ const writeArtifact = (engine: ReturnType<typeof mutateForEngine>, input: DriveI
   engine.complete({
     runId: input.runId,
     taskId: input.taskId,
-    author: "mara",
     source: input.provider === "codex" ? "codex" : "fake",
     mediaType: "text/markdown",
     sha256,

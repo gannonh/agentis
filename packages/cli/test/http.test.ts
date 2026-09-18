@@ -50,6 +50,15 @@ const command = async (endpoint: URL, token: string, body: unknown, header = `Be
   return { status: response.status, json: (await response.json()) as Record<string, unknown> };
 };
 
+const statusSnapshot = async (endpoint: URL, token: string) =>
+  Schema.decodeUnknownSync(WorkspaceSnapshot)(
+    await (
+      await fetch(new URL("/v1/status", endpoint), {
+        headers: { authorization: `Bearer ${token}` },
+      })
+    ).json(),
+  );
+
 describe("http", () => {
   it("rejects guessed-auth-free commands and bot approvals", async () => {
     const { endpoint, server, owner } = await boot();
@@ -220,26 +229,18 @@ describe("http", () => {
     "rejects late approval after %s with expiry %s without reviving work",
     async (kind, expired) => {
       const { endpoint, server, owner } = await boot();
-      const snapshot = async () =>
-        Schema.decodeUnknownSync(WorkspaceSnapshot)(
-          await (
-            await fetch(new URL("/v1/status", endpoint), {
-              headers: { authorization: `Bearer ${owner.token}` },
-            })
-          ).json(),
-        );
       try {
         const submitted = await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
           command: { kind: "submit_task", brief: "pending", fixture: "allow" },
         });
-        const pending = await snapshot();
+        const pending = await statusSnapshot(endpoint, owner.token);
         const approval = pending.pending.find((action) => action.approvalId);
         await command(endpoint, owner.token, {
           idempotencyKey: newIdempotencyKey(),
           command: { kind, ...(kind === "cancel_run" ? { runId: submitted.json.runId } : {}) },
         });
-        const canceled = await snapshot();
+        const canceled = await statusSnapshot(endpoint, owner.token);
         if (expired) vi.spyOn(Date, "now").mockReturnValue(Date.now() + 6 * 60 * 1000);
         for (const decision of ["allowed", "denied"]) {
           const late = await command(endpoint, owner.token, {
@@ -249,7 +250,7 @@ describe("http", () => {
           expect(late.json.accepted).toBe(false);
           expect(late.json.effects).toEqual([]);
         }
-        const after = await snapshot();
+        const after = await statusSnapshot(endpoint, owner.token);
         expect(after.runs).toEqual(canceled.runs);
         expect(after.tasks).toEqual(canceled.tasks);
         expect(after.artifacts).toEqual(canceled.artifacts);
@@ -382,10 +383,7 @@ describe("http", () => {
         command: { kind: "submit_task", brief: "provider metadata", fixture: "smoke" },
       });
       expect(submitted.json.accepted).toBe(true);
-      const status = await fetch(new URL("/v1/status", endpoint), {
-        headers: { authorization: `Bearer ${owner.token}` },
-      });
-      const snap = Schema.decodeUnknownSync(WorkspaceSnapshot)(await status.json());
+      const snap = await statusSnapshot(endpoint, owner.token);
       const run = snap.runs.find((item) => item.id === String(submitted.json.runId));
       const revision = snap.botConfigRevisions.find((item) => item.id === run?.botConfigRevisionId);
       const expected = {
@@ -409,6 +407,135 @@ describe("http", () => {
     }
   });
 
+  it("attributes an Ivo approval request to Ivo in the status snapshot", async () => {
+    const { endpoint, server, owner } = await boot();
+    try {
+      const submitted = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "ivo approval", fixture: "allow", bot: "ivo" },
+      });
+      expect(submitted.json.accepted).toBe(true);
+      const snap = await statusSnapshot(endpoint, owner.token);
+      const approval = snap.messages.find(
+        (message) => message.kind === "approval" && message.runId === String(submitted.json.runId),
+      );
+      expect(approval?.authorName).toBe("ivo");
+      expect(approval?.authorRole).toBe("specialist");
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("attributes an Ivo fake-provider result to Ivo", async () => {
+    const { endpoint, server, owner } = await boot();
+    try {
+      const submitted = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "ivo smoke", fixture: "smoke", bot: "ivo" },
+      });
+      expect(submitted.json.accepted).toBe(true);
+      const snap = await statusSnapshot(endpoint, owner.token);
+      const runId = String(submitted.json.runId);
+      const artifact = snap.artifacts.find((item) => item.runId === runId);
+      expect(artifact?.author).toBe("ivo");
+      const result = snap.messages.find(
+        (message) => message.kind === "result" && message.runId === runId,
+      );
+      expect(result?.authorName).toBe("ivo");
+      expect(result?.authorRole).toBe("specialist");
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("keeps Mara attribution for approval requests and fake-provider results", async () => {
+    const { endpoint, server, owner } = await boot();
+    try {
+      const allow = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "mara approval", fixture: "allow" },
+      });
+      const pending = await statusSnapshot(endpoint, owner.token);
+      const approval = pending.messages.find(
+        (message) => message.kind === "approval" && message.runId === String(allow.json.runId),
+      );
+      expect(approval?.authorName).toBe("mara");
+      expect(approval?.authorRole).toBe("coordinator");
+      const resolved = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "resolve_approval",
+          approvalId: pending.pending.find(
+            (action) => action.runId === String(allow.json.runId) && action.approvalId,
+          )?.approvalId,
+          decision: "allowed",
+        },
+      });
+      expect(resolved.json.accepted).toBe(true);
+      const smoke = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: { kind: "submit_task", brief: "mara smoke", fixture: "smoke" },
+      });
+      const after = await statusSnapshot(endpoint, owner.token);
+      const artifact = after.artifacts.find((item) => item.runId === String(smoke.json.runId));
+      expect(artifact?.author).toBe("mara");
+      const result = after.messages.find(
+        (message) => message.kind === "result" && message.runId === String(smoke.json.runId),
+      );
+      expect(result?.authorName).toBe("mara");
+      expect(result?.authorRole).toBe("coordinator");
+    } finally {
+      await server.close();
+    }
+  });
+
+  it("keeps an Ivo approval resolution attributed to Ivo", async () => {
+    const { endpoint, server, owner } = await boot();
+    try {
+      const submitted = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "submit_task",
+          brief: "ivo allow resolution",
+          fixture: "allow",
+          bot: "ivo",
+        },
+      });
+      expect(submitted.json.accepted).toBe(true);
+      const pending = await statusSnapshot(endpoint, owner.token);
+      const resolved = await command(endpoint, owner.token, {
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "resolve_approval",
+          approvalId: pending.pending.find(
+            (action) => action.runId === String(submitted.json.runId) && action.approvalId,
+          )?.approvalId,
+          decision: "allowed",
+        },
+      });
+      expect(resolved.json.accepted).toBe(true);
+      const after = await statusSnapshot(endpoint, owner.token);
+      const runId = String(submitted.json.runId);
+      const artifact = after.artifacts.find((item) => item.runId === runId);
+      expect(artifact?.author).toBe("ivo");
+      const result = after.messages.find(
+        (message) => message.kind === "result" && message.runId === runId,
+      );
+      expect(result?.authorName).toBe("ivo");
+      expect(result?.authorRole).toBe("specialist");
+      const decision = after.messages.find(
+        (message) =>
+          message.kind === "approval" &&
+          message.body === "approval allowed" &&
+          message.runId === runId,
+      );
+      expect(decision?.authorName).toBe("owner");
+      expect(decision?.authorRole).toBe("operator");
+    } finally {
+      await server.close();
+    }
+  });
+
   it("replays approval receipts without another dispatch effect", async () => {
     const { endpoint, server, owner } = await boot();
     try {
@@ -416,13 +543,7 @@ describe("http", () => {
         idempotencyKey: newIdempotencyKey(),
         command: { kind: "submit_task", brief: "approve once", fixture: "allow" },
       });
-      const snapshot = Schema.decodeUnknownSync(WorkspaceSnapshot)(
-        await (
-          await fetch(new URL("/v1/status", endpoint), {
-            headers: { authorization: `Bearer ${owner.token}` },
-          })
-        ).json(),
-      );
+      const snapshot = await statusSnapshot(endpoint, owner.token);
       const body = {
         idempotencyKey: newIdempotencyKey(),
         command: {

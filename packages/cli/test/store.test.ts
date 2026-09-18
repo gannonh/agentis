@@ -176,6 +176,49 @@ describe("store", () => {
     expect(receipt.accepted).toBe(true);
   });
 
+  it("attributes an Ivo run's artifact and result message to its frozen bot", async () => {
+    const root = tempRoot();
+    const workspaceRoot = join(root, "scratch");
+    const store = await Effect.runPromise(openStore(root));
+    const receipt = await Effect.runPromise(
+      store.applyCommand({
+        principal: owner(),
+        idempotencyKey: newIdempotencyKey(),
+        command: {
+          kind: "submit_task",
+          brief: "Prepare the Ivo draft",
+          bot: "ivo",
+          source: { kind: "pasted", label: "Notes", text: "Proof", citations: [] },
+        },
+        nowMs: 1_000,
+        provider: "fake",
+        executionBoundary: "unverified-host-scratch",
+        workspaceId: workspaceRoot,
+      }),
+    );
+    if (!receipt.runId || !receipt.taskId) throw new Error("missing run");
+    const body = "draft";
+    const path = join(workspaceRoot, "hello.md");
+    const engine = mutateForEngine(join(root, "state.sqlite"));
+    engine.complete({
+      runId: receipt.runId,
+      taskId: receipt.taskId,
+      source: "fake",
+      mediaType: "text/markdown",
+      sha256: createHash("sha256").update(body).digest("hex"),
+      byteSize: Buffer.byteLength(body),
+      path,
+      nowMs: 2_000,
+    });
+    engine.close();
+    const finished = await Effect.runPromise(store.snapshot());
+    expect(finished.artifacts[0]?.author).toBe("ivo");
+    const result = finished.messages.find((message) => message.kind === "result");
+    expect(result?.authorName).toBe("ivo");
+    expect(result?.authorRole).toBe("specialist");
+    await Effect.runPromise(store.close());
+  });
+
   it("fails the run when the materialized source is missing on the launch drive", async () => {
     const root = tempRoot();
     const workspaceRoot = join(root, "scratch");
