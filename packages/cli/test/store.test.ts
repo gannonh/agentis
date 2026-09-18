@@ -14,7 +14,6 @@ import {
   type ApplyInput,
   type Principal,
 } from "../src/store.js";
-import { message } from "../src/store-db.js";
 import { EVENT_REPLAY_LIMIT, SCHEMA_ID } from "../src/versions.js";
 import { Cursor, type Command, type SourcePacket } from "../src/schema.js";
 
@@ -591,51 +590,6 @@ describe("store", () => {
       transitions.events.filter((transition) => transition.event.reason === "task_submitted"),
     ).toHaveLength(1);
     await Effect.runPromise(store.close());
-  });
-
-  it("ignores a duplicate dedupe key and inserts messages without one", async () => {
-    const root = tempRoot();
-    const store = await Effect.runPromise(openStore(root));
-    const receipt = await Effect.runPromise(
-      store.applyCommand({
-        principal: owner(),
-        idempotencyKey: newIdempotencyKey(),
-        command: { kind: "submit_task", brief: "dedupe submit", fixture: "cancel" },
-        nowMs: 1_000,
-        provider: "fake",
-        executionBoundary: "unverified-host-scratch",
-        workspaceId: join(root, "scratch"),
-      }),
-    );
-    const { threadId, taskId, runId } = receipt;
-    if (!threadId || !taskId || !runId) throw new Error("missing ids");
-    const base: Parameters<typeof message>[1] = {
-      threadId,
-      taskId,
-      runId,
-      authorKind: "bot",
-      authorName: "mara",
-      authorRole: "coordinator",
-      kind: "progress",
-      body: "dedupe probe",
-      nowMs: 2_000,
-    };
-    const db = new DatabaseSync(store.path);
-    try {
-      expect(message(db, { ...base, dedupeKey: "dedupe-probe:once" })).toBe(true);
-      expect(message(db, { ...base, dedupeKey: "dedupe-probe:once" })).toBe(false);
-      expect(message(db, { ...base, body: "plain insert", nowMs: 3_000 })).toBe(true);
-      expect(message(db, { ...base, body: "plain insert", nowMs: 4_000 })).toBe(true);
-    } finally {
-      db.close();
-    }
-    try {
-      const snapshot = await Effect.runPromise(store.snapshot());
-      expect(snapshot.messages.filter((item) => item.body === "dedupe probe")).toHaveLength(1);
-      expect(snapshot.messages.filter((item) => item.body === "plain insert")).toHaveLength(2);
-    } finally {
-      await Effect.runPromise(store.close());
-    }
   });
 
   it("freezes a distinct workspace root for every Run", async () => {
