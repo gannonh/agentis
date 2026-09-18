@@ -9,4 +9,14 @@ process.env.TMPDIR = parent;
 const cleanup = () => rmSync(parent, { recursive: true, force: true });
 
 afterAll(cleanup);
-process.once("exit", cleanup);
+
+const onSignal = (signal: NodeJS.Signals) => {
+  try {
+    cleanup();
+  } finally {
+    process.kill(process.pid, signal);
+  }
+};
+
+process.once("SIGINT", () => onSignal("SIGINT"));
+process.once("SIGTERM", () => onSignal("SIGTERM"));
