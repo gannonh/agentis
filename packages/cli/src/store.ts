@@ -275,13 +275,28 @@ export type ThreadRow = {
 
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 
-const messageRoleOfRun = (db: DatabaseSync, runId: RunId): MessageAuthorRole => {
-  const current = row<{ frozen_json: string }>(db, "SELECT frozen_json FROM runs WHERE id=?", [
-    runId,
-  ]);
-  if (!current)
-    throw new StoreError("internal", `run ${runId} has no frozen config for a message role`);
-  return Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(current.frozen_json)).role;
+const runMessageContext = (
+  db: DatabaseSync,
+  runId: RunId,
+): {
+  readonly threadId: string;
+  readonly taskId: string;
+  readonly authorName: FrozenConfig["bot"];
+  readonly authorRole: MessageAuthorRole;
+} => {
+  const current = row<{ thread_id: string; task_id: string; frozen_json: string }>(
+    db,
+    "SELECT thread_id, task_id, frozen_json FROM runs WHERE id=?",
+    [runId],
+  );
+  if (!current) throw new StoreError("internal", `run ${runId} has no frozen config for a message`);
+  const frozen = Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(current.frozen_json));
+  return {
+    threadId: current.thread_id,
+    taskId: current.task_id,
+    authorName: frozen.bot,
+    authorRole: frozen.role,
+  };
 };
 
 const DDL = `
@@ -2169,7 +2184,7 @@ export const mutateForEngine = (storePath: string) => {
           runId,
           authorKind: "bot",
           authorName: "ivo",
-          authorRole: messageRoleOfRun(db, runId),
+          authorRole: runMessageContext(db, runId).authorRole,
           kind: "progress",
           importance: "routine",
           dedupeKey: `peer:${runId}:${digest(body)}`,
@@ -2262,27 +2277,20 @@ export const mutateForEngine = (storePath: string) => {
           "UPDATE runs SET status = 'waiting_approval', waiting_reason = 'approval' WHERE id = ?",
           [input.runId],
         );
-        const current = row<{ thread_id: string; frozen_json: string }>(
-          db,
-          "SELECT thread_id,frozen_json FROM runs WHERE id=?",
-          [input.runId],
-        );
-        if (current) {
-          const frozen = Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(current.frozen_json));
-          message(db, {
-            threadId: current.thread_id,
-            taskId: input.taskId,
-            runId: input.runId,
-            authorKind: "bot",
-            authorName: frozen.bot,
-            authorRole: frozen.role,
-            kind: "approval",
-            importance: "blocking",
-            dedupeKey: `approval:${approvalId}`,
-            body: `Approval required for ${input.tool}`,
-            nowMs: input.nowMs,
-          });
-        }
+        const context = runMessageContext(db, input.runId);
+        message(db, {
+          threadId: context.threadId,
+          taskId: input.taskId,
+          runId: input.runId,
+          authorKind: "bot",
+          authorName: context.authorName,
+          authorRole: context.authorRole,
+          kind: "approval",
+          importance: "blocking",
+          dedupeKey: `approval:${approvalId}`,
+          body: `Approval required for ${input.tool}`,
+          nowMs: input.nowMs,
+        });
         emit(
           db,
           "waiting_approval",
@@ -2297,30 +2305,23 @@ export const mutateForEngine = (storePath: string) => {
         run(db, "UPDATE runs SET status = 'waiting_input', waiting_reason = 'input' WHERE id = ?", [
           runId,
         ]);
-        const current = row<{ thread_id: string; task_id: string; frozen_json: string }>(
-          db,
-          "SELECT thread_id,task_id,frozen_json FROM runs WHERE id=?",
-          [runId],
-        );
-        if (current) {
-          const frozen = Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(current.frozen_json));
-          message(db, {
-            threadId: current.thread_id,
-            taskId: current.task_id,
-            runId,
-            authorKind: "bot",
-            authorName: frozen.bot,
-            authorRole: frozen.role,
-            kind: "question",
-            importance: "blocking",
-            dedupeKey: `question:${runId}:${digest(prompt)}`,
-            body:
-              publicPendingPrompt("waiting_input", prompt)
-                ?.questions.map((question) => question.prompt)
-                .join("\n") ?? prompt,
-            nowMs,
-          });
-        }
+        const context = runMessageContext(db, runId);
+        message(db, {
+          threadId: context.threadId,
+          taskId: context.taskId,
+          runId,
+          authorKind: "bot",
+          authorName: context.authorName,
+          authorRole: context.authorRole,
+          kind: "question",
+          importance: "blocking",
+          dedupeKey: `question:${runId}:${digest(prompt)}`,
+          body:
+            publicPendingPrompt("waiting_input", prompt)
+              ?.questions.map((question) => question.prompt)
+              .join("\n") ?? prompt,
+          nowMs,
+        });
         emit(db, "waiting_input", { runId, prompt }, nowMs);
       }),
     complete: (input: {
@@ -2334,17 +2335,12 @@ export const mutateForEngine = (storePath: string) => {
       nowMs: number;
     }) =>
       withTxn(db, () => {
-        const current = row<{ status: string; frozen_json: string }>(
-          db,
-          "SELECT status, frozen_json FROM runs WHERE id = ?",
-          [input.runId],
-        );
-        if (!current || !active(input.runId)) {
+        if (!active(input.runId)) {
           return null;
         }
-        const frozen = Schema.decodeUnknownSync(FrozenConfig)(JSON.parse(current.frozen_json));
         const handoff = handoffForRun(db, input.runId);
         if (handoff && handoff.state !== "accepted") return null;
+        const { authorName, authorRole } = runMessageContext(db, input.runId);
         const artifactId = newArtifactId();
         const source = row<{ citations_json: string }>(
           db,
@@ -2362,7 +2358,7 @@ export const mutateForEngine = (storePath: string) => {
             artifactId,
             input.taskId,
             input.runId,
-            frozen.bot,
+            authorName,
             input.source,
             input.mediaType,
             input.sha256,
@@ -2379,8 +2375,8 @@ export const mutateForEngine = (storePath: string) => {
           latestArtifactId: artifactId,
           message: {
             authorKind: "bot",
-            authorName: frozen.bot,
-            authorRole: frozen.role,
+            authorName,
+            authorRole,
             kind: "result",
             importance: "result",
             dedupeKey: `result:${input.runId}`,
@@ -2427,7 +2423,7 @@ export const mutateForEngine = (storePath: string) => {
           message: {
             authorKind: "bot",
             authorName: currentTask?.bot_name === "ivo" ? "ivo" : "mara",
-            authorRole: messageRoleOfRun(db, runId),
+            authorRole: runMessageContext(db, runId).authorRole,
             kind: "failure",
             importance: "blocking",
             dedupeKey: `failure:${runId}:${digest(error)}`,

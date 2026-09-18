@@ -465,7 +465,9 @@ describe("http", () => {
         idempotencyKey: newIdempotencyKey(),
         command: {
           kind: "resolve_approval",
-          approvalId: pending.pending.find((action) => action.approvalId)?.approvalId,
+          approvalId: pending.pending.find(
+            (action) => action.runId === String(allow.json.runId) && action.approvalId,
+          )?.approvalId,
           decision: "allowed",
         },
       });
@@ -505,7 +507,9 @@ describe("http", () => {
         idempotencyKey: newIdempotencyKey(),
         command: {
           kind: "resolve_approval",
-          approvalId: pending.pending.find((action) => action.approvalId)?.approvalId,
+          approvalId: pending.pending.find(
+            (action) => action.runId === String(submitted.json.runId) && action.approvalId,
+          )?.approvalId,
           decision: "allowed",
         },
       });
@@ -519,6 +523,14 @@ describe("http", () => {
       );
       expect(result?.authorName).toBe("ivo");
       expect(result?.authorRole).toBe("specialist");
+      const decision = after.messages.find(
+        (message) =>
+          message.kind === "approval" &&
+          message.body === "approval allowed" &&
+          message.runId === runId,
+      );
+      expect(decision?.authorName).toBe("owner");
+      expect(decision?.authorRole).toBe("operator");
     } finally {
       await server.close();
     }
