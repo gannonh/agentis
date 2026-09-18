@@ -4,5 +4,6 @@ export default defineConfig({
   test: {
     include: ["test/**/*.test.{ts,tsx}"],
     fileParallelism: false,
+    setupFiles: ["test/helpers/tmpdir-scope.ts"],
   },
 });
