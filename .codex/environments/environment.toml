@@ -1,5 +1,0 @@
-version = 1
-name = "agentis"
-
-[setup]
-script = "rm -f \"$CODEX_WORKTREE_PATH/.env\" \"$CODEX_WORKTREE_PATH/.env.local\""
